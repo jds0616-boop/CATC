@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>강사 전용 - CATC</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 40px; background: #222; color: white; margin: 0; }
+        
+        /* 상단 헤더 */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #555; padding-bottom: 20px; margin-bottom: 40px; }
+        .header h1 { font-size: 36px; margin: 0; color: #fff; letter-spacing: -1px; }
+        .logo-box { background: #fff; color: #000; padding: 10px 20px; font-weight: bold; font-size: 20px; border-radius: 5px; }
+
+        /* 질문 카드 리스트 */
+        .q-card { 
+            background: #333; 
+            border-left: 10px solid #007bff; /* 파란색 포인트 */
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        /* 질문 텍스트 (프리젠테이션용 큰 글씨) */
+        .q-text { 
+            font-size: 36px; 
+            font-weight: bold; 
+            width: 80%; 
+            line-height: 1.4; 
+            word-break: break-all;
+        }
+        
+        .q-info {
+            font-size: 18px;
+            color: #aaa;
+            margin-top: 10px;
+            font-weight: normal;
+        }
+
+        /* 우측 버튼 영역 */
+        .q-actions { width: 18%; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;}
+        
+        .btn-check {
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #555;
+            background: transparent;
+            color: #aaa;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-check:hover { border-color: #fff; color: #fff; }
+
+        /* 답변 완료된 상태 디자인 */
+        .completed { 
+            opacity: 0.3; 
+            border-left-color: #555; 
+            transform: scale(0.98);
+        }
+        .completed .btn-check {
+            background: #28a745; /* 녹색 */
+            border-color: #28a745;
+            color: #fff;
+        }
+
+        /* 좋아요 뱃지 */
+        .like-badge {
+            display: inline-block;
+            background: #ff5252;
+            color: white;
+            font-size: 20px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>CATC 교육과정 질문 플랫폼</h1>
+        <div class="logo-box">LOGO AREA</div>
+    </div>
+
+    <div id="instructorList">
+        <!-- 질문이 들어오는 곳 -->
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        if (typeof db !== 'undefined') {
+            db.ref('questions').on('value', (snapshot) => {
+                const listDiv = document.getElementById('instructorList');
+                listDiv.innerHTML = "";
+                
+                const data = snapshot.val();
+                if(!data) {
+                    listDiv.innerHTML = "<p style='font-size:24px; color:#555;'>현재 등록된 질문이 없습니다.</p>";
+                    return;
+                }
+
+                let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+
+                // ★ 정렬 로직 (핵심)
+                // 1순위: 답변 안 한 것(false)이 위로
+                // 2순위: 좋아요(likes) 많은 순서대로
+                // 3순위: 최신순
+                items.sort((a, b) => {
+                    if (a.isDone !== b.isDone) return a.isDone ? 1 : -1; // 완료된건 맨 뒤로
+                    if ((b.likes || 0) !== (a.likes || 0)) return (b.likes || 0) - (a.likes || 0); // 좋아요 많은 순
+                    return b.timestamp - a.timestamp; // 최신순
+                });
+
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = `q-card ${item.isDone ? 'completed' : ''}`;
+                    
+                    // 좋아요가 1개 이상일 때만 뱃지 표시
+                    const likeHtml = (item.likes > 0) ? `<span class="like-badge">👍 ${item.likes}</span>` : '';
+
+                    card.innerHTML = `
+                        <div class="q-content" style="width:80%">
+                            ${likeHtml}
+                            <div class="q-text">${item.text}</div>
+                        </div>
+                        <div class="q-actions">
+                            <button class="btn-check" onclick="toggleDone('${item.id}', ${!item.isDone})">
+                                ${item.isDone ? '답변완료됨' : '✔ 답변완료'}
+                            </button>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            });
+        }
+
+        function toggleDone(key, newStatus) {
+            db.ref('questions/' + key).update({ isDone: newStatus });
+        }
+    </script>
+</body>
+</html>
