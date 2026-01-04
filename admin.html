@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <!-- [NEW] Takeover Auth Modal (비밀번호 숨김용) -->
+    <!-- [NEW] Takeover Auth Modal -->
     <div id="takeoverModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-header"><h3><i class="fa-solid fa-lock"></i> 강의실 제어권 인증</h3></div>
@@ -158,19 +158,20 @@
                 
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
+                    <!-- [수정] QR 코드 + 카피 버튼 가로 배치 -->
                     <div class="qr-box">
                         <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
-                        <div class="url-text-area">
-                            <span class="url-preview">Student Link QR</span>
-                            <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
-                        </div>
-                        <input type="hidden" id="studentLink">
+                        <button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()">
+                            <i class="fa-solid fa-copy"></i> Copy Link
+                        </button>
+                        <!-- [수정] 복사 기능용 투명 input -->
+                        <input type="text" id="studentLink" style="opacity: 0; position: absolute; z-index: -1;">
                     </div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
+                    <!-- [수정] 퀴즈 파일 + 샘플 버튼 가로 배치 -->
                     <div class="file-row">
-                        <!-- [수정] 파일 디자인 변경 -->
                         <input type="file" id="quizFile" accept=".txt" style="display: none;" onchange="alert(this.files[0].name + ' 선택됨')">
                         <label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor: pointer; justify-content: center; flex-grow: 1;">
                             <i class="fa-solid fa-file-import"></i> Quiz File
@@ -200,7 +201,6 @@
             <div class="lock-message">
                 <i class="fa-solid fa-lock"></i>
                 <h3>강의 대기 중 (Room Idle)</h3>
-                <!-- [수정] 파란 박스 강조 -->
                 <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
             </div>
         </div>

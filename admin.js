@@ -1,4 +1,4 @@
-/* --- admin.js (Final Polish) --- */
+/* --- admin.js (Copy Fix) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -80,7 +80,7 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
+            // [수정] 복사 버튼 리스너는 html onclick으로 처리함
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -146,7 +146,6 @@ const dataMgr = {
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         
-        // [수정] 드롭다운 값 강제 동기화
         const selectBox = document.getElementById('roomSelect');
         if(selectBox) selectBox.value = room;
 
@@ -329,6 +328,7 @@ const ui = {
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
     renderQr: function(url) {
+        // [수정] 숨겨진 input에도 값 설정 (복사용)
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         try { new QRCode(qrDiv, { text: url, width: 35, height: 35 }); } catch(e) {}
@@ -353,19 +353,29 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
-    // [수정] 링크 복사 기능 개선
-    copyLink: async function() {
+    // [수정] 안전한 복사 방식 적용
+    copyLink: function() {
         const urlInput = document.getElementById('studentLink');
         const url = urlInput.value;
         if (!url) return alert("복사할 링크가 없습니다.");
 
+        // Fallback 방식 우선 (모든 환경 호환)
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999);
+        
         try {
-            await navigator.clipboard.writeText(url);
-            alert("링크가 복사되었습니다!");
+            const successful = document.execCommand('copy');
+            if(successful) alert("링크가 복사되었습니다!");
+            else throw new Error("Copy failed");
         } catch (err) {
-            urlInput.select();
-            document.execCommand('copy');
-            alert("링크가 복사되었습니다! (구형 방식)");
+            // 최신 API 시도
+            if(navigator.clipboard) {
+                navigator.clipboard.writeText(url)
+                    .then(() => alert("링크가 복사되었습니다!"))
+                    .catch(() => alert("복사 실패. 수동으로 복사해주세요."));
+            } else {
+                alert("복사 실패. 브라우저 보안 설정을 확인하세요.");
+            }
         }
     },
 

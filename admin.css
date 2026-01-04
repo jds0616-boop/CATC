@@ -1,4 +1,4 @@
-/* --- admin.css (Final Full Version) --- */
+/* --- admin.css (Final Fixed Version) --- */
 
 :root {
     --header-bg: #0f172a;
@@ -31,7 +31,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .login-btn:hover { background: #2563eb; }
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
-/* Sidebar Layout (Fixed & Scrollable) */
+/* Sidebar Layout - Fixed & Compact */
 .sidebar { 
     width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; 
     display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; 
@@ -40,25 +40,23 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     z-index: 50; overflow: hidden; 
 }
 
-/* 상단 설정 영역 (내용이 길어지면 스크롤) */
 .sidebar-top { 
-    flex: 1; /* 남은 공간 차지 */
-    display: flex; flex-direction: column; gap: 18px; 
+    flex: 1; 
+    display: flex; flex-direction: column; gap: 15px; 
     overflow-y: auto; scrollbar-width: none; 
-    padding-bottom: 20px;
+    padding-bottom: 10px;
 }
 .sidebar-top::-webkit-scrollbar { display: none; }
 
-/* 하단 버튼 영역 (바닥 고정) */
 .sidebar-bottom {
     flex-shrink: 0;
-    padding-top: 20px;
+    padding-top: 15px;
     border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-.sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 10px; }
-.setting-container { display: flex; flex-direction: column; gap: 15px; } 
-.setting-group { display: flex; flex-direction: column; gap: 6px; }
+.sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 5px; }
+.setting-container { display: flex; flex-direction: column; gap: 12px; } 
+.setting-group { display: flex; flex-direction: column; gap: 4px; }
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
 .setting-input, .setting-select { 
     width: 100%; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; 
@@ -66,61 +64,55 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .setting-input:focus { border-color: var(--accent-color); }
 
-/* QR Box (Fixed to Horizontal Layout) */
+/* QR Box Layout (Side by Side) */
 .qr-box { 
     background: #0f172a; 
     border: 1px solid #334155; 
-    border-radius: 10px; 
-    padding: 12px; 
+    border-radius: 8px; 
+    padding: 8px; 
     display: flex; 
-    flex-direction: row; /* 가로 정렬 */
+    flex-direction: row; 
     align-items: center; 
-    gap: 15px; 
+    gap: 10px; 
 }
 #qrcode { 
     background: white; 
-    padding: 4px; 
+    padding: 2px; 
     border-radius: 4px; 
     cursor: pointer; 
-    width: 54px; 
-    height: 54px; 
+    width: 42px; /* 사이즈 조정 */
+    height: 42px; 
     flex-shrink: 0; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
+    display: flex; align-items: center; justify-content: center; 
 }
 #qrcode img { display: block; width: 100%; height: 100%; }
-.url-text-area { 
-    flex-grow: 1; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; 
-    overflow: hidden; 
+
+/* Copy Link Button inside QR Box */
+#btnCopyLink {
+    flex-grow: 1;
+    height: 42px; /* QR 코드 높이와 맞춤 */
+    margin: 0;
+    border: 1px solid #475569;
 }
-.url-preview { 
-    font-size: 11px; 
-    color: #94a3b8; 
-    font-weight: 700; 
-    letter-spacing: -0.3px;
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-}
+
+/* File Row Layout */
+.file-row { display: flex; gap: 8px; align-items: center; }
+.file-row label { flex-grow: 1; text-align: center; } /* Quiz File 버튼 */
+.file-row button { width: auto; min-width: 70px; } /* Sample 버튼 */
 
 .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0; }
-.file-row { display: flex; gap: 8px; align-items: center; }
 
-.btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-action { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-action:active { transform: translateY(0); }
 .btn-primary { background: var(--accent-color); }
 .btn-secondary { background: #475569; }
 .btn-danger { background: #7f1d1d; color: #fecaca; }
 .btn-print { background: #e2e8f0; color: #334155; }
-.btn-small { padding: 0 15px; font-size: 12px; height: 38px; white-space: nowrap; }
-.btn-dark { background: #475569; color: white; border: 1px solid #64748b; }
+.btn-small { padding: 0 10px; font-size: 11px; height: 36px; white-space: nowrap; }
+.btn-dark { background: #1e293b; color: white; border: 1px solid #475569; }
 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
-.dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 15px; }
+.dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; }
 
 /* Main Stage */
 .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; height: 100vh; background: var(--bg-color); }
@@ -140,22 +132,12 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 
 .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 30px; display: flex; justify-content: center; }
 
-/* Status Overlay & Styled Save Badge */
+/* Status Overlay */
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .lock-message i { font-size: 60px; margin-bottom: 25px; color: #94a3b8; }
 .lock-message h3 { font-size: 28px; font-weight: 800; margin: 0 0 15px 0; letter-spacing: -0.5px; }
 .lock-message p { font-size: 16px; color: #cbd5e1; line-height: 1.6; }
-/* Save Badge Style */
-.text-badge {
-    background-color: var(--accent-color);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 800;
-    margin: 0 4px;
-    display: inline-block;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
+.text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; }
 .qa-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
@@ -173,6 +155,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
 .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
+/* QUIZ STYLES UPDATED */
 #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; max-width: 1200px; }
 .quiz-card { width: 100%; height: 100%; background: var(--card-bg); border-radius: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding: 40px; position: relative; overflow: hidden; }
 #quizContent { width: 100%; height: 100%; display: flex; flex-direction: column; flex-grow: 1; }
@@ -182,7 +165,9 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 @keyframes blink { 50% { opacity: 0.5; } }
 .quiz-question { font-size: 42px; font-weight: 900; line-height: 1.2; color: var(--text-color); word-break: keep-all; margin: 0; text-align: left; }
 .quiz-options { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
-.quiz-opt { width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 28px; font-weight: 700; color: #475569; background: white; transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+
+/* [수정] 퀴즈 답안 글씨 크기 확대 */
+.quiz-opt { width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 34px; font-weight: 800; color: #475569; background: white; transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 .quiz-opt .opt-num { width: 50px; height: 50px; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 25px; flex-shrink: 0; }
 .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
 .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; font-weight: 800; }
@@ -200,8 +185,9 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 @keyframes fadeIn { to { opacity: 1; } }
 
-.quiz-status-bar { margin-top: 20px; display: flex; gap: 20px; flex-shrink: 0; justify-content: center; width: 100%; flex-wrap: wrap; }
-.q-btn { padding: 10px 15px; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; transition: 0.1s; min-width: 90px; justify-content: center; }
+/* [수정] 버튼 간격 추가 (gap) */
+.quiz-status-bar { margin-top: 20px; display: flex; gap: 15px; flex-shrink: 0; justify-content: center; width: 100%; flex-wrap: wrap; }
+.q-btn { padding: 10px 20px; border-radius: 10px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; transition: 0.1s; min-width: 100px; justify-content: center; }
 .q-btn:active { transform: translateY(4px); box-shadow: none; }
 .btn-test { background: #f59e0b; width: 100%; justify-content: center; }
 .btn-start { background: #3b82f6; } .btn-stop { background: #ef4444; } .btn-result { background: #10b981; } .btn-nav { background: #64748b; }
