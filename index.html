@@ -4,650 +4,199 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CATC Training Q&A</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- CSS Variables & Reset --- */
-        :root {
-            --theme-color: #3b82f6; /* 기본 테마색 */
-            --main-color: #1a237e;  /* 상단바 고정색 (남색) */
-        }
-
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5; 
-            margin: 0; padding: 0; color: #333;
-            overflow: hidden; height: 100vh;
-        }
-
-        .app-container {
-            width: 100%; max-width: 600px; margin: 0 auto;
-            height: 100%; position: relative;
-            background: #f0f2f5;
-            display: flex; flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        /* --- Header --- */
-        .header {
-            height: 65px; flex-shrink: 0;
-            background: var(--main-color); color: white;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border-bottom: 6px solid var(--theme-color); /* 테마 컬러 라인 */
-            transition: border-color 0.3s;
-        }
-        .header-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; overflow: hidden; }
-        .menu-icon { font-size: 22px; cursor: pointer; padding: 5px; }
-        .course-title { 
-            font-size: 18px; font-weight: bold; white-space: nowrap; 
-            overflow: hidden; text-overflow: ellipsis; 
-        }
-        .header-right { display: flex; align-items: center; }
-        .kac-logo { height: 16px; width: auto; object-fit: contain; }
-
-        /* --- Content Area --- */
-        .scroll-area {
-            flex-grow: 1; overflow-y: auto; padding-bottom: 80px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .input-section { 
-            padding: 20px; background: #e8eaf6; 
-            border-bottom: 1px solid #c5cae9; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        :root { --theme-color: #3b82f6; --main-color: #1a237e; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #f0f2f5; overflow: hidden; height: 100vh; }
+        .app-container { width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; background: #f0f2f5; }
+        .header { height: 65px; background: var(--main-color); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 6px solid var(--theme-color); transition: border-color 0.3s; flex-shrink: 0;}
+        .footer { height: auto; min-height: 60px; background: var(--main-color); color: #ccc; text-align: center; padding: 15px; font-size: 11px; flex-shrink: 0;}
+        .course-title { font-weight: bold; font-size: 18px; }
+        .kac-logo { height: 16px; }
         
-        .notice-text { 
-            font-size: 13px; color: #333; font-weight: 500;
-            margin-bottom: 15px; line-height: 1.5; 
-            background: #fff; padding: 15px; 
-            border-radius: 8px; border-left: 5px solid #d32f2f;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .q-input {
-            width: 100%; height: 110px; padding: 15px;
-            border: 2px solid var(--main-color); /* 남색 고정 */
-            border-radius: 12px; font-size: 16px; resize: none; background: #fff;
-        }
-        
+        .scroll-area { flex-grow: 1; overflow-y: auto; padding-bottom: 80px; }
+        .input-section { padding: 20px; background: #e8eaf6; }
+        .q-input { width: 100%; height: 100px; padding: 15px; border: 2px solid var(--theme-color); border-radius: 12px; resize: none; }
         .action-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
-        .edit-status-bar { flex-grow: 1; font-weight: bold; color: #d32f2f; display: none; align-items: center; gap: 5px;}
-
-        .btn-submit {
-            background: var(--main-color); /* 남색 고정 */
-            color: white; border: none; padding: 12px 35px;
-            border-radius: 50px; font-weight: bold; font-size: 15px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-        .btn-cancel { background: #fff; color: #555; border: 1px solid #aaa; padding: 10px 20px; border-radius: 50px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
-
-        .list-section { padding: 0; }
-        .list-header { 
-            position: sticky; top: 0; z-index: 100;
-            background: #f0f2f5; 
-            padding: 15px 15px 10px 20px;
-            font-size: 16px; font-weight: bold; color: #444; 
-            display: flex; align-items: center; gap: 8px; 
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .list-content { padding: 10px 15px; }
-
-        .q-card {
-            background: #fff; border-radius: 12px; padding: 15px;
-            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; position: relative;
-        }
-        .q-card:active { transform: scale(0.98); background: #fafafa; }
+        .btn-submit { background: var(--theme-color); color: white; padding: 12px 30px; border: none; border-radius: 50px; font-weight: bold; cursor:pointer;}
         
-        .q-left { display: flex; align-items: center; width: 60%; } 
+        .list-header { padding: 15px; font-weight: bold; color: #555; background: #f0f2f5; position: sticky; top: 0; }
+        .q-card { background: white; margin: 10px 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
-        .user-icon { 
-            width: 40px; height: 40px; background: #e8eaf6; 
-            color: var(--main-color); 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin-right: 15px; font-size: 18px; flex-shrink: 0;
-        }
-        .q-card.my-post .user-icon { background: #ffebee; color: #d32f2f; } /* 내 글은 빨강 */
-
-        .q-text-preview {
-            font-size: 16px; color: #222; line-height: 1.4;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden; text-overflow: ellipsis; word-break: break-all;
-        }
+        /* Quiz Overlay */
+        #quizOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 5000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #quizWaitingScreen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 4900; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
         
-        .q-right { width: 40%; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-        .edit-controls { display: flex; flex-direction: row; align-items: center; gap: 5px; }
+        .quiz-badge { background: var(--main-color); color: white; padding: 8px 20px; border-radius: 30px; font-weight: bold; margin-bottom: 30px; font-size: 16px; }
+        .quiz-msg { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 50px; color: #333; line-height: 1.4; }
         
-        .timer-badge { 
-            font-size: 11px; font-weight: bold; color: #e53935; 
-            background: #ffebee; padding: 4px 6px; border-radius: 4px;
-            white-space: nowrap; margin-bottom: 0;
-        }
+        .quiz-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 400px; }
+        .quiz-btn { height: 120px; font-size: 40px; font-weight: 900; border: 4px solid #eee; background: white; border-radius: 20px; cursor: pointer; color: #333; transition:0.1s; }
+        .quiz-btn.selected { background: var(--theme-color); color: white; border-color: var(--theme-color); }
         
-        .btn-mini-edit {
-            background: #fff; border: 1px solid var(--main-color); color: var(--main-color);
-            font-size: 11px; padding: 4px 8px; border-radius: 12px;
-            cursor: pointer; font-weight: bold; white-space: nowrap;
-        }
-
-        .like-badge { 
-            font-size: 14px; font-weight: bold; color: #ff5252; 
-            background: #ffebee; padding: 6px 10px; border-radius: 20px; 
-            display: flex; align-items: center; gap: 5px; 
-            justify-content: center; white-space: nowrap;
-        }
-
-        /* --- Footer --- */
-        .footer {
-            height: auto; min-height: 60px; flex-shrink: 0;
-            text-align: center; padding: 15px 10px; 
-            font-size: 11px; color: #ccc; 
-            background: var(--main-color); /* 남색 고정 */
-            line-height: 1.4; z-index: 1000;
-        }
-
-        /* --- Floating Exit Button --- */
-        .fab-exit {
-            position: fixed; bottom: 90px; right: 20px;
-            width: 56px; height: 56px;
-            background: #d32f2f; color: white;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            cursor: pointer; z-index: 1100;
-            transition: transform 0.2s;
-        }
-        .fab-exit:active { transform: scale(0.9); }
-
-        /* --- Modals --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 2000;
-            display: none; align-items: center; justify-content: center;
-        }
-        .modal-box {
-            background: #fff; width: 90%; max-width: 500px;
-            border-radius: 20px; padding: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            position: relative; animation: popUp 0.3s ease;
-            max-height: 80vh; overflow-y: auto;
-        }
-        @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .menu-list { list-style: none; padding: 0; margin: 10px 0; max-height: 300px; overflow-y: auto; }
-        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .pw-input-box { display: none; margin-top: 15px; text-align: center; background: #f9f9f9; padding: 15px; border-radius: 10px; }
-        .pw-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 70%; text-align: center; font-size: 20px; letter-spacing: 5px;}
-        .btn-pw-submit { background: var(--main-color); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-        
-        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; padding: 10px; background: #f9f9f9; border-radius: 10px; word-break: break-all;}
-        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
-        .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
-        .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .btn-modal-like.active { background: #ff5252; color: #fff; }
-
-        /* --- ★ QUIZ MODE OVERLAY ★ --- */
-        #quizModeOverlay {
-            display: none; /* JS로 제어 */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 5000;
-            flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px;
-        }
-        .quiz-title-badge { background: #1a237e; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; font-size: 14px;}
-        .quiz-question-display { font-size: 24px; font-weight: 800; color: #333; text-align: center; margin-bottom: 40px; line-height: 1.4; word-break: keep-all; }
-        
-        .quiz-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
-        .quiz-option-btn { 
-            background: white; border: 3px solid #eee; border-radius: 15px;
-            height: 100px; font-size: 32px; font-weight: 800; color: #333;
-            cursor: pointer; transition: 0.1s;
-        }
-        .quiz-option-btn:active { transform: scale(0.95); background: #f0f0f0; }
-        .quiz-option-btn.selected { background: var(--theme-color); color: white; border-color: var(--theme-color); }
-        
-        .quiz-waiting-msg { text-align: center; margin-top: 30px; font-size: 16px; color: #888; display: none; }
+        .btn-confirm-quiz { margin-top: 40px; padding: 15px 50px; background: #1a237e; color: white; font-size: 20px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- 1. Fixed Header -->
-        <header class="header" translate="no">
-            <div class="header-left">
-                <div class="menu-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+        <header class="header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-bars" style="font-size:20px;"></i>
                 <div class="course-title" id="courseTitle">Loading...</div>
             </div>
-            <div class="header-right">
-                <img src="logo.png" alt="KAC Logo" class="kac-logo">
-            </div>
+            <img src="logo.png" class="kac-logo">
         </header>
 
-        <!-- 2. Scrollable Area -->
         <div class="scroll-area">
-            
-            <!-- Input Section -->
             <div class="input-section">
-                <div class="notice-text" translate="no">
-                    All questions are anonymous.<br>
-                    Please refrain from using offensive language.<br>
-                    <br>
-                    익명으로 접수됩니다.<br>
-                    성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
+                <div class="notice-text" id="lang-notice">
+                    All questions are anonymous.<br>익명으로 접수됩니다.
                 </div>
-                
-                <textarea id="qInput" class="q-input" placeholder="Type your question here..."></textarea>
-                
-                <div class="action-row" translate="no">
-                    <div id="editStatusBar" class="edit-status-bar">
-                        <i class="fa-regular fa-clock"></i> <span id="editTimer">05:00</span> remaining
-                    </div>
-                    
-                    <button id="cancelEditBtn" class="btn-cancel" onclick="cancelEditMode()">Cancel</button>
-                    <button id="submitBtn" class="btn-submit" onclick="submitQuestion()">Submit</button>
+                <textarea class="q-input" id="qInput" placeholder="Type here..."></textarea>
+                <div class="action-row">
+                    <button class="btn-submit" id="btn-submit-qa" onclick="submitQuestion()">Submit</button>
                 </div>
             </div>
-
-            <!-- List Section -->
-            <div class="list-section">
-                <!-- Sticky Header -->
-                <div class="list-header" translate="no">
-                    <i class="fa-solid fa-comments"></i> Live Questions
-                </div>
-                <!-- Content -->
-                <div id="questionList" class="list-content">
-                    <div style="text-align:center; padding: 30px; color:#aaa;">Loading...</div>
-                </div>
-            </div>
+            <div class="list-header" id="lang-live">Live Questions</div>
+            <div id="qList"></div>
         </div>
 
-        <!-- 3. Fixed Footer -->
-        <div class="footer" id="appFooter" translate="no">
-            KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.<br>
-            문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)<br>
-            © 2026 Korea Airports Corporation. All rights reserved.
-        </div>
+        <footer class="footer" id="appFooter">KAC Platform</footer>
     </div>
 
-    <!-- 4. Floating Exit Button -->
-    <div class="fab-exit" onclick="exitRoom()">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+    <!-- Quiz Waiting Screen (When Teacher is in Quiz Mode but no question active) -->
+    <div id="quizWaitingScreen">
+        <i class="fa-solid fa-hourglass-half fa-3x" style="color:#aaa; margin-bottom:20px;"></i>
+        <h2 id="lang-quiz-wait">퀴즈 대기 중...</h2>
+        <p style="color:#666;" id="lang-quiz-sub">강사님이 문제를 준비하고 있습니다.</p>
     </div>
 
-    <!-- Menu Modal (A-Z) -->
-    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
-        <div class="modal-box">
-            <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
-            <ul class="menu-list" id="roomList"></ul>
-            <div id="pwSection" class="pw-input-box">
-                <p id="pwTargetMsg" style="margin-bottom:5px;">Enter Password</p>
-                <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
-                <br>
-                <button class="btn-pw-submit" onclick="submitRoomPw()">Enter Room</button>
-            </div>
+    <!-- Quiz Active Overlay -->
+    <div id="quizOverlay">
+        <div class="quiz-badge">LIVE QUIZ</div>
+        <div class="quiz-msg" id="lang-quiz-active">정답을 선택해주세요.</div>
+        
+        <div class="quiz-btn-grid" id="quizBtns">
+            <button class="quiz-btn" onclick="selectAnswer(1)">1</button>
+            <button class="quiz-btn" onclick="selectAnswer(2)">2</button>
+            <button class="quiz-btn" onclick="selectAnswer(3)">3</button>
+            <button class="quiz-btn" onclick="selectAnswer(4)">4</button>
         </div>
-    </div>
-
-    <!-- Detail Modal -->
-    <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
-        <div class="modal-box">
-            <h3 style="margin:0; color:var(--main-color);" translate="no">Question Detail</h3>
-            <div id="modalText" class="modal-content-text"></div>
-            <div class="modal-actions" translate="no">
-                <button class="btn-modal-close" onclick="document.getElementById('detailModal').style.display='none'">Close</button>
-                <button id="modalLikeBtn" class="btn-modal-like" onclick="doLike()">
-                    <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount" style="margin-left:5px">0</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ★ QUIZ MODE OVERLAY ★ -->
-    <div id="quizModeOverlay">
-        <div class="quiz-title-badge">LIVE QUIZ</div>
-        <div class="quiz-question-display">
-            강사가 문제를 출제 중입니다.<br>
-            정답을 선택해주세요.
-        </div>
-        <div class="quiz-btn-grid" id="quizButtons">
-            <button class="quiz-option-btn" onclick="submitQuizAnswer(1)">1</button>
-            <button class="quiz-option-btn" onclick="submitQuizAnswer(2)">2</button>
-            <button class="quiz-option-btn" onclick="submitQuizAnswer(3)">3</button>
-            <button class="quiz-option-btn" onclick="submitQuizAnswer(4)">4</button>
-        </div>
-        <div class="quiz-waiting-msg" id="quizWaitMsg">
-            <i class="fa-solid fa-check-circle" style="color:#10b981; font-size:40px; margin-bottom:10px;"></i><br>
-            답변이 제출되었습니다.<br>결과를 기다려주세요.
-        </div>
+        
+        <button class="btn-confirm-quiz" id="btnConfirm" onclick="submitFinalAnswer()">제출 (Submit)</button>
     </div>
 
     <script src="config.js"></script>
-
     <script>
-        // 안전장치: config.js 미로드 시 오류 방지
-        if (typeof firebase === 'undefined') {
-            alert("Firebase not loaded. Check config.js");
-        }
-
-        // 변수 중복 선언 방지 (db -> firebase.database() 직접 호출)
         const room = new URLSearchParams(window.location.search).get('room') || 'A';
+        const db = firebase.database();
+        let selectedChoice = null;
+        let currentQuizId = null;
         
-        let questionsData = {};
-        let editingKey = null; 
-        let editInterval = null;
-        let currentActiveQuizId = null;
-
-        // Single Tab Logic
-        const bc = new BroadcastChannel('catc_platform_channel');
-        bc.onmessage = (event) => {
-            if (event.data === 'exists') {
-                alert("Already open in another tab.");
-                window.location.href = "about:blank"; window.close(); 
-            } else if (event.data === 'check') bc.postMessage('exists');
+        // Multi-language Dictionary
+        const LANG = {
+            ko: { notice: "익명으로 접수됩니다.", live: "실시간 질문", submit: "등록", quizWait: "퀴즈 대기 중...", quizSub: "문제를 준비 중입니다.", quizActive: "정답을 선택하세요.", quizConfirm: "제출하기" },
+            en: { notice: "All questions are anonymous.", live: "Live Questions", submit: "Submit", quizWait: "Waiting for Quiz...", quizSub: "Instructor is preparing.", quizActive: "Select an answer.", quizConfirm: "Confirm Submit" }
         };
-        bc.postMessage('check');
 
-        const roomListEl = document.getElementById('roomList');
-        for (let i = 65; i <= 90; i++) { 
-            const char = String.fromCharCode(i);
-            const li = document.createElement('li');
-            li.className = 'menu-item';
-            li.onclick = () => trySwitchRoom(char);
-            li.innerHTML = `<span>Course ${char}</span> <i class="fa-solid fa-chevron-right"></i>`;
-            roomListEl.appendChild(li);
-        }
-
-        window.addEventListener('load', () => {
-            if (typeof firebase === 'undefined') return;
-            
-            // 초기값 설정
-            document.getElementById('courseTitle').innerText = `Course ${room}`;
-            
-            const db = firebase.database();
-            
-            // 1. Settings & Theme
-            db.ref(`courses/${room}/settings`).on('value', snapshot => {
-                const val = snapshot.val();
-                if(val) {
-                    if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
-                    if(val.footerText) document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
-                    
-                    // 테마 컬러 적용 (상단바 라인만)
-                    if(val.themeColor) {
-                        document.documentElement.style.setProperty('--theme-color', val.themeColor);
-                    }
-                }
+        window.onload = () => {
+            // 1. Listen Settings (Theme & Language)
+            db.ref(`courses/${room}/settings`).on('value', s => {
+                const v = s.val() || {};
+                if(v.courseName) document.getElementById('courseTitle').innerText = v.courseName;
+                if(v.themeColor) document.documentElement.style.setProperty('--theme-color', v.themeColor);
+                if(v.footerText) document.getElementById('appFooter').innerHTML = v.footerText.replace(/\n/g, '<br>');
+                
+                // Language Apply
+                const curLang = LANG[v.language || 'ko'];
+                document.getElementById('lang-notice').innerHTML = curLang.notice;
+                document.getElementById('lang-live').innerText = curLang.live;
+                document.getElementById('btn-submit-qa').innerText = curLang.submit;
+                document.getElementById('lang-quiz-wait').innerText = curLang.quizWait;
+                document.getElementById('lang-quiz-sub').innerText = curLang.quizSub;
+                document.getElementById('lang-quiz-active').innerText = curLang.quizActive;
+                document.getElementById('btnConfirm').innerText = curLang.quizConfirm;
             });
 
-            // 2. Quiz Listener
-            db.ref(`courses/${room}/activeQuiz`).on('value', snapshot => {
-                const quizData = snapshot.val();
-                if(quizData && quizData.id) {
-                    // Quiz Active
-                    currentActiveQuizId = quizData.id;
-                    showQuizScreen();
+            // 2. Mode Sync (QA vs Quiz)
+            db.ref(`courses/${room}/status/mode`).on('value', s => {
+                const mode = s.val();
+                if(mode === 'quiz') {
+                    document.getElementById('quizWaitingScreen').style.display = 'flex';
                 } else {
-                    // Quiz Closed
-                    currentActiveQuizId = null;
-                    hideQuizScreen();
+                    document.getElementById('quizWaitingScreen').style.display = 'none';
+                    document.getElementById('quizOverlay').style.display = 'none';
                 }
             });
 
-            // 3. Start Data Listener
+            // 3. Active Quiz Trigger
+            db.ref(`courses/${room}/activeQuiz`).on('value', s => {
+                const val = s.val();
+                if(val && val.id) {
+                    currentQuizId = val.id;
+                    document.getElementById('quizWaitingScreen').style.display = 'none';
+                    document.getElementById('quizOverlay').style.display = 'flex';
+                    
+                    // Check if already answered
+                    if(localStorage.getItem(`quiz_${currentQuizId}`)) {
+                        document.getElementById('quizOverlay').innerHTML = `<h2>제출 완료!</h2><i class='fa-solid fa-check-circle fa-3x' style='color:#10b981'></i>`;
+                    } else {
+                        // Reset UI
+                        selectedChoice = null;
+                        document.querySelectorAll('.quiz-btn').forEach(b => b.classList.remove('selected'));
+                        document.getElementById('btnConfirm').style.display = 'none';
+                    }
+                } else {
+                    // If mode is still quiz but activeQuiz is null -> Back to waiting
+                    db.ref(`courses/${room}/status/mode`).once('value', m => {
+                        if(m.val() === 'quiz') document.getElementById('quizWaitingScreen').style.display = 'flex';
+                    });
+                    document.getElementById('quizOverlay').style.display = 'none';
+                }
+            });
+
             startDataListener();
-            setInterval(updateLiveTimers, 1000);
-        });
+        };
 
-        // --- Quiz Functions ---
-        function showQuizScreen() {
-            document.getElementById('quizModeOverlay').style.display = 'flex';
-            // Check LocalStorage
-            const answered = localStorage.getItem(`quiz_ans_${room}_${currentActiveQuizId}`);
-            if(answered) showQuizWaiting();
-            else resetQuizButtons();
+        function selectAnswer(n) {
+            selectedChoice = n;
+            document.querySelectorAll('.quiz-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.quiz-btn')[n-1].classList.add('selected');
+            document.getElementById('btnConfirm').style.display = 'block';
         }
 
-        function hideQuizScreen() {
-            document.getElementById('quizModeOverlay').style.display = 'none';
-            resetQuizButtons();
-        }
-
-        function submitQuizAnswer(choice) {
-            if(!currentActiveQuizId) return;
-            document.getElementById('quizButtons').style.display = 'none';
-            document.getElementById('quizWaitMsg').style.display = 'block';
-
-            firebase.database().ref(`courses/${room}/quiz_answers/${currentActiveQuizId}`).push({
-                choice: choice,
+        function submitFinalAnswer() {
+            if(!selectedChoice || !currentQuizId) return;
+            db.ref(`courses/${room}/quiz_answers/${currentQuizId}`).push({
+                choice: selectedChoice,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
-            localStorage.setItem(`quiz_ans_${room}_${currentActiveQuizId}`, choice);
+            localStorage.setItem(`quiz_${currentQuizId}`, selectedChoice);
+            document.getElementById('quizOverlay').innerHTML = `<h2>제출 완료!</h2><i class='fa-solid fa-check-circle fa-3x' style='color:#10b981'></i>`;
         }
 
-        function showQuizWaiting() {
-            document.getElementById('quizButtons').style.display = 'none';
-            document.getElementById('quizWaitMsg').style.display = 'block';
-        }
-
-        function resetQuizButtons() {
-            document.getElementById('quizButtons').style.display = 'grid';
-            document.getElementById('quizWaitMsg').style.display = 'none';
-            document.querySelectorAll('.quiz-option-btn').forEach(b => b.classList.remove('selected'));
-        }
-
-        // --- Q&A Functions ---
         function startDataListener() {
-            firebase.database().ref(`courses/${room}/questions`).on('value', (snapshot) => {
-                const listDiv = document.getElementById('questionList');
-                listDiv.innerHTML = "";
-                const data = snapshot.val();
-                questionsData = data || {};
-
-                if (!data) { listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet.</p>"; return; }
-
-                let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                items.sort((a, b) => {
-                    const diffLike = (b.likes || 0) - (a.likes || 0);
-                    if(diffLike !== 0) return diffLike;
-                    return b.timestamp - a.timestamp;
+            db.ref(`courses/${room}/questions`).on('value', s => {
+                const d = s.val();
+                const div = document.getElementById('qList'); div.innerHTML="";
+                if(d) Object.keys(d).reverse().forEach(k => {
+                    div.innerHTML += `<div class="q-card" style="padding:15px; margin:10px;">${d[k].text}</div>`;
                 });
-
-                const myPosts = JSON.parse(localStorage.getItem(`my_posts_${room}`) || '{}');
-
-                items.forEach(item => {
-                    const myPostTime = myPosts[item.id];
-                    let isMineAndEditable = false;
-                    if(myPostTime && (Date.now() - myPostTime < 5 * 60 * 1000)) {
-                        isMineAndEditable = true;
-                    }
-
-                    const div = document.createElement('div');
-                    div.className = `q-card ${myPostTime ? 'my-post' : ''}`;
-                    div.onclick = () => openDetail(item.id);
-                    
-                    let editControlsHtml = '';
-                    if (isMineAndEditable) {
-                        editControlsHtml = `
-                            <div class="edit-controls">
-                                <div class="timer-badge live-timer" data-time="${myPostTime}">...</div>
-                                <button class="btn-mini-edit" onclick="event.stopPropagation(); loadToEdit('${item.id}')">
-                                    <i class="fa-solid fa-pen"></i> Edit
-                                </button>
-                            </div>
-                        `;
-                    }
-
-                    div.innerHTML = `
-                        <div class="q-left">
-                            <div class="user-icon"><i class="fa-solid fa-user"></i></div>
-                            <div class="q-text-preview">${escapeHtml(item.text)}</div>
-                        </div>
-                        <div class="q-right">
-                            ${editControlsHtml}
-                            <div class="like-badge">
-                                <i class="fa-solid fa-thumbs-up"></i> ${item.likes || 0}
-                            </div>
-                        </div>
-                    `;
-                    listDiv.appendChild(div);
-                });
-                updateLiveTimers();
-            });
-        }
-
-        function updateLiveTimers() {
-            const timers = document.querySelectorAll('.live-timer');
-            const now = Date.now();
-            timers.forEach(span => {
-                const postTime = parseInt(span.getAttribute('data-time'));
-                const diff = 5 * 60 * 1000 - (now - postTime);
-                if (diff <= 0) span.parentElement.innerHTML = ""; 
-                else {
-                    const m = Math.floor(diff / 60000);
-                    const s = Math.floor((diff % 60000) / 1000);
-                    span.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
-                }
             });
         }
 
         function submitQuestion() {
-            const input = document.getElementById('qInput');
-            const text = input.value.trim();
-            if (!text) return alert("Please enter your question.");
-
-            if (editingKey) {
-                firebase.database().ref(`courses/${room}/questions/${editingKey}`).update({ text: text })
-                    .then(() => { alert("Modified successfully."); cancelEditMode(); })
-                    .catch(e => alert("Error: " + e.message));
-                return;
-            }
-
-            const lastPostTime = localStorage.getItem('last_post_time');
-            const now = Date.now();
-            if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
-                const remain = Math.ceil((3 * 60 * 1000 - (now - lastPostTime)) / 1000);
-                return alert(`Please wait ${remain} seconds.`);
-            }
-
-            const newRef = firebase.database().ref(`courses/${room}/questions`).push();
-            newRef.set({ text: text, likes: 0, isDone: false, timestamp: firebase.database.ServerValue.TIMESTAMP })
-            .then(() => {
-                alert("Question Submitted!");
-                input.value = "";
-                localStorage.setItem('last_post_time', now);
-                let myPosts = JSON.parse(localStorage.getItem(`my_posts_${room}`) || '{}');
-                myPosts[newRef.key] = now;
-                localStorage.setItem(`my_posts_${room}`, JSON.stringify(myPosts));
+            const t = document.getElementById('qInput').value;
+            if(!t) return alert("Empty!");
+            db.ref(`courses/${room}/questions`).push({
+                text: t, timestamp: firebase.database.ServerValue.TIMESTAMP
             });
-        }
-
-        function loadToEdit(key) {
-            const item = questionsData[key];
-            const input = document.getElementById('qInput');
-            input.value = item.text; input.focus();
-            editingKey = key;
-            document.getElementById('submitBtn').innerText = "Modify";
-            document.getElementById('cancelEditBtn').style.display = "inline-block";
-            document.getElementById('editStatusBar').style.display = 'flex';
-            const myPosts = JSON.parse(localStorage.getItem(`my_posts_${room}`) || '{}');
-            const postTime = myPosts[key];
-            if(editInterval) clearInterval(editInterval);
-            updateEditTimerDisplay(postTime); 
-            editInterval = setInterval(() => updateEditTimerDisplay(postTime), 1000);
-            document.querySelector('.scroll-area').scrollTop = 0;
-        }
-
-        function updateEditTimerDisplay(postTime) {
-            const remaining = (5 * 60 * 1000) - (Date.now() - postTime);
-            if (remaining <= 0) { clearInterval(editInterval); cancelEditMode(); alert("Edit time expired."); return; }
-            const m = Math.floor(remaining / 60000);
-            const s = Math.floor((remaining % 60000) / 1000);
-            document.getElementById('editTimer').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
-        }
-
-        function cancelEditMode() {
-            editingKey = null;
             document.getElementById('qInput').value = "";
-            document.getElementById('submitBtn').innerText = "Submit";
-            document.getElementById('cancelEditBtn').style.display = "none";
-            document.getElementById('editStatusBar').style.display = "none";
-            if(editInterval) clearInterval(editInterval);
-        }
-
-        function openDetail(key) {
-            const item = questionsData[key];
-            if(!item) return;
-            document.getElementById('modalText').innerText = item.text;
-            document.getElementById('modalLikeCount').innerText = item.likes || 0;
-            const likedMap = JSON.parse(localStorage.getItem(`liked_${room}`) || '{}');
-            const btn = document.getElementById('modalLikeBtn');
-            btn.onclick = () => doLike(key);
-            if(likedMap[key]) btn.classList.add('active'); else btn.classList.remove('active');
-            document.getElementById('detailModal').style.display = 'flex';
-        }
-
-        function doLike(key) {
-            if(!key) return;
-            const likedMap = JSON.parse(localStorage.getItem(`liked_${room}`) || '{}');
-            if (likedMap[key]) return alert("You already liked this.");
-            firebase.database().ref(`courses/${room}/questions/${key}`).transaction((post) => {
-                if (post) post.likes = (post.likes || 0) + 1;
-                return post;
-            }, (error, committed) => {
-                if (committed) {
-                    likedMap[key] = true;
-                    localStorage.setItem(`liked_${room}`, JSON.stringify(likedMap));
-                    const btn = document.getElementById('modalLikeBtn');
-                    if(btn) { btn.classList.add('active'); const cnt = document.getElementById('modalLikeCount'); cnt.innerText = parseInt(cnt.innerText) + 1; }
-                }
-            });
-        }
-
-        function exitRoom() { if(confirm("Leave the room?")) window.location.href = "about:blank"; }
-        function openMenu() { document.getElementById('menuModal').style.display = 'flex'; }
-        function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
-        function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
-
-        let targetSwitchRoom = null;
-        function trySwitchRoom(roomId) {
-            if(roomId === room) return alert("Already here.");
-            targetSwitchRoom = roomId;
-            document.getElementById('pwSection').style.display = 'block';
-            document.getElementById('pwTargetMsg').innerText = `Enter Password for Course ${roomId}`;
-            document.getElementById('roomPw').value = ""; document.getElementById('roomPw').focus();
-        }
-
-        function submitRoomPw() {
-            const inputPw = document.getElementById('roomPw').value;
-            if(inputPw.length !== 4) return alert("Please enter 4 digits.");
-            firebase.database().ref(`courses/${targetSwitchRoom}/settings/password`).once('value').then(snap => {
-                const hash = snap.val();
-                if (!hash) moveToRoom(targetSwitchRoom);
-                else {
-                    verifyPassword(inputPw, hash).then(ok => { if(ok) moveToRoom(targetSwitchRoom); else alert("Wrong Password."); });
-                }
-            });
-        }
-        function moveToRoom(r) { window.location.search = `?room=${r}`; }
-        async function verifyPassword(p, h) {
-            const m = new TextEncoder().encode(p);
-            const hb = await crypto.subtle.digest('SHA-256', m);
-            const ha = Array.from(new Uint8Array(hb));
-            return ha.map(b => b.toString(16).padStart(2, '0')).join('') === h;
-        }
-        function escapeHtml(t) {
-            if(!t) return "";
-            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
     </script>
 </body>
