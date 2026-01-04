@@ -22,276 +22,201 @@
             --text-color: #1e293b;
             --sidebar-width: 300px;
         }
-        body.night-mode {
-            --bg-color: #0f172a; --card-bg: #1e293b; --text-color: #e2e8f0;
-        }
+        body.night-mode { --bg-color: #0f172a; --card-bg: #1e293b; --text-color: #e2e8f0; }
         * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
         body { margin: 0; background: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; display: flex; }
 
-        /* Sidebar - Compact Layout */
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width); background: #1e293b; color: #94a3b8;
             display: flex; flex-direction: column; padding: 15px; flex-shrink: 0;
             border-right: 1px solid rgba(255,255,255,0.1); 
-            height: 100vh; overflow: hidden; /* No Scroll */
-            justify-content: space-between;
+            height: 100vh; overflow: hidden; justify-content: space-between;
         }
         .sidebar-header { font-size: 18px; font-weight: 800; color: white; margin-bottom: 15px; letter-spacing: -0.5px; text-align: center; }
-        
-        .setting-container { display: flex; flex-direction: column; gap: 12px; }
-        .setting-group { }
-        .setting-label { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: block; color: #64748b; }
-        .setting-input, .setting-select {
-            width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155;
-            color: white; border-radius: 4px; font-size: 12px;
-        }
-        
-        .btn-action {
-            width: 100%; padding: 10px; border-radius: 4px; border: none; font-weight: 700; cursor: pointer;
-            background: #334155; color: white; transition: 0.2s; font-size: 12px;
-        }
+        .setting-container { display: flex; flex-direction: column; gap: 8px; }
+        .setting-label { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; display: block; color: #64748b; }
+        .setting-input, .setting-select { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; font-size: 12px; }
+        .btn-action { width: 100%; padding: 10px; border-radius: 4px; border: none; font-weight: 700; cursor: pointer; background: #334155; color: white; transition: 0.2s; font-size: 12px; }
         .btn-action:hover { background: #475569; }
         .btn-primary { background: var(--accent-color); }
         .btn-primary:hover { background: #2563eb; }
         .btn-danger { background: #7f1d1d; color: #fca5a5; margin-top: 5px; }
-
-        /* Developer Info Footer */
-        .dev-info {
-            text-align: center; font-size: 10px; color: #475569; margin-top: 10px; 
-            border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; line-height: 1.4;
-        }
+        .dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; line-height: 1.4; }
 
         /* QR Code & Modal */
-        #qrcode { 
-            background: white; padding: 5px; border-radius: 5px; width: 80px; height: 80px; 
-            margin: 5px auto; display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-        .qr-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 9999; 
-            display: none; align-items: center; justify-content: center;
-        }
+        #qrcode { background: white; padding: 5px; border-radius: 5px; width: 80px; height: 80px; margin: 5px auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .qr-big-box { background: white; padding: 20px; border-radius: 20px; text-align: center; }
-        #printHeader { display: none; }
-
-        /* Main Content */
+        
+        /* Main Stage */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
-        .header {
-            height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10;
-        }
+        .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10; }
         .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
         .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 16px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px; }
         .header-controls { display: flex; gap: 15px; }
-        .icon-btn { 
-            width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s;
-        }
+        .icon-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; }
         .icon-btn:hover { background: var(--accent-color); }
 
-        .mode-tabs {
-            display: flex; gap: 15px; padding: 15px 30px; 
-            border-bottom: 2px solid rgba(0,0,0,0.05); background: var(--card-bg);
-        }
-        .mode-btn {
-            padding: 10px 25px; border-radius: 50px; border: 2px solid #cbd5e1; 
-            font-weight: 800; color: #64748b; cursor: pointer; background: transparent; font-size: 14px; transition: 0.2s;
-        }
+        .mode-tabs { display: flex; gap: 15px; padding: 15px 30px; border-bottom: 2px solid rgba(0,0,0,0.05); background: var(--card-bg); }
+        .mode-btn { padding: 10px 25px; border-radius: 50px; border: 2px solid #cbd5e1; font-weight: 800; color: #64748b; cursor: pointer; background: transparent; font-size: 14px; transition: 0.2s; }
         .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; }
-        
         .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 20px; }
-        
+
         /* Q&A View */
         #view-qa { height: 100%; display: flex; flex-direction: column; }
         .qa-filters { display: flex; gap: 10px; margin-bottom: 20px; }
-        .filter-chip { 
-            padding: 6px 14px; background: var(--card-bg); border-radius: 20px; font-size: 13px; 
-            font-weight: 600; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); opacity: 0.7;
-        }
+        .filter-chip { padding: 6px 14px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); opacity: 0.7; }
         .filter-chip.active { opacity: 1; border-color: var(--accent-color); color: var(--accent-color); }
-        .qa-list { 
-            flex-grow: 1; overflow-y: auto; display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
-            gap: 15px; align-content: start; 
-        }
-        .q-card {
-            background: var(--card-bg); padding: 15px; border-radius: 10px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #cbd5e1;
-            cursor: pointer; transition: transform 0.2s; height: fit-content;
-        }
+        .qa-list { flex-grow: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; align-content: start; }
+        .q-card { background: var(--card-bg); padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #cbd5e1; cursor: pointer; transition: transform 0.2s; height: fit-content; }
         .q-card:hover { transform: translateY(-3px); }
         .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
         .q-card.status-later { border-left-color: #f59e0b; opacity: 0.9; }
         .q-card.status-done { border-left-color: #94a3b8; opacity: 0.5; background: #f1f5f9; color: #64748b; filter: grayscale(1); }
 
-        /* Quiz View */
+        /* Quiz View (Centered & 3D Chart) */
         #view-quiz { height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .quiz-display {
-            width: 98%; height: 98%; background: var(--card-bg); border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 4px solid var(--header-bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; text-align: center; position: relative;
-        }
-        .quiz-question { font-size: 32px; font-weight: 900; margin-bottom: 20px; line-height: 1.4; color: var(--text-color); flex-shrink: 0; }
+        .quiz-display { width: 98%; height: 98%; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 4px solid var(--header-bg); display: flex; flex-direction: column; align-items: center; padding: 20px; text-align: center; position: relative; }
+        .quiz-question { font-size: 36px; font-weight: 900; margin-bottom: 20px; line-height: 1.4; color: var(--text-color); flex-shrink: 0; position: relative; padding-top: 10px;}
         
-        .quiz-options { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; justify-content: center; }
-        .quiz-opt { 
-            font-size: 22px; padding: 15px; border: 3px solid #e2e8f0; border-radius: 12px; 
-            font-weight: 600; text-align: left; display: flex; align-items: center; background: white; color: #333; transition: 0.3s;
+        /* 30s Timer */
+        .timer-badge { 
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            background: #333; color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); opacity: 0; transition: 0.3s;
         }
-        .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #047857; transform: scale(1.02); }
-        .quiz-opt span { 
-            width: 35px; height: 35px; background: #e2e8f0; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 16px; 
-        }
+        .timer-badge.show { opacity: 1; top: -25px; }
+        .timer-badge.urgent { background: #ef4444; animation: pulse 1s infinite; }
+
+        .quiz-options { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; justify-content: center; align-items: center; }
+        .quiz-opt { width: 100%; font-size: 24px; padding: 20px; border: 3px solid #e2e8f0; border-radius: 15px; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; background: white; color: #333; transition: 0.3s; }
+        .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #047857; transform: scale(1.05); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); font-weight: 800; }
+        .quiz-opt span { position: absolute; left: 20px; width: 40px; height: 40px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #666; }
         .quiz-opt.reveal-answer span { background: #10b981; color: white; }
 
-        .chart-area { 
-            display: none; width: 100%; height: 100%; flex-grow: 1;
-            align-items: flex-end; justify-content: center; gap: 40px; padding-bottom: 20px; 
-        }
-        .bar-col { display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; justify-content: flex-end;}
-        .bar { width: 100%; background: #cbd5e1; transition: height 1s; border-radius: 8px 8px 0 0; }
-        .bar.winner { background: #10b981; }
+        /* 3D Cylinder Chart */
+        .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 60px; padding-bottom: 40px; position: relative; }
+        .bar-container { position: relative; width: 80px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+        
+        .cylinder { position: relative; width: 100%; transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 5; }
+        .cylinder-top { position: absolute; top: -15px; width: 100%; height: 30px; border-radius: 50%; background: #94a3b8; border: 1px solid rgba(0,0,0,0.1); }
+        .cylinder-body { width: 100%; height: 100%; background: linear-gradient(to right, #94a3b8, #cbd5e1, #94a3b8); border-left: 1px solid rgba(0,0,0,0.1); border-right: 1px solid rgba(0,0,0,0.1); }
+        .cylinder-label { position: absolute; top: -45px; width: 100%; text-align: center; font-weight: bold; font-size: 20px; color: #333; }
+        
+        /* Correct Answer Highlighting (Green/Blue) */
+        .cylinder.correct .cylinder-top { background: #10b981; }
+        .cylinder.correct .cylinder-body { background: linear-gradient(to right, #059669, #34d399, #059669); }
+        .cylinder.wrong .cylinder-top { background: #94a3b8; }
+        .cylinder.wrong .cylinder-body { background: linear-gradient(to right, #64748b, #94a3b8, #64748b); }
 
-        .quiz-status-bar { margin-top: 20px; display: flex; gap: 10px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
-        .q-btn { 
-            padding: 10px 20px; border-radius: 30px; border: none; font-size: 14px; font-weight: 800; cursor: pointer; color: white; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 100px;
+        .x-axis { position: absolute; bottom: 0; width: 100%; height: 2px; background: #333; }
+        .x-label-badge { 
+            margin-top: 15px; width: 40px; height: 40px; border-radius: 50%; background: #1e293b; color: white; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; z-index: 10;
         }
-        .q-btn i { font-size: 18px; }
+
+        /* Controls */
+        .quiz-status-bar { margin-top: 20px; display: flex; gap: 15px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
+        .q-btn { padding: 12px 25px; border-radius: 40px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 110px; }
+        .q-btn i { font-size: 20px; }
         .btn-test { background: #f59e0b; }
         .btn-start { background: #3b82f6; }
         .btn-stop { background: #ef4444; }
         .btn-result { background: #10b981; }
         .btn-nav { background: #1e293b; border: 2px solid #fff; } 
-        .quiz-guide-text { background: rgba(0,0,0,0.8); color: #fff; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 10px; animation: pulse 2s infinite; }
+        .quiz-guide-text { background: rgba(0,0,0,0.8); color: #fff; padding: 10px 30px; border-radius: 30px; font-size: 16px; font-weight: bold; margin-bottom: 20px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; } }
 
-        /* Right Editor */
-        .overlay-panel {
-            position: absolute; top: 0; right: 0; width: 350px; height: 100%;
-            background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2);
-            transform: translateX(100%); transition: 0.3s; z-index: 100; padding: 25px;
-            display: flex; flex-direction: column;
-        }
+        /* Overlays & Modals */
+        .overlay-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.3s; z-index: 100; padding: 25px; display: flex; flex-direction: column; }
         .overlay-panel.open { transform: translateX(0); }
-        .overlay-toggle-tab {
-            position: absolute; top: 50%; left: -40px; transform: translateY(-50%);
-            width: 40px; height: 60px; background: var(--header-bg); color: white;
-            border-radius: 10px 0 0 10px; cursor: pointer; z-index: 110;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-        }
+        .overlay-toggle-tab { position: absolute; top: 50%; left: -40px; transform: translateY(-50%); width: 40px; height: 60px; background: var(--header-bg); color: white; border-radius: 10px 0 0 10px; cursor: pointer; z-index: 110; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); }
         .editor-input { width: 100%; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; color: #333; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
         .quiz-list-item { padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color:#333; display: flex; gap: 8px; align-items: center; }
 
-        /* Modal Smooth Animation & Layout */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-            z-index: 200; display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.show { opacity: 1; }
-        
-        .modal-box { 
-            background: var(--card-bg); width: 700px; padding: 30px; border-radius: 15px; 
-            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-        }
+        .modal-box { background: var(--card-bg); width: 700px; padding: 30px; border-radius: 15px; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
         .modal-overlay.show .modal-box { transform: scale(1); }
-
         .modal-q-text { font-size: 28px; font-weight: 800; margin-bottom: 30px; line-height: 1.4; color: var(--text-color); }
-        
         .modal-actions { display: flex; gap: 15px; justify-content: space-between; align-items: center; }
-        .modal-left-btns { display: flex; gap: 10px; }
-        .modal-right-btns { display: flex; gap: 10px; }
-
-        /* Modal Buttons */
         .m-btn { border: none; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .m-btn:hover { transform: translateY(-2px); }
-        
-        .m-btn-done { background: #10b981; color: white; padding: 12px 30px; font-size: 16px; } /* Green, Main */
-        .m-btn-later { background: #f59e0b; color: white; } /* Yellow */
-        
+        .m-btn-done { background: #10b981; color: white; padding: 12px 30px; font-size: 16px; }
+        .m-btn-later { background: #f59e0b; color: white; }
         .m-btn-icon { width: 45px; height: 45px; border-radius: 50%; padding: 0; justify-content: center; font-size: 18px; }
-        .m-btn-pin { background: #3b82f6; color: white; } /* Blue Pin */
-        .m-btn-del { background: #ef4444; color: white; } /* Red Trash */
+        .m-btn-pin { background: #3b82f6; color: white; }
+        .m-btn-del { background: #ef4444; color: white; }
 
-        /* PRINT STYLE (Official Document) */
+        /* PRINT STYLE (Replicating Image) */
+        #printHeader { display: none; }
         @media print {
-            @page { margin: 15mm; }
+            @page { margin: 10mm; }
             body * { visibility: hidden; }
             .sidebar, .header, .mode-tabs, .overlay-toggle-tab, .qa-filters, .overlay-panel { display: none !important; }
             
             #printHeader { 
                 display: block !important; visibility: visible; 
                 position: absolute; top: 0; left: 0; width: 100%;
+                font-family: "Malgun Gothic", "Dotum", sans-serif;
             }
             
-            .report-title { 
-                text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 30px; 
-                font-family: "Malgun Gothic", serif; border-bottom: 2px solid #000; padding-bottom: 10px;
+            /* Official Table Style */
+            .p-container { border: 2px solid #000; width: 100%; margin-bottom: 20px; }
+            .p-title { 
+                background: #e5e7eb; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; 
+                border-bottom: 1px solid #000;
             }
-            .info-table { 
-                width: 100%; border-collapse: collapse; margin-bottom: 30px; font-family: "Malgun Gothic", serif; font-size: 12px;
-            }
-            .info-table th { 
-                background: #f0f0f0; border: 1px solid #000; padding: 8px; width: 15%; text-align: center; font-weight: bold; 
-            }
-            .info-table td { 
-                border: 1px solid #000; padding: 8px; width: 35%; 
+            .p-table { width: 100%; border-collapse: collapse; }
+            .p-table th { background: #e5e7eb; width: 20%; padding: 10px; border: 1px solid #000; font-weight: bold; text-align: center; }
+            .p-table td { padding: 10px; border: 1px solid #000; width: 80%; font-weight: bold; font-size: 14px; }
+            .p-summary { 
+                background: #fdba74; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; 
+                border: 1px solid #000; border-top: 2px solid #000;
             }
 
-            .content-area, #view-qa, .qa-list { 
-                visibility: visible; position: absolute; top: 200px; left: 0; width: 100%; height: auto !important; 
-                overflow: visible !important; display: block !important;
-            }
-            .qa-list { display: block !important; }
-            
-            /* List Item Style for Print */
-            .q-card { 
-                visibility: visible; break-inside: avoid; border-bottom: 1px solid #ccc; 
-                box-shadow: none; margin-bottom: 5px; width: 100%; padding: 10px 0; background: none; border-left: none;
-                display: flex; justify-content: space-between; align-items: center;
-            }
-            .q-card div { visibility: visible; color: #000; font-family: "Malgun Gothic", serif; }
-            .q-card .q-text-print { font-size: 12px; width: 80%; }
-            .q-card .q-meta-print { font-size: 10px; width: 20%; text-align: right; }
-            
-            /* Hide Buttons in Print */
-            .q-card.status-done { opacity: 1; filter: none; }
+            /* List Table */
+            .list-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+            .list-table th { background: #e5e7eb; border: 1px solid #000; padding: 8px; text-align: center; }
+            .list-table td { border: 1px solid #000; padding: 8px; }
+            .td-no { width: 10%; text-align: center; font-weight: bold; }
+            .td-q { width: 80%; font-weight: bold; font-size: 14px; }
+            .td-like { width: 10%; text-align: center; }
+
+            /* Content Visibility */
+            .content-area, #view-qa { visibility: visible; position: absolute; top: 350px; width: 100%; height: auto; }
+            .qa-list { display: none !important; } /* Hide original grid */
+            #printListArea { display: block !important; visibility: visible; } /* Show table list */
         }
     </style>
 </head>
 <body class="day-mode">
 
-    <!-- QR Big Modal -->
-    <div id="qrModal" class="qr-modal" onclick="closeQrModal()">
-        <div class="qr-big-box" id="qrBigTarget"></div>
-    </div>
+    <!-- QR Modal -->
+    <div id="qrModal" class="qr-modal" onclick="closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
 
-    <!-- Print Header (Hidden on Screen) -->
+    <!-- Print Layout (Hidden) -->
     <div id="printHeader">
-        <div class="report-title">과정 운영 Q&A 리포트</div>
-        <table class="info-table">
-            <tr>
-                <th>과 정 명</th> <td id="p-cname"></td>
-                <th>교육기간</th> <td id="p-date"></td>
-            </tr>
-            <tr>
-                <th>코디네이터</th> <td id="p-coord"></td>
-                <th>담당교수</th> <td id="p-prof"></td>
-            </tr>
+        <div class="p-container">
+            <div class="p-title">KAC Training Platform</div>
+            <table class="p-table">
+                <tr><th>과정명</th><td id="p-cname"></td></tr>
+                <tr><th>교육기간</th><td id="p-date"></td></tr>
+                <tr><th>담임교수</th><td id="p-prof"></td></tr>
+            </table>
+            <div class="p-summary" id="p-summary-text">Q&A 총 취합건수 : 00건</div>
+        </div>
+        <table class="list-table">
+            <thead><tr><th>연번</th><th>질문사항</th><th>공감</th></tr></thead>
+            <tbody id="printListBody"></tbody>
         </table>
-        <div style="font-weight:bold; font-size:14px; margin-bottom:10px; border-bottom:1px solid #000; padding-bottom:5px;">질문 리스트</div>
     </div>
 
-    <!-- 1. Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar">
         <div>
             <div class="sidebar-header">KAC Training Platform</div>
-            
             <div class="setting-container">
                 <div class="setting-group">
                     <label class="setting-label">Select Room</label>
@@ -336,19 +261,14 @@
                 </div>
             </div>
         </div>
-
         <div>
-            <button class="btn-action" style="background:#e2e8f0; color:#333; margin-bottom:5px;" onclick="printReport()"><i class="fa-solid fa-print"></i> Report Print</button>
+            <button class="btn-action" style="background:#e2e8f0; color:#333; margin-bottom:5px;" onclick="printReport()"><i class="fa-solid fa-print"></i> Print Report</button>
             <button class="btn-action btn-danger" onclick="resetCourse()">⚠️ Reset Course</button>
-            
-            <div class="dev-info">
-                (Developed by DooSeok, Jang)<br>
-                E-mail : jds0616@airport.co.kr
-            </div>
+            <div class="dev-info">(Developed by DooSeok, Jang)<br>E-mail : jds0616@airport.co.kr</div>
         </div>
     </div>
 
-    <!-- 2. Main Stage -->
+    <!-- Main Stage -->
     <div class="main-stage">
         <header class="header">
             <div class="header-title">
@@ -381,17 +301,18 @@
             <div id="view-quiz">
                 <div class="quiz-display">
                     <div id="quizGuideArea" class="quiz-guide-text" style="display:none;"></div>
+                    
                     <div id="quizContent" style="width:100%; height:100%; display:flex; flex-direction:column;">
+                        <div class="timer-badge" id="quizTimer">⏳ 30</div>
                         <div class="quiz-question" id="d-qtext">Press 'Test Mode' first.</div>
                         <div class="quiz-options" id="d-options"></div>
                         <div class="chart-area" id="d-chart"></div>
+                        <div class="x-axis" id="xAxis" style="display:none;"></div>
                     </div>
+
                     <div class="quiz-status-bar">
                         <button class="q-btn btn-test" id="btnTest" onclick="startTestMode()" style="flex-direction:row;">
                             <i class="fa-solid fa-triangle-exclamation"></i> <span>Start Test Mode</span>
-                        </button>
-                        <button class="q-btn btn-primary" id="btnReady" onclick="loadRealQuiz()" style="display:none;">
-                            <i class="fa-solid fa-check"></i> <span>Test Complete</span>
                         </button>
                         
                         <div id="quizControls" style="display:none; gap:10px; align-items:center;">
@@ -416,11 +337,9 @@
             </div>
         </div>
 
-        <!-- Right Overlay -->
+        <!-- Overlay Editor -->
         <div class="overlay-panel" id="rightPanel">
-            <div class="overlay-toggle-tab" onclick="toggleRightPanel()">
-                <i class="fa-solid fa-chevron-left" id="panelIcon"></i>
-            </div>
+            <div class="overlay-toggle-tab" onclick="toggleRightPanel()"><i class="fa-solid fa-chevron-left" id="panelIcon"></i></div>
             <div class="panel-header"><h3 style="margin:0; color:#333;">Quiz Editor</h3></div>
             <textarea id="manualQ" class="editor-input" style="height:100px;" placeholder="Question Text"></textarea>
             <input type="text" id="manualO1" class="editor-input" placeholder="Option 1">
@@ -434,7 +353,7 @@
         </div>
     </div>
 
-    <!-- Modal (Enhanced) -->
+    <!-- Modal -->
     <div id="qaModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
             <div class="modal-q-text" id="m-text"></div>
@@ -453,32 +372,18 @@
 
     <script src="config.js"></script>
     <script>
-        // Init
-        let currentRoom = 'A';
-        let dbRef = {};
-        let qaData = {};
-        let quizList = [];
-        let currentQuizIdx = 0;
-        let isTestMode = false;
-        let activeQaKey = null;
+        let currentRoom='A', dbRef={}, qaData={}, quizList=[], currentQuizIdx=0, isTestMode=false, activeQaKey=null;
+        let timerInterval=null, timeLeft=30;
 
-        window.onload = function() {
-            initRoomSelect();
-            changeRoom('A');
-        };
-
+        window.onload = function() { initRoomSelect(); changeRoom('A'); };
         function initRoomSelect() {
             const s = document.getElementById('roomSelect');
-            for(let i=65; i<=90; i++) {
-                const char = String.fromCharCode(i);
-                s.innerHTML += `<option value="${char}">Room ${char}</option>`;
-            }
+            for(let i=65; i<=90; i++) s.innerHTML += `<option value="${String.fromCharCode(i)}">Room ${String.fromCharCode(i)}</option>`;
         }
 
         function changeRoom(r) {
             currentRoom = r;
             document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`;
-            
             db.ref(`courses/${r}/settings`).once('value', snap => {
                 const set = snap.val() || {};
                 document.getElementById('courseNameInput').value = set.courseName || "";
@@ -487,299 +392,246 @@
                 document.getElementById('courseCoordInput').value = set.courseCoord || "";
                 document.getElementById('courseProfInput').value = set.courseProf || "";
             });
-
             const code = getCodeFromRoom(r);
-            const path = window.location.href.replace('admin.html', 'index.html');
-            const fullLink = `${path}?code=${code}`;
+            const fullLink = `${window.location.href.replace('admin.html','index.html')}?code=${code}`;
             document.getElementById('studentLink').value = fullLink;
+            const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text:fullLink, width:70, height:70, colorDark:"#000", colorLight:"#fff", correctLevel:QRCode.CorrectLevel.H });
 
-            const qrDiv = document.getElementById('qrcode');
-            qrDiv.innerHTML = "";
-            new QRCode(qrDiv, {
-                text: fullLink, width: 70, height: 70, colorDark : "#000", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H
-            });
-
-            if(dbRef.qa) dbRef.qa.off();
-            if(dbRef.quiz) dbRef.quiz.off();
-            if(dbRef.ans) dbRef.ans.off();
-            
+            if(dbRef.qa) dbRef.qa.off(); if(dbRef.quiz) dbRef.quiz.off();
             dbRef.qa = db.ref(`courses/${r}/questions`);
             dbRef.quiz = db.ref(`courses/${r}/activeQuiz`);
             dbRef.ans = db.ref(`courses/${r}/quizAnswers`);
-
             loadQaData();
         }
 
         function saveSettings() {
             const pw = document.getElementById('roomPw').value;
-            const cName = document.getElementById('courseNameInput').value;
-            
             const updates = {};
             if(pw && pw.length === 4) updates.password = pw;
-            updates.courseName = cName;
+            updates.courseName = document.getElementById('courseNameInput').value;
             updates.courseDate = document.getElementById('courseDateInput').value;
             updates.courseCoord = document.getElementById('courseCoordInput').value;
             updates.courseProf = document.getElementById('courseProfInput').value;
-
-            db.ref(`courses/${currentRoom}/settings`).update(updates, error => {
-                if(error) alert("Error saving.");
-                else { alert("Saved!"); document.getElementById('displayCourseTitle').innerText = cName; }
+            db.ref(`courses/${currentRoom}/settings`).update(updates, e => {
+                if(e) alert("Error."); else { alert("Saved!"); document.getElementById('displayCourseTitle').innerText = updates.courseName; }
             });
         }
 
-        // --- RESET COURSE ---
         function resetCourse() {
-            const inputPw = prompt("Enter Room Password to RESET ALL DATA:");
-            if(!inputPw) return;
-
-            db.ref(`courses/${currentRoom}/settings/password`).once('value', snap => {
-                const realPw = snap.val();
-                if(realPw && realPw == inputPw) {
-                    if(confirm("WARNING: All questions and quiz data will be deleted. Continue?")) {
-                        dbRef.qa.set(null);
-                        dbRef.quiz.set(null);
-                        dbRef.ans.set(null);
-                        alert("Course Data Reset Complete.");
+            const pw = prompt("Enter Password to RESET:");
+            db.ref(`courses/${currentRoom}/settings/password`).once('value', s => {
+                if(s.val() == pw) {
+                    if(confirm("WARNING: Clearing All Data (Q&A, Quiz, Info). Password remains.")) {
+                        db.ref(`courses/${currentRoom}`).set(null).then(() => {
+                            db.ref(`courses/${currentRoom}/settings/password`).set(pw);
+                            location.reload();
+                        });
                     }
-                } else {
-                    alert("Wrong Password.");
-                }
+                } else alert("Wrong Password.");
             });
         }
 
         function printReport() {
-            // Fill Headers
             document.getElementById('p-cname').innerText = document.getElementById('courseNameInput').value;
             document.getElementById('p-date').innerText = document.getElementById('courseDateInput').value;
             document.getElementById('p-coord').innerText = document.getElementById('courseCoordInput').value;
             document.getElementById('p-prof').innerText = document.getElementById('courseProfInput').value;
             
-            // Generate List for Print
-            // The existing list is hidden, but the @media print will show it.
-            // We just need to make sure the style inside q-card is adapted.
-            // Done via CSS.
+            // Build Print List
+            const tbody = document.getElementById('printListBody');
+            tbody.innerHTML = "";
+            let items = Object.values(qaData || {});
+            document.getElementById('p-summary-text').innerText = `Q&A 총 취합건수 : ${items.length}건`;
+            
+            items.forEach((item, idx) => {
+                tbody.innerHTML += `<tr>
+                    <td class="td-no">${idx+1}</td>
+                    <td class="td-q">${item.text}</td>
+                    <td class="td-like">${item.likes||0}</td>
+                </tr>`;
+            });
             window.print();
         }
 
-        // --- Q&A Logic ---
-        function loadQaData() {
-            dbRef.qa.on('value', snap => { qaData = snap.val() || {}; renderQa('all'); });
-        }
+        function loadQaData() { dbRef.qa.on('value', s => { qaData = s.val() || {}; renderQa('all'); }); }
         function renderQa(filter) {
-            const list = document.getElementById('qaList');
-            list.innerHTML = "";
+            const list = document.getElementById('qaList'); list.innerHTML = "";
             let items = Object.keys(qaData).map(k => ({id:k, ...qaData[k]}));
+            const getScore = (i) => { if(i.status==='pin')return 4; if(i.status==='later')return 2; if(i.status==='done')return 0; return 3; };
+            if(filter==='pin') items=items.filter(x=>x.status==='pin');
+            else if(filter==='later') items=items.filter(x=>x.status==='later');
+            items.sort((a,b) => getScore(b)-getScore(a) || (b.likes||0)-(a.likes||0) || b.timestamp-a.timestamp);
             
-            // Sort Priority: Pin(1) > Normal(2) > Later(3) > Done(4)
-            // Done should be at bottom
-            
-            const getScore = (item) => {
-                if(item.status === 'pin') return 4;
-                if(item.status === 'later') return 2;
-                if(item.status === 'done') return 0;
-                return 3; // Normal
-            };
-
-            // Filters
-            if(filter === 'pin') items = items.filter(x => x.status === 'pin');
-            else if(filter === 'later') items = items.filter(x => x.status === 'later');
-
-            items.sort((a,b) => {
-                const sA = getScore(a);
-                const sB = getScore(b);
-                if(sA !== sB) return sB - sA; // High score first
-                return (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp;
-            });
-
-            items.forEach(item => {
-                const cls = item.status === 'pin' ? 'status-pin' : (item.status === 'later' ? 'status-later' : (item.status === 'done' ? 'status-done' : ''));
-                const icon = item.status === 'pin' ? '📌 ' : (item.status === 'later' ? '⚠️ ' : (item.status === 'done' ? '✅ ' : ''));
-                
-                // Print specific structure
-                const dateStr = new Date(item.timestamp).toLocaleString();
-                
-                list.innerHTML += `
-                    <div class="q-card ${cls}" onclick="openQaModal('${item.id}')">
-                        <div class="q-text-print" style="font-size:16px; font-weight:700;">${icon}${item.text}</div>
-                        <div class="q-meta-print" style="font-size:11px; color:#64748b;">
-                            👍 ${item.likes||0} | ${dateStr}
-                        </div>
-                    </div>`;
+            items.forEach(i => {
+                const cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
+                const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
+                list.innerHTML += `<div class="q-card ${cls}" onclick="openQaModal('${i.id}')"><div style="font-size:16px; font-weight:700;">${icon}${i.text}</div><div style="font-size:11px; color:#64748b;">👍 ${i.likes||0} | ${new Date(i.timestamp).toLocaleTimeString()}</div></div>`;
             });
         }
-        function filterQa(mode) {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
-            renderQa(mode);
-        }
-        
-        function openQaModal(key) {
-            activeQaKey = key;
-            const item = qaData[key];
-            document.getElementById('m-text').innerText = item.text;
-            
-            const modal = document.getElementById('qaModal');
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
-        }
-
-        function updateQa(action) {
+        function filterQa(mode) { document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); event.target.classList.add('active'); renderQa(mode); }
+        function openQaModal(k) { activeQaKey=k; document.getElementById('m-text').innerText=qaData[k].text; const m=document.getElementById('qaModal'); m.style.display='flex'; setTimeout(()=>m.classList.add('show'),10); }
+        function closeModal(e) { const m=document.getElementById('qaModal'); if(!e||e.target.className.includes('modal')||e.target.tagName==='BUTTON'){ m.classList.remove('show'); setTimeout(()=>m.style.display='none',300); }}
+        function updateQa(act) {
             if(!activeQaKey) return;
-            const modal = document.getElementById('qaModal');
-            
-            if(action === 'delete') {
-                const pw = prompt("Enter Room Password to DELETE:");
-                db.ref(`courses/${currentRoom}/settings/password`).once('value', snap => {
-                    if(snap.val() == pw) {
-                        dbRef.qa.child(activeQaKey).remove();
-                        closeModal();
-                    } else {
-                        alert("Wrong Password.");
-                    }
-                });
-                return;
+            if(act==='delete') {
+                const pw = prompt("Password to Delete:");
+                db.ref(`courses/${currentRoom}/settings/password`).once('value', s => { if(s.val()==pw) dbRef.qa.child(activeQaKey).remove(); else alert("Wrong."); });
             } else {
-                // pin, later, done -> Toggle logic if needed, or set direct
-                let newStatus = action;
-                // if same status clicked? maybe toggle to normal.
-                if(qaData[activeQaKey].status === action) newStatus = 'normal';
-                
-                dbRef.qa.child(activeQaKey).update({ status: newStatus });
+                let st = act; if(qaData[activeQaKey].status===act) st='normal';
+                dbRef.qa.child(activeQaKey).update({status:st});
             }
             closeModal();
         }
-        
-        function closeModal(e) { 
-            const modal = document.getElementById('qaModal');
-            if(!e || e.target.className.includes('modal-overlay') || e.target.tagName === 'BUTTON') {
-                modal.classList.remove('show');
-                setTimeout(() => modal.style.display='none', 300);
-            }
-        }
 
-        // --- Quiz Logic (Same as before) ---
+        // Quiz Logic
         function startTestMode() {
-            isTestMode = true;
-            const testQ = { text: "Test: 10 + 10 = ?", options: ["10","20","30","40"], correct: 2 };
-            renderQuizOnScreen(testQ);
-            document.getElementById('btnTest').style.display = 'none';
-            document.getElementById('btnReady').style.display = 'flex';
-            document.getElementById('quizControls').style.display = 'flex';
-            document.getElementById('quizGuideArea').style.display = 'block';
-            document.getElementById('quizGuideArea').innerText = "TEST MODE: Press [Start] to enable student buttons.";
-            dbRef.quiz.set({ id: 'TEST', status: 'ready', ...testQ });
+            isTestMode=true; 
+            const tQ={text:"Test: 10 + 10 = ?", options:["10","20","30","40"], correct:2};
+            renderQuizOnScreen(tQ);
+            document.getElementById('btnTest').style.display='none';
+            document.getElementById('quizControls').style.display='flex';
+            setGuide("TEST MODE: Press [Start] to enable.");
+            dbRef.quiz.set({id:'TEST', status:'ready', ...tQ});
         }
         function loadRealQuiz() {
-            if(quizList.length === 0) return alert("Please load quiz first.");
-            const firstIdx = quizList.findIndex(q => q.checked);
-            if(firstIdx === -1) return alert("Check at least one question.");
-            isTestMode = false; currentQuizIdx = firstIdx;
-            document.getElementById('btnReady').style.display = 'none';
+            if(quizList.length==0) return alert("Load quiz first.");
+            const idx = quizList.findIndex(q=>q.checked);
+            if(idx==-1) return alert("Check questions.");
+            isTestMode=false; currentQuizIdx=idx;
             showCurrentQuiz();
         }
         function showCurrentQuiz() {
-            const q = quizList[currentQuizIdx];
-            renderQuizOnScreen(q);
-            document.getElementById('quizGuideArea').style.display = 'block';
-            document.getElementById('quizGuideArea').innerText = "READY: Press [Start] to begin.";
-            dbRef.quiz.set({ id: `Q${currentQuizIdx}`, status: 'ready', ...q });
+            const q=quizList[currentQuizIdx]; renderQuizOnScreen(q);
+            setGuide("READY: Press [Start].");
+            dbRef.quiz.set({id:`Q${currentQuizIdx}`, status:'ready', ...q});
         }
         function renderQuizOnScreen(q) {
-            document.getElementById('d-qtext').innerText = q.text;
-            const optDiv = document.getElementById('d-options');
-            optDiv.style.display = 'flex';
-            document.getElementById('d-chart').style.display = 'none';
-            optDiv.innerHTML = "";
-            q.options.forEach((o, i) => {
-                optDiv.innerHTML += `<div class="quiz-opt" id="opt-${i+1}"><span>${i+1}</span> ${o}</div>`;
-            });
+            document.getElementById('d-qtext').innerText=q.text;
+            const optDiv=document.getElementById('d-options'); optDiv.style.display='flex'; 
+            document.getElementById('d-chart').style.display='none';
+            document.getElementById('xAxis').style.display='none';
+            optDiv.innerHTML="";
+            q.options.forEach((o,i)=> optDiv.innerHTML+=`<div class="quiz-opt" id="opt-${i+1}"><span>${i+1}</span>${o}</div>`);
         }
         function quizAction(act) {
-            const id = isTestMode ? 'TEST' : `Q${currentQuizIdx}`;
-            dbRef.quiz.update({ status: act });
-            const optDiv = document.getElementById('d-options');
-            const chartDiv = document.getElementById('d-chart');
-            const guide = document.getElementById('quizGuideArea');
-            const correctAns = isTestMode ? 2 : parseInt(quizList[currentQuizIdx].correct);
-            
-            document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
+            const id = isTestMode?'TEST':`Q${currentQuizIdx}`;
+            dbRef.quiz.update({status:act});
+            const optDiv=document.getElementById('d-options');
+            const chartDiv=document.getElementById('d-chart');
+            const correct = isTestMode?2:parseInt(quizList[currentQuizIdx].correct);
+
+            // Timer Logic
+            const timerBadge = document.getElementById('quizTimer');
             if(act === 'open') {
-                optDiv.style.display = 'flex'; chartDiv.style.display = 'none';
-                guide.innerText = "RUNNING: Press [Stop] to finish.";
-            } else if(act === 'close') {
-                document.getElementById(`opt-${correctAns}`).classList.add('reveal-answer');
-                guide.innerText = "STOPPED: Answer Revealed. Press [Result].";
-            } else if(act === 'result') {
-                optDiv.style.display = 'none'; chartDiv.style.display = 'flex';
-                guide.innerText = "RESULT: Statistics.";
-                dbRef.ans.child(id).once('value', s => {
-                    const ans = s.val() || {};
-                    const counts = [0,0,0,0];
-                    Object.values(ans).forEach(v => { if(v.choice>=1 && v.choice<=4) counts[v.choice-1]++; });
-                    chartDiv.innerHTML = "";
-                    const max = Math.max(...counts, 1);
-                    counts.forEach((c, i) => {
-                        const h = (c/max)*100;
-                        const isWin = (i+1) === correctAns;
-                        chartDiv.innerHTML += `<div class="bar-col"><div style="font-weight:bold; margin-bottom:5px;">${c}</div><div class="bar ${isWin?'winner':''}" style="height:${h}%"></div><div style="margin-top:10px; font-weight:bold; font-size:20px;">${i+1}</div></div>`;
-                    });
-                });
+                optDiv.style.display='flex'; chartDiv.style.display='none';
+                setGuide("RUNNING: 30s Timer.");
+                // Timer Start
+                timeLeft = 30;
+                timerBadge.classList.add('show');
+                timerBadge.classList.remove('urgent');
+                timerBadge.innerText = `⏳ ${timeLeft}`;
+                if(timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerBadge.innerText = `⏳ ${timeLeft}`;
+                    if(timeLeft <= 10) timerBadge.classList.add('urgent');
+                    if(timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        quizAction('close'); // Auto Stop
+                    }
+                }, 1000);
+            } else {
+                if(timerInterval) clearInterval(timerInterval);
+                timerBadge.classList.remove('show');
+                
+                if(act === 'close') {
+                    document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
+                    document.getElementById(`opt-${correct}`).classList.add('reveal-answer');
+                    setGuide("STOPPED: Answer Revealed.");
+                } else if(act === 'result') {
+                    optDiv.style.display='none'; chartDiv.style.display='flex'; 
+                    document.getElementById('xAxis').style.display='flex';
+                    setGuide("RESULT: Statistics.");
+                    render3DChart(id, correct);
+                }
             }
         }
+        function render3DChart(id, correct) {
+            const chartDiv = document.getElementById('d-chart');
+            dbRef.ans.child(id).once('value', s => {
+                const ans = s.val()||{};
+                const counts=[0,0,0,0]; Object.values(ans).forEach(v=>{if(v.choice>=1&&v.choice<=4)counts[v.choice-1]++});
+                const max = Math.max(...counts, 1);
+                chartDiv.innerHTML="";
+                counts.forEach((c, i) => {
+                    const h = (c/max)*100;
+                    const isCor = (i+1) === correct;
+                    const cls = isCor ? 'correct' : 'wrong';
+                    chartDiv.innerHTML += `
+                        <div class="bar-container">
+                            <div class="cylinder-label">${c}</div>
+                            <div class="cylinder ${cls}" style="height:${h}%">
+                                <div class="cylinder-top"></div>
+                                <div class="cylinder-body"></div>
+                            </div>
+                            <div class="x-label-badge">${i+1}</div>
+                        </div>`;
+                });
+            });
+        }
         function prevNextQuiz(dir) {
-            if(isTestMode) return alert("Finish test first.");
+            if(isTestMode) { // Exit test mode
+                if(dir > 0) loadRealQuiz(); else alert("This is Test Mode.");
+                return;
+            }
             let nextIdx = currentQuizIdx + dir;
             while(nextIdx >= 0 && nextIdx < quizList.length) {
                 if(quizList[nextIdx].checked) { currentQuizIdx = nextIdx; showCurrentQuiz(); return; }
                 nextIdx += dir;
             }
-            alert(dir > 0 ? "Last Question." : "First Question.");
+            alert("End of List.");
         }
+        function setGuide(txt) { 
+            const g = document.getElementById('quizGuideArea'); g.style.display='block'; g.innerText=txt; 
+        }
+        
+        // Utils
         function loadQuizFile(input) {
             const file = input.files[0]; if(!file) return;
             const r = new FileReader();
             r.onload = e => {
-                const text = e.target.result; const blocks = text.split(/\n\s*\n/); quizList = [];
+                const blocks = e.target.result.split(/\n\s*\n/); quizList = [];
                 blocks.forEach(b => {
-                    const lines = b.trim().split('\n');
-                    if(lines.length >= 6) quizList.push({ text: lines[0], options: [lines[1],lines[2],lines[3],lines[4]], correct: lines[5].replace(/[^0-9]/g, ''), checked: true });
+                    const l = b.trim().split('\n');
+                    if(l.length>=6) quizList.push({text:l[0], options:[l[1],l[2],l[3],l[4]], correct:l[5].replace(/[^0-9]/g,''), checked:true});
                 });
-                alert(`${quizList.length} questions loaded.`); renderMiniList();
+                alert(`${quizList.length} Loaded.`); renderMiniList();
             };
             r.readAsText(file);
         }
         function addManualQuiz() {
-            const txt = document.getElementById('manualQ').value;
-            const o1 = document.getElementById('manualO1').value;
-            const o2 = document.getElementById('manualO2').value;
-            const o3 = document.getElementById('manualO3').value;
-            const o4 = document.getElementById('manualO4').value;
-            const ans = document.getElementById('manualAns').value;
-            if(!txt || !ans) return;
-            quizList.push({ text: txt, options: [o1,o2,o3,o4], correct: ans, checked: true });
+            const txt=document.getElementById('manualQ').value;
+            const ans=document.getElementById('manualAns').value;
+            if(!txt||!ans) return;
+            quizList.push({text:txt, options:[1,2,3,4].map(i=>document.getElementById('manualO'+i).value), correct:ans, checked:true});
             renderMiniList();
-            document.getElementById('manualQ').value = "";
+            document.querySelectorAll('.editor-input').forEach(i=>i.value="");
         }
         function renderMiniList() {
             const d = document.getElementById('miniQuizList'); d.innerHTML = "";
-            quizList.forEach((q, i) => {
-                d.innerHTML += `<div class="quiz-list-item"><input type="checkbox" ${q.checked ? 'checked' : ''} onchange="toggleQuizCheck(${i})"><span>${i+1}. ${q.text.substring(0,15)}...</span></div>`;
-            });
+            quizList.forEach((q, i) => d.innerHTML += `<div class="quiz-list-item"><input type="checkbox" ${q.checked?'checked':''} onchange="quizList[${i}].checked=!quizList[${i}].checked"><span>${i+1}. ${q.text.substring(0,15)}...</span></div>`);
         }
-        function toggleQuizCheck(i) { quizList[i].checked = !quizList[i].checked; }
         function downloadSample() {
-            const sampleData = `KAC의 뜻은?\nKorea Airports Corporation\nKorea Army Corps\nKing And Castle\nKick And Catch\n1\n\n대한민국의 수도는?\n부산\n서울\n광주\n대구\n2\n\n10 + 10 = ?\n10\n20\n30\n40\n2`;
-            const blob = new Blob([sampleData], { type: "text/plain" });
-            const url = URL.createObjectURL(blob); const a = document.createElement("a");
-            a.href = url; a.download = "quiz_sample.txt"; a.click(); URL.revokeObjectURL(url);
+            const blob = new Blob([`KAC의 뜻은?\nKorea Airports Corporation\nKorea Army\nKing\nKick\n1\n\n수도는?\n부산\n서울\n광주\n대구\n2`], {type:"text/plain"});
+            const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="quiz_sample.txt"; a.click();
         }
         function openQrModal() {
-            const qrHTML = document.getElementById('qrcode').innerHTML;
-            const target = document.getElementById('qrBigTarget'); target.innerHTML = qrHTML;
-            const img = target.querySelector('img'); if(img) { img.style.width = '400px'; img.style.height = '400px'; }
+            document.getElementById('qrBigTarget').innerHTML = document.getElementById('qrcode').innerHTML;
+            document.querySelector('#qrBigTarget img').style.cssText = "width:400px; height:400px;";
             document.getElementById('qrModal').style.display = 'flex';
         }
-        function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+        function closeQrModal() { document.getElementById('qrModal').style.display='none'; }
         function setMode(m) {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${m}`).classList.add('active');
@@ -788,7 +640,7 @@
         }
         function toggleRightPanel() { 
             const p = document.getElementById('rightPanel'); p.classList.toggle('open');
-            const icon = document.getElementById('panelIcon'); icon.className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
+            document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
         }
         function copyLink() { document.getElementById('studentLink').select(); document.execCommand('copy'); alert('Copied!'); }
         function toggleNightMode() { document.body.classList.toggle('night-mode'); }
