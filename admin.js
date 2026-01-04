@@ -1,4 +1,4 @@
-/* --- admin.js (Secure Link + UI Fix Final) --- */
+/* --- admin.js (Relative Path Fix) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -80,7 +80,6 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            // [Copy Link] 버튼 클릭 시 ui.copyLink 실행 (HTML onclick 속성 사용)
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -171,7 +170,7 @@ const dataMgr = {
             ui.checkLockStatus(st);
         });
 
-        // [중요] 보안 코드를 가져와서 QR/링크 생성
+        // 보안 코드 기반 URL 생성 호출
         this.fetchCodeAndRenderQr(room);
 
         dbRef.qa.on('value', s => {
@@ -181,25 +180,32 @@ const dataMgr = {
         });
     },
 
-    // [보안 기능] DB에서 보안 코드를 찾아서 QR/링크 생성
+    // [수정] 현재 폴더 경로를 반영하여 URL 생성
     fetchCodeAndRenderQr: function(room) {
+        // 현재 admin.html이 있는 폴더 경로 추출 (예: https://.../CATC)
+        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        
         firebase.database().ref('public_codes')
             .orderByValue().equalTo(room)
             .once('value', snapshot => {
                 const data = snapshot.val();
                 if (data) {
-                    // codes.json에서 해당 방의 키(코드)를 찾음 (예: x7k9...)
                     const code = Object.keys(data)[0]; 
-                    // [중요] 주소에 ?code=... 가 들어감
-                    const studentUrl = `${window.location.origin}/index.html?code=${code}`;
+                    // 폴더 경로 포함한 URL 생성
+                    const studentUrl = `${baseUrl}/index.html?code=${code}`;
                     ui.renderQr(studentUrl);
                 } else {
-                    console.warn("보안 코드를 찾을 수 없습니다. (codes.json 확인 필요)");
-                    // 비상용 (일반 주소)
-                    const studentUrl = `${window.location.origin}/index.html?room=${room}`;
+                    console.warn("보안 코드를 찾을 수 없어 일반 링크를 사용합니다.");
+                    const studentUrl = `${baseUrl}/index.html?room=${room}`;
                     ui.renderQr(studentUrl);
                 }
             });
+    },
+
+    renderQrForRoom: function(room) {
+        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        const studentUrl = `${baseUrl}/index.html?room=${room}`;
+        ui.renderQr(studentUrl);
     },
 
     saveSettings: function() {
@@ -344,18 +350,16 @@ const ui = {
     
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
-    // [중요] URL을 QR과 숨겨진 Input에 동시에 세팅
     renderQr: function(url) {
-        document.getElementById('studentLink').value = url; // 복사용 Input
-        const qrDiv = document.getElementById('qrcode'); 
-        qrDiv.innerHTML = "";
+        document.getElementById('studentLink').value = url;
+        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         try { new QRCode(qrDiv, { text: url, width: 35, height: 35 }); } catch(e) {}
     },
     
     openQrModal: function() {
         const modal = document.getElementById('qrModal');
         const bigTarget = document.getElementById('qrBigTarget');
-        const url = document.getElementById('studentLink').value; // 숨겨진 Input 값 사용
+        const url = document.getElementById('studentLink').value;
         if(!url) return;
         modal.style.display = 'flex';
         bigTarget.innerHTML = ""; 
@@ -371,11 +375,10 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
-    // [복사 기능]
     copyLink: function() {
         const urlInput = document.getElementById('studentLink');
         const url = urlInput.value;
-        if (!url) return alert("복사할 링크가 없습니다. (DB 연결 확인 필요)");
+        if (!url) return alert("복사할 링크가 없습니다.");
 
         urlInput.select();
         urlInput.setSelectionRange(0, 99999);
