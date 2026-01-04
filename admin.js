@@ -1,20 +1,19 @@
 // --- Crypto & Security Utils ---
 const cryptoUtils = {
-    // SHA-256 해시 생성 함수 (대문자 변환 후 처리)
+    // SHA-256 해시 생성 함수
     hash: async function(text) {
         if (!text) return "";
         const encoder = new TextEncoder();
-        const data = encoder.encode(text.toUpperCase()); // 대소문자 구분 없음
+        const data = encoder.encode(text.toUpperCase()); 
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return hashHex;
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 };
 
 // --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9), // 현재 브라우저 세션 ID
+    sessionId: Math.random().toString(36).substr(2, 9),
     room: null,
     isTestMode: false,
     quizList: [],
@@ -28,9 +27,8 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, glo
 
 // --- 1. Auth ---
 const authMgr = {
-    DEFAULT_PW: "catc1234", // 초기 비밀번호 (코드상 표기는 참조용, 실제 로직은 해시 비교)
+    DEFAULT_PW: "catc1234",
     
-    // 로그인 시도
     tryLogin: async function() {
         const input = document.getElementById('loginPwInput').value;
         if(!input) return alert("비밀번호를 입력해주세요.");
@@ -38,11 +36,8 @@ const authMgr = {
         const inputHash = await cryptoUtils.hash(input);
         const defaultHash = await cryptoUtils.hash(this.DEFAULT_PW);
 
-        // DB에서 현재 설정된 해시값 가져오기
         db.ref('adminPassword').once('value', async (snap) => {
             let savedHash = snap.val();
-
-            // DB에 비번이 없으면 초기값으로 비교 후 저장
             if (!savedHash) {
                 if (inputHash === defaultHash) {
                     await db.ref('adminPassword').set(defaultHash);
@@ -51,11 +46,8 @@ const authMgr = {
                     alert("초기 비밀번호가 일치하지 않습니다.");
                 }
             } else {
-                if (inputHash === savedHash) {
-                    this.loginSuccess();
-                } else {
-                    alert("비밀번호가 올바르지 않습니다.");
-                }
+                if (inputHash === savedHash) this.loginSuccess();
+                else alert("비밀번호가 올바르지 않습니다.");
             }
         });
     },
@@ -63,20 +55,15 @@ const authMgr = {
     loginSuccess: function() {
         document.getElementById('loginOverlay').style.display = 'none';
         sessionStorage.setItem('kac_admin_auth', 'true');
-        dataMgr.initSystem(); // 로그인 성공 후에 시스템 초기화 시작
+        dataMgr.initSystem(); 
     },
 
-    // 로그아웃
     logout: function() {
-        // 현재 점유하던 방 해제
-        if(state.room) {
-             dataMgr.releaseRoom(state.room);
-        }
+        if(state.room) dataMgr.releaseRoom(state.room);
         sessionStorage.removeItem('kac_admin_auth');
         location.reload(); 
     },
 
-    // 비밀번호 변경 실행
     executeChangePw: async function() {
         const curr = document.getElementById('cp-current').value;
         const newPw = document.getElementById('cp-new').value;
@@ -103,87 +90,72 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
-    // 시스템 초기화 (로그인 후 호출됨)
     initSystem: function() {
-        // 방 자동 배정 로직 시작
         this.autoAssignRoom();
-
         ui.initRoomSelect(); 
-        
         document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
         document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
-        
         const qrEl = document.getElementById('qrcode');
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
 
-    // [핵심] 자동 방 배정 알고리즘
     autoAssignRoom: function() {
         db.ref('courses').once('value', snapshot => {
             const allRooms = snapshot.val() || {};
             const roomKeys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-            
             let targetRoom = null;
+            let shouldClaim = false;
             
-            // 1. 이미 내가 점유중인 방이 있는지 확인 (새로고침 시)
+            // 1. 내가 점유중이던 방이 있으면 복구
             for(let key of roomKeys) {
                 const rData = allRooms[key] || {};
                 const st = rData.status || {};
                 if(st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) {
                     targetRoom = key;
+                    shouldClaim = true; 
                     break;
                 }
             }
 
-            // 2. 없다면 빈 방 찾기 (순차 검색)
+            // 2. 없으면 빈 방 찾기 (단, 자동 Active는 하지 않음)
             if(!targetRoom) {
                 for(let key of roomKeys) {
                     const rData = allRooms[key] || {};
                     const st = rData.status || {};
-                    // active가 아니거나, active여도 오너가 없으면(오류상황) 진입
                     if(!st.roomStatus || st.roomStatus === 'idle') {
                         targetRoom = key;
+                        shouldClaim = false; // [수정] 들어는 가지만 '사용중'으로 바꾸진 않음
                         break;
                     }
                 }
             }
 
             if(targetRoom) {
-                // 방 접속 및 점유 시도
-                this.enterRoom(targetRoom, true);
+                this.enterRoom(targetRoom, shouldClaim);
             } else {
                 alert("현재 사용 가능한 빈 강의실이 없습니다.");
             }
         });
     },
 
-    // [변경됨] 방 변경 시도 로직 (강제 진입 포함)
     switchRoomAttempt: function(newRoom) {
         db.ref(`courses/${newRoom}/status`).once('value', s => {
             const st = s.val() || {};
-            
-            // 사용 중인 방일 경우 처리 로직 (강제 진입 여부 묻기)
             if(st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                // 경고창 띄우기
                 const confirmTakeover = confirm(
                     `Room ${newRoom}은 현재 '사용중' 상태입니다.\n\n` +
                     `기존 접속을 끊고 강제로 진입하여 제어권을 가져오시겠습니까?`
                 );
-
                 if(confirmTakeover) {
-                    // 확인 시: 기존 방 해제 후 -> 강제 진입 (점유권 덮어쓰기)
                     if(state.room) this.releaseRoom(state.room);
-                    this.enterRoom(newRoom, true); // true = 강제 점유
+                    this.enterRoom(newRoom, true); 
                 } else {
-                    // 취소 시: 다시 원래 방 선택값으로 되돌림
                     document.getElementById('roomSelect').value = state.room;
                 }
                 return;
             }
-
-            // 일반적인 이동 (빈 방 이동)
             if(state.room) this.releaseRoom(state.room);
             this.enterRoom(newRoom, false);
         });
@@ -193,7 +165,6 @@ const dataMgr = {
         state.room = room;
         ui.updateHeaderRoom(room);
         
-        // 기존 리스너 해제
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.quiz) dbRef.quiz.off();
         if(dbRef.status) dbRef.status.off();
@@ -205,17 +176,12 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
-        // 방 진입 시 자동 점유 (Auto Claim)
         if(autoClaim) {
-            dbRef.status.update({
-                roomStatus: 'active',
-                ownerSessionId: state.sessionId
-            });
+            dbRef.status.update({ roomStatus: 'active', ownerSessionId: state.sessionId });
         }
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // 상태 실시간 감지 -> 오버레이 및 점유권 제어
         dbRef.status.on('value', s => {
             const st = s.val() || {};
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
@@ -232,13 +198,9 @@ const dataMgr = {
         });
     },
 
-    // 방 놓아주기 (Idle 상태로 변경)
     releaseRoom: function(room) {
         if(!room) return;
-        db.ref(`courses/${room}/status`).update({
-            roomStatus: 'idle',
-            ownerSessionId: null
-        });
+        db.ref(`courses/${room}/status`).update({ roomStatus: 'idle', ownerSessionId: null });
     },
 
     getRoomCode: function(r) {
@@ -246,35 +208,35 @@ const dataMgr = {
     },
 
     saveSettings: function() {
-        const pw = document.getElementById('roomPw').value; // 학생용 방 비번(필요시)
+        // [복구] 학생용 비밀번호 읽기 및 저장
+        const pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
-        const statusVal = document.getElementById('roomStatusSelect').value; // active or idle
+        const statusVal = document.getElementById('roomStatusSelect').value;
 
         const updates = { courseName: newName };
-        if(pw && pw.length >= 4) updates.password = pw;
+        if(pw) updates.password = pw; // 비번이 있으면 업데이트
+
         dbRef.settings.update(updates);
         document.getElementById('displayCourseTitle').innerText = newName;
 
-        // 상태 변경에 따른 점유권 처리
+        // [수정] 상태 저장 로직 명확화
         if (statusVal === 'active') {
             dbRef.status.update({
                 roomStatus: 'active',
-                ownerSessionId: state.sessionId // 내가 주인임
+                ownerSessionId: state.sessionId
             });
-            alert("저장되었습니다. 강의실이 활성화되었습니다.");
+            alert("저장되었습니다. 강의실이 활성화되었습니다."); // [추가] 팝업
         } else {
-            // Idle로 바꾸면 점유 해제 -> 다른 PC가 들어올 수 있음
             dbRef.status.update({
                 roomStatus: 'idle',
                 ownerSessionId: null 
             });
-            alert("저장되었습니다. 강의실이 비활성화(대기) 상태가 되었습니다.");
+            alert("저장되었습니다. 강의실이 비활성화(대기) 상태가 되었습니다."); // [추가] 팝업
         }
     },
 
     updateQa: function(action) {
         if(!state.activeQaKey) return;
-        // 단순 삭제/상태변경 로직
         if (action === 'delete') {
              if(confirm("정말 삭제하시겠습니까?")) {
                  dbRef.qa.child(state.activeQaKey).remove(); ui.closeQaModal();
@@ -298,7 +260,6 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
-    // [변경됨] 룸 셀렉트 초기화 (사용중인 방도 클릭 가능하게 변경)
     initRoomSelect: function() {
         db.ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
@@ -320,7 +281,6 @@ const ui = {
                         opt.innerText = `Room ${char} (🔵 내 강의실)`;
                         opt.style.fontWeight = 'bold'; opt.style.color = '#3b82f6';
                     } else {
-                        // 빨간색이지만 선택은 가능하게 처리 (강제 진입 허용)
                         opt.innerText = `Room ${char} (🔴 사용중 - 진입 가능)`;
                         opt.style.color = '#ef4444'; 
                     }
@@ -339,18 +299,13 @@ const ui = {
         const isActive = (statusObj.roomStatus === 'active');
         const isOwner = (statusObj.ownerSessionId === state.sessionId);
 
-        // 1. 내가 주인이고 Active -> 잠금 해제
         if (isActive && isOwner) {
             overlay.style.display = 'none';
-        } 
-        // 2. Active인데 주인이 아님 -> 강력 잠금 (다른 PC가 선점)
-        else if (isActive && !isOwner) {
+        } else if (isActive && !isOwner) {
             overlay.style.display = 'flex';
             overlay.innerHTML = `<div class="lock-message"><i class="fa-solid fa-ban"></i><h3>접속 불가</h3><p>다른 강사가 사용 중입니다.<br>자동으로 다른 빈 방을 탐색합니다...</p></div>`;
-            setTimeout(() => dataMgr.autoAssignRoom(), 2000); // 2초 뒤 쫓겨남
-        }
-        // 3. Idle 상태 -> 잠금 (시작 대기)
-        else {
+            setTimeout(() => dataMgr.autoAssignRoom(), 2000);
+        } else {
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
@@ -364,6 +319,8 @@ const ui = {
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
+        // [복구] 비밀번호 불러오기
+        document.getElementById('roomPw').value = data.password || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
@@ -429,7 +386,6 @@ const ui = {
     },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     
-    // 비밀번호 변경 모달
     openPwModal: function() { 
         document.getElementById('cp-current').value = "";
         document.getElementById('cp-new').value = "";
@@ -631,7 +587,11 @@ const printMgr = {
     executePrint: function() { window.print(); }
 };
 
-// 페이지 로드 시에는 아무것도 안 함 (로그인 화면만 띄움)
+// [수정] 페이지 로드 시 자동 로그인 체크
 window.onload = function() {
-    // 자동 실행되는 로직 없음. 사용자가 비번 입력 후 dataMgr.initSystem()이 트리거됨.
+    if(sessionStorage.getItem('kac_admin_auth') === 'true') {
+        document.getElementById('loginOverlay').style.display = 'none';
+        dataMgr.initSystem();
+    }
+    // 인증 안 되어 있으면 오버레이 유지 (HTML 기본값)
 };
