@@ -42,15 +42,14 @@ const authMgr = {
 const dataMgr = {
     init: function() {
         this.changeRoom('A');
-        ui.initRoomSelect();
+        ui.initRoomSelect(); // 실시간 리스너 등록
         
-        // 이벤트 리스너 연결
         document.getElementById('roomSelect').addEventListener('change', (e) => this.changeRoom(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
         document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
 
-        // [중요] QR코드 클릭 시 팝업 열기 강제 연결 (HTML onclick 실수 방지)
+        // QR 클릭 이벤트 강제 연결
         const qrEl = document.getElementById('qrcode');
         if(qrEl) {
             qrEl.onclick = function() { ui.openQrModal(); };
@@ -70,6 +69,7 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
+        // 설정 로드
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         dbRef.status.child('roomStatus').once('value', s => ui.renderRoomStatus(s.val()));
 
@@ -95,12 +95,12 @@ const dataMgr = {
         const newName = document.getElementById('courseNameInput').value;
         const updates = { courseName: newName };
         
+        // 제목 즉시 반영
         document.getElementById('displayCourseTitle').innerText = newName;
 
+        // 방 상태 저장 (저장만 하면 initRoomSelect의 .on 리스너가 알아서 UI 갱신함)
         const statusVal = document.getElementById('roomStatusSelect').value;
-        dbRef.status.child('roomStatus').set(statusVal).then(() => {
-            ui.initRoomSelect(); 
-        });
+        dbRef.status.child('roomStatus').set(statusVal);
 
         if(pw && pw.length >= 4) updates.password = pw;
         dbRef.settings.update(updates, (err) => {
@@ -135,27 +135,36 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
+    // [수정됨] .once -> .on (실시간 감지)
     initRoomSelect: function() {
-        db.ref('courses').once('value', snapshot => {
+        db.ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
+            // 리렌더링 전 현재 선택값 기억
             const currentSelection = sel.value || state.room; 
+            
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
                 const roomData = allData[char] || {};
                 const status = roomData.status ? roomData.status.roomStatus : 'idle';
+                
                 const opt = document.createElement('option');
                 opt.value = char;
                 if(status === 'active') {
                     opt.innerText = `Room ${char} (🟢 사용중)`;
-                    opt.style.fontWeight = 'bold'; opt.style.color = '#fbbf24'; 
+                    opt.style.fontWeight = 'bold';
+                    opt.style.color = '#fbbf24'; 
                 } else {
                     opt.innerText = `Room ${char}`;
                 }
+                
+                // 기억해둔 값으로 다시 선택
                 if(char === currentSelection) opt.selected = true;
                 sel.appendChild(opt);
             }
+            // 강제 값 유지 (DOM 초기화 방지)
+            sel.value = currentSelection;
         });
     },
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
@@ -163,16 +172,16 @@ const ui = {
         document.getElementById('courseNameInput').value = data.courseName || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
-    renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
-    
-    // 사이드바 QR 그리기
+    renderRoomStatus: function(st) {
+        document.getElementById('roomStatusSelect').value = st || 'idle';
+    },
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         new QRCode(qrDiv, { text: url, width: 50, height: 50 });
     },
     
-    // [핵심] QR 팝업 열기 (확대)
+    // QR 확대 모달
     openQrModal: function() {
         const modal = document.getElementById('qrModal');
         const bigTarget = document.getElementById('qrBigTarget');
@@ -181,16 +190,12 @@ const ui = {
         if(!url) return;
 
         modal.style.display = 'flex';
-        bigTarget.innerHTML = ""; // 초기화
+        bigTarget.innerHTML = ""; 
 
-        // 모달이 뜬 뒤에 그려야 사이즈가 잡힘
         setTimeout(() => {
             new QRCode(bigTarget, { 
-                text: url, 
-                width: 300, 
-                height: 300,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
+                text: url, width: 300, height: 300,
+                colorDark : "#000000", colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
         }, 50);
@@ -207,7 +212,10 @@ const ui = {
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
         db.ref(`courses/${state.room}/status/mode`).set(mode);
-        if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
+
+        if(mode === 'quiz' && state.quizList.length > 0) {
+            quizMgr.showQuiz(); 
+        }
     },
     filterQa: function(filter) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -395,8 +403,7 @@ const quizMgr = {
             });
         });
     },
-    setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
-    ,
+    setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; },
     closeQuizMode: function() {
         ui.setMode('qa');
     }
