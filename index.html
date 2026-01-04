@@ -27,7 +27,7 @@
             display: flex; flex-direction: column;
         }
 
-        /* --- Header --- */
+        /* --- Header (Layout Changed) --- */
         .header {
             min-height: 60px;
             background: #1a237e; /* Navy Color */
@@ -36,18 +36,34 @@
             padding: 10px 15px; position: sticky; top: 0; z-index: 100;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .header-icon { font-size: 20px; color: #fff; cursor: pointer; padding: 10px; }
+        
+        /* Left: Exit Icon */
+        .header-left { 
+            display: flex; align-items: center; justify-content: flex-start;
+            min-width: 40px;
+        }
+        
+        /* Center: Menu + Title */
+        .header-center { 
+            display: flex; align-items: center; justify-content: center; 
+            flex-grow: 1; gap: 10px; /* 아이콘과 텍스트 사이 간격 */
+        }
+        
+        /* Right: Logo */
+        .header-right {
+            display: flex; align-items: center; justify-content: flex-end;
+            min-width: 40px;
+        }
+
+        .header-icon { font-size: 20px; color: #fff; cursor: pointer; padding: 5px; }
         
         .course-title { 
             font-size: 20px; font-weight: bold; color: #fff; 
-            flex-grow: 1; text-align: center; line-height: 1.2;
-            padding: 0 10px; word-break: keep-all;
+            line-height: 1.2; text-align: center; word-break: keep-all;
         }
         
-        /* 로고 배경 제거 및 깔끔하게 처리 */
         .kac-logo { 
             height: 22px; width: auto; object-fit: contain; 
-            margin-left: 10px; 
         }
 
         /* --- Input Section --- */
@@ -137,16 +153,16 @@
             min-width: 50px; justify-content: center;
         }
 
-        /* --- Footer (Updated) --- */
+        /* --- Footer (Color Changed) --- */
         .footer {
             text-align: center; 
-            padding: 15px 10px; /* 타이트한 상하 여백 */
+            padding: 15px 10px; 
             font-size: 11px; 
             color: #ccc; 
-            background: #2c3e50; /* 짙은 회색 배경 */
+            background: #1a237e; /* 상단바와 동일한 색상 */
             margin-top: auto;
             line-height: 1.6;
-            border-top: 1px solid #444;
+            border-top: 1px solid #1a237e;
         }
         .footer p { margin: 0; }
 
@@ -182,12 +198,23 @@
 <body>
 
     <div class="app-container">
-        <!-- Header -->
+        <!-- Header (New Layout) -->
         <header class="header" translate="no">
-            <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
-            <div class="course-title" id="courseTitle">Loading...</div>
-            <img src="logo.png" alt="KAC Logo" class="kac-logo">
-            <div class="header-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+            <!-- Left: Exit -->
+            <div class="header-left">
+                <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+            </div>
+            
+            <!-- Center: Menu + Title -->
+            <div class="header-center">
+                <div class="header-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+                <div class="course-title" id="courseTitle">Loading...</div>
+            </div>
+
+            <!-- Right: Logo -->
+            <div class="header-right">
+                <img src="logo.png" alt="KAC Logo" class="kac-logo">
+            </div>
         </header>
 
         <!-- Input Area -->
@@ -222,7 +249,7 @@
             </div>
         </div>
 
-        <!-- Footer (요청하신 문구 반영) -->
+        <!-- Footer -->
         <div class="footer" id="appFooter" translate="no">
             KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.<br>
             문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)<br>
@@ -295,7 +322,6 @@
                 if(val) {
                     if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
                     
-                    // 하단바 텍스트 DB 연동 (값이 있으면 DB 값으로 교체)
                     if(val.footerText) {
                         document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
                     }
@@ -394,7 +420,10 @@
 
             if (editingKey) {
                 dbRef.child(editingKey).update({ text: text })
-                    .then(() => { alert("Modified successfully."); resetInput(); })
+                    .then(() => { 
+                        alert("Modified successfully."); 
+                        cancelEditMode(); // [FIXED] Changed from resetInput() to cancelEditMode()
+                    })
                     .catch(e => alert("Error: " + e.message));
                 return;
             }
