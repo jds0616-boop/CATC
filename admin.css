@@ -23,8 +23,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     display: flex; flex-direction: column; padding: 25px 20px; flex-shrink: 0; 
     height: 100vh; justify-content: space-between; 
     border-right: 1px solid rgba(255,255,255,0.05); 
-    z-index: 50;
-    overflow: hidden; 
+    z-index: 50; overflow: hidden; 
 }
 .sidebar-top { 
     display: flex; flex-direction: column; gap: 20px; 
@@ -35,7 +34,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 10px; letter-spacing: -0.5px; }
 .setting-container { display: flex; flex-direction: column; gap: 15px; } 
-
 .setting-group { display: flex; flex-direction: column; gap: 6px; }
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
 .setting-input, .setting-select { 
@@ -44,16 +42,8 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .setting-input:focus { border-color: var(--accent-color); }
 
-/* QR Box */
-.qr-box {
-    background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px;
-    display: flex; align-items: center; gap: 10px;
-}
-#qrcode { 
-    background: white; padding: 3px; border-radius: 4px; cursor: pointer; 
-    width: 50px; height: 50px; flex-shrink: 0; 
-    display: flex; align-items: center; justify-content: center;
-}
+.qr-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 10px; }
+#qrcode { background: white; padding: 3px; border-radius: 4px; cursor: pointer; width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 #qrcode img { display: block; }
 #studentLink { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
 
@@ -61,14 +51,9 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .file-row { display: flex; gap: 8px; align-items: center; }
 
 /* Buttons */
-.btn-action { 
-    width: 100%; padding: 12px; border-radius: 8px; border: none; 
-    font-weight: 700; cursor: pointer; color: white; transition: 0.2s; 
-    font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; 
-}
+.btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-action:active { transform: translateY(0); }
-
 .btn-primary { background: var(--accent-color); }
 .btn-secondary { background: #475569; }
 .btn-danger { background: #7f1d1d; color: #fecaca; }
@@ -84,9 +69,17 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 20; flex-shrink: 0; }
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
 .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 15px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; }
+
+/* [수정] Header Controls */
+.header-controls { display: flex; gap: 20px; align-items: center; }
+.theme-toggle { 
+    background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; display: flex; gap: 5px; cursor: pointer; 
+}
+.theme-toggle i { 
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #64748b; transition: 0.2s; 
+}
+.theme-toggle i.active { background: white; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .kac-logo { height: 24px; opacity: 0.9; }
-.icon-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; margin-right: 15px; }
-.icon-btn:hover { background: var(--accent-color); }
 
 .mode-tabs { display: flex; gap: 15px; padding: 15px 30px; border-bottom: 1px solid #e2e8f0; background: var(--card-bg); flex-shrink: 0; justify-content: center; }
 .mode-btn { padding: 8px 25px; border-radius: 50px; border: 2px solid #cbd5e1; font-weight: 700; color: #64748b; cursor: pointer; background: transparent; font-size: 14px; transition: 0.2s; display: flex; gap: 8px; align-items: center; }
@@ -100,42 +93,23 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qa-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
 .filter-chip { padding: 6px 16px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.03); color: #64748b; transition: 0.2s; }
 .filter-chip.active { background: #eff6ff; color: var(--accent-color); border-color: var(--accent-color); font-weight: 800; }
+.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 25px 5px 40px 5px; }
 
-/* [수정] 상단 여백 확보 (첫 카드 잘림 방지) */
-.qa-list { 
-    flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; 
-    gap: 12px; padding: 25px 5px 40px 5px; 
-}
-
-/* [수정] Q&A Card & Green Border Overlay */
 .q-card { 
     background: var(--card-bg); padding: 20px 25px; border-radius: 12px; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
-    /* 왼쪽 컬러바 */
-    border-left: 5px solid #0f172a; 
-    cursor: pointer; transition: all 0.1s ease; 
-    position: relative; z-index: 1; /* z-index 설정 */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; 
+    cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; 
     display: flex; justify-content: space-between; align-items: flex-start;
 }
-
-/* 상태별 왼쪽 컬러바 색상 */
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
-
-/* [핵심 수정] 가상 요소를 이용한 완벽한 녹색 테두리 덮어쓰기 */
 .q-card:hover::after {
-    content: '';
-    position: absolute;
-    top: -2px; left: -5px; right: -2px; bottom: -2px; /* 왼쪽 바(-5px)까지 포함 */
-    border: 3px solid #10b981; /* 녹색 테두리 */
-    border-radius: 14px; /* 카드보다 약간 더 둥글게 */
-    z-index: 100; /* 내용물보다 위로 */
-    pointer-events: none; /* 클릭 방해 안 하게 */
+    content: ''; position: absolute; top: -2px; left: -5px; right: -2px; bottom: -2px;
+    border: 3px solid #10b981; border-radius: 14px; z-index: 100; pointer-events: none;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 .q-card:hover { transform: translateY(-3px); }
-
 .q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
 .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
@@ -151,39 +125,18 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     padding: 40px; position: relative; overflow: hidden;
 }
 #quizContent { width: 100%; height: 100%; display: flex; flex-direction: column; flex-grow: 1; }
-
-.quiz-header-part { 
-    flex-shrink: 0; display: flex; align-items: center; 
-    justify-content: center; gap: 30px; margin-bottom: 30px; 
-}
-
-.digital-timer {
-    display: inline-block; font-family: 'Courier New', monospace; font-size: 48px; font-weight: 900;
-    color: #333; background: #f8fafc; padding: 5px 25px; border-radius: 12px;
-    border: 2px solid #cbd5e1; flex-shrink: 0;
-}
+.quiz-header-part { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 30px; margin-bottom: 30px; }
+.digital-timer { display: inline-block; font-family: 'Courier New', monospace; font-size: 48px; font-weight: 900; color: #333; background: #f8fafc; padding: 5px 25px; border-radius: 12px; border: 2px solid #cbd5e1; flex-shrink: 0; }
 .digital-timer.urgent { color: #dc2626; border-color: #dc2626; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
-
-.quiz-question { 
-    font-size: 42px; font-weight: 900; line-height: 1.2; 
-    color: var(--text-color); word-break: keep-all; 
-    margin: 0; text-align: left; 
-}
-
+.quiz-question { font-size: 42px; font-weight: 900; line-height: 1.2; color: var(--text-color); word-break: keep-all; margin: 0; text-align: left; }
 .quiz-options { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
-.quiz-opt { 
-    width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; 
-    padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; 
-    font-size: 28px; font-weight: 700; color: #475569; background: white; 
-    transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-}
+.quiz-opt { width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 28px; font-weight: 700; color: #475569; background: white; transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 .quiz-opt .opt-num { width: 50px; height: 50px; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 25px; flex-shrink: 0; }
 .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
 .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; font-weight: 800; }
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 
-/* Chart */
 .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 8%; padding-bottom: 40px; border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; }
 .bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 120px; height: 100%; position: relative; }
 .bar-value { font-size: 24px; font-weight: 800; color: #334155; margin-bottom: 8px; opacity: 0; animation: fadeIn 0.5s forwards 0.8s; }
@@ -192,17 +145,22 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .bar-wrapper.correct .bar-fill { background: linear-gradient(180deg, #34d399 0%, #059669 100%); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
 .bar-wrapper.correct .bar-label { background: #059669; transform: scale(1.2); }
 .bar-wrapper.correct .bar-value { color: #059669; transform: scale(1.2); }
-
 .crown-icon { font-size: 32px; position: absolute; left: 50%; transform: translateX(-50%); animation: bounce 1s infinite; z-index: 10; }
 @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 @keyframes fadeIn { to { opacity: 1; } }
 
-.quiz-status-bar { margin-top: 20px; display: flex; gap: 60px; flex-shrink: 0; justify-content: center; width: 100%; }
-.quiz-guide-text { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.05); color: #64748b; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-.q-btn { padding: 12px 30px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; transition: 0.1s; }
+/* [수정] Quiz Controls Gap & Width */
+.quiz-status-bar { margin-top: 20px; display: flex; gap: 20px; flex-shrink: 0; justify-content: center; width: 100%; flex-wrap: wrap; }
+.q-btn { padding: 12px 25px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; transition: 0.1s; min-width: 120px; justify-content: center; }
 .q-btn:active { transform: translateY(4px); box-shadow: none; }
 .btn-test { background: #f59e0b; width: 100%; justify-content: center; }
 .btn-start { background: #3b82f6; } .btn-stop { background: #ef4444; } .btn-result { background: #10b981; } .btn-nav { background: #64748b; }
+
+/* [NEW] Quiz Exit Button */
+.quiz-exit-btn { position: absolute; bottom: 30px; left: 30px; width: 50px; height: 50px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: #64748b; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.quiz-exit-btn:hover { background: #cbd5e1; color: #333; }
+
+.quiz-guide-text { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.05); color: #64748b; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-box { background: var(--card-bg); width: 600px; padding: 30px; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); animation: popIn 0.3s; }
@@ -224,9 +182,13 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qr-big-box { background: white; padding: 20px; border-radius: 20px; }
 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* [수정] Print Preview Box & Spacing */
 .print-preview-box { background: #525659; width: 90%; height: 95%; max-width: 1000px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-.preview-header { background: #323639; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-.preview-content { flex-grow: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 40px; }
+.preview-header { 
+    background: #323639; color: white; padding: 20px 30px; /* 패딩 확대 */
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+}
+.preview-content { flex-grow: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 50px 0; }
 #official-document { width: 210mm; min-height: 297mm; background: white; padding: 20mm; box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative; font-family: 'Malgun Gothic', 'Dotum', sans-serif; color: black; }
 .doc-header { text-align: center; margin-bottom: 10px; border-bottom: 3px solid #000; padding-bottom: 10px; }
 .doc-header h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }

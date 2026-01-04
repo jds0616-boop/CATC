@@ -42,7 +42,7 @@ const authMgr = {
 const dataMgr = {
     init: function() {
         this.changeRoom('A');
-        ui.initRoomSelect(); // initRoomSelect를 호출하지만, 내부에서 비동기로 데이터를 가져옵니다.
+        ui.initRoomSelect();
         
         document.getElementById('roomSelect').addEventListener('change', (e) => this.changeRoom(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
@@ -89,13 +89,10 @@ const dataMgr = {
         const newName = document.getElementById('courseNameInput').value;
         const updates = { courseName: newName };
         
-        // [수정] 즉시 화면 반영 (새로고침 없이)
         document.getElementById('displayCourseTitle').innerText = newName;
 
-        // 방 상태 저장
         const statusVal = document.getElementById('roomStatusSelect').value;
         dbRef.status.child('roomStatus').set(statusVal).then(() => {
-            // 상태 저장 후 드롭다운 목록도 갱신 (선택된 방의 상태가 바뀌었으므로)
             ui.initRoomSelect(); 
         });
 
@@ -132,28 +129,24 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
-    // [수정] 모든 방의 상태를 조회하여 드롭다운 생성
     initRoomSelect: function() {
         db.ref('courses').once('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
-            // 기존 선택된 값 기억
             const currentSelection = sel.value || state.room; 
             
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
-                // 해당 방의 상태 확인 (undefined 체크)
                 const roomData = allData[char] || {};
                 const status = roomData.status ? roomData.status.roomStatus : 'idle';
                 
                 const opt = document.createElement('option');
                 opt.value = char;
-                // 상태에 따라 텍스트 변경
                 if(status === 'active') {
                     opt.innerText = `Room ${char} (🟢 사용중)`;
                     opt.style.fontWeight = 'bold';
-                    opt.style.color = '#fbbf24'; // 노란색/골드 강조
+                    opt.style.color = '#fbbf24'; 
                 } else {
                     opt.innerText = `Room ${char}`;
                 }
@@ -188,6 +181,11 @@ const ui = {
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
         db.ref(`courses/${state.room}/status/mode`).set(mode);
+
+        // [수정] 퀴즈 모드로 다시 들어왔을 때, 기존 문제 유지 및 표시
+        if(mode === 'quiz' && state.quizList.length > 0) {
+            quizMgr.showQuiz(); 
+        }
     },
     filterQa: function(filter) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -215,7 +213,21 @@ const ui = {
     },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
-    toggleNightMode: function() { document.body.classList.toggle('night-mode'); },
+    
+    // [수정] Day/Night Toggle 로직
+    toggleNightMode: function() { 
+        document.body.classList.toggle('night-mode'); 
+        const isNight = document.body.classList.contains('night-mode');
+        // 아이콘 활성화 상태 변경
+        if(isNight) {
+            document.getElementById('iconSun').classList.remove('active');
+            document.getElementById('iconMoon').classList.add('active');
+        } else {
+            document.getElementById('iconSun').classList.add('active');
+            document.getElementById('iconMoon').classList.remove('active');
+        }
+    },
+    
     toggleRightPanel: function() {
         const p = document.getElementById('rightPanel'); p.classList.toggle('open');
         document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
@@ -351,7 +363,6 @@ const quizMgr = {
                 const isCorrect = (i + 1) === correct;
                 const height = (c / Math.max(maxVal, 1)) * 80;
                 
-                // 왕관은 정답이면서, 높이에 따라 위치를 조정 (높이가 0이면 바닥+40px, 아니면 높이+20px)
                 const crownHtml = isCorrect 
                     ? `<div class="crown-icon" style="bottom: ${height > 0 ? height + '%' : '40px'};">👑</div>` 
                     : '';
@@ -367,15 +378,44 @@ const quizMgr = {
         });
     },
     setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
+    ,
+    // [NEW] 퀴즈 모드 종료 (문제 상태 유지, 화면 전환)
+    closeQuizMode: function() {
+        ui.setMode('qa'); // Q&A 모드로 전환 (DB 업데이트 포함)
+    }
 };
 
-// --- 5. Print ---
+// --- 5. Print (수정됨: 입력 모달 -> 미리보기) ---
 const printMgr = {
-    openPreview: function() {
+    // 1. 입력 모달 열기
+    openInputModal: function() {
+        document.getElementById('printDateInput').value = "";
+        document.getElementById('printProfInput').value = "";
+        document.getElementById('printInputModal').style.display = 'flex';
+    },
+    
+    // 2. 입력 확인/스킵
+    confirmPrint: function(isSkip) {
+        const date = isSkip ? "" : document.getElementById('printDateInput').value;
+        const prof = isSkip ? "" : document.getElementById('printProfInput').value;
+        this.closeInputModal();
+        this.openPreview(date, prof);
+    },
+
+    closeInputModal: function() {
+        document.getElementById('printInputModal').style.display = 'none';
+    },
+
+    // 3. 미리보기 열기 (데이터 주입)
+    openPreview: function(date, prof) {
         document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value;
+        document.getElementById('doc-date').innerText = date || ""; // 입력값 사용
+        document.getElementById('doc-prof').innerText = prof || ""; // 입력값 사용
+        
         const listBody = document.getElementById('docListBody'); listBody.innerHTML = "";
         let items = Object.values(state.qaData || {});
         document.getElementById('doc-summary-text').innerText = `Q&A 총 취합건수 : ${items.length}건`;
+        
         if (items.length === 0) listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:20px;'>내역 없음</td></tr>";
         else {
             items.forEach((item, idx) => {
@@ -384,6 +424,7 @@ const printMgr = {
         }
         document.getElementById('printPreviewModal').style.display = 'flex';
     },
+    
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
     executePrint: function() { window.print(); }
 };
