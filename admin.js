@@ -1,4 +1,4 @@
-/* --- admin.js (Copy Fix) --- */
+/* --- admin.js (Secure Link Version) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -80,7 +80,7 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            // [수정] 복사 버튼 리스너는 html onclick으로 처리함
+            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -171,7 +171,8 @@ const dataMgr = {
             ui.checkLockStatus(st);
         });
 
-        this.renderQrForRoom(room);
+        // [수정] 보안 코드 조회 및 QR 생성
+        this.fetchCodeAndRenderQr(room);
 
         dbRef.qa.on('value', s => {
             if(state.room !== room) return;
@@ -180,9 +181,24 @@ const dataMgr = {
         });
     },
 
-    renderQrForRoom: function(room) {
-        const studentUrl = `${window.location.origin}/index.html?room=${room}`;
-        ui.renderQr(studentUrl);
+    // [신규] 방 ID(A)에 해당하는 보안 코드(x7k9...) 조회 함수
+    fetchCodeAndRenderQr: function(room) {
+        firebase.database().ref('public_codes')
+            .orderByValue().equalTo(room)
+            .once('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    // codes.json에서 해당 방의 키(코드)를 찾음
+                    const code = Object.keys(data)[0]; 
+                    const studentUrl = `${window.location.origin}/index.html?code=${code}`;
+                    ui.renderQr(studentUrl);
+                } else {
+                    // 코드가 없을 경우 안전장치 (그냥 room=A 사용)
+                    console.warn("보안 코드를 찾을 수 없어 일반 링크를 사용합니다.");
+                    const studentUrl = `${window.location.origin}/index.html?room=${room}`;
+                    ui.renderQr(studentUrl);
+                }
+            });
     },
 
     saveSettings: function() {
@@ -328,7 +344,6 @@ const ui = {
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
     renderQr: function(url) {
-        // [수정] 숨겨진 input에도 값 설정 (복사용)
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         try { new QRCode(qrDiv, { text: url, width: 35, height: 35 }); } catch(e) {}
@@ -353,13 +368,11 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
-    // [수정] 안전한 복사 방식 적용
     copyLink: function() {
         const urlInput = document.getElementById('studentLink');
         const url = urlInput.value;
         if (!url) return alert("복사할 링크가 없습니다.");
 
-        // Fallback 방식 우선 (모든 환경 호환)
         urlInput.select();
         urlInput.setSelectionRange(0, 99999);
         
@@ -368,7 +381,6 @@ const ui = {
             if(successful) alert("링크가 복사되었습니다!");
             else throw new Error("Copy failed");
         } catch (err) {
-            // 최신 API 시도
             if(navigator.clipboard) {
                 navigator.clipboard.writeText(url)
                     .then(() => alert("링크가 복사되었습니다!"))
