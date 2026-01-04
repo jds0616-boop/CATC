@@ -14,11 +14,13 @@
         body { font-family: sans-serif; margin: 0; padding: 0; background: #f0f2f5; overflow: hidden; height: 100vh; }
         
         .app-container { width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; background: #f0f2f5; }
+        
+        /* Header */
         .header { height: 65px; background: var(--main-color); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 6px solid var(--theme-color); transition: border-color 0.3s; flex-shrink: 0;}
-        .footer { height: auto; min-height: 60px; background: var(--main-color); color: #ccc; text-align: center; padding: 15px; font-size: 11px; flex-shrink: 0;}
         .course-title { font-weight: bold; font-size: 18px; }
         .kac-logo { height: 16px; }
         
+        /* Content */
         .scroll-area { flex-grow: 1; overflow-y: auto; padding-bottom: 80px; }
         .input-section { padding: 20px; background: #e8eaf6; }
         .q-input { width: 100%; height: 100px; padding: 15px; border: 2px solid var(--theme-color); border-radius: 12px; resize: none; }
@@ -28,6 +30,11 @@
         .list-header { padding: 15px; font-weight: bold; color: #555; background: #f0f2f5; position: sticky; top: 0; }
         .q-card { background: white; margin: 10px 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
+        /* Footer */
+        .footer { height: auto; min-height: 80px; background: var(--main-color); color: #ccc; text-align: center; padding: 20px 15px; font-size: 11px; flex-shrink: 0; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .admin-link { opacity: 0.3; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #999; padding: 5px 10px; border-radius: 20px; font-size: 10px; transition: 0.2s; }
+        .admin-link:hover { opacity: 1; color: white; border-color: white; }
+
         /* Quiz Overlay */
         #quizOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 5000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         #quizWaitingScreen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 4900; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
@@ -40,6 +47,27 @@
         .quiz-btn.selected { background: var(--theme-color); color: white; border-color: var(--theme-color); }
         
         .btn-confirm-quiz { margin-top: 40px; padding: 15px 50px; background: #1a237e; color: white; font-size: 20px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; display: none; }
+        
+        /* Floating Exit Button */
+        .fab-exit { position: fixed; bottom: 110px; right: 20px; width: 56px; height: 56px; background: #d32f2f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 1100; transition: transform 0.2s; }
+        .fab-exit:active { transform: scale(0.9); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-box { background: #fff; width: 90%; max-width: 500px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; animation: popUp 0.3s ease; max-height: 80vh; overflow-y: auto; }
+        @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .menu-list { list-style: none; padding: 0; margin: 10px 0; max-height: 300px; overflow-y: auto; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .pw-input-box { display: none; margin-top: 15px; text-align: center; background: #f9f9f9; padding: 15px; border-radius: 10px; }
+        .pw-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 70%; text-align: center; font-size: 20px; letter-spacing: 5px;}
+        .btn-pw-submit { background: var(--main-color); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        
+        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; padding: 10px; background: #f9f9f9; border-radius: 10px; word-break: break-all;}
+        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
+        .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-modal-like.active { background: #ff5252; color: #fff; }
     </style>
 </head>
 <body>
@@ -55,30 +83,40 @@
 
         <div class="scroll-area">
             <div class="input-section">
-                <div class="notice-text">All questions are anonymous.<br>익명으로 접수됩니다.</div>
+                <div class="notice-text" id="lang-notice">
+                    All questions are anonymous.<br>익명으로 접수됩니다.
+                </div>
                 <textarea class="q-input" id="qInput" placeholder="Type here..."></textarea>
                 <div class="action-row">
-                    <button class="btn-submit" onclick="submitQuestion()">Submit</button>
+                    <button class="btn-submit" id="btn-submit-qa" onclick="submitQuestion()">Submit</button>
                 </div>
             </div>
-            <div class="list-header">Live Questions</div>
+            <div class="list-header" id="lang-live">Live Questions</div>
             <div id="qList"></div>
         </div>
 
-        <footer class="footer" id="appFooter">KAC Platform</footer>
+        <footer class="footer">
+            <div id="footerText">KAC Platform</div>
+            <!-- 관리자 로그인 버튼 추가 -->
+            <div class="admin-link" onclick="location.href='login.html'">
+                <i class="fa-solid fa-lock"></i> Administrator
+            </div>
+        </footer>
     </div>
+
+    <div class="fab-exit" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
 
     <!-- Quiz Waiting Screen -->
     <div id="quizWaitingScreen">
         <i class="fa-solid fa-hourglass-half fa-3x" style="color:#aaa; margin-bottom:20px;"></i>
-        <h2>퀴즈 대기 중...</h2>
-        <p style="color:#666;">강사님이 문제를 준비하고 있습니다.</p>
+        <h2 id="lang-quiz-wait">퀴즈 대기 중...</h2>
+        <p style="color:#666;" id="lang-quiz-sub">강사님이 문제를 준비하고 있습니다.</p>
     </div>
 
     <!-- Quiz Active Overlay -->
     <div id="quizOverlay">
         <div class="quiz-badge">LIVE QUIZ</div>
-        <div class="quiz-msg">정답을 선택해주세요.</div>
+        <div class="quiz-msg" id="lang-quiz-active">정답을 선택해주세요.</div>
         
         <div class="quiz-btn-grid" id="quizBtns">
             <button class="quiz-btn" onclick="selectAnswer(1)">1</button>
@@ -90,33 +128,70 @@
         <button class="btn-confirm-quiz" id="btnConfirm" onclick="submitFinalAnswer()">제출 (Submit)</button>
     </div>
 
+    <!-- Modals -->
+    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)">
+        <div class="modal-box">
+            <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
+            <ul class="menu-list" id="roomList"></ul>
+            <div id="pwSection" class="pw-input-box">
+                <p id="pwTargetMsg" style="margin-bottom:5px;">Enter Password</p>
+                <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
+                <br><button class="btn-pw-submit" onclick="submitRoomPw()">Enter Room</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
+        <div class="modal-box">
+            <h3 style="margin:0; color:var(--main-color);">Question Detail</h3>
+            <div id="modalText" class="modal-content-text"></div>
+            <div class="modal-actions">
+                <button class="btn-modal-close" onclick="document.getElementById('detailModal').style.display='none'">Close</button>
+                <button id="modalLikeBtn" class="btn-modal-like" onclick="doLike()">
+                    <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount" style="margin-left:5px">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script>
         const room = new URLSearchParams(window.location.search).get('room') || 'A';
         const db = firebase.database();
         let selectedChoice = null;
         let currentQuizId = null;
+        
+        const LANG = {
+            ko: { notice: "익명으로 접수됩니다.", live: "실시간 질문", submit: "등록", quizWait: "퀴즈 대기 중...", quizSub: "문제를 준비 중입니다.", quizActive: "정답을 선택하세요.", quizConfirm: "제출하기" },
+            en: { notice: "All questions are anonymous.", live: "Live Questions", submit: "Submit", quizWait: "Waiting for Quiz...", quizSub: "Instructor is preparing.", quizActive: "Select an answer.", quizConfirm: "Confirm Submit" }
+        };
 
         window.onload = () => {
             db.ref(`courses/${room}/settings`).on('value', s => {
                 const v = s.val() || {};
                 if(v.courseName) document.getElementById('courseTitle').innerText = v.courseName;
                 if(v.themeColor) document.documentElement.style.setProperty('--theme-color', v.themeColor);
-                if(v.footerText) document.getElementById('appFooter').innerHTML = v.footerText.replace(/\n/g, '<br>');
+                if(v.footerText) document.getElementById('footerText').innerHTML = v.footerText.replace(/\n/g, '<br>');
+                
+                const curLang = LANG[v.language || 'ko'];
+                document.getElementById('lang-notice').innerHTML = curLang.notice;
+                document.getElementById('lang-live').innerText = curLang.live;
+                document.getElementById('btn-submit-qa').innerText = curLang.submit;
+                document.getElementById('lang-quiz-wait').innerText = curLang.quizWait;
+                document.getElementById('lang-quiz-sub').innerText = curLang.quizSub;
+                document.getElementById('lang-quiz-active').innerText = curLang.quizActive;
+                document.getElementById('btnConfirm').innerText = curLang.quizConfirm;
             });
 
-            // Sync Mode
             db.ref(`courses/${room}/status/mode`).on('value', s => {
                 const mode = s.val();
-                if(mode === 'quiz') {
-                    document.getElementById('quizWaitingScreen').style.display = 'flex';
-                } else {
+                if(mode === 'quiz') document.getElementById('quizWaitingScreen').style.display = 'flex';
+                else {
                     document.getElementById('quizWaitingScreen').style.display = 'none';
                     document.getElementById('quizOverlay').style.display = 'none';
                 }
             });
 
-            // Active Quiz
             db.ref(`courses/${room}/activeQuiz`).on('value', s => {
                 const val = s.val();
                 if(val && val.id) {
@@ -132,7 +207,6 @@
                         document.getElementById('btnConfirm').style.display = 'none';
                     }
                 } else {
-                    // Back to waiting if mode is quiz
                     db.ref(`courses/${room}/status/mode`).once('value', m => {
                         if(m.val() === 'quiz') document.getElementById('quizWaitingScreen').style.display = 'flex';
                     });
@@ -141,6 +215,7 @@
             });
 
             startDataListener();
+            setupMenu();
         };
 
         function selectAnswer(n) {
@@ -165,7 +240,7 @@
                 const d = s.val();
                 const div = document.getElementById('qList'); div.innerHTML="";
                 if(d) Object.keys(d).reverse().forEach(k => {
-                    div.innerHTML += `<div class="q-card" style="padding:15px; margin:10px;">${d[k].text}</div>`;
+                    div.innerHTML += `<div class="q-card" style="padding:15px; margin:10px;" onclick="openDetail('${d[k].text}', '${k}', ${d[k].likes||0})">${d[k].text}</div>`;
                 });
             });
         }
@@ -173,10 +248,66 @@
         function submitQuestion() {
             const t = document.getElementById('qInput').value;
             if(!t) return alert("Empty!");
-            db.ref(`courses/${room}/questions`).push({
-                text: t, timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
+            db.ref(`courses/${room}/questions`).push({ text: t, timestamp: firebase.database.ServerValue.TIMESTAMP });
             document.getElementById('qInput').value = "";
+        }
+
+        function openDetail(txt, key, likes) {
+            document.getElementById('modalText').innerText = txt;
+            document.getElementById('modalLikeCount').innerText = likes;
+            const btn = document.getElementById('modalLikeBtn');
+            btn.onclick = () => doLike(key);
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function doLike(key) {
+            if(localStorage.getItem(`liked_${key}`)) return alert("Already liked");
+            db.ref(`courses/${room}/questions/${key}`).transaction(p => { if(p) p.likes++; return p; }, (e,c) => {
+                if(c) {
+                    localStorage.setItem(`liked_${key}`, true);
+                    const cnt = document.getElementById('modalLikeCount');
+                    cnt.innerText = parseInt(cnt.innerText)+1;
+                }
+            });
+        }
+
+        function setupMenu() {
+            const roomListEl = document.getElementById('roomList');
+            for (let i = 65; i <= 90; i++) { 
+                const char = String.fromCharCode(i);
+                const li = document.createElement('li');
+                li.className = 'menu-item'; li.onclick = () => trySwitchRoom(char);
+                li.innerHTML = `<span>Course ${char}</span> <i class="fa-solid fa-chevron-right"></i>`;
+                roomListEl.appendChild(li);
+            }
+        }
+
+        function openMenu() { document.getElementById('menuModal').style.display = 'flex'; }
+        function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
+        function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
+        function exitRoom() { if(confirm("Leave?")) window.location.href = "about:blank"; }
+        
+        let targetSwitchRoom = null;
+        function trySwitchRoom(r) {
+            if(r === room) return alert("Already here.");
+            targetSwitchRoom = r;
+            document.getElementById('pwSection').style.display = 'block';
+            document.getElementById('pwTargetMsg').innerText = `Enter Password for Course ${r}`;
+            document.getElementById('roomPw').value = ""; document.getElementById('roomPw').focus();
+        }
+        function submitRoomPw() {
+            const p = document.getElementById('roomPw').value;
+            if(p.length!==4) return alert("4 digits.");
+            db.ref(`courses/${targetSwitchRoom}/settings/password`).once('value').then(s => {
+                const h = s.val();
+                if(!h) window.location.search = `?room=${targetSwitchRoom}`;
+                else verifyPassword(p, h).then(ok => { if(ok) window.location.search = `?room=${targetSwitchRoom}`; else alert("Wrong."); });
+            });
+        }
+        async function verifyPassword(p, h) {
+            const m = new TextEncoder().encode(p);
+            const hb = await crypto.subtle.digest('SHA-256', m);
+            return Array.from(new Uint8Array(hb)).map(b => b.toString(16).padStart(2, '0')).join('') === h;
         }
     </script>
 </body>
