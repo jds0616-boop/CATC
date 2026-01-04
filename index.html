@@ -12,7 +12,6 @@
     <style>
         :root {
             --theme-color: #0f172a; /* Instructor's Navy */
-            --point-color: #d32f2f; /* Red Bar if needed */
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: #f1f5f9; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -20,8 +19,9 @@
         /* Level 1: Fixed Header */
         .header {
             height: 60px; background: white; display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 18px; color: #333; flex-shrink: 0; z-index: 100;
+            font-weight: 900; font-size: 16px; color: #333; flex-shrink: 0; z-index: 100;
             border-bottom: 5px solid var(--theme-color); /* Color Bar */
+            padding: 0 15px; text-align: center;
         }
 
         /* Level 2: Fixed Input Area */
@@ -140,32 +140,34 @@
 
     <script src="config.js"></script>
     <script>
-        // --- 1. Security & Init ---
-        // Single Tab Check
+        // Init
         const bc = new BroadcastChannel('kac_student_channel');
         bc.onmessage = (e) => { if(e.data === 'here') { alert("Already open in another tab."); window.location.href="about:blank"; } };
         bc.postMessage('here');
 
-        // Resolve Room
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         let currentRoom = getRoomFromCode(code);
 
         if(!currentRoom) {
-            alert("Invalid Link or Room Code.");
-            // Fallback (e.g. ask for code logic could be here, but for now just stop)
             document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Invalid Access Link</h2>";
             throw new Error("No Room");
         }
 
-        document.getElementById('roomTitle').innerText = `Course Room ${currentRoom}`;
-
-        // --- 2. Firebase & Logic ---
+        // --- Firebase ---
         const dbRef = {
             qa: db.ref(`courses/${currentRoom}/questions`),
             quiz: db.ref(`courses/${currentRoom}/activeQuiz`),
-            ans: db.ref(`courses/${currentRoom}/quizAnswers`)
+            ans: db.ref(`courses/${currentRoom}/quizAnswers`),
+            settings: db.ref(`courses/${currentRoom}/settings`) // Added settings ref
         };
+
+        // Load Course Name dynamically
+        dbRef.settings.on('value', snap => {
+            const val = snap.val() || {};
+            const name = val.courseName ? val.courseName : `Course Room ${currentRoom}`;
+            document.getElementById('roomTitle').innerText = name;
+        });
 
         // Q&A
         let myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
@@ -178,11 +180,10 @@
             list.innerHTML = "";
 
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            // Sort: Likes DESC -> Time DESC
             items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
 
             items.forEach(item => {
-                if(item.status === 'delete') return; // Hide deleted
+                if(item.status === 'delete') return;
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
                 
@@ -199,7 +200,7 @@
 
         function submitQ() {
             const now = Date.now();
-            if(now - lastPostTime < 120000) return; // 2 min check
+            if(now - lastPostTime < 120000) return; 
 
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
@@ -209,11 +210,9 @@
                 text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'normal'
             });
 
-            // Local Save
             myQs[ref.key] = true;
             localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
             
-            // Timer logic
             lastPostTime = now;
             localStorage.setItem(`lastTime_${currentRoom}`, now);
             document.getElementById('qInput').value = "";
@@ -236,11 +235,10 @@
                 msg.style.visibility = 'hidden';
             }
         }
-        // Init timer check
         checkCooldown();
 
         function toggleLike(key) {
-            if(myLikes[key]) return; // 1 like per person
+            if(myLikes[key]) return;
             dbRef.qa.child(key).transaction(post => {
                 if(post) post.likes = (post.likes||0) + 1;
                 return post;
@@ -258,11 +256,10 @@
             const overlay = document.getElementById('quizOverlay');
             
             if(!q || q.status === 'result') {
-                overlay.style.display = 'none'; // Hide on result or null
+                overlay.style.display = 'none';
                 return;
             }
 
-            // Show Overlay
             overlay.style.display = 'flex';
             currentQuizId = q.id;
             
@@ -277,29 +274,17 @@
                 document.getElementById('quizBtns').style.pointerEvents = 'none';
                 document.getElementById('quizBtns').style.opacity = '0.5';
             } else {
-                // Closed
                 canAnswer = false;
                 document.getElementById('quizStatusMsg').innerText = "Closed.";
                 document.getElementById('quizBtns').style.pointerEvents = 'none';
             }
-
-            // Check if I already answered this specific quiz ID
-            // But requirement says: allow modification until closed.
-            // So we just highlight selected button.
         });
 
         function sendAns(choice) {
             if(!canAnswer || !currentQuizId) return;
-            
-            // Highlight UI
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.quiz-opt-btn')[choice-1].classList.add('selected');
 
-            // Send to DB (Push unique key per user-device is hard without auth, 
-            // so we push and let backend count, or overwrite if we had user ID.
-            // Simplified: Just push. Real stats might need dedup logic in admin, 
-            // or we generate a random user token in localStorage.)
-            
             let myToken = localStorage.getItem('userToken');
             if(!myToken) { myToken = Math.random().toString(36).substr(2); localStorage.setItem('userToken', myToken); }
 
@@ -326,7 +311,6 @@
             const pw = prompt(`Enter Password for Room ${targetRoom}:`);
             if(!pw) return;
 
-            // Verify Password via DB
             db.ref(`courses/${targetRoom}/settings/password`).once('value', snap => {
                 const realPw = snap.val();
                 if(realPw && realPw == pw) {
