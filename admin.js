@@ -1,4 +1,4 @@
-/* --- admin.js (Save Button Fix & Logic) --- */
+/* --- admin.js (Fix Save Button) --- */
 
 const state = {
     sessionId: Math.random().toString(36).substr(2, 9), 
@@ -73,24 +73,19 @@ const dataMgr = {
 
     loadInitialData: function() {
         const lastRoom = localStorage.getItem('kac_last_room') || 'A';
-        
-        // [중요] 버튼 리스너를 가장 먼저 연결 (오류 방지)
-        try {
-            const saveBtn = document.getElementById('btnSaveInfo');
-            if(saveBtn) saveBtn.onclick = () => this.saveSettings(); // addEventListener 대신 직접 할당으로 중복 방지
+        this.forceEnterRoom(lastRoom); 
 
+        try {
+            ui.initRoomSelect(); 
+            // [중요] HTML에서 onclick으로 연결했으므로 여기서는 제거하여 충돌 방지
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
-            document.getElementById('btnCopyLink').onclick = () => ui.copyLink();
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
             if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
         } catch(e) {
-            console.error("Listener Error:", e);
+            console.error("Init Error:", e);
         }
-
-        this.forceEnterRoom(lastRoom); 
-        ui.initRoomSelect(); 
     },
 
     switchRoomAttempt: async function(newRoom) {
@@ -108,7 +103,7 @@ const dataMgr = {
             }
         } catch (e) {
             console.error(e);
-            this.forceEnterRoom(newRoom); // 에러나면 그냥 이동
+            this.forceEnterRoom(newRoom);
         }
     },
 
@@ -206,35 +201,41 @@ const dataMgr = {
             });
     },
 
-    // [수정] 저장 버튼 로직 강화
+    renderQrForRoom: function(room) {
+        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        const studentUrl = `${baseUrl}/index.html?room=${room}`;
+        ui.renderQr(studentUrl);
+    },
+
+    // [중요] 저장 기능 함수
     saveSettings: function() {
         try {
             let pw = document.getElementById('roomPw').value; 
             const newName = document.getElementById('courseNameInput').value;
             const statusVal = document.getElementById('roomStatusSelect').value;
 
-            if (!pw) pw = "1234";
+            if (!pw) pw = "1234"; // 기본 비밀번호 처리
 
-            // DB 업데이트
+            // 1. DB에 설정 저장 (과정명, 비밀번호)
             const updates = { courseName: newName, password: pw };
             firebase.database().ref(`courses/${state.room}/settings`).update(updates);
             
-            // 화면 업데이트
+            // 2. 화면 타이틀 즉시 업데이트 (사용자 피드백)
             document.getElementById('displayCourseTitle').innerText = newName;
             document.getElementById('roomPw').value = pw;
 
-            // 상태 업데이트
+            // 3. 방 상태(사용중/비어있음) 업데이트
             const statusUpdate = {
                 roomStatus: statusVal === 'active' ? 'active' : 'idle',
                 ownerSessionId: statusVal === 'active' ? state.sessionId : null
             };
             firebase.database().ref(`courses/${state.room}/status`).update(statusUpdate);
 
-            // 알림
-            alert(`[Room ${state.room}] 설정이 저장되었습니다.\n- 과정명: ${newName}\n- 상태: ${statusVal}\n- 비밀번호: ${pw}`);
+            // 4. 성공 알림
+            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.\n- 과정명: ${newName}\n- 상태: ${statusVal}`);
         } catch(e) {
             console.error(e);
-            alert("저장 중 오류가 발생했습니다: " + e.message);
+            alert("❌ 저장 중 오류가 발생했습니다: " + e.message);
         }
     },
 
@@ -430,44 +431,23 @@ const ui = {
     renderQaList: function(filter) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
-
-        items.sort((a, b) => {
-            const getStatusWeight = (status) => {
-                if (status.startsWith('pin')) return 4;
-                if (status.startsWith('later')) return 3;
-                if (status === 'done') return 0;
-                return 2;
-            };
-
-            const weightA = getStatusWeight(a.status);
-            const weightB = getStatusWeight(b.status);
-
-            if (weightA !== weightB) return weightB - weightA;
-
-            const likesA = a.likes || 0;
-            const likesB = b.likes || 0;
-            if (likesA !== likesB) return likesB - likesA;
-
-            return b.timestamp - a.timestamp;
-        });
-
-        if(filter === 'pin') items = items.filter(x => x.status.startsWith('pin'));
-        else if(filter === 'later') items = items.filter(x => x.status.startsWith('later'));
+        const getScore = (i) => { if(i.status==='pin')return 1000; if(i.status==='later')return 500; if(i.status==='done')return -1000; return 0; };
+        if(filter === 'pin') items = items.filter(x => x.status === 'pin');
+        else if(filter === 'later') items = items.filter(x => x.status === 'later');
+        items.sort((a,b) => (getScore(b) + (b.likes||0)) - (getScore(a) + (a.likes||0)));
 
         items.forEach(i => {
-            let cls = '';
-            let icon = '';
-
-            if (i.status.startsWith('pin')) { cls += ' status-pin'; icon = '📌 '; }
-            else if (i.status.startsWith('later')) { cls += ' status-later'; icon = '⚠️ '; }
-            else if (i.status === 'done') { cls += ' status-done'; icon = '✅ '; }
-
+            const cls = i.status === 'pin' ? 'status-pin' : (i.status === 'later' ? 'status-later' : (i.status === 'done' ? 'status-done' : ''));
+            const icon = i.status === 'pin' ? '📌 ' : (i.status === 'later' ? '⚠️ ' : (i.status === 'done' ? '✅ ' : ''));
+            
+            // 완료된 항목 흐리게 처리
+            let style = '';
             if (i.status.includes('done') || i.status === 'done') {
-                cls += '" style="opacity: 0.6; filter: grayscale(1);';
+                style = 'style="opacity: 0.6; filter: grayscale(1);"';
             }
 
             list.innerHTML += `
-                <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
+                <div class="q-card ${cls}" ${style} onclick="ui.openQaModal('${i.id}')">
                     <div class="q-content">${icon}${i.text}</div>
                     <div class="q-meta">
                         <div class="q-like-badge">👍 ${i.likes||0}</div>
@@ -513,7 +493,6 @@ const ui = {
 
 // --- 4. Quiz ---
 const quizMgr = {
-    // 기존 기능 유지 (생략 없이 포함)
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
         const r = new FileReader();

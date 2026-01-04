@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <!-- [NEW] Takeover Auth Modal -->
+    <!-- Takeover Auth Modal -->
     <div id="takeoverModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-header"><h3><i class="fa-solid fa-lock"></i> 강의실 제어권 인증</h3></div>
@@ -152,25 +152,23 @@
                     <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭">
                 </div>
 
-                <button class="btn-action btn-primary" id="btnSaveInfo">Save Settings (설정 저장)</button>
+                <!-- [수정] onclick 속성 직접 추가 -->
+                <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings (설정 저장)</button>
                 
                 <div class="divider"></div>
                 
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
-                    <!-- [수정] QR 코드 + 카피 버튼 가로 배치 -->
                     <div class="qr-box">
                         <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
                         <button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()">
                             <i class="fa-solid fa-copy"></i> Copy Link
                         </button>
-                        <!-- [수정] 복사 기능용 투명 input -->
                         <input type="text" id="studentLink" style="opacity: 0; position: absolute; z-index: -1;">
                     </div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
-                    <!-- [수정] 퀴즈 파일 + 샘플 버튼 가로 배치 -->
                     <div class="file-row">
                         <input type="file" id="quizFile" accept=".txt" style="display: none;" onchange="alert(this.files[0].name + ' 선택됨')">
                         <label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor: pointer; justify-content: center; flex-grow: 1;">
