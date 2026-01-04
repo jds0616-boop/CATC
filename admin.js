@@ -1,6 +1,5 @@
-/* --- admin.js (Priority + Done Logic Update) --- */
+/* --- admin.js (Save Button Fix & Logic) --- */
 
-// --- 전역 상태 ---
 const state = {
     sessionId: Math.random().toString(36).substr(2, 9), 
     room: null,
@@ -74,33 +73,42 @@ const dataMgr = {
 
     loadInitialData: function() {
         const lastRoom = localStorage.getItem('kac_last_room') || 'A';
-        this.forceEnterRoom(lastRoom); 
-
+        
+        // [중요] 버튼 리스너를 가장 먼저 연결 (오류 방지)
         try {
-            ui.initRoomSelect(); 
+            const saveBtn = document.getElementById('btnSaveInfo');
+            if(saveBtn) saveBtn.onclick = () => this.saveSettings(); // addEventListener 대신 직접 할당으로 중복 방지
+
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
-            document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
+            document.getElementById('btnCopyLink').onclick = () => ui.copyLink();
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
             if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
         } catch(e) {
-            console.error("Init Error:", e);
+            console.error("Listener Error:", e);
         }
+
+        this.forceEnterRoom(lastRoom); 
+        ui.initRoomSelect(); 
     },
 
     switchRoomAttempt: async function(newRoom) {
-        const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
-        const st = snapshot.val() || {};
-        
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            state.pendingRoom = newRoom;
-            document.getElementById('takeoverPwInput').value = "";
-            document.getElementById('takeoverModal').style.display = 'flex';
-            document.getElementById('takeoverPwInput').focus();
-        } else {
-            this.forceEnterRoom(newRoom);
+        try {
+            const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
+            const st = snapshot.val() || {};
+            
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                state.pendingRoom = newRoom;
+                document.getElementById('takeoverPwInput').value = "";
+                document.getElementById('takeoverModal').style.display = 'flex';
+                document.getElementById('takeoverPwInput').focus();
+            } else {
+                this.forceEnterRoom(newRoom);
+            }
+        } catch (e) {
+            console.error(e);
+            this.forceEnterRoom(newRoom); // 에러나면 그냥 이동
         }
     },
 
@@ -198,37 +206,35 @@ const dataMgr = {
             });
     },
 
-    renderQrForRoom: function(room) {
-        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-        const studentUrl = `${baseUrl}/index.html?room=${room}`;
-        ui.renderQr(studentUrl);
-    },
-
+    // [수정] 저장 버튼 로직 강화
     saveSettings: function() {
-        let pw = document.getElementById('roomPw').value; 
-        const newName = document.getElementById('courseNameInput').value;
-        const statusVal = document.getElementById('roomStatusSelect').value;
+        try {
+            let pw = document.getElementById('roomPw').value; 
+            const newName = document.getElementById('courseNameInput').value;
+            const statusVal = document.getElementById('roomStatusSelect').value;
 
-        if (!pw) pw = "1234";
+            if (!pw) pw = "1234";
 
-        const updates = { courseName: newName, password: pw };
+            // DB 업데이트
+            const updates = { courseName: newName, password: pw };
+            firebase.database().ref(`courses/${state.room}/settings`).update(updates);
+            
+            // 화면 업데이트
+            document.getElementById('displayCourseTitle').innerText = newName;
+            document.getElementById('roomPw').value = pw;
 
-        firebase.database().ref(`courses/${state.room}/settings`).update(updates);
-        document.getElementById('displayCourseTitle').innerText = newName;
-        document.getElementById('roomPw').value = pw;
+            // 상태 업데이트
+            const statusUpdate = {
+                roomStatus: statusVal === 'active' ? 'active' : 'idle',
+                ownerSessionId: statusVal === 'active' ? state.sessionId : null
+            };
+            firebase.database().ref(`courses/${state.room}/status`).update(statusUpdate);
 
-        if (statusVal === 'active') {
-            firebase.database().ref(`courses/${state.room}/status`).update({
-                roomStatus: 'active',
-                ownerSessionId: state.sessionId
-            });
-            alert(`[Room ${state.room}] 설정 저장 완료 (사용중)\n학생 비밀번호: ${pw}`); 
-        } else {
-            firebase.database().ref(`courses/${state.room}/status`).update({
-                roomStatus: 'idle',
-                ownerSessionId: null
-            });
-            alert(`[Room ${state.room}] 설정 저장 완료 (비어있음)`); 
+            // 알림
+            alert(`[Room ${state.room}] 설정이 저장되었습니다.\n- 과정명: ${newName}\n- 상태: ${statusVal}\n- 비밀번호: ${pw}`);
+        } catch(e) {
+            console.error(e);
+            alert("저장 중 오류가 발생했습니다: " + e.message);
         }
     },
 
@@ -251,7 +257,6 @@ const dataMgr = {
         }
     },
 
-    // [수정] 복합 상태(핀+완료, 보류+완료) 업데이트 로직 적용
     updateQa: function(action) {
         if(!state.activeQaKey) return;
         const currentItem = state.qaData[state.activeQaKey];
@@ -262,24 +267,19 @@ const dataMgr = {
                  dbRef.qa.child(state.activeQaKey).remove(); ui.closeQaModal();
              }
         } else if (action === 'done') {
-            // [중요] Done 버튼 클릭 시 상태 변화 로직
             let newStatus = 'done';
-            
             if (currentStatus === 'pin') newStatus = 'pin-done';
-            else if (currentStatus === 'pin-done') newStatus = 'pin'; // 해제
+            else if (currentStatus === 'pin-done') newStatus = 'pin'; 
             else if (currentStatus === 'later') newStatus = 'later-done';
-            else if (currentStatus === 'later-done') newStatus = 'later'; // 해제
+            else if (currentStatus === 'later-done') newStatus = 'later'; 
             else if (currentStatus === 'normal') newStatus = 'done';
-            else if (currentStatus === 'done') newStatus = 'normal'; // 해제
+            else if (currentStatus === 'done') newStatus = 'normal'; 
             
             dbRef.qa.child(state.activeQaKey).update({ status: newStatus });
             ui.closeQaModal();
         } else {
-            // Pin 또는 Later 버튼 클릭 시
             let newStatus = action;
-            if (currentStatus === action) newStatus = 'normal'; // 토글
-            // 만약 done 상태였다면 done은 풀리고 해당 상태로 변경 (사용자 의도상 중요도로 이동)
-            
+            if (currentStatus === action) newStatus = 'normal'; 
             dbRef.qa.child(state.activeQaKey).update({ status: newStatus });
             ui.closeQaModal();
         }
@@ -407,7 +407,7 @@ const ui = {
             if(navigator.clipboard) {
                 navigator.clipboard.writeText(url)
                     .then(() => alert("링크가 복사되었습니다!"))
-                    .catch(() => alert("복사 실패. 브라우저가 지원하지 않습니다."));
+                    .catch(() => alert("복사 실패. 수동으로 복사해주세요."));
             } else {
                 alert("복사 실패.");
             }
@@ -427,19 +427,16 @@ const ui = {
         event.target.classList.add('active');
         this.renderQaList(filter);
     },
-
-    // [수정] 정렬 및 표시 로직 수정
     renderQaList: function(filter) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
 
         items.sort((a, b) => {
-            // 1. 상태 가중치 (Pin계열 > Later계열 > 일반 > 완료)
             const getStatusWeight = (status) => {
-                if (status.startsWith('pin')) return 4;   // pin, pin-done
-                if (status.startsWith('later')) return 3; // later, later-done
-                if (status === 'done') return 0;          // 순수 done (최하단)
-                return 2;                                 // normal
+                if (status.startsWith('pin')) return 4;
+                if (status.startsWith('later')) return 3;
+                if (status === 'done') return 0;
+                return 2;
             };
 
             const weightA = getStatusWeight(a.status);
@@ -458,20 +455,14 @@ const ui = {
         else if(filter === 'later') items = items.filter(x => x.status.startsWith('later'));
 
         items.forEach(i => {
-            // 스타일 클래스 결정
             let cls = '';
             let icon = '';
 
-            // 기본 상태 클래스
             if (i.status.startsWith('pin')) { cls += ' status-pin'; icon = '📌 '; }
             else if (i.status.startsWith('later')) { cls += ' status-later'; icon = '⚠️ '; }
             else if (i.status === 'done') { cls += ' status-done'; icon = '✅ '; }
 
-            // 완료된 항목(pin-done, later-done 포함)에 완료 효과 추가
             if (i.status.includes('done') || i.status === 'done') {
-                // 기존 클래스에 투명도/흑백 효과를 주기 위해 인라인 스타일 추가
-                // 또는 admin.css에 .done-effect 클래스를 추가하여 처리 가능
-                // 여기서는 인라인 스타일로 간단히 처리 (grayscale & opacity)
                 cls += '" style="opacity: 0.6; filter: grayscale(1);';
             }
 
@@ -485,7 +476,6 @@ const ui = {
                 </div>`;
         });
     },
-
     openQaModal: function(key) {
         state.activeQaKey = key;
         document.getElementById('m-text').innerText = state.qaData[key].text;
@@ -523,6 +513,7 @@ const ui = {
 
 // --- 4. Quiz ---
 const quizMgr = {
+    // 기존 기능 유지 (생략 없이 포함)
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
         const r = new FileReader();
