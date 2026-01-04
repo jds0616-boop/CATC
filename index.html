@@ -23,20 +23,25 @@
         }
         .header-left { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
         .header-right { display: flex; align-items: center; gap: 10px; }
-        .kac-logo-sm { height: 20px; }
         .room-badge { background: var(--theme-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-        /* Input Area (High Contrast) */
+        /* Input Area (Dark Navy Theme) */
         .input-area {
             background: #1e293b; padding: 20px; flex-shrink: 0; z-index: 90;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 20px 20px;
+            position: relative;
         }
         .q-input {
-            width: 100%; border: 3px solid #3b82f6; padding: 15px; border-radius: 12px;
-            font-size: 16px; margin-bottom: 10px; resize: none; height: 80px;
-            background: #fff; color: #333;
+            width: 100%; border: 2px solid #334155; padding: 15px; border-radius: 12px;
+            font-size: 16px; margin-bottom: 10px; resize: none; height: 90px;
+            background: #0f172a; color: #fff;
         }
-        .q-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        .q-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+        .q-input.limit-reached { border-color: #ef4444; }
+        
+        .char-counter { position: absolute; right: 25px; bottom: 70px; color: #94a3b8; font-size: 11px; }
+        .char-counter.limit { color: #ef4444; }
+
         .input-actions { display: flex; justify-content: space-between; align-items: center; }
         .timer-msg { font-size: 12px; color: #ef4444; font-weight: bold; visibility: hidden; }
         .btn-submit {
@@ -74,7 +79,7 @@
         }
         .edit-timer { font-size: 10px; color: #ef4444; margin-right: 5px; }
 
-        /* Footer */
+        /* Fixed Dark Navy Footer */
         .footer {
             position: fixed; bottom: 0; width: 100%; height: 50px; background: #1e293b; color: #94a3b8;
             display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
@@ -114,12 +119,12 @@
         <div class="header-right">
             <span id="roomBadge" class="room-badge">Room</span>
             <i class="fa-solid fa-moon" onclick="toggleNight()"></i>
-            <img src="logo.png" alt="Logo" class="kac-logo-sm">
         </div>
     </div>
 
     <div class="input-area">
-        <textarea id="qInput" class="q-input" placeholder="익명으로 처리되나, 불쾌한 표현이나 남을 불편하게 하는 문구는 삼가주세요."></textarea>
+        <textarea id="qInput" class="q-input" placeholder="익명으로 처리되나, 불쾌한 표현은 삼가주세요." maxlength="100"></textarea>
+        <span id="charCount" class="char-counter">0 / 100</span>
         <div class="input-actions">
             <span id="coolTimer" class="timer-msg">Wait 02:00</span>
             <button id="submitBtn" class="btn-submit" onclick="submitQ()">Submit</button>
@@ -173,7 +178,8 @@
             qa: db.ref(`courses/${currentRoom}/questions`),
             quiz: db.ref(`courses/${currentRoom}/activeQuiz`),
             ans: db.ref(`courses/${currentRoom}/quizAnswers`),
-            settings: db.ref(`courses/${currentRoom}/settings`)
+            settings: db.ref(`courses/${currentRoom}/settings`),
+            status: db.ref(`courses/${currentRoom}/status/mode`) // For Mode Sync
         };
 
         dbRef.settings.on('value', snap => {
@@ -181,9 +187,31 @@
             document.getElementById('roomTitle').innerText = val.courseName ? val.courseName.substring(0,15) : `Course ${currentRoom}`;
         });
 
+        // Mode Sync (Force Close Quiz)
+        dbRef.status.on('value', snap => {
+            if(snap.val() === 'qa') {
+                document.getElementById('quizOverlay').style.display = 'none';
+            }
+        });
+
+        // 100 Char Limit
+        const qInput = document.getElementById('qInput');
+        const charCount = document.getElementById('charCount');
+        qInput.addEventListener('input', () => {
+            const len = qInput.value.length;
+            charCount.innerText = `${len} / 100`;
+            if(len >= 100) {
+                qInput.classList.add('limit-reached');
+                charCount.classList.add('limit');
+            } else {
+                qInput.classList.remove('limit-reached');
+                charCount.classList.remove('limit');
+            }
+        });
+
         // Q&A Logic
         let myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
-        let myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); // { key: timestamp }
+        let myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
         let lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
         let editInterval = null;
 
@@ -199,12 +227,11 @@
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
                 
-                // Edit Button Logic
                 let editHtml = '';
                 if(isMine) {
                     const postTime = myQs[item.id];
                     const diff = Date.now() - postTime;
-                    if(diff < 300000) { // 5 min
+                    if(diff < 300000) { 
                         editHtml = `<span id="timer-${item.id}" class="edit-timer"></span><button class="edit-btn" style="display:inline-block;" onclick="editQ('${item.id}')">Edit</button>`;
                     }
                 }
@@ -232,7 +259,7 @@
                     const postTime = myQs[key];
                     if(postTime) {
                         const remain = 300000 - (now - postTime);
-                        if(remain <= 0) { el.parentElement.innerHTML = ""; } // Hide edit
+                        if(remain <= 0) { el.parentElement.innerHTML = ""; } 
                         else {
                             const m = Math.floor(remain/60000);
                             const s = Math.floor((remain%60000)/1000);
@@ -259,7 +286,6 @@
             if(!txt) return;
 
             if(editingKey) {
-                // Update
                 dbRef.qa.child(editingKey).update({ text: txt });
                 editingKey = null;
                 document.getElementById('submitBtn').innerText = "Submit";
@@ -268,7 +294,6 @@
                 return;
             }
 
-            // New
             const now = Date.now();
             if(now - lastPostTime < 120000) return; 
             
@@ -302,7 +327,7 @@
             myLikes[key] = true; localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
         }
 
-        // Quiz Logic Fix (Reset Buttons)
+        // Quiz Logic Fix
         let currentQuizId = null;
         let canAnswer = false;
 
@@ -311,9 +336,7 @@
             const overlay = document.getElementById('quizOverlay');
             if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
 
-            // Check if new question
             if(currentQuizId !== q.id) {
-                // RESET BUTTONS
                 document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
                 document.getElementById('quizWait').style.display = 'none';
                 currentQuizId = q.id;
