@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - KAC Platform</title>
+<!-- Firebase SDK 추가 필수 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
   * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
@@ -48,16 +51,18 @@
     <button onclick="tryLogin()">Login</button>
     <div id="msg" class="message"></div>
     
-    <div class="hint">일반 강사(1234) / 총관리자(9999)</div>
+    <div class="hint">초기 비번: 강사(1234) / 관리자(9999)</div>
   </div>
 
+  <!-- Config JS 연결 -->
+  <script src="config.js"></script>
+  
   <script>
-    // 5시간 세션
-    const SESSION_DURATION = 5 * 60 * 60 * 1000;
+    const SESSION_DURATION = 5 * 60 * 60 * 1000; // 5시간
     
-    // Hash Values (SHA-256)
-    const INSTRUCTOR_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // 1234
-    const SUPER_ADMIN_HASH = "863339c089945df81f7c320875e53313337946955a5078505c8686e0c704c77f"; // 9999
+    // 기본 해시값 (DB에 값이 없을 때 사용)
+    const DEFAULT_INST = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // 1234
+    const DEFAULT_ADMIN = "863339c089945df81f7c320875e53313337946955a5078505c8686e0c704c77f"; // 9999
 
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
@@ -70,42 +75,55 @@
         const msgBox = document.getElementById('msg');
         
         if(!input) { msgBox.textContent = "비밀번호를 입력하세요."; return; }
+        if (typeof firebase === 'undefined') { msgBox.textContent = "DB 연결 실패 (config.js 확인)"; return; }
 
-        const inputHash = await sha256(input);
-        
-        let role = null;
-        if(inputHash === INSTRUCTOR_HASH) role = 'instructor';
-        else if(inputHash === SUPER_ADMIN_HASH) role = 'super_admin';
+        msgBox.style.color = "#94a3b8";
+        msgBox.textContent = "확인 중...";
 
-        if(role) {
-            msgBox.style.color = "#4ade80";
-            msgBox.textContent = role === 'super_admin' ? "관리자 접속 성공!" : "강사 접속 성공!";
-            
-            const sessionData = {
-                token: 'granted',
-                role: role,
-                expiry: Date.now() + SESSION_DURATION
-            };
-            localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
-            
-            setTimeout(() => location.replace('admin.html'), 500);
-        } else {
+        try {
+            // 1. 입력값 암호화
+            const inputHash = await sha256(input);
+
+            // 2. DB에서 저장된 비밀번호 가져오기
+            const snapshot = await firebase.database().ref('globalSettings/passwords').once('value');
+            const dbPass = snapshot.val() || {};
+
+            // 3. 비교 (DB값 우선, 없으면 기본값 사용)
+            const realInstHash = dbPass.instructor || DEFAULT_INST;
+            const realAdminHash = dbPass.super_admin || DEFAULT_ADMIN;
+
+            let role = null;
+            if(inputHash === realInstHash) role = 'instructor';
+            else if(inputHash === realAdminHash) role = 'super_admin';
+
+            if(role) {
+                msgBox.style.color = "#4ade80";
+                msgBox.textContent = role === 'super_admin' ? "관리자 접속 성공!" : "강사 접속 성공!";
+                
+                const sessionData = {
+                    token: 'granted',
+                    role: role,
+                    expiry: Date.now() + SESSION_DURATION
+                };
+                localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
+                
+                setTimeout(() => location.replace('admin.html'), 500);
+            } else {
+                throw new Error("비밀번호 오류입니다.");
+            }
+        } catch (e) {
             msgBox.style.color = "#ef4444";
-            msgBox.textContent = "비밀번호 오류입니다.";
+            msgBox.textContent = e.message;
             document.getElementById('pwInput').value = "";
             document.getElementById('pwInput').focus();
         }
     }
     
-    // Auto Login
     window.onload = function() {
         const session = JSON.parse(localStorage.getItem('kac_admin_session'));
         if(session && session.token === 'granted') {
-            if(Date.now() < session.expiry) {
-                location.replace('admin.html');
-            } else {
-                localStorage.removeItem('kac_admin_session'); 
-            }
+            if(Date.now() < session.expiry) location.replace('admin.html');
+            else localStorage.removeItem('kac_admin_session'); 
         }
     }
   </script>
