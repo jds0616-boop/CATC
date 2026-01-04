@@ -149,11 +149,15 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
+/* 기존 코드 대신 이걸로 교체하세요 */
 .q-card:hover { 
-    transform: translateY(-3px); /* 위로 살짝 뜸 */
-    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); /* 파란색 계열 그림자 */
-    border: 1px solid var(--accent-color); /* 테두리를 파란색으로 변경 */
-    background-color: #f8fafc; /* 배경색 아주 살짝 변경 */
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); 
+    background-color: #f8fafc; 
+    
+    /* [중요] border 대신 outline 사용 */
+    /* 이렇게 해야 왼쪽의 빨간/노란 상태바가 사라지지 않고 그대로 유지됩니다 */
+    outline: 2px solid var(--accent-color); 
 }
 .q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
 .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
