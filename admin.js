@@ -1,8 +1,9 @@
-/* --- admin.js (Full Updated Version) --- */
+/* --- admin.js (Fixed Version) --- */
 
-// --- Firebase Instances ---
-const auth = firebase.auth();
-const db = firebase.database();
+// ▼▼▼ [삭제됨] 이 부분 때문에 오류가 났습니다. 지우면 해결됩니다! ▼▼▼
+// const auth = firebase.auth();
+// const db = firebase.database();
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 // --- 전역 상태 ---
 const state = {
