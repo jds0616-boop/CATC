@@ -2,96 +2,613 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>질문 등록 - CATC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CATC Training Q&A</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- FontAwesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #f4f6f8;}
-        .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .logo { font-weight: bold; color: #007bff; }
+        /* --- Reset & Base Styles --- */
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5; 
+            margin: 0; 
+            padding: 0; 
+            color: #333;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* --- Mobile Container Simulation on PC --- */
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            background: #fff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        .header {
+            height: 60px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-icon { font-size: 20px; color: #555; cursor: pointer; padding: 10px; }
+        .course-title { font-size: 18px; font-weight: bold; color: #000; flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kac-logo { height: 30px; width: auto; object-fit: contain; margin: 0 10px; }
+
+        /* --- Input Section --- */
+        .input-section { padding: 20px; background: #fff; border-bottom: 1px solid #f0f0f0; }
+        .notice-text { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .q-input {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 15px;
+            resize: none;
+            transition: 0.2s;
+        }
+        .q-input:focus { border-color: #007bff; }
         
-        .input-box { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; resize: none; }
-        button#submitBtn { width: 100%; margin-top: 10px; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .timer-display { font-size: 13px; color: #d32f2f; font-weight: bold; display: none; }
         
-        .q-list { margin-top: 20px; }
-        .q-item { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .q-text { width: 75%; font-size: 16px; word-break: break-all; }
+        .btn-submit {
+            background: #007bff; color: white; border: none; padding: 10px 24px;
+            border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+        }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
         
-        /* 좋아요 버튼 스타일 */
-        .like-btn { background: #fff; border: 1px solid #ddd; padding: 5px 10px; border-radius: 20px; cursor: pointer; color: #555; display: flex; align-items: center; gap: 5px; font-size: 14px; transition: 0.2s; }
-        .like-btn.active { background: #ffebee; border-color: #ff5252; color: #ff5252; }
-        .like-btn:hover { background: #f1f1f1; }
+        .btn-cancel { background: #eee; color: #555; border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
+
+        /* --- List Section --- */
+        .list-section { flex-grow: 1; padding: 15px; background: #f8f9fa; padding-bottom: 50px; }
+        .list-header { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; padding-left: 5px; }
+
+        .q-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .q-card:active { transform: scale(0.98); }
+        
+        .q-left { display: flex; align-items: center; width: 80%; }
+        .user-icon { 
+            width: 36px; height: 36px; background: #eef2f5; color: #888; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-right: 12px; font-size: 16px; flex-shrink: 0;
+        }
+        .q-text-preview {
+            font-size: 15px; color: #333; line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; text-overflow: ellipsis; word-break: break-all;
+        }
+        
+        .q-right { text-align: right; min-width: 40px; }
+        .like-count { font-size: 14px; font-weight: bold; color: #ff5252; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center; padding: 20px; font-size: 10px; color: #bbb;
+            background: #f8f9fa; margin-top: auto;
+        }
+
+        /* --- Modal (Detail & Menu) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 999;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #fff; width: 90%; max-width: 500px;
+            border-radius: 20px; padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative; animation: popUp 0.3s ease;
+        }
+        @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Detail Modal Specifics */
+        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; max-height: 50vh; overflow-y: auto; word-break: break-all; }
+        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
+        .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
+        .btn-modal-like.active { background: #ff5252; color: #fff; }
+
+        /* Menu Modal Specifics */
+        .menu-list { list-style: none; padding: 0; margin: 10px 0; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; }
+        .menu-item:last-child { border-bottom: none; }
+        .menu-item:hover { background: #f9f9f9; }
+
+        /* Password Input in Modal */
+        .pw-input-box { display: none; margin-top: 10px; text-align: center; }
+        .pw-input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 60%; text-align: center; font-size: 18px; }
+        .btn-pw-submit { padding: 8px 15px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
     </style>
 </head>
 <body>
-    <div class="header">
-        <h3>CATC 질문 등록</h3>
-        <div class="logo">LOGO</div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+            <div class="course-title" id="courseTitle">Loading...</div>
+            <img src="logo.png" alt="KAC Logo" class="kac-logo">
+            <div class="header-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+        </header>
+
+        <!-- Input Area -->
+        <div class="input-section">
+            <div class="notice-text">
+                All questions are anonymous. Please refrain from using offensive language. <br>
+                익명으로 접수됩니다. 성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
+            </div>
+            <textarea id="qInput" class="q-input" placeholder="Type your question here (Anonymous)"></textarea>
+            <div class="action-row">
+                <span id="editTimer" class="timer-display">Edit Time: 05:00</span>
+                <div style="margin-left: auto;">
+                    <button id="cancelEditBtn" class="btn-cancel" onclick="cancelEditMode()">Cancel</button>
+                    <button id="submitBtn" class="btn-submit" onclick="submitQuestion()">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Area -->
+        <div class="list-section">
+            <div class="list-header">Live Questions</div>
+            <div id="questionList">
+                <!-- Dynamic Content -->
+                <div style="text-align:center; padding: 20px; color:#aaa;">Loading questions...</div>
+            </div>
+        </div>
+
+        <!-- Developer Footer -->
+        <div class="footer">
+            Developer Dooseok Jang (jds0616@airport.co.kr)
+        </div>
     </div>
 
-    <div class="input-box">
-        <textarea id="questionInput" placeholder="강사님께 궁금한 점을 남겨주세요."></textarea>
-        <button id="submitBtn" onclick="submitQuestion()">질문 등록하기</button>
+    <!-- Question Detail Modal -->
+    <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
+        <div class="modal-box">
+            <h3 style="margin:0; color:#007bff;">Question</h3>
+            <div id="modalText" class="modal-content-text"></div>
+            <div class="modal-actions">
+                <button class="btn-modal-close" onclick="document.getElementById('detailModal').style.display='none'">Close</button>
+                <button id="modalLikeBtn" class="btn-modal-like" onclick="doLike()">
+                    <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount">0</span>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="q-list">
-        <h4 style="margin-left: 5px; color:#555;">실시간 질문 목록</h4>
-        <div id="studentList">Loading...</div>
+    <!-- Room Switch Menu Modal -->
+    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)">
+        <div class="modal-box">
+            <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
+            <ul class="menu-list">
+                <li class="menu-item" onclick="trySwitchRoom('A')"><span>Course A</span> <i class="fa-solid fa-chevron-right"></i></li>
+                <li class="menu-item" onclick="trySwitchRoom('B')"><span>Course B</span> <i class="fa-solid fa-chevron-right"></i></li>
+                <li class="menu-item" onclick="trySwitchRoom('C')"><span>Course C</span> <i class="fa-solid fa-chevron-right"></i></li>
+            </ul>
+            
+            <!-- Password Entry (Hidden by default) -->
+            <div id="pwSection" class="pw-input-box">
+                <p id="pwTargetMsg" style="font-size:14px; margin-bottom:5px;">Enter Password for Course A</p>
+                <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
+                <button class="btn-pw-submit" onclick="submitRoomPw()">Go</button>
+            </div>
+            
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn-modal-close" onclick="document.getElementById('menuModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
     </div>
 
+    <!-- Config Import -->
     <script src="config.js"></script>
+
     <script>
-        function submitQuestion() {
-            if (typeof db === 'undefined') return alert("DB 연결 실패. config.js를 확인하세요.");
-            const input = document.getElementById('questionInput');
-            if(input.value.trim() === "") return alert("내용을 입력해주세요.");
+        // --- 1. Global Variables & Init ---
+        let currentRoom = new URLSearchParams(window.location.search).get('room') || 'A';
+        let dbRef = null;
+        let settingsRef = null;
+        let questionsData = {};
+        
+        let editingKey = null; // Currently editing question ID
+        let editTimeout = null; // Timer object
 
-            db.ref('questions').push({
-                text: input.value,
-                likes: 0,
-                isDone: false,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+        // Single Tab Logic
+        const bc = new BroadcastChannel('catc_platform_channel');
+        
+        // Listen for other tabs
+        bc.onmessage = (event) => {
+            if (event.data === 'exists') {
+                alert("The platform is already open in another tab. This window will be closed.");
+                window.location.href = "about:blank"; // Fallback
+                window.close(); 
+            } else if (event.data === 'check') {
+                bc.postMessage('exists');
+            }
+        };
+        // Check if anyone else exists
+        bc.postMessage('check');
+
+
+        // On Load
+        window.addEventListener('load', () => {
+            if (typeof firebase === 'undefined') {
+                alert("Firebase SDK Error. Check config.js");
+                return;
+            }
+            // Update Header
+            document.getElementById('courseTitle').innerText = `Course Room ${currentRoom}`;
+            
+            // Connect DB
+            dbRef = firebase.database().ref(`courses/${currentRoom}/questions`);
+            settingsRef = firebase.database().ref(`courses/${currentRoom}/settings`);
+
+            // Load Settings (Title, etc.) - Optional expansion
+            settingsRef.once('value', snapshot => {
+                const val = snapshot.val();
+                if(val && val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
             });
-            input.value = ""; 
-        }
 
-        if (typeof db !== 'undefined') {
-            db.ref('questions').on('value', (snapshot) => {
-                const listDiv = document.getElementById('studentList');
-                listDiv.innerHTML = ""; 
-                const data = snapshot.val();
-                if(!data) { listDiv.innerHTML = "<p style='padding:10px; color:#888;'>등록된 질문이 없습니다.</p>"; return; }
+            // Start Listener
+            startDataListener();
+        });
 
-                let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+
+        // --- 2. Data Listener & Rendering ---
+        function startDataListener() {
+            dbRef.on('value', (snapshot) => {
+                const listDiv = document.getElementById('questionList');
+                listDiv.innerHTML = "";
                 
-                // 정렬: 최신순
-                items.sort((a, b) => b.timestamp - a.timestamp);
+                const data = snapshot.val();
+                questionsData = data || {};
+
+                if (!data) {
+                    listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet. Be the first!</p>";
+                    return;
+                }
+
+                // Sorting: 1. Likes (Desc) 2. Timestamp (Desc)
+                let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                items.sort((a, b) => {
+                    const diffLike = (b.likes || 0) - (a.likes || 0);
+                    if(diffLike !== 0) return diffLike;
+                    return b.timestamp - a.timestamp;
+                });
 
                 items.forEach(item => {
+                    // Check if 'Done' (Completed) - Optional: Students might still want to see it, 
+                    // or we move it to bottom. For now, showing all.
+                    // If you want to hide completed: if(item.isDone) return;
+
                     const div = document.createElement('div');
-                    div.className = 'q-item';
+                    div.className = 'q-card';
+                    div.onclick = () => openDetail(item.id);
                     div.innerHTML = `
-                        <div class="q-text">${item.text}</div>
-                        <button class="like-btn" onclick="likeQuestion('${item.id}', ${item.likes})">
-                            👍 <span>${item.likes || 0}</span>
-                        </button>
+                        <div class="q-left">
+                            <div class="user-icon"><i class="fa-solid fa-user"></i></div>
+                            <div class="q-text-preview">${escapeHtml(item.text)}</div>
+                        </div>
+                        <div class="q-right">
+                            <div class="like-count">
+                                <i class="fa-solid fa-thumbs-up"></i> ${item.likes || 0}
+                            </div>
+                        </div>
                     `;
                     listDiv.appendChild(div);
                 });
+
+                // Update My Edit Status if currently in list
+                checkMyPostsExpiry();
             });
         }
 
-        // 좋아요 기능 (트랜잭션으로 동시성 처리)
-        function likeQuestion(key, currentLikes) {
-            db.ref('questions/' + key).transaction((post) => {
+        // --- 3. Posting Logic (Create / Update) ---
+        function submitQuestion() {
+            const input = document.getElementById('qInput');
+            const text = input.value.trim();
+            if (!text) return alert("Please enter your question.");
+
+            // 1) Edit Mode
+            if (editingKey) {
+                dbRef.child(editingKey).update({ text: text })
+                    .then(() => {
+                        alert("Modified successfully.");
+                        resetInput();
+                    })
+                    .catch(e => alert("Error: " + e.message));
+                return;
+            }
+
+            // 2) New Post Mode - Check Cool Time (3 mins)
+            const lastPostTime = localStorage.getItem('last_post_time');
+            const now = Date.now();
+            if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
+                const remain = Math.ceil((3 * 60 * 1000 - (now - lastPostTime)) / 1000);
+                return alert(`Please wait ${remain} seconds before posting again.`);
+            }
+
+            // Push to DB
+            const newRef = dbRef.push();
+            const payload = {
+                text: text,
+                likes: 0,
+                isDone: false,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            newRef.set(payload).then(() => {
+                alert("Question Submitted!");
+                input.value = "";
+                // Save Local Constraints
+                localStorage.setItem('last_post_time', now);
+                
+                // Save ownership for editing (Key : Timestamp)
+                let myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
+                myPosts[newRef.key] = now;
+                localStorage.setItem(`my_posts_${currentRoom}`, JSON.stringify(myPosts));
+
+                // Start visual timer for this user? 
+                // Actually the list updates, and we can identify 'my post' there if we want to add Edit button in list.
+                // But request says: "Question Input box has buttons". 
+                // Since Input box is single, user can only edit ONE active question they just selected?
+                // Request clarification: "User can edit within 5 mins". 
+                // Implementation: I will allow clicking one's own post in the list to load it into the input box for editing.
+            });
+        }
+
+        // --- 4. Editing Logic ---
+        // When clicking a post in the list, if it's mine and < 5 mins, show in Detail Modal with "Edit" button.
+        // Or directly load into input box? Let's use Detail Modal -> "Edit" button loads into Input box.
+
+        function openDetail(key) {
+            const item = questionsData[key];
+            if(!item) return;
+            
+            // Set Content
+            document.getElementById('modalText').innerText = item.text;
+            document.getElementById('modalLikeCount').innerText = item.likes || 0;
+            
+            // Like Button State
+            const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
+            const btn = document.getElementById('modalLikeBtn');
+            if(likedMap[key]) {
+                btn.classList.add('active');
+                btn.onclick = () => alert("You already liked this.");
+            } else {
+                btn.classList.remove('active');
+                btn.onclick = () => doLike(key);
+            }
+
+            // Check if it's mine for Edit/Delete
+            const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
+            const postTime = myPosts[key];
+            
+            // Remove existing edit buttons from modal if any
+            const existingEdit = document.getElementById('modalEditActions');
+            if(existingEdit) existingEdit.remove();
+
+            if (postTime) {
+                const diff = Date.now() - postTime;
+                if (diff < 5 * 60 * 1000) {
+                    // Create Edit/Delete buttons in Modal
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.id = 'modalEditActions';
+                    actionsDiv.style.marginTop = "15px";
+                    actionsDiv.style.textAlign = "center";
+                    actionsDiv.innerHTML = `
+                        <button onclick="loadToEdit('${key}')" style="margin-right:10px; padding:8px 15px; border-radius:15px; border:1px solid #aaa;">Edit</button>
+                        <button onclick="deletePost('${key}')" style="padding:8px 15px; border-radius:15px; border:1px solid red; color:red;">Delete</button>
+                        <div style="font-size:12px; color:red; margin-top:5px;">Edit/Delete available for 5 mins</div>
+                    `;
+                    document.querySelector('.modal-box').appendChild(actionsDiv);
+                }
+            }
+
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function loadToEdit(key) {
+            document.getElementById('detailModal').style.display = 'none';
+            const item = questionsData[key];
+            const input = document.getElementById('qInput');
+            
+            input.value = item.text;
+            input.focus();
+            
+            editingKey = key;
+            document.getElementById('submitBtn').innerText = "Modify";
+            document.getElementById('cancelEditBtn').style.display = "inline-block";
+            
+            // Timer Logic
+            const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
+            const postTime = myPosts[key];
+            const timerDisplay = document.getElementById('editTimer');
+            timerDisplay.style.display = "block";
+
+            if(editTimeout) clearInterval(editTimeout);
+            
+            editTimeout = setInterval(() => {
+                const remaining = (5 * 60 * 1000) - (Date.now() - postTime);
+                if (remaining <= 0) {
+                    clearInterval(editTimeout);
+                    cancelEditMode();
+                    alert("Edit time expired.");
+                    return;
+                }
+                const m = Math.floor(remaining / 60000);
+                const s = Math.floor((remaining % 60000) / 1000);
+                timerDisplay.innerText = `Edit Time: 0${m}:${s < 10 ? '0'+s : s}`;
+            }, 1000);
+        }
+
+        function cancelEditMode() {
+            editingKey = null;
+            document.getElementById('qInput').value = "";
+            document.getElementById('submitBtn').innerText = "Submit";
+            document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('editTimer').style.display = "none";
+            if(editTimeout) clearInterval(editTimeout);
+        }
+
+        function deletePost(key) {
+            if(!confirm("Are you sure you want to delete this question?")) return;
+            dbRef.child(key).remove().then(() => {
+                alert("Deleted.");
+                document.getElementById('detailModal').style.display = 'none';
+            });
+        }
+
+        function checkMyPostsExpiry() {
+            // Clean up localStorage for old posts
+            let myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
+            const now = Date.now();
+            let changed = false;
+            for(let key in myPosts) {
+                if(now - myPosts[key] > 5 * 60 * 1000 + 10000) { // 5 min + buffer
+                    // Actually we might want to keep it to know "I wrote this", but user can't edit.
+                    // Requirement: 5 mins passed -> modify impossible. 
+                }
+            }
+        }
+
+        // --- 5. Like Logic ---
+        function doLike(key) {
+            if(!key && editingKey) return; // Should not happen
+            
+            const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
+            if (likedMap[key]) return alert("You already liked this question.");
+
+            dbRef.child(key).transaction((post) => {
                 if (post) {
                     post.likes = (post.likes || 0) + 1;
                 }
                 return post;
+            }, (error, committed) => {
+                if (committed) {
+                    likedMap[key] = true;
+                    localStorage.setItem(`liked_${currentRoom}`, JSON.stringify(likedMap));
+                    // Update Modal UI if open
+                    document.getElementById('modalLikeBtn').classList.add('active');
+                    const countSpan = document.getElementById('modalLikeCount');
+                    countSpan.innerText = parseInt(countSpan.innerText) + 1;
+                }
             });
         }
+
+        // --- 6. Navigation & Modals ---
+        function exitRoom() {
+            if(confirm("Do you want to leave the room?")) {
+                window.location.href = "about:blank"; // Or redirect to a landing page
+            }
+        }
+
+        function openMenu() { document.getElementById('menuModal').style.display = 'flex'; }
+        function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
+        function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
+
+        // Room Switching with Password
+        let targetSwitchRoom = null;
+
+        function trySwitchRoom(roomId) {
+            if(roomId === currentRoom) return alert("You are already in this room.");
+            
+            // Check if password required (Simulated Logic)
+            // Ideally, we check DB: courses/B/settings/password
+            targetSwitchRoom = roomId;
+            
+            // Show Password Input
+            document.getElementById('pwSection').style.display = 'block';
+            document.getElementById('pwTargetMsg').innerText = `Enter Password for Course ${roomId}`;
+            document.getElementById('roomPw').value = "";
+            document.getElementById('roomPw').focus();
+        }
+
+        function submitRoomPw() {
+            const inputPw = document.getElementById('roomPw').value;
+            if(inputPw.length !== 4) return alert("Please enter 4 digits.");
+
+            // HASH CHECK LOGIC 
+            // Since we are client-side only for now and Admin sets PW in DB:
+            // We should read the password from DB to verify.
+            firebase.database().ref(`courses/${targetSwitchRoom}/settings/password`).once('value')
+                .then(snapshot => {
+                    const savedHash = snapshot.val();
+                    
+                    if (!savedHash) {
+                        // If no password set by admin, allow entry? Or block?
+                        // Let's allow entry if no PW set, or treat as '0000'
+                        moveToRoom(targetSwitchRoom);
+                    } else {
+                        // Verify Hash
+                        verifyPassword(inputPw, savedHash).then(isValid => {
+                            if(isValid) moveToRoom(targetSwitchRoom);
+                            else alert("Incorrect Password.");
+                        });
+                    }
+                });
+        }
+
+        function moveToRoom(roomId) {
+            window.location.search = `?room=${roomId}`;
+        }
+
+        // SHA-256 Helper
+        async function verifyPassword(plain, hash) {
+            const msgBuffer = new TextEncoder().encode(plain);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex === hash;
+        }
+
+        function resetInput() {
+            cancelEditMode();
+        }
+        
+        // Helper
+        function escapeHtml(text) {
+            if(!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
     </script>
 </body>
 </html>
