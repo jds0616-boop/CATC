@@ -1,4 +1,4 @@
-/* --- admin.js (Secure Link Version) --- */
+/* --- admin.js (Secure Link + UI Fix Final) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -80,7 +80,7 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
+            // [Copy Link] 버튼 클릭 시 ui.copyLink 실행 (HTML onclick 속성 사용)
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -171,7 +171,7 @@ const dataMgr = {
             ui.checkLockStatus(st);
         });
 
-        // [수정] 보안 코드 조회 및 QR 생성
+        // [중요] 보안 코드를 가져와서 QR/링크 생성
         this.fetchCodeAndRenderQr(room);
 
         dbRef.qa.on('value', s => {
@@ -181,20 +181,21 @@ const dataMgr = {
         });
     },
 
-    // [신규] 방 ID(A)에 해당하는 보안 코드(x7k9...) 조회 함수
+    // [보안 기능] DB에서 보안 코드를 찾아서 QR/링크 생성
     fetchCodeAndRenderQr: function(room) {
         firebase.database().ref('public_codes')
             .orderByValue().equalTo(room)
             .once('value', snapshot => {
                 const data = snapshot.val();
                 if (data) {
-                    // codes.json에서 해당 방의 키(코드)를 찾음
+                    // codes.json에서 해당 방의 키(코드)를 찾음 (예: x7k9...)
                     const code = Object.keys(data)[0]; 
+                    // [중요] 주소에 ?code=... 가 들어감
                     const studentUrl = `${window.location.origin}/index.html?code=${code}`;
                     ui.renderQr(studentUrl);
                 } else {
-                    // 코드가 없을 경우 안전장치 (그냥 room=A 사용)
-                    console.warn("보안 코드를 찾을 수 없어 일반 링크를 사용합니다.");
+                    console.warn("보안 코드를 찾을 수 없습니다. (codes.json 확인 필요)");
+                    // 비상용 (일반 주소)
                     const studentUrl = `${window.location.origin}/index.html?room=${room}`;
                     ui.renderQr(studentUrl);
                 }
@@ -343,16 +344,18 @@ const ui = {
     
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
+    // [중요] URL을 QR과 숨겨진 Input에 동시에 세팅
     renderQr: function(url) {
-        document.getElementById('studentLink').value = url;
-        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+        document.getElementById('studentLink').value = url; // 복사용 Input
+        const qrDiv = document.getElementById('qrcode'); 
+        qrDiv.innerHTML = "";
         try { new QRCode(qrDiv, { text: url, width: 35, height: 35 }); } catch(e) {}
     },
     
     openQrModal: function() {
         const modal = document.getElementById('qrModal');
         const bigTarget = document.getElementById('qrBigTarget');
-        const url = document.getElementById('studentLink').value;
+        const url = document.getElementById('studentLink').value; // 숨겨진 Input 값 사용
         if(!url) return;
         modal.style.display = 'flex';
         bigTarget.innerHTML = ""; 
@@ -368,10 +371,11 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
+    // [복사 기능]
     copyLink: function() {
         const urlInput = document.getElementById('studentLink');
         const url = urlInput.value;
-        if (!url) return alert("복사할 링크가 없습니다.");
+        if (!url) return alert("복사할 링크가 없습니다. (DB 연결 확인 필요)");
 
         urlInput.select();
         urlInput.setSelectionRange(0, 99999);
@@ -384,9 +388,9 @@ const ui = {
             if(navigator.clipboard) {
                 navigator.clipboard.writeText(url)
                     .then(() => alert("링크가 복사되었습니다!"))
-                    .catch(() => alert("복사 실패. 수동으로 복사해주세요."));
+                    .catch(() => alert("복사 실패. 브라우저가 지원하지 않습니다."));
             } else {
-                alert("복사 실패. 브라우저 보안 설정을 확인하세요.");
+                alert("복사 실패.");
             }
         }
     },
