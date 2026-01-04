@@ -1,4 +1,4 @@
-/* --- admin.css (Final Fixed Version) --- */
+/* --- admin.css (Final Integrated Version) --- */
 
 :root {
     --header-bg: #0f172a;
@@ -31,7 +31,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .login-btn:hover { background: #2563eb; }
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
-/* Sidebar Layout - Fixed & Compact */
+/* Sidebar Layout (Fixed & Scrollable) */
 .sidebar { 
     width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; 
     display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; 
@@ -64,7 +64,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .setting-input:focus { border-color: var(--accent-color); }
 
-/* QR Box Layout (Side by Side) */
+/* QR Box Layout (Horizontal) */
 .qr-box { 
     background: #0f172a; 
     border: 1px solid #334155; 
@@ -80,7 +80,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     padding: 2px; 
     border-radius: 4px; 
     cursor: pointer; 
-    width: 42px; /* 사이즈 조정 */
+    width: 42px; 
     height: 42px; 
     flex-shrink: 0; 
     display: flex; align-items: center; justify-content: center; 
@@ -90,15 +90,15 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 /* Copy Link Button inside QR Box */
 #btnCopyLink {
     flex-grow: 1;
-    height: 42px; /* QR 코드 높이와 맞춤 */
+    height: 42px;
     margin: 0;
     border: 1px solid #475569;
 }
 
 /* File Row Layout */
 .file-row { display: flex; gap: 8px; align-items: center; }
-.file-row label { flex-grow: 1; text-align: center; } /* Quiz File 버튼 */
-.file-row button { width: auto; min-width: 70px; } /* Sample 버튼 */
+.file-row label { flex-grow: 1; text-align: center; } 
+.file-row button { width: auto; min-width: 70px; } 
 
 .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0; }
 
@@ -139,32 +139,71 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .lock-message p { font-size: 16px; color: #cbd5e1; line-height: 1.6; }
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-#view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; }
-.qa-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+/* [수정] Q&A View Layout - 틀 고정 및 스크롤 처리 */
+#view-qa { 
+    width: 100%; 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    max-width: 1000px; 
+    overflow: hidden; /* 전체 스크롤 방지 */
+    position: relative;
+}
+
+/* 필터 버튼 영역 (상단 고정) */
+.qa-filters { 
+    display: flex; 
+    gap: 10px; 
+    padding: 20px 5px; 
+    flex-shrink: 0; 
+    background: var(--bg-color); /* 카드가 뒤로 지나갈 때 가려주기 위해 배경색 지정 */
+    z-index: 10; 
+    position: relative;
+}
+
 .filter-chip { padding: 6px 16px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.03); color: #64748b; transition: 0.2s; }
 .filter-chip.active { background: #eff6ff; color: var(--accent-color); border-color: var(--accent-color); font-weight: 800; }
-.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 25px 5px 40px 5px; }
 
-.q-card { background: var(--card-bg); padding: 20px 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; }
+/* 리스트 영역 (여기만 스크롤) */
+.qa-list { 
+    flex-grow: 1; 
+    overflow-y: auto; /* 내부 스크롤 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    padding: 5px 5px; 
+    
+    /* [핵심] 마지막 카드가 중간까지 올라오도록 하단 여백 추가 */
+    padding-bottom: 50vh; 
+}
+.qa-list::-webkit-scrollbar { width: 6px; }
+.qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.qa-list::-webkit-scrollbar-track { background: transparent; }
+
+.q-card { 
+    background: var(--card-bg); padding: 20px 25px; border-radius: 12px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; 
+    cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; 
+    display: flex; justify-content: space-between; align-items: flex-start; 
+}
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
-/* 기존 코드 대신 이걸로 교체하세요 */
+
+/* Hover Effect: 테두리 파란색 강조 + 그림자 */
 .q-card:hover { 
     transform: translateY(-3px); 
     box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); 
     background-color: #f8fafc; 
-    
-    /* [중요] border 대신 outline 사용 */
-    /* 이렇게 해야 왼쪽의 빨간/노란 상태바가 사라지지 않고 그대로 유지됩니다 */
-    outline: 2px solid var(--accent-color); 
+    outline: 2px solid var(--accent-color); /* 기존 border 보존 */
 }
+
 .q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
 .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
 .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
-/* QUIZ STYLES UPDATED */
+/* QUIZ STYLES */
 #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; max-width: 1200px; }
 .quiz-card { width: 100%; height: 100%; background: var(--card-bg); border-radius: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding: 40px; position: relative; overflow: hidden; }
 #quizContent { width: 100%; height: 100%; display: flex; flex-direction: column; flex-grow: 1; }
@@ -175,7 +214,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .quiz-question { font-size: 42px; font-weight: 900; line-height: 1.2; color: var(--text-color); word-break: keep-all; margin: 0; text-align: left; }
 .quiz-options { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
 
-/* [수정] 퀴즈 답안 글씨 크기 확대 */
+/* 퀴즈 답안 글씨 크기 확대 */
 .quiz-opt { width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 34px; font-weight: 800; color: #475569; background: white; transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 .quiz-opt .opt-num { width: 50px; height: 50px; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 25px; flex-shrink: 0; }
 .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
@@ -194,7 +233,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 @keyframes fadeIn { to { opacity: 1; } }
 
-/* [수정] 버튼 간격 추가 (gap) */
 .quiz-status-bar { margin-top: 20px; display: flex; gap: 15px; flex-shrink: 0; justify-content: center; width: 100%; flex-wrap: wrap; }
 .q-btn { padding: 10px 20px; border-radius: 10px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; transition: 0.1s; min-width: 100px; justify-content: center; }
 .q-btn:active { transform: translateY(4px); box-shadow: none; }
