@@ -1,8 +1,6 @@
-/* --- admin.js (Final Fixed Version) --- */
+/* --- admin.js (Login Fix Version) --- */
 
-// --- Firebase Instances ---
-// [중요] 변수 선언을 제거하고, 필요할 때 firebase.auth()를 직접 호출합니다.
-// 이렇게 하면 config.js와의 충돌도 없고, 변수 못 찾는 오류도 사라집니다.
+// [중요] 상단의 const auth = ... 부분을 모두 제거하여 충돌을 방지했습니다.
 
 // --- 전역 상태 ---
 const state = {
@@ -20,7 +18,7 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
 // --- 1. Auth (Firebase Authentication) ---
 const authMgr = {
-    // 관리자 이메일
+    // 관리자 이메일 (고정)
     ADMIN_EMAIL: "admin@kac.com", 
 
     tryLogin: async function() {
@@ -28,12 +26,12 @@ const authMgr = {
         if(!inputPw) return alert("비밀번호를 입력해주세요.");
 
         try {
-            // [수정 포인트] auth.signIn... 대신 firebase.auth().signIn... 사용
+            // [수정] 충돌 방지를 위해 firebase.auth() 직접 사용
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
-            // 로그인 성공 시 onAuthStateChanged 리스너가 작동하여 화면이 전환됩니다.
+            console.log("로그인 성공 처리 중...");
         } catch (error) {
             console.error(error);
-            alert("로그인 실패: 비밀번호가 올바르지 않거나 시스템 오류입니다.\n(" + error.message + ")");
+            alert("로그인 실패: " + error.message);
             document.getElementById('loginPwInput').value = "";
         }
     },
@@ -45,7 +43,7 @@ const authMgr = {
     },
 
     executeChangePw: async function() {
-        const user = firebase.auth().currentUser; // [수정] 직접 호출
+        const user = firebase.auth().currentUser;
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
 
@@ -58,7 +56,7 @@ const authMgr = {
             alert("비밀번호가 변경되었습니다.");
             ui.closePwModal();
         } catch (e) {
-            alert("변경 실패: " + e.message + "\n(로그인한지 오래된 경우 재로그인이 필요할 수 있습니다)");
+            alert("변경 실패: " + e.message);
         }
     }
 };
@@ -66,12 +64,14 @@ const authMgr = {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
-        // [수정] 인증 상태 감지 리스너도 직접 호출
+        // [수정] 인증 상태 감지
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
+                // 로그인 성공 시
                 document.getElementById('loginOverlay').style.display = 'none';
                 this.loadInitialData();
             } else {
+                // 로그아웃 상태일 시
                 document.getElementById('loginOverlay').style.display = 'flex';
             }
         });
@@ -93,7 +93,7 @@ const dataMgr = {
     },
 
     switchRoomAttempt: async function(newRoom) {
-        // [수정] db 변수 대신 firebase.database() 직접 사용 권장 (안전성 위해)
+        // [수정] firebase.database() 직접 사용
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
@@ -114,7 +114,6 @@ const dataMgr = {
     forceEnterRoom: function(room) {
         if (state.room) {
             const oldPath = `courses/${state.room}`;
-            // 안전하게 firebase.database() 사용
             firebase.database().ref(`${oldPath}/questions`).off();
             firebase.database().ref(`${oldPath}/activeQuiz`).off();
             firebase.database().ref(`${oldPath}/status`).off();
@@ -129,13 +128,14 @@ const dataMgr = {
         state.qaData = {};
         
         const rPath = `courses/${room}`;
-        const dbRoot = firebase.database(); // 편의상 지역 변수 사용
-        
-        dbRef.settings = dbRoot.ref(`${rPath}/settings`);
-        dbRef.qa = dbRoot.ref(`${rPath}/questions`);
-        dbRef.quiz = dbRoot.ref(`${rPath}/activeQuiz`);
-        dbRef.ans = dbRoot.ref(`${rPath}/quizAnswers`);
-        dbRef.status = dbRoot.ref(`${rPath}/status`);
+        // 편의상 로컬 변수로 할당
+        const db = firebase.database();
+
+        dbRef.settings = db.ref(`${rPath}/settings`);
+        dbRef.qa = db.ref(`${rPath}/questions`);
+        dbRef.quiz = db.ref(`${rPath}/activeQuiz`);
+        dbRef.ans = db.ref(`${rPath}/quizAnswers`);
+        dbRef.status = db.ref(`${rPath}/status`);
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
@@ -385,7 +385,7 @@ const ui = {
     }
 };
 
-// --- 4. Quiz ---
+// --- 4. Quiz (기존 기능 유지) ---
 const quizMgr = {
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
@@ -430,7 +430,7 @@ const quizMgr = {
         document.getElementById('btnTest').style.display = 'none';
         document.getElementById('quizControls').style.display = 'flex';
         this.setGuide("TEST MODE: Press [Start] to enable.");
-        dbRef.quiz.set({ id: 'TEST', status: 'ready', ...testQ });
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: 'TEST', status: 'ready', ...testQ });
     },
     prevNext: function(dir) {
         if(state.isTestMode) { if(dir > 0) this.startRealQuiz(); else alert("Test Mode."); return; }
@@ -456,7 +456,7 @@ const quizMgr = {
         this.resetTimerUI();
         this.renderScreen(q);
         this.setGuide(`Q${state.currentQuizIdx + 1}. Ready`);
-        dbRef.quiz.set({ id: `Q${state.currentQuizIdx}`, status: 'ready', ...q });
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', ...q });
     },
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
@@ -470,7 +470,7 @@ const quizMgr = {
     action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         const correct = state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct;
-        dbRef.quiz.update({ status: act });
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
         if(act === 'open') { this.startTimer(); this.setGuide("RUNNING..."); }
         else if(act === 'close') {
             this.stopTimer();
@@ -504,7 +504,7 @@ const quizMgr = {
     
     renderChart: function(id, correct) {
         const div = document.getElementById('d-chart'); div.innerHTML = "";
-        dbRef.ans.child(id).once('value', s => {
+        firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
             const data = s.val() || {};
             const counts = [0, 0, 0, 0];
             Object.values(data).forEach(v => { if(v.choice >= 1 && v.choice <= 4) counts[v.choice - 1]++; });
