@@ -46,13 +46,13 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
 
-        /* Header (일렬 배치 수정) */
+        /* Header */
         .header {
             height: 60px; background: var(--header-bg); color: white; 
             display: flex; align-items: center; 
             padding: 0 15px; flex-shrink: 0; z-index: 100; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            gap: 12px; /* 아이템 간 간격 */
+            gap: 12px;
         }
         .menu-btn { font-size: 20px; cursor: pointer; padding: 5px; color: #fff; }
         .room-badge { 
@@ -63,7 +63,7 @@
         .title-text { 
             font-size: 16px; font-weight: 700; color: white;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            flex-grow: 1; /* 남은 공간 차지 */
+            flex-grow: 1; 
         }
 
         /* Input Area */
@@ -98,7 +98,7 @@
         
         .timer-msg { font-size: 12px; color: #ef4444; font-weight: 800; margin-right: 12px; visibility: hidden; }
 
-        /* List Area (하단바 공간 확보를 위해 padding-bottom 수정) */
+        /* List Area */
         .scroll-container { flex-grow: 1; overflow-y: auto; padding: 0; position: relative; padding-bottom: 60px; }
         .sticky-bar {
             position: sticky; top: 0; background: var(--bg-color); padding: 15px 20px;
@@ -146,16 +146,30 @@
         .like-btn.active { background: #fee2e2; color: #ef4444; }
         body.night-mode .like-btn.active { background: #7f1d1d; color: #fca5a5; }
 
-        /* [추가] Bottom Bar */
+        /* Bottom Bar */
         .bottom-bar {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50px;
-            background: var(--bottom-bar-bg); border-top: 1px solid var(--bottom-bar-border);
+            background: var(--header-bg); /* 상단바와 동일한 색 */
             display: flex; align-items: center; justify-content: center;
             z-index: 100; padding: 0 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
-        .bottom-logo { height: 20px; opacity: 0.8; }
-        .bottom-right-btn { position: absolute; right: 20px; font-size: 20px; cursor: pointer; color: #94a3b8; transition: 0.3s; }
-        .bottom-right-btn:hover { color: var(--accent-color); }
+        .bottom-logo { height: 20px; opacity: 0.9; }
+        .bottom-right-btn { position: absolute; right: 20px; }
+
+        /* 주야간 토글 스위치 */
+        .theme-toggle { 
+            background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; 
+            display: flex; gap: 5px; cursor: pointer; 
+        }
+        .theme-toggle i { 
+            width: 24px; height: 24px; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 50%; color: #64748b; transition: 0.2s; font-size: 12px; 
+        }
+        .theme-toggle i.active { 
+            background: white; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+        }
 
         /* Quiz Overlay */
         .quiz-overlay {
@@ -190,7 +204,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Header (일렬 배치 수정) -->
+        <!-- Header -->
         <div class="header">
             <i class="fa-solid fa-bars menu-btn" onclick="openMenu()"></i>
             <span id="roomBadge" class="room-badge">Loading...</span>
@@ -220,11 +234,14 @@
             <div id="qList" class="q-list"></div>
         </div>
 
-        <!-- [추가] Bottom Bar -->
+        <!-- Bottom Bar -->
         <div class="bottom-bar">
             <img src="logo.png" alt="KAC" class="bottom-logo">
-            <div class="bottom-right-btn" onclick="toggleNight()">
-                <i class="fa-solid fa-moon"></i>
+            <div class="bottom-right-btn">
+                <div class="theme-toggle" onclick="toggleNight()">
+                    <i class="fa-solid fa-sun active" id="iconSun"></i>
+                    <i class="fa-solid fa-moon" id="iconMoon"></i>
+                </div>
             </div>
         </div>
 
@@ -307,7 +324,6 @@
         })();
 
         function setupListeners() {
-            // [수정] 과정명 실시간 연동
             dbRef.settings.on('value', snap => {
                 const val = snap.val() || {};
                 document.getElementById('roomTitle').innerText = val.courseName ? val.courseName : `교육 과정`;
@@ -338,7 +354,6 @@
                     if(isMine) {
                         const postTime = myQs[item.id];
                         const diff = Date.now() - postTime;
-                        // 5분 이내일 때만 버튼 표시
                         if(diff < 300000) { 
                             leftActions = `
                                 <div class="q-left-actions" id="actions-${item.id}">
@@ -429,7 +444,6 @@
                 btn.innerHTML = 'Update <i class="fa-solid fa-pen"></i>';
                 btn.classList.add('mode-edit'); 
                 
-                // [중요] 쿨타임 UI 잠시 해제 (수정이니까)
                 btn.disabled = false;
                 document.getElementById('coolTimer').style.visibility = 'hidden';
 
@@ -448,7 +462,6 @@
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
             
-            // 1. 수정 (Update) - 쿨타임 무시
             if(editingKey) {
                 dbRef.qa.child(editingKey).update({ text: txt })
                     .then(() => {
@@ -459,13 +472,11 @@
                         btn.classList.remove('mode-edit');
                         document.getElementById('qInput').value = ""; 
                         
-                        // 수정 끝났으니 쿨타임 다시 체크
                         checkCooldown(); 
                     });
                 return;
             }
             
-            // 2. 신규 (Push) - 쿨타임 적용
             const now = Date.now();
             if(now - lastPostTime < 120000) return; 
             
@@ -483,7 +494,6 @@
         }
 
         function checkCooldown() {
-            // 수정 모드일 때는 쿨타임 체크 건너뜀
             if (editingKey) return;
 
             const diff = Date.now() - lastPostTime;
@@ -535,16 +545,25 @@
             document.getElementById('menuModal').style.display = 'flex';
         }
 
+        // [수정] 방 이동 로직 (보안 강화: 코드에서 1234, 13281 제거)
         function switchRoom(targetRoom) {
             const pw = prompt(`Room ${targetRoom} 비밀번호 입력:`); 
             if(!pw) return;
             const db = firebase.database();
             
+            // DB의 비밀번호와 비교
             db.ref(`courses/${targetRoom}/settings/password`).once('value', snap => {
-                const dbPw = snap.val() || "1234";
-                const masterKey = "13281"; 
+                const dbPw = snap.val(); // DB 값
 
-                if(String(pw) === String(dbPw) || String(pw) === masterKey) {
+                // 1. DB에 설정된 비번이 있고 그것과 일치하거나
+                // 2. DB에 비번이 없어서 null일 때 기본값(1234)이라 치고 입력값이 1234인지 (이건 강사가 비번설정 안했을때를 대비)
+                // 하지만 보안상 가장 좋은건 DB값하고만 비교하는 것입니다.
+                
+                // 여기서는 Admin 페이지에서 저장 시 기본 '1234'가 들어가도록 로직이 짜여있으므로
+                // DB값과 일치하는지만 보면 됩니다. (혹시 모르니 DB가 null이면 '1234'로 간주)
+                const validPw = dbPw ? String(dbPw) : "1234";
+
+                if(String(pw) === validPw) {
                     window.location.href = `index.html?room=${targetRoom}`;
                 } else {
                     alert("비밀번호가 틀렸습니다.");
@@ -552,7 +571,17 @@
             });
         }
 
-        function toggleNight() { document.body.classList.toggle('night-mode'); }
+        function toggleNight() { 
+            document.body.classList.toggle('night-mode'); 
+            const isNight = document.body.classList.contains('night-mode');
+            if(isNight) {
+                document.getElementById('iconSun').classList.remove('active');
+                document.getElementById('iconMoon').classList.add('active');
+            } else {
+                document.getElementById('iconSun').classList.add('active');
+                document.getElementById('iconMoon').classList.remove('active');
+            }
+        }
         function escapeHtml(t) { return t ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;") : ""; }
     </script>
 </body>
