@@ -324,9 +324,12 @@
         })();
 
         function setupListeners() {
+            // [중요] 과정명 실시간 반영 로직
             dbRef.settings.on('value', snap => {
                 const val = snap.val() || {};
-                document.getElementById('roomTitle').innerText = val.courseName ? val.courseName : `교육 과정`;
+                const title = val.courseName ? val.courseName : `교육 과정`;
+                console.log("Course Name Update:", title); // 디버깅용
+                document.getElementById('roomTitle').innerText = title;
             });
 
             dbRef.status.on('value', snap => {
@@ -354,6 +357,7 @@
                     if(isMine) {
                         const postTime = myQs[item.id];
                         const diff = Date.now() - postTime;
+                        // 5분 이내일 때만 버튼 표시
                         if(diff < 300000) { 
                             leftActions = `
                                 <div class="q-left-actions" id="actions-${item.id}">
