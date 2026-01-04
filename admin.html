@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Admin - CATC</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* --- Base & Dark Theme --- */
+        /* Base & Dark Theme */
         body { 
             font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; 
             margin: 0; padding: 0; 
@@ -19,7 +17,6 @@
             overflow-x: hidden;
         }
         
-        /* --- Login Overlay --- */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; z-index: 9999;
@@ -30,7 +27,7 @@
         .login-input { padding: 10px; font-size: 20px; text-align: center; border-radius: 5px; border: none; }
         .login-btn { padding: 10px 20px; font-size: 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
 
-        /* --- Header --- */
+        /* Header */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 30px; background: #333; border-bottom: 2px solid #444;
@@ -44,25 +41,22 @@
         .icon-btn { font-size: 24px; cursor: pointer; color: #ddd; transition: 0.2s; }
         .icon-btn:hover { color: #fff; }
 
-        /* --- Layout --- */
+        /* Layout */
         .container { padding: 30px; max-width: 1200px; margin: 0 auto; }
-
-        /* --- Question Cards --- */
         .q-list { display: flex; flex-direction: column; gap: 20px; }
+        
+        /* Card */
         .q-card {
             background: #2a2a2a; border-radius: 10px; padding: 20px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border-left: 5px solid #555; /* Default */
-            transition: all 0.2s ease;
+            border-left: 5px solid #555; transition: all 0.2s ease;
             cursor: pointer;
         }
         .q-card:hover { transform: translateY(-2px); background: #333; }
-
-        /* State Styles */
-        .state-notice { border-left-color: #ff5252; background: #2c2020; } /* Notice/Pin */
-        .state-verify { border-left-color: #ffb74d; border: 2px solid #ffb74d; } /* Verify Later */
-        .state-done { opacity: 0.5; border-left-color: #28a745; filter: grayscale(0.5); } /* Done */
+        .state-notice { border-left-color: #ff5252; background: #2c2020; }
+        .state-verify { border-left-color: #ffb74d; border: 2px solid #ffb74d; }
+        .state-done { opacity: 0.5; border-left-color: #28a745; filter: grayscale(0.5); }
 
         .q-content { flex-grow: 1; margin-right: 20px; }
         .q-badges { margin-bottom: 8px; }
@@ -73,9 +67,9 @@
         .q-text { font-size: 22px; line-height: 1.4; word-break: break-all; }
         .q-sub { font-size: 14px; color: #888; margin-top: 5px; display: flex; gap: 10px; }
         
-        /* --- Sidebar (Settings) --- */
+        /* Sidebar */
         .sidebar {
-            position: fixed; top: 0; left: 0; width: 350px; height: 100%;
+            position: fixed; top: 0; left: 0; width: 400px; height: 100%;
             background: #111; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             transform: translateX(-100%); transition: 0.3s; z-index: 200;
             padding: 20px; overflow-y: auto;
@@ -85,14 +79,14 @@
         
         .setting-group { margin-bottom: 25px; background: #222; padding: 15px; border-radius: 8px; }
         .setting-label { font-size: 14px; color: #aaa; margin-bottom: 5px; display: block; }
-        .setting-input { width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; margin-bottom: 10px; }
+        .setting-input { width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; margin-bottom: 10px; resize: none; }
         .btn-action { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
         .btn-blue { background: #007bff; color: white; }
         .btn-green { background: #28a745; color: white; }
         .btn-red { background: #dc3545; color: white; }
         .btn-dark { background: #444; color: white; }
 
-        /* --- Detail Modal --- */
+        /* Modal */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center;
@@ -102,9 +96,7 @@
             padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
         }
         .modal-text { font-size: 24px; line-height: 1.5; margin-bottom: 20px; border-left: 4px solid #007bff; padding-left: 15px; }
-        
         .comment-box { width: 100%; height: 80px; background: #333; border: 1px solid #555; color: white; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
-        
         .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .control-btn { padding: 15px; font-size: 16px; border: 2px solid #444; background: transparent; color: #aaa; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .control-btn:hover { border-color: #fff; color: #fff; }
@@ -115,7 +107,6 @@
 </head>
 <body>
 
-    <!-- 1. Login Screen -->
     <div id="loginOverlay">
         <div class="login-box">
             <h2 style="color:white;">CATC Admin Access</h2>
@@ -124,16 +115,11 @@
         </div>
     </div>
 
-    <!-- 2. Main App -->
     <div id="appContainer" style="display:none;">
-        
-        <!-- Header -->
         <header class="header" id="mainHeader">
             <div class="header-left">
                 <div class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
-                <div>
-                    <span class="header-title">CATC Training Q&A Platform</span>
-                </div>
+                <div><span class="header-title">CATC Training Q&A Platform</span></div>
                 <div class="course-name" id="displayCourseName">Course A</div>
             </div>
             <div class="header-right">
@@ -141,20 +127,14 @@
             </div>
         </header>
 
-        <!-- Content -->
         <div class="container">
             <div id="qListArea" class="q-list">
                 <div style="text-align:center; padding:50px; color:#555;">Loading data...</div>
             </div>
-            
-            <div class="footer">
-                Developer Dooseok Jang (jds0616@airport.co.kr)
-            </div>
+            <div class="footer">Developer Dooseok Jang (jds0616@airport.co.kr)</div>
         </div>
-
     </div>
 
-    <!-- 3. Sidebar (Settings) -->
     <div class="sidebar" id="sidebar">
         <div class="sb-header">
             <span>Settings</span>
@@ -171,12 +151,17 @@
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">Room Config (Course Name)</label>
+            <label class="setting-label">Course Name</label>
             <input type="text" id="confName" class="setting-input" placeholder="e.g. Basic Training">
             <label class="setting-label">Room Password (4 Digits)</label>
             <input type="password" id="confPw" class="setting-input" placeholder="****" maxlength="4">
             <label class="setting-label">Theme Color</label>
             <input type="color" id="confColor" class="setting-input" value="#333333">
+            
+            <!-- 추가된 하단바 설정 -->
+            <label class="setting-label">Footer Text (Student View)</label>
+            <textarea id="confFooter" class="setting-input" style="height:100px;" placeholder="Footer text..."></textarea>
+            
             <button class="btn-action btn-blue" onclick="saveRoomSettings()">Save Config</button>
         </div>
 
@@ -188,34 +173,30 @@
 
         <div class="setting-group">
             <label class="setting-label">GitHub Integration</label>
-            <input type="text" id="ghToken" class="setting-input" placeholder="Personal Access Token (ghp_...)">
-            <input type="text" id="ghOwner" class="setting-input" placeholder="Owner (ID)">
-            <input type="text" id="ghRepo" class="setting-input" placeholder="Repository Name">
-            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token to LocalStorage</button>
-            <button class="btn-action btn-green" onclick="uploadToGithub()">Push Current Data to GitHub</button>
-            <button class="btn-action btn-dark" onclick="downloadBackup()">Download JSON Backup</button>
+            <input type="text" id="ghToken" class="setting-input" placeholder="Token">
+            <input type="text" id="ghOwner" class="setting-input" placeholder="Owner">
+            <input type="text" id="ghRepo" class="setting-input" placeholder="Repo">
+            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token</button>
+            <button class="btn-action btn-green" onclick="uploadToGithub()">Push to GitHub</button>
+            <button class="btn-action btn-dark" onclick="downloadBackup()">Download JSON</button>
         </div>
         
         <div class="setting-group">
-            <button class="btn-action btn-red" onclick="clearHistory()">Clear History (Delete All)</button>
+            <button class="btn-action btn-red" onclick="clearHistory()">Clear All History</button>
         </div>
     </div>
 
-    <!-- 4. Detail Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
             <h3 style="margin-top:0; color:#888;">Question Detail</h3>
             <div id="modalText" class="modal-text"></div>
-            
-            <textarea id="adminMemo" class="comment-box" placeholder="Instructor's private/public memo..."></textarea>
-            
+            <textarea id="adminMemo" class="comment-box" placeholder="Memo..."></textarea>
             <div class="control-grid">
-                <button class="control-btn" id="btnPin" onclick="setStatus('pin')">📌 Pin (Notice)</button>
-                <button class="control-btn" id="btnVerify" onclick="setStatus('verify')">🧐 Check Later</button>
+                <button class="control-btn" id="btnPin" onclick="setStatus('pin')">📌 Pin</button>
+                <button class="control-btn" id="btnVerify" onclick="setStatus('verify')">🧐 Verify</button>
                 <button class="control-btn" id="btnDone" onclick="setStatus('done')">✅ Done</button>
-                <button class="control-btn" onclick="openTranslate()">🌐 Translate (Google)</button>
+                <button class="control-btn" onclick="openTranslate()">🌐 Translate</button>
             </div>
-
             <div style="text-align:right;">
                 <button class="btn-action btn-blue" style="width:auto; padding: 10px 30px;" onclick="saveDetail()">Save & Close</button>
             </div>
@@ -224,22 +205,17 @@
 
     <script src="config.js"></script>
     <script>
-        // --- Configuration & State ---
-        // '1234' SHA-256 Hash for Admin Login (Change this hash if you want a different pw)
-        const ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; 
-        
+        const ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // 1234
         let currentRoom = "A";
         let dbQuestionsRef = null;
         let dbSettingsRef = null;
         let currentData = {};
-        let activeKey = null; // Key of the question currently in modal
+        let activeKey = null;
 
-        // --- 1. Admin Login (SHA-256) ---
         async function sha256(message) {
             const msgBuffer = new TextEncoder().encode(message);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
         async function checkAdminLogin() {
@@ -249,102 +225,72 @@
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 initApp();
-            } else {
-                alert("Invalid Password.");
-            }
+            } else { alert("Invalid Password."); }
         }
 
-        // --- 2. Initialization ---
         function initApp() {
             if (typeof firebase === 'undefined') return alert("Firebase not loaded.");
-            
-            // Load GitHub Settings from LocalStorage
             loadGithubSettings();
-
-            // Start with Room A
             loadRoom(currentRoom);
         }
 
         function changeRoom(roomId) {
             currentRoom = roomId;
             loadRoom(roomId);
-            toggleSidebar(); // Close sidebar
+            toggleSidebar();
         }
 
         function loadRoom(roomId) {
-            // Unsubscribe old listeners if any (simple implementation: just overwrite)
             if(dbQuestionsRef) dbQuestionsRef.off();
             if(dbSettingsRef) dbSettingsRef.off();
 
             dbQuestionsRef = firebase.database().ref(`courses/${roomId}/questions`);
             dbSettingsRef = firebase.database().ref(`courses/${roomId}/settings`);
 
-            // 1. Load Settings
             dbSettingsRef.on('value', snap => {
                 const val = snap.val() || {};
                 document.getElementById('displayCourseName').innerText = val.courseName || `Course ${roomId}`;
                 document.getElementById('mainHeader').style.background = val.themeColor || '#333';
                 
-                // Update Sidebar Inputs
                 document.getElementById('confName').value = val.courseName || "";
-                // Note: Password cannot be retrieved back to plain text, so leave blank or placeholder
                 document.getElementById('confColor').value = val.themeColor || "#333333";
                 
-                // Update Link
+                // Footer Load
+                document.getElementById('confFooter').value = val.footerText || "KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.\n문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)\n© 2026 Korea Airports Corporation. All rights reserved.";
+                
                 const link = `${window.location.origin}/index.html?room=${roomId}`;
                 document.getElementById('studentLinkUrl').value = link;
             });
 
-            // 2. Load Questions
             dbQuestionsRef.on('value', snap => {
                 const listDiv = document.getElementById('qListArea');
                 listDiv.innerHTML = "";
-                
                 const data = snap.val();
                 currentData = data || {};
 
-                if (!data) {
-                    listDiv.innerHTML = "<p style='text-align:center; color:#555; font-size:20px;'>No questions waiting.</p>";
-                    return;
-                }
+                if (!data) { listDiv.innerHTML = "<p style='text-align:center; color:#555; font-size:20px;'>No questions waiting.</p>"; return; }
 
-                // Sorting Logic: 
-                // 1. Notice (Pin) Top
-                // 2. Verify Later
-                // 3. Normal (Likes > Time)
-                // 4. Done (Bottom)
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                
                 items.sort((a, b) => {
-                    // Priority Score: Pin=3, Verify=2, Normal=1, Done=0
                     const getScore = (item) => {
                         if (item.status === 'pin') return 3;
                         if (item.status === 'verify') return 2;
                         if (item.status === 'done') return 0;
                         return 1;
                     };
-                    
                     const scoreA = getScore(a);
                     const scoreB = getScore(b);
-                    
                     if (scoreA !== scoreB) return scoreB - scoreA;
-                    
-                    // Same priority -> Sort by Likes, then Time
                     if ((b.likes||0) !== (a.likes||0)) return (b.likes||0) - (a.likes||0);
                     return b.timestamp - a.timestamp;
                 });
 
-                items.forEach(item => {
-                    renderCard(item, listDiv);
-                });
+                items.forEach(item => renderCard(item, listDiv));
             });
         }
 
-        // --- 3. Rendering ---
         function renderCard(item, container) {
             const el = document.createElement('div');
-            
-            // Determine Style Class
             let stateClass = '';
             let badges = '';
             
@@ -362,7 +308,7 @@
                     <div class="q-text">${escapeHtml(item.text)}</div>
                     <div class="q-sub">
                         <span>${new Date(item.timestamp).toLocaleTimeString()}</span>
-                        ${item.memo ? `<span style="color:#007bff;">💬 1 Memo</span>` : ''}
+                        ${item.memo ? `<span style="color:#007bff;">💬 Memo</span>` : ''}
                     </div>
                 </div>
                 <div><i class="fa-solid fa-chevron-right" style="color:#555;"></i></div>
@@ -370,7 +316,6 @@
             container.appendChild(el);
         }
 
-        // --- 4. Modal Logic ---
         function openModal(key) {
             activeKey = key;
             const item = currentData[key];
@@ -379,9 +324,7 @@
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('adminMemo').value = item.memo || "";
             
-            // Reset Buttons
             ['btnPin', 'btnVerify', 'btnDone'].forEach(id => document.getElementById(id).classList.remove('active'));
-            
             if (item.status === 'pin') document.getElementById('btnPin').classList.add('active');
             else if (item.status === 'verify') document.getElementById('btnVerify').classList.add('active');
             else if (item.status === 'done') document.getElementById('btnDone').classList.add('active');
@@ -389,32 +332,19 @@
             document.getElementById('detailModal').style.display = 'flex';
         }
 
-        function closeModal(e) {
-            if (e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none';
-        }
+        function closeModal(e) { if (e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
 
         function setStatus(status) {
             if (!activeKey) return;
             const item = currentData[activeKey];
-            
-            // Toggle off if clicking same status
             let newStatus = status;
             if (item.status === status) newStatus = 'normal';
             
-            // UI Update Immediate (Actual update on Save)
             ['btnPin', 'btnVerify', 'btnDone'].forEach(id => document.getElementById(id).classList.remove('active'));
             if (newStatus !== 'normal') {
                 const btnId = newStatus === 'pin' ? 'btnPin' : (newStatus === 'verify' ? 'btnVerify' : 'btnDone');
                 document.getElementById(btnId).classList.add('active');
             }
-            
-            // Auto Save Status ? Or wait for Save Button? 
-            // UX: Let's wait for Save Button to commit everything (memo + status).
-            // But for visual feedback, we updated the buttons.
-            // Storing temp status in DOM attribute or variable could be complex. 
-            // Let's just update DB immediately for Status, Memo separately? 
-            // Requirement says "Popups... check box...". Let's do Immediate Update for better UX.
-            
             dbQuestionsRef.child(activeKey).update({ status: newStatus });
         }
 
@@ -428,46 +358,32 @@
 
         function openTranslate() {
             const text = document.getElementById('modalText').innerText;
-            const url = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(text)}&op=translate`;
-            window.open(url, '_blank');
+            window.open(`https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(text)}&op=translate`, '_blank');
         }
 
-        // --- 5. Settings & Config ---
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 
         async function saveRoomSettings() {
             const name = document.getElementById('confName').value;
             const pw = document.getElementById('confPw').value;
             const color = document.getElementById('confColor').value;
+            const footer = document.getElementById('confFooter').value;
             
-            const payload = { courseName: name, themeColor: color };
-            
-            if (pw.length === 4) {
-                // Hash the 4-digit PW
-                payload.password = await sha256(pw);
-            } else if (pw.length > 0) {
-                return alert("Password must be 4 digits.");
-            }
+            const payload = { courseName: name, themeColor: color, footerText: footer };
+            if (pw.length === 4) payload.password = await sha256(pw);
+            else if (pw.length > 0) return alert("Password must be 4 digits.");
 
             dbSettingsRef.update(payload).then(() => alert("Settings Saved!"));
         }
 
         function copyLink() {
             const copyText = document.getElementById("studentLinkUrl");
-            copyText.select();
-            document.execCommand("copy");
-            alert("Link copied: " + copyText.value);
+            copyText.select(); document.execCommand("copy");
+            alert("Copied!");
         }
 
-        function clearHistory() {
-            if (confirm("WARNING: This will delete ALL questions in this room. Cannot be undone.")) {
-                dbQuestionsRef.set(null);
-            }
-        }
+        function clearHistory() { if (confirm("Delete ALL questions?")) dbQuestionsRef.set(null); }
 
-        // --- 6. GitHub Integration ---
         function loadGithubSettings() {
             const gh = JSON.parse(localStorage.getItem('gh_config') || '{}');
             document.getElementById('ghToken').value = gh.token || "";
@@ -476,68 +392,42 @@
         }
 
         function saveGithubInfo() {
-            const config = {
-                token: document.getElementById('ghToken').value,
-                owner: document.getElementById('ghOwner').value,
-                repo: document.getElementById('ghRepo').value
-            };
+            const config = { token: document.getElementById('ghToken').value, owner: document.getElementById('ghOwner').value, repo: document.getElementById('ghRepo').value };
             localStorage.setItem('gh_config', JSON.stringify(config));
-            alert("GitHub Token & Info Saved to Browser LocalStorage.");
+            alert("Saved.");
         }
 
         async function uploadToGithub() {
             const token = document.getElementById('ghToken').value;
             const owner = document.getElementById('ghOwner').value;
             const repo = document.getElementById('ghRepo').value;
+            if (!token || !owner || !repo) return alert("Check GitHub Info.");
 
-            if (!token || !owner || !repo) return alert("Please fill in all GitHub fields and Save.");
-
-            // 1. Prepare Data
             const content = JSON.stringify(currentData, null, 2);
-            const contentEncoded = btoa(unescape(encodeURIComponent(content))); // Base64 handling for UTF-8
+            const contentEncoded = btoa(unescape(encodeURIComponent(content)));
             const path = `backup_room_${currentRoom}_${Date.now()}.json`;
 
-            // 2. Push (Create New File)
-            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-            
             try {
-                const response = await fetch(url, {
+                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Backup Room ${currentRoom} - ${new Date().toLocaleString()}`,
-                        content: contentEncoded
-                    })
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Backup Room ${currentRoom}`, content: contentEncoded })
                 });
-
-                if (response.ok) {
-                    alert("Successfully uploaded to GitHub: " + path);
-                } else {
-                    const err = await response.json();
-                    alert("GitHub Error: " + err.message);
-                }
-            } catch (error) {
-                alert("Network Error: " + error.message);
-            }
+                if (response.ok) alert("Uploaded: " + path); else alert("Error");
+            } catch (error) { alert("Error: " + error.message); }
         }
 
         function downloadBackup() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `backup_${currentRoom}_${Date.now()}.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            const node = document.createElement('a');
+            node.setAttribute("href", dataStr);
+            node.setAttribute("download", `backup_${currentRoom}_${Date.now()}.json`);
+            document.body.appendChild(node); node.click(); node.remove();
         }
 
-        // Helper
-        function escapeHtml(text) {
-            if(!text) return "";
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        function escapeHtml(t) {
+            if(!t) return "";
+            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
     </script>
 </body>
