@@ -36,33 +36,31 @@
         }
         .sidebar-header { font-size: 20px; font-weight: 800; color: white; margin-bottom: 30px; letter-spacing: -0.5px; }
         .setting-group { margin-bottom: 25px; }
-        .setting-label { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; color: #64748b; }
+        .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: block; color: #64748b; }
         .setting-input, .setting-select {
             width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155;
-            color: white; border-radius: 6px; margin-bottom: 10px; font-size: 14px;
+            color: white; border-radius: 6px; margin-bottom: 10px; font-size: 13px;
         }
         .btn-action {
             width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer;
-            background: #334155; color: white; transition: 0.2s; font-size: 14px;
+            background: #334155; color: white; transition: 0.2s; font-size: 13px;
         }
         .btn-action:hover { background: #475569; }
         .btn-primary { background: var(--accent-color); }
         .btn-primary:hover { background: #2563eb; }
 
-        /* QR Code */
+        /* QR Code & Print Hidden Areas */
         #qrcode { 
-            background: white; padding: 10px; border-radius: 10px; width: 150px; height: 150px; 
+            background: white; padding: 10px; border-radius: 10px; width: 100px; height: 100px; 
             margin: 10px auto; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        #qrcode img { display: block; margin: 0 auto; }
-
-        /* QR Modal (Big) */
         .qr-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); z-index: 9999; 
             display: none; align-items: center; justify-content: center;
         }
         .qr-big-box { background: white; padding: 20px; border-radius: 20px; text-align: center; }
+        #printHeader { display: none; } /* Only for print */
 
         /* Main Content */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
@@ -113,50 +111,61 @@
         .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
         .q-card.status-later { border-left-color: #f59e0b; opacity: 0.8; }
 
-        /* Quiz View */
+        /* Quiz View (Layout Fixed) */
         #view-quiz { height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .quiz-display {
-            width: 95%; height: 90%; background: var(--card-bg); border-radius: 30px;
+            width: 95%; height: 95%; background: var(--card-bg); border-radius: 30px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 8px solid var(--header-bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 40px; text-align: center; position: relative;
+            padding: 30px; text-align: center; position: relative;
         }
-        .quiz-question { font-size: 40px; font-weight: 900; margin-bottom: 40px; line-height: 1.4; color: var(--text-color); }
+        .quiz-question { font-size: 36px; font-weight: 900; margin-bottom: 30px; line-height: 1.4; color: var(--text-color); flex-shrink: 0; }
         
-        .quiz-options { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; }
+        /* Options Container */
+        .quiz-options { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
         .quiz-opt { 
             font-size: 24px; padding: 20px; border: 3px solid #e2e8f0; border-radius: 15px; 
-            font-weight: 600; text-align: left; display: flex; align-items: center; background: white; color: #333;
+            font-weight: 600; text-align: left; display: flex; align-items: center; background: white; color: #333; transition: 0.3s;
         }
+        .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #047857; transform: scale(1.02); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
         .quiz-opt span { 
             width: 40px; height: 40px; background: #e2e8f0; border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 18px; 
         }
-        
+        .quiz-opt.reveal-answer span { background: #10b981; color: white; }
+
         /* Chart Area (Fix Layout) */
         .chart-area { 
-            display: none; width: 100%; height: 100%; 
+            display: none; width: 100%; height: 100%; flex-grow: 1;
             align-items: flex-end; justify-content: center; gap: 50px; 
             padding-bottom: 20px; 
         }
-        .bar-col { display: flex; flex-direction: column; align-items: center; width: 80px; }
+        .bar-col { display: flex; flex-direction: column; align-items: center; width: 80px; height: 100%; justify-content: flex-end;}
         .bar { width: 100%; background: #cbd5e1; transition: height 1s; border-radius: 10px 10px 0 0; }
         .bar.winner { background: #10b981; }
 
-        .quiz-status-bar { margin-top: 30px; display: flex; gap: 20px; z-index: 20; }
-        .q-btn { padding: 15px 30px; border-radius: 40px; border: none; font-size: 18px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; }
+        /* Controls */
+        .quiz-status-bar { margin-top: 30px; display: flex; gap: 15px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
+        .q-btn { 
+            padding: 12px 25px; border-radius: 40px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px;
+        }
+        .q-btn i { font-size: 20px; }
+        .q-btn span { font-size: 11px; font-weight: 400; opacity: 0.8; }
+        
         .btn-test { background: #f59e0b; }
         .btn-start { background: #3b82f6; }
         .btn-stop { background: #ef4444; }
         .btn-result { background: #10b981; }
-        .btn-next { background: #1e293b; border: 2px solid #fff; } /* Next Button High Visibility */
+        .btn-nav { background: #1e293b; border: 2px solid #fff; } 
 
-        /* Overlay Editor */
-        .overlay-toggle {
-            position: absolute; top: 50%; right: 0; transform: translateY(-50%);
-            background: var(--header-bg); color: white; padding: 20px 10px;
-            border-radius: 10px 0 0 10px; cursor: pointer; z-index: 90;
+        .quiz-guide-text {
+            background: rgba(0,0,0,0.8); color: #fff; padding: 10px 30px; border-radius: 30px;
+            font-size: 16px; font-weight: bold; margin-bottom: 15px; animation: pulse 2s infinite;
         }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; } }
+
+        /* Overlay Editor - Tab Style Toggle */
         .overlay-panel {
             position: absolute; top: 0; right: 0; width: 400px; height: 100%;
             background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2);
@@ -164,12 +173,21 @@
             display: flex; flex-direction: column;
         }
         .overlay-panel.open { transform: translateX(0); }
+        
+        .overlay-toggle-tab {
+            position: absolute; top: 50%; left: -50px; transform: translateY(-50%);
+            width: 50px; height: 80px;
+            background: var(--header-bg); color: white;
+            border-radius: 10px 0 0 10px; cursor: pointer; z-index: 110;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        }
+
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .editor-input {
             width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1;
             color: #333; border-radius: 8px; margin-bottom: 12px; font-size: 14px;
         }
-        
         .quiz-list-item { 
             padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color:#333; 
             display: flex; gap: 10px; align-items: center; 
@@ -184,6 +202,31 @@
         .modal-box { background: var(--card-bg); width: 800px; padding: 40px; border-radius: 20px; }
         .modal-q-text { font-size: 32px; font-weight: 800; margin-bottom: 40px; line-height: 1.4; color: var(--text-color); }
         .modal-actions { display: flex; gap: 15px; justify-content: flex-end; }
+
+        /* PRINT STYLE */
+        @media print {
+            body * { visibility: hidden; }
+            .sidebar, .header, .mode-tabs, .overlay-toggle-tab, .qa-filters { display: none !important; }
+            
+            #printHeader { 
+                display: block !important; visibility: visible; 
+                position: absolute; top: 0; left: 0; width: 100%; padding: 20px; border-bottom: 2px solid #000;
+            }
+            .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .print-table th { text-align: left; background: #eee; padding: 10px; border: 1px solid #000; }
+            .print-table td { padding: 10px; border: 1px solid #000; }
+
+            .content-area, #view-qa, .qa-list { 
+                visibility: visible; position: absolute; top: 150px; left: 0; width: 100%; height: auto !important; 
+                overflow: visible !important; display: block !important;
+            }
+            .qa-list { display: block !important; }
+            .q-card { 
+                visibility: visible; break-inside: avoid; border: 1px solid #000; box-shadow: none; 
+                margin-bottom: 10px; width: 100%;
+            }
+            .q-card * { visibility: visible; }
+        }
     </style>
 </head>
 <body class="day-mode">
@@ -191,6 +234,22 @@
     <!-- QR Big Modal -->
     <div id="qrModal" class="qr-modal" onclick="closeQrModal()">
         <div class="qr-big-box" id="qrBigTarget"></div>
+    </div>
+
+    <!-- Print Header (Hidden on Screen) -->
+    <div id="printHeader">
+        <h1 style="text-align:center; margin-bottom:20px;">Q&A Report</h1>
+        <table class="print-table">
+            <tr>
+                <th>Course Name</th> <td id="p-cname"></td>
+                <th>Date</th> <td id="p-date"></td>
+            </tr>
+            <tr>
+                <th>Coordinator</th> <td id="p-coord"></td>
+                <th>Professor</th> <td id="p-prof"></td>
+            </tr>
+        </table>
+        <h3>Question List</h3>
     </div>
 
     <!-- 1. Sidebar -->
@@ -202,31 +261,43 @@
             <select id="roomSelect" class="setting-select" onchange="changeRoom(this.value)"></select>
         </div>
 
+        <!-- Metadata Inputs -->
         <div class="setting-group">
             <label class="setting-label">Course Name</label>
-            <input type="text" id="courseNameInput" class="setting-input" placeholder="e.g. Basic Course">
+            <input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name">
+            <label class="setting-label">Duration (Date)</label>
+            <input type="text" id="courseDateInput" class="setting-input" placeholder="e.g. 2026.01.01 ~ 01.05">
+            <label class="setting-label">Coordinator</label>
+            <input type="text" id="courseCoordInput" class="setting-input" placeholder="Coordinator Name">
+            <label class="setting-label">Professor</label>
+            <input type="text" id="courseProfInput" class="setting-input" placeholder="Professor Name">
+            
+            <button class="btn-action btn-primary" onclick="saveSettings()">Save All Info</button>
         </div>
 
         <div class="setting-group">
             <label class="setting-label">Room Password</label>
             <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="****">
-            <button class="btn-action btn-primary" onclick="saveSettings()">Save Settings</button>
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">Student Link & QR (Click to Enlarge)</label>
+            <label class="setting-label">Student Link & QR</label>
             <input type="text" id="studentLink" class="setting-input" readonly style="color:#aaa; font-size:11px;">
             <div id="qrcode" onclick="openQrModal()" title="Click to Expand"></div> 
             <button class="btn-action" onclick="copyLink()">Copy Link</button>
         </div>
 
-        <div class="setting-group" style="margin-top:20px;">
+        <div class="setting-group">
             <label class="setting-label">Quiz File Load (.txt)</label>
             <input type="file" id="quizFile" accept=".txt" class="setting-input" onchange="loadQuizFile(this)">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                <p style="font-size:11px; color:#64748b; margin:0;">Format: Q -> (Empty) -> Q</p>
-                <button class="btn-action" style="width:auto; padding:5px 10px; font-size:11px; background:#475569;" onclick="downloadSample()">Download Sample</button>
+                <p style="font-size:10px; color:#64748b; margin:0;">Format: Q -> (Empty) -> Q</p>
+                <button class="btn-action" style="width:auto; padding:5px 10px; font-size:10px; background:#475569;" onclick="downloadSample()">Sample DL</button>
             </div>
+        </div>
+
+        <div class="setting-group" style="margin-top:auto;">
+             <button class="btn-action" style="background:#fff; color:#333; border:1px solid #ccc;" onclick="printReport()"><i class="fa-solid fa-print"></i> Print Report</button>
         </div>
     </div>
 
@@ -262,20 +333,49 @@
             <!-- Quiz View -->
             <div id="view-quiz">
                 <div class="quiz-display">
-                    <div id="quizContent" style="width:100%;">
+                    
+                    <div id="quizGuideArea" class="quiz-guide-text" style="display:none;"></div>
+
+                    <div id="quizContent" style="width:100%; height:100%; display:flex; flex-direction:column;">
                         <div class="quiz-question" id="d-qtext">Press 'Test Mode' first.</div>
+                        
+                        <!-- Options Area -->
                         <div class="quiz-options" id="d-options"></div>
+                        
+                        <!-- Chart Area -->
                         <div class="chart-area" id="d-chart"></div>
                     </div>
 
                     <div class="quiz-status-bar">
-                        <button class="q-btn btn-test" id="btnTest" onclick="startTestMode()">⚠️ Start Test Mode</button>
-                        <button class="q-btn btn-primary" id="btnReady" onclick="loadRealQuiz()" style="display:none;">Test Complete. Load Quiz</button>
-                        <div id="quizControls" style="display:none; gap:15px;">
-                            <button class="q-btn btn-start" onclick="quizAction('open')"><i class="fa-solid fa-play"></i> Start</button>
-                            <button class="q-btn btn-stop" onclick="quizAction('close')"><i class="fa-solid fa-stop"></i> Stop</button>
-                            <button class="q-btn btn-result" onclick="quizAction('result')"><i class="fa-solid fa-chart-simple"></i> Result</button>
-                            <button class="q-btn btn-next" onclick="prevNextQuiz(1)">Next <i class="fa-solid fa-forward"></i></button>
+                        <!-- Initial Test Button -->
+                        <button class="q-btn btn-test" id="btnTest" onclick="startTestMode()" style="flex-direction:row;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Start Test Mode
+                        </button>
+                        <button class="q-btn btn-primary" id="btnReady" onclick="loadRealQuiz()" style="display:none;">
+                            <i class="fa-solid fa-check"></i> Test Complete
+                        </button>
+                        
+                        <!-- Controls -->
+                        <div id="quizControls" style="display:none; gap:15px; align-items:center;">
+                            <button class="q-btn btn-nav" onclick="prevNextQuiz(-1)">
+                                <i class="fa-solid fa-backward"></i> <span>Prev</span>
+                            </button>
+                            
+                            <button class="q-btn btn-start" onclick="quizAction('open')">
+                                <i class="fa-solid fa-play"></i> <span>Start</span>
+                            </button>
+                            
+                            <button class="q-btn btn-stop" onclick="quizAction('close')">
+                                <i class="fa-solid fa-stop"></i> <span>Stop</span>
+                            </button>
+                            
+                            <button class="q-btn btn-result" onclick="quizAction('result')">
+                                <i class="fa-solid fa-chart-simple"></i> <span>Result</span>
+                            </button>
+                            
+                            <button class="q-btn btn-nav" onclick="prevNextQuiz(1)">
+                                <i class="fa-solid fa-forward"></i> <span>Next</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -283,11 +383,14 @@
         </div>
 
         <!-- Right Overlay (Quiz Editor) -->
-        <div class="overlay-toggle" onclick="toggleRightPanel()"><i class="fa-solid fa-pen"></i></div>
         <div class="overlay-panel" id="rightPanel">
+            <!-- Center Tab Toggle -->
+            <div class="overlay-toggle-tab" onclick="toggleRightPanel()">
+                <i class="fa-solid fa-chevron-left" id="panelIcon"></i>
+            </div>
+
             <div class="panel-header">
                 <h3 style="margin:0; color:#333;">Quiz Editor</h3>
-                <i class="fa-solid fa-xmark" style="font-size:24px; cursor:pointer; color:#666;" onclick="toggleRightPanel()"></i>
             </div>
             
             <textarea id="manualQ" class="editor-input" style="height:100px;" placeholder="Question Text"></textarea>
@@ -347,8 +450,12 @@
             
             db.ref(`courses/${r}/settings`).once('value', snap => {
                 const set = snap.val() || {};
+                // Load Settings
                 document.getElementById('courseNameInput').value = set.courseName || "";
                 document.getElementById('displayCourseTitle').innerText = set.courseName || "";
+                document.getElementById('courseDateInput').value = set.courseDate || "";
+                document.getElementById('courseCoordInput').value = set.courseCoord || "";
+                document.getElementById('courseProfInput').value = set.courseProf || "";
             });
 
             const code = getCodeFromRoom(r);
@@ -361,7 +468,7 @@
             qrDiv.innerHTML = "";
             new QRCode(qrDiv, {
                 text: fullLink,
-                width: 130, height: 130,
+                width: 90, height: 90,
                 colorDark : "#000000", colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
@@ -378,30 +485,48 @@
         function saveSettings() {
             const pw = document.getElementById('roomPw').value;
             const cName = document.getElementById('courseNameInput').value;
-            if(pw && pw.length !== 4) return alert("Password must be 4 digits.");
-            
+            const cDate = document.getElementById('courseDateInput').value;
+            const cCoord = document.getElementById('courseCoordInput').value;
+            const cProf = document.getElementById('courseProfInput').value;
+
             const updates = {};
-            if(pw) updates.password = pw;
+            if(pw && pw.length === 4) updates.password = pw;
             updates.courseName = cName;
+            updates.courseDate = cDate;
+            updates.courseCoord = cCoord;
+            updates.courseProf = cProf;
+
             db.ref(`courses/${currentRoom}/settings`).update(updates, error => {
                 if(error) alert("Error saving settings.");
-                else { alert("Settings Saved!"); document.getElementById('displayCourseTitle').innerText = cName; }
+                else {
+                    alert("Settings Saved!");
+                    document.getElementById('displayCourseTitle').innerText = cName;
+                }
             });
+        }
+
+        function printReport() {
+            // Fill Print Header
+            document.getElementById('p-cname').innerText = document.getElementById('courseNameInput').value;
+            document.getElementById('p-date').innerText = document.getElementById('courseDateInput').value;
+            document.getElementById('p-coord').innerText = document.getElementById('courseCoordInput').value;
+            document.getElementById('p-prof').innerText = document.getElementById('courseProfInput').value;
+            
+            // Trigger Print
+            window.print();
         }
 
         function openQrModal() {
             const qrHTML = document.getElementById('qrcode').innerHTML;
             const target = document.getElementById('qrBigTarget');
-            target.innerHTML = ""; 
             target.innerHTML = qrHTML;
-            // Scale up
             const img = target.querySelector('img');
             if(img) { img.style.width = '400px'; img.style.height = '400px'; }
             document.getElementById('qrModal').style.display = 'flex';
         }
         function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
 
-        // --- Q&A Logic (No Change) ---
+        // --- Q&A Logic ---
         function loadQaData() {
             dbRef.qa.on('value', snap => { qaData = snap.val() || {}; renderQa('all'); });
         }
@@ -444,35 +569,47 @@
             isTestMode = true;
             const testQ = { text: "Test Question: 10 + 10 = ?", options: ["10","20","30","40"], correct: 2 };
             renderQuizOnScreen(testQ);
+            
             document.getElementById('btnTest').style.display = 'none';
-            document.getElementById('btnReady').style.display = 'inline-block';
+            document.getElementById('btnReady').style.display = 'flex';
             document.getElementById('quizControls').style.display = 'flex';
+            
+            // Guide Text
+            const guide = document.getElementById('quizGuideArea');
+            guide.style.display = 'block';
+            guide.innerText = "TEST MODE: Press [Start] to enable student buttons.";
+
             dbRef.quiz.set({ id: 'TEST', status: 'ready', ...testQ });
         }
 
         function loadRealQuiz() {
             if(quizList.length === 0) return alert("Please load quiz first.");
-            isTestMode = false;
-            // Find first checked
             const firstIdx = quizList.findIndex(q => q.checked);
             if(firstIdx === -1) return alert("Please check at least one question in the list.");
             
+            isTestMode = false;
             currentQuizIdx = firstIdx;
             document.getElementById('btnReady').style.display = 'none';
+            
             showCurrentQuiz();
         }
 
         function showCurrentQuiz() {
             const q = quizList[currentQuizIdx];
             renderQuizOnScreen(q);
+            
+            const guide = document.getElementById('quizGuideArea');
+            guide.style.display = 'block';
+            guide.innerText = "READY: Press [Start] to begin.";
+
             dbRef.quiz.set({ id: `Q${currentQuizIdx}`, status: 'ready', ...q });
         }
 
         function renderQuizOnScreen(q) {
             document.getElementById('d-qtext').innerText = q.text;
             const optDiv = document.getElementById('d-options');
-            optDiv.style.display = 'flex'; // Ensure visible
-            document.getElementById('d-chart').style.display = 'none'; // Hide chart
+            optDiv.style.display = 'flex';
+            document.getElementById('d-chart').style.display = 'none';
             optDiv.innerHTML = "";
             q.options.forEach((o, i) => {
                 optDiv.innerHTML += `<div class="quiz-opt" id="opt-${i+1}"><span>${i+1}</span> ${o}</div>`;
@@ -483,13 +620,29 @@
             const id = isTestMode ? 'TEST' : `Q${currentQuizIdx}`;
             dbRef.quiz.update({ status: act });
 
-            // Layout fix for result
             const optDiv = document.getElementById('d-options');
             const chartDiv = document.getElementById('d-chart');
+            const guide = document.getElementById('quizGuideArea');
+            const correctAns = isTestMode ? 2 : parseInt(quizList[currentQuizIdx].correct);
 
-            if(act === 'result') {
-                optDiv.style.display = 'none'; // Hide options
-                chartDiv.style.display = 'flex'; // Show chart
+            // Highlight Reset
+            document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
+
+            if(act === 'open') {
+                optDiv.style.display = 'flex';
+                chartDiv.style.display = 'none';
+                guide.innerText = "RUNNING: Students can answer now. Press [Stop] to finish.";
+            } 
+            else if(act === 'close') {
+                // REVEAL ANSWER
+                const corrEl = document.getElementById(`opt-${correctAns}`);
+                if(corrEl) corrEl.classList.add('reveal-answer');
+                guide.innerText = "STOPPED: Answer revealed. Press [Result] for stats.";
+            } 
+            else if(act === 'result') {
+                optDiv.style.display = 'none';
+                chartDiv.style.display = 'flex';
+                guide.innerText = "RESULT: Showing Statistics.";
 
                 dbRef.ans.child(id).once('value', s => {
                     const ans = s.val() || {};
@@ -497,24 +650,19 @@
                     Object.values(ans).forEach(v => { if(v.choice>=1 && v.choice<=4) counts[v.choice-1]++; });
                     chartDiv.innerHTML = "";
                     const max = Math.max(...counts, 1);
-                    const correct = isTestMode ? 2 : parseInt(quizList[currentQuizIdx].correct);
                     counts.forEach((c, i) => {
                         const h = (c/max)*100;
-                        const isWin = (i+1) === correct;
+                        const isWin = (i+1) === correctAns;
                         chartDiv.innerHTML += `<div class="bar-col"><div style="font-weight:bold; margin-bottom:5px;">${c}</div><div class="bar ${isWin?'winner':''}" style="height:${h}%"></div><div style="margin-top:10px; font-weight:bold; font-size:20px;">${i+1}</div></div>`;
                     });
                 });
-            } else {
-                // Open or Close -> Show Options
-                optDiv.style.display = 'flex';
-                chartDiv.style.display = 'none';
             }
         }
 
         function prevNextQuiz(dir) {
             if(isTestMode) return alert("Finish test mode first.");
             
-            // Find next checked index
+            // Find next/prev checked index
             let nextIdx = currentQuizIdx + dir;
             while(nextIdx >= 0 && nextIdx < quizList.length) {
                 if(quizList[nextIdx].checked) {
@@ -524,7 +672,7 @@
                 }
                 nextIdx += dir;
             }
-            alert("No more selected questions.");
+            alert(dir > 0 ? "Last Question." : "First Question.");
         }
 
         // --- File & Manual Quiz ---
@@ -543,7 +691,7 @@
                             text: lines[0],
                             options: [lines[1], lines[2], lines[3], lines[4]],
                             correct: lines[5].replace(/[^0-9]/g, ''),
-                            checked: true // Default checked
+                            checked: true
                         });
                     }
                 });
@@ -565,7 +713,6 @@
             quizList.push({ text: txt, options: [o1,o2,o3,o4], correct: ans, checked: true });
             renderMiniList();
             
-            // Clear inputs
             document.getElementById('manualQ').value = "";
             document.getElementById('manualO1').value = "";
             document.getElementById('manualO2').value = "";
@@ -585,89 +732,14 @@
                     </div>`;
             });
         }
+        function toggleQuizCheck(i) { quizList[i].checked = !quizList[i].checked; }
 
-        function toggleQuizCheck(i) {
-            quizList[i].checked = !quizList[i].checked;
-        }
-
-        // Sample Download
         function downloadSample() {
-            const sampleData = `KAC의 뜻은?
-Korea Airports Corporation
-Korea Army Corps
-King And Castle
-Kick And Catch
-1
-
-대한민국의 수도는?
-부산
-서울
-광주
-대구
-2
-
-10 + 10 = ?
-10
-20
-30
-40
-2
-
-비행기가 뜨는 곳은?
-항구
-정류장
-공항
-역
-3
-
-사과의 색깔은?
-파랑
-검정
-보라
-빨강
-4
-
-KAC 교육센터 위치는?
-김포
-제주
-김해
-청주
-1
-
-다음 중 과일이 아닌 것은?
-사과
-배
-포도
-자동차
-4
-
-1년은 며칠인가?
-300일
-365일
-400일
-100일
-2
-
-가장 큰 숫자는?
-1
-10
-100
-1000
-4
-
-신호등 멈춤 색깔은?
-빨강
-초록
-노랑
-파랑
-1`;
+            const sampleData = `KAC의 뜻은?\nKorea Airports Corporation\nKorea Army Corps\nKing And Castle\nKick And Catch\n1\n\n대한민국의 수도는?\n부산\n서울\n광주\n대구\n2\n\n10 + 10 = ?\n10\n20\n30\n40\n2`;
             const blob = new Blob([sampleData], { type: "text/plain" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = "quiz_sample.txt";
-            a.click();
-            URL.revokeObjectURL(url);
+            a.href = url; a.download = "quiz_sample.txt"; a.click(); URL.revokeObjectURL(url);
         }
 
         // Misc
@@ -677,13 +749,14 @@ KAC 교육센터 위치는?
             document.getElementById('view-qa').style.display = (m==='qa'?'flex':'none');
             document.getElementById('view-quiz').style.display = (m==='quiz'?'flex':'none');
         }
-        function toggleRightPanel() { document.getElementById('rightPanel').classList.toggle('open'); }
-        function closeModal(e) { if(e.target.className.includes('modal-overlay')) e.target.style.display='none'; }
-        function copyLink() {
-            document.getElementById('studentLink').select();
-            document.execCommand('copy');
-            alert('Copied!');
+        function toggleRightPanel() { 
+            const p = document.getElementById('rightPanel');
+            p.classList.toggle('open');
+            const icon = document.getElementById('panelIcon');
+            icon.className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
         }
+        function closeModal(e) { if(e.target.className.includes('modal-overlay')) e.target.style.display='none'; }
+        function copyLink() { document.getElementById('studentLink').select(); document.execCommand('copy'); alert('Copied!'); }
         function toggleNightMode() { document.body.classList.toggle('night-mode'); }
         function logout() { location.replace('login.html'); }
     </script>
