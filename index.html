@@ -13,10 +13,10 @@
     <style>
         /* --- 1. CSS Variables & Reset --- */
         :root {
-            /* 기본 테마 컬러 (DB 로드 전) */
+            /* 기본 테마 컬러 (DB 로드 전) - 상단바 라인에만 쓰임 */
             --theme-color: #3b82f6; 
-            /* 고정된 상단바/하단바 배경색 (남색) */
-            --nav-bg: #1a237e;
+            /* 메인 디자인 컬러 (남색 고정) */
+            --main-color: #1a237e;
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -38,16 +38,16 @@
 
         /* --- 2. Dynamic Header --- */
         .header {
-            height: 65px; /* 높이 약간 증가 (테두리 고려) */
+            height: 65px; 
             flex-shrink: 0;
-            background: var(--nav-bg); /* 남색 고정 */
+            background: var(--main-color); /* 남색 고정 */
             color: white;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 15px;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             
-            /* ★ 핵심: 하단에 굵은 테마 컬러 라인 적용 ★ */
+            /* ★ 유일하게 테마 컬러가 적용되는 부분 (하단 라인) ★ */
             border-bottom: 6px solid var(--theme-color);
             transition: border-color 0.3s;
         }
@@ -86,23 +86,21 @@
 
         .q-input {
             width: 100%; height: 110px; padding: 15px;
-            /* 입력창 테두리는 테마 컬러를 따름 */
-            border: 2px solid var(--theme-color); 
+            /* 다시 남색으로 고정 */
+            border: 2px solid var(--main-color); 
             border-radius: 12px;
             font-size: 16px; resize: none; background: #fff;
-            transition: border-color 0.3s;
         }
         
         .action-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
         .edit-status-bar { flex-grow: 1; font-weight: bold; color: #d32f2f; display: none; align-items: center; gap: 5px;}
 
         .btn-submit {
-            /* 제출 버튼은 테마 컬러 사용 */
-            background: var(--theme-color); 
+            /* 다시 남색으로 고정 */
+            background: var(--main-color); 
             color: white; border: none; padding: 12px 35px;
             border-radius: 50px; font-weight: bold; font-size: 15px; cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background 0.3s;
         }
         .btn-cancel { background: #fff; color: #555; border: 1px solid #aaa; padding: 10px 20px; border-radius: 50px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
 
@@ -130,13 +128,13 @@
         .user-icon { 
             width: 40px; height: 40px; 
             background: #e8eaf6; 
-            color: var(--theme-color); /* 아이콘 색상은 테마 컬러 */
+            /* 다시 남색으로 고정 */
+            color: var(--main-color); 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             margin-right: 15px; font-size: 18px; flex-shrink: 0;
-            transition: color 0.3s;
         }
 
-        /* 내 질문: 빨간색 */
+        /* 내 질문: 빨간색 (이건 유지) */
         .q-card.my-post .user-icon { background: #ffebee; color: #d32f2f; }
 
         .q-text-preview {
@@ -155,7 +153,10 @@
         }
         
         .btn-mini-edit {
-            background: #fff; border: 1px solid var(--theme-color); color: var(--theme-color);
+            background: #fff; 
+            /* 다시 남색으로 고정 */
+            border: 1px solid var(--main-color); 
+            color: var(--main-color);
             font-size: 11px; padding: 4px 8px; border-radius: 12px;
             cursor: pointer; font-weight: bold; white-space: nowrap;
         }
@@ -172,7 +173,7 @@
             height: auto; min-height: 60px; flex-shrink: 0;
             text-align: center; padding: 15px 10px; 
             font-size: 11px; color: #ccc; 
-            background: var(--nav-bg); /* 상단바와 동일한 남색 */
+            background: var(--main-color); /* 남색 고정 */
             line-height: 1.4; z-index: 1000;
         }
 
@@ -209,7 +210,7 @@
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .pw-input-box { display: none; margin-top: 15px; text-align: center; background: #f9f9f9; padding: 15px; border-radius: 10px; }
         .pw-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 70%; text-align: center; font-size: 20px; letter-spacing: 5px;}
-        .btn-pw-submit { background: var(--nav-bg); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        .btn-pw-submit { background: var(--main-color); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
         
         .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; padding: 10px; background: #f9f9f9; border-radius: 10px; word-break: break-all;}
         .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
@@ -301,7 +302,7 @@
     <!-- Detail Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
         <div class="modal-box">
-            <h3 style="margin:0; color:var(--nav-bg);" translate="no">Question Detail</h3>
+            <h3 style="margin:0; color:var(--main-color);" translate="no">Question Detail</h3>
             <div id="modalText" class="modal-content-text"></div>
             <div class="modal-actions" translate="no">
                 <button class="btn-modal-close" onclick="document.getElementById('detailModal').style.display='none'">Close</button>
@@ -354,7 +355,7 @@
                     if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
                     if(val.footerText) document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
                     
-                    // ★ 테마 컬러 적용 로직 ★
+                    // 테마 컬러 적용 (상단바 라인만)
                     if(val.themeColor) {
                         document.documentElement.style.setProperty('--theme-color', val.themeColor);
                     }
