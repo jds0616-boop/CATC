@@ -7,6 +7,8 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- QR Code Lib -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- FontAwesome & Font -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
@@ -34,7 +36,7 @@
         .sidebar {
             width: var(--sidebar-width); background: #1e293b; color: #94a3b8;
             display: flex; flex-direction: column; padding: 20px; flex-shrink: 0;
-            border-right: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
         }
         .sidebar-header { font-size: 20px; font-weight: 800; color: white; margin-bottom: 30px; letter-spacing: -0.5px; }
         .setting-group { margin-bottom: 25px; }
@@ -51,6 +53,13 @@
         .btn-primary { background: var(--accent-color); }
         .btn-primary:hover { background: #2563eb; }
 
+        /* QR Code Box */
+        #qrcode { 
+            background: white; padding: 10px; border-radius: 10px; width: 150px; height: 150px; 
+            margin: 10px auto; display: flex; align-items: center; justify-content: center;
+        }
+        #qrcode img { display: block; margin: 0 auto; }
+
         /* 2. Main Content */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
 
@@ -59,7 +68,8 @@
             height: 70px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between;
             padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10;
         }
-        .header-title { font-size: 24px; font-weight: 800; color: white; }
+        .header-title { font-size: 20px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
+        .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 18px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px; }
         .header-controls { display: flex; gap: 15px; }
         .icon-btn { 
             width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); 
@@ -83,7 +93,7 @@
         /* Content Area */
         .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 20px; }
         
-        /* Q&A Mode View */
+        /* Q&A Mode View - Grid Layout */
         #view-qa { height: 100%; display: flex; flex-direction: column; }
         .qa-filters { display: flex; gap: 10px; margin-bottom: 20px; }
         .filter-chip { 
@@ -92,15 +102,19 @@
         }
         .filter-chip.active { opacity: 1; border-color: var(--accent-color); color: var(--accent-color); }
 
-        .qa-list { flex-grow: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-content: start; }
+        .qa-list { 
+            flex-grow: 1; overflow-y: auto; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 20px; align-content: start; 
+        }
         .q-card {
             background: var(--card-bg); padding: 20px; border-radius: 12px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #cbd5e1;
-            cursor: pointer; transition: transform 0.2s;
+            cursor: pointer; transition: transform 0.2s; height: fit-content;
         }
         .q-card:hover { transform: translateY(-3px); }
-        .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; } /* Red notice */
-        .q-card.status-later { border-left-color: #f59e0b; opacity: 0.8; } /* Yellow later */
+        .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
+        .q-card.status-later { border-left-color: #f59e0b; opacity: 0.8; }
 
         /* Quiz Mode View */
         #view-quiz { height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -127,7 +141,7 @@
         .btn-stop { background: #ef4444; }
         .btn-result { background: #10b981; }
 
-        /* 3. Right Overlay (Quiz Editor) */
+        /* 3. Right Overlay (Quiz Editor) - Improved */
         .overlay-panel {
             position: absolute; top: 0; right: 0; width: 400px; height: 100%;
             background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2);
@@ -140,6 +154,18 @@
             background: var(--header-bg); color: white; padding: 20px 10px;
             border-radius: 10px 0 0 10px; cursor: pointer; z-index: 90;
         }
+        
+        /* New Style for Right Panel Inputs */
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .panel-close-btn { font-size: 24px; cursor: pointer; color: #64748b; transition: 0.2s; }
+        .panel-close-btn:hover { color: #ef4444; }
+
+        .editor-input {
+            width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1;
+            color: #333; border-radius: 8px; margin-bottom: 12px; font-size: 14px;
+        }
+        .editor-input:focus { border-color: var(--accent-color); background: white; outline: none; }
+        .editor-input::placeholder { color: #94a3b8; }
 
         /* Modal */
         .modal-overlay {
@@ -161,7 +187,7 @@
 
     <!-- 1. Sidebar -->
     <div class="sidebar">
-        <div class="sidebar-header">KAC Instructor</div>
+        <div class="sidebar-header">KAC Training Platform</div>
         
         <div class="setting-group">
             <label class="setting-label">Select Room</label>
@@ -169,9 +195,8 @@
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">Student Link (Random Code)</label>
-            <input type="text" id="studentLink" class="setting-input" readonly style="color:#aaa;">
-            <button class="btn-action" onclick="copyLink()">Copy Link</button>
+            <label class="setting-label">Course Name</label>
+            <input type="text" id="courseNameInput" class="setting-input" placeholder="e.g. Basic Course">
         </div>
 
         <div class="setting-group">
@@ -180,7 +205,14 @@
             <button class="btn-action btn-primary" onclick="saveSettings()">Save Settings</button>
         </div>
 
-        <div class="setting-group" style="margin-top:auto;">
+        <div class="setting-group">
+            <label class="setting-label">Student Link & QR</label>
+            <input type="text" id="studentLink" class="setting-input" readonly style="color:#aaa; font-size:11px;">
+            <div id="qrcode"></div> <!-- QR Code Area -->
+            <button class="btn-action" onclick="copyLink()">Copy Link</button>
+        </div>
+
+        <div class="setting-group" style="margin-top:20px;">
             <label class="setting-label">Quiz File Load (.txt)</label>
             <input type="file" id="quizFile" accept=".txt" class="setting-input" onchange="loadQuizFile(this)">
             <p style="font-size:11px; color:#64748b; margin-top:5px;">Format: Q -> (Empty Line) -> Q</p>
@@ -190,7 +222,10 @@
     <!-- 2. Main Stage -->
     <div class="main-stage">
         <header class="header">
-            <div class="header-title" id="displayRoomName">Course Room A</div>
+            <div class="header-title">
+                <span id="displayRoomName">Course ROOM A</span> 
+                <span class="course-sub-name" id="displayCourseTitle"></span>
+            </div>
             <div class="header-controls">
                 <div class="icon-btn" onclick="toggleNightMode()" title="Day/Night"><i class="fa-solid fa-moon"></i></div>
                 <div class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></div>
@@ -223,11 +258,8 @@
                     </div>
 
                     <div class="quiz-status-bar">
-                        <!-- Step 1 -->
                         <button class="q-btn btn-test" id="btnTest" onclick="startTestMode()">⚠️ Start Test Mode</button>
-                        <!-- Step 2 -->
                         <button class="q-btn btn-primary" id="btnReady" onclick="loadRealQuiz()" style="display:none;">Test Complete. Load Quiz</button>
-                        <!-- Step 3 Control -->
                         <div id="quizControls" style="display:none; gap:15px;">
                             <button class="q-btn btn-start" onclick="quizAction('open')">Start (Open)</button>
                             <button class="q-btn btn-stop" onclick="quizAction('close')">Stop</button>
@@ -242,18 +274,23 @@
         <!-- Right Toggle for Quiz Editor -->
         <div class="overlay-toggle" onclick="toggleRightPanel()"><i class="fa-solid fa-pen"></i></div>
         
-        <!-- Right Overlay -->
+        <!-- Right Overlay (Improved) -->
         <div class="overlay-panel" id="rightPanel">
-            <h3>Manual Quiz Editor</h3>
-            <textarea id="manualQ" class="setting-input" style="height:100px;" placeholder="Question Text"></textarea>
-            <input type="text" id="manualO1" class="setting-input" placeholder="Option 1">
-            <input type="text" id="manualO2" class="setting-input" placeholder="Option 2">
-            <input type="text" id="manualO3" class="setting-input" placeholder="Option 3">
-            <input type="text" id="manualO4" class="setting-input" placeholder="Option 4">
-            <input type="number" id="manualAns" class="setting-input" placeholder="Correct Answer (1-4)">
+            <div class="panel-header">
+                <h3 style="margin:0; color:#333;">Quiz Editor</h3>
+                <i class="fa-solid fa-xmark panel-close-btn" onclick="toggleRightPanel()"></i>
+            </div>
+            
+            <textarea id="manualQ" class="editor-input" style="height:100px;" placeholder="Question Text"></textarea>
+            <input type="text" id="manualO1" class="editor-input" placeholder="Option 1">
+            <input type="text" id="manualO2" class="editor-input" placeholder="Option 2">
+            <input type="text" id="manualO3" class="editor-input" placeholder="Option 3">
+            <input type="text" id="manualO4" class="editor-input" placeholder="Option 4">
+            <input type="number" id="manualAns" class="editor-input" placeholder="Correct Answer (1-4)">
+            
             <button class="btn-action btn-primary" onclick="addManualQuiz()">Add to List</button>
-            <hr style="border:0; border-top:1px solid #334155; margin:20px 0;">
-            <div style="flex-grow:1; overflow-y:auto;" id="miniQuizList"></div>
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:20px 0;">
+            <div style="flex-grow:1; overflow-y:auto; color:#333;" id="miniQuizList"></div>
         </div>
     </div>
 
@@ -296,14 +333,36 @@
 
         function changeRoom(r) {
             currentRoom = r;
-            document.getElementById('displayRoomName').innerText = `Course Room ${r}`;
+            document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`;
             
-            // 난수 코드 링크 생성
+            // 1. Load Settings (Password & Course Name)
+            db.ref(`courses/${r}/settings`).once('value', snap => {
+                const set = snap.val() || {};
+                // Load Course Name to Input
+                document.getElementById('courseNameInput').value = set.courseName || "";
+                // Display in Header
+                document.getElementById('displayCourseTitle').innerText = set.courseName || "";
+            });
+
+            // 2. Generate Link & QR
             const code = getCodeFromRoom(r);
             const path = window.location.href.replace('admin.html', 'index.html');
-            document.getElementById('studentLink').value = `${path}?code=${code}`;
+            const fullLink = `${path}?code=${code}`;
+            document.getElementById('studentLink').value = fullLink;
 
-            // DB 연결
+            // Generate QR Code
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = ""; // clear old
+            new QRCode(qrDiv, {
+                text: fullLink,
+                width: 130,
+                height: 130,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // 3. Connect DB
             if(dbRef.qa) dbRef.qa.off();
             if(dbRef.quiz) dbRef.quiz.off();
             
@@ -312,6 +371,26 @@
             dbRef.ans = db.ref(`courses/${r}/quizAnswers`);
 
             loadQaData();
+        }
+
+        function saveSettings() {
+            const pw = document.getElementById('roomPw').value;
+            const cName = document.getElementById('courseNameInput').value;
+
+            if(pw && pw.length !== 4) return alert("Password must be 4 digits.");
+            
+            const updates = {};
+            if(pw) updates.password = pw;
+            updates.courseName = cName;
+
+            db.ref(`courses/${currentRoom}/settings`).update(updates, error => {
+                if(error) alert("Error saving settings.");
+                else {
+                    alert("Settings Saved!");
+                    // Update header immediately
+                    document.getElementById('displayCourseTitle').innerText = cName;
+                }
+            });
         }
 
         // --- Q&A Logic ---
@@ -328,11 +407,10 @@
             
             let items = Object.keys(qaData).map(k => ({id:k, ...qaData[k]}));
             
-            // Filter
             if(filter === 'pin') items = items.filter(x => x.status === 'pin');
             else if(filter === 'later') items = items.filter(x => x.status === 'later');
             
-            // Sort: Pin -> Likes -> Time
+            // Sort: Pin > Likes > Time
             items.sort((a,b) => {
                 if(a.status === 'pin') return -1;
                 if(b.status === 'pin') return 1;
@@ -369,7 +447,6 @@
             if(action === 'delete') {
                 if(confirm("Delete this question?")) dbRef.qa.child(activeQaKey).remove();
             } else {
-                // pin, later, normal
                 const newStatus = (qaData[activeQaKey].status === action) ? 'normal' : action;
                 dbRef.qa.child(activeQaKey).update({ status: newStatus });
             }
@@ -381,12 +458,9 @@
             isTestMode = true;
             const testQ = { text: "Test Question: 10 + 10 = ?", options: ["10","20","30","40"], correct: 2 };
             renderQuizOnScreen(testQ);
-            
             document.getElementById('btnTest').style.display = 'none';
             document.getElementById('btnReady').style.display = 'inline-block';
             document.getElementById('quizControls').style.display = 'flex';
-            
-            // Force activate on student
             dbRef.quiz.set({ id: 'TEST', status: 'ready', ...testQ });
         }
 
@@ -401,7 +475,6 @@
         function showCurrentQuiz() {
             const q = quizList[currentQuizIdx];
             renderQuizOnScreen(q);
-            // DB Update (Ready state)
             dbRef.quiz.set({ id: `Q${currentQuizIdx}`, status: 'ready', ...q });
         }
 
@@ -410,7 +483,6 @@
             const optDiv = document.getElementById('d-options');
             optDiv.innerHTML = "";
             document.getElementById('d-chart').style.display = 'none';
-            
             q.options.forEach((o, i) => {
                 optDiv.innerHTML += `<div class="quiz-opt" id="opt-${i+1}"><span>${i+1}</span> ${o}</div>`;
             });
@@ -421,19 +493,15 @@
             dbRef.quiz.update({ status: act });
 
             if(act === 'result') {
-                // Fetch answers
                 dbRef.ans.child(id).once('value', s => {
                     const ans = s.val() || {};
                     const counts = [0,0,0,0];
                     Object.values(ans).forEach(v => { if(v.choice>=1 && v.choice<=4) counts[v.choice-1]++; });
-                    
-                    // Show Chart
                     const chart = document.getElementById('d-chart');
                     chart.innerHTML = "";
                     chart.style.display = 'flex';
                     const max = Math.max(...counts, 1);
                     const correct = isTestMode ? 2 : parseInt(quizList[currentQuizIdx].correct);
-                    
                     counts.forEach((c, i) => {
                         const h = (c/max)*100;
                         const isWin = (i+1) === correct;
@@ -457,14 +525,14 @@
             }
         }
 
-        // --- File Parser (Empty Line Separator) ---
+        // --- File Parser ---
         function loadQuizFile(input) {
             const file = input.files[0];
             if(!file) return;
             const r = new FileReader();
             r.onload = e => {
                 const text = e.target.result;
-                const blocks = text.split(/\n\s*\n/); // Split by empty line
+                const blocks = text.split(/\n\s*\n/);
                 quizList = [];
                 blocks.forEach(b => {
                     const lines = b.trim().split('\n');
@@ -501,7 +569,7 @@
             const d = document.getElementById('miniQuizList');
             d.innerHTML = "";
             quizList.forEach((q, i) => {
-                d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #334155; font-size:12px;">${i+1}. ${q.text.substring(0,20)}...</div>`;
+                d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #e2e8f0; font-size:12px;">${i+1}. ${q.text.substring(0,20)}...</div>`;
             });
         }
 
@@ -519,19 +587,7 @@
             document.execCommand('copy');
             alert('Copied!');
         }
-        function saveSettings() {
-            const pw = document.getElementById('roomPw').value;
-            if(pw.length === 4) {
-                // Simple Hash logic (or just save plain for demo) -> In real app, hash it
-                db.ref(`courses/${currentRoom}/settings/password`).set(pw);
-                alert("Settings Saved.");
-            } else {
-                alert("Password must be 4 digits.");
-            }
-        }
-        function toggleNightMode() {
-            document.body.classList.toggle('night-mode');
-        }
+        function toggleNightMode() { document.body.classList.toggle('night-mode'); }
         function logout() { location.replace('login.html'); }
     </script>
 </body>
