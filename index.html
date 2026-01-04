@@ -2,77 +2,68 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CATC Training Q&A</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- FontAwesome (Icons) -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- Reset & Base Styles --- */
+        /* --- Reset & Layout --- */
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5; 
             margin: 0; padding: 0; color: #333;
-            display: flex; justify-content: center; min-height: 100vh;
+            overflow: hidden; /* 전체 페이지 스크롤 방지 (상하단 고정 위함) */
+            height: 100vh;
         }
 
         .app-container {
-            width: 100%; max-width: 600px; background: #f0f2f5;
-            min-height: 100vh; position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 100%; max-width: 600px; margin: 0 auto;
+            height: 100%; position: relative;
+            background: #f0f2f5;
             display: flex; flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* --- Header (Layout Changed) --- */
+        /* --- 1. Fixed Header --- */
         .header {
-            min-height: 60px;
-            background: #1a237e; /* Navy Color */
+            height: 60px; flex-shrink: 0;
+            background: #1a237e; /* Navy */
             color: white;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 15px; position: sticky; top: 0; z-index: 100;
+            padding: 0 15px;
+            z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
-        /* Left: Exit Icon */
-        .header-left { 
-            display: flex; align-items: center; justify-content: flex-start;
-            min-width: 40px;
-        }
-        
-        /* Center: Menu + Title */
-        .header-center { 
-            display: flex; align-items: center; justify-content: center; 
-            flex-grow: 1; gap: 10px; /* 아이콘과 텍스트 사이 간격 */
-        }
-        
-        /* Right: Logo */
-        .header-right {
-            display: flex; align-items: center; justify-content: flex-end;
-            min-width: 40px;
-        }
-
-        .header-icon { font-size: 20px; color: #fff; cursor: pointer; padding: 5px; }
-        
+        .header-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; overflow: hidden; }
+        .menu-icon { font-size: 22px; cursor: pointer; padding: 5px; }
         .course-title { 
-            font-size: 20px; font-weight: bold; color: #fff; 
-            line-height: 1.2; text-align: center; word-break: keep-all;
-        }
-        
-        .kac-logo { 
-            height: 22px; width: auto; object-fit: contain; 
+            font-size: 18px; font-weight: bold; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; 
         }
 
-        /* --- Input Section --- */
+        .header-right { display: flex; align-items: center; }
+        .kac-logo { height: 16px; width: auto; object-fit: contain; } /* 로고 크기 축소 */
+
+        /* --- 2. Scrollable Content Area (Input + List) --- */
+        .scroll-area {
+            flex-grow: 1;
+            overflow-y: auto; /* 여기가 스크롤 되는 영역 */
+            padding-bottom: 80px; /* 하단바 및 FAB 공간 확보 */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Input Section */
         .input-section { 
-            padding: 20px; 
-            background: #e8eaf6; 
+            padding: 20px; background: #e8eaf6; 
             border-bottom: 1px solid #c5cae9; 
             margin-bottom: 10px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .notice-text { 
@@ -82,41 +73,32 @@
             border-radius: 8px; border-left: 5px solid #d32f2f;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
+
         .q-input {
             width: 100%; height: 110px; padding: 15px;
-            border: 2px solid #1a237e; 
-            border-radius: 12px;
-            font-size: 16px; resize: none;
-            background: #fff;
-            transition: 0.2s;
+            border: 2px solid #1a237e; border-radius: 12px;
+            font-size: 16px; resize: none; background: #fff;
         }
-        .q-input:focus { box-shadow: 0 0 0 4px rgba(26, 35, 126, 0.2); }
-        .q-input::placeholder { color: #999; }
         
         .action-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
-        
         .edit-status-bar { flex-grow: 1; font-weight: bold; color: #d32f2f; display: none; align-items: center; gap: 5px;}
 
         .btn-submit {
             background: #1a237e; color: white; border: none; padding: 12px 35px;
             border-radius: 50px; font-weight: bold; font-size: 15px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
-        .btn-submit:active { transform: scale(0.95); }
-        
         .btn-cancel { background: #fff; color: #555; border: 1px solid #aaa; padding: 10px 20px; border-radius: 50px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
 
-        /* --- List Section --- */
-        .list-section { flex-grow: 1; padding: 15px; background: #f0f2f5; padding-bottom: 50px; }
+        /* List Section */
+        .list-section { padding: 15px; }
         .list-header { font-size: 16px; font-weight: bold; color: #444; margin-bottom: 15px; padding-left: 5px; display: flex; align-items: center; gap: 8px; }
 
         .q-card {
             background: #fff; border-radius: 12px; padding: 18px;
             margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; transition: transform 0.1s;
-            position: relative;
+            cursor: pointer; position: relative;
         }
         .q-card:active { transform: scale(0.98); background: #fafafa; }
         
@@ -153,23 +135,34 @@
             min-width: 50px; justify-content: center;
         }
 
-        /* --- Footer (Color Changed) --- */
+        /* --- 3. Fixed Footer --- */
         .footer {
-            text-align: center; 
-            padding: 15px 10px; 
-            font-size: 11px; 
-            color: #ccc; 
-            background: #1a237e; /* 상단바와 동일한 색상 */
-            margin-top: auto;
-            line-height: 1.6;
-            border-top: 1px solid #1a237e;
+            height: auto; min-height: 60px; flex-shrink: 0;
+            text-align: center; padding: 15px 10px; 
+            font-size: 11px; color: #ccc; 
+            background: #1a237e; /* 상단바 색상과 통일 */
+            line-height: 1.4;
+            z-index: 1000;
         }
-        .footer p { margin: 0; }
 
-        /* Modal */
+        /* --- 4. Floating Exit Button (FAB) --- */
+        .fab-exit {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 56px; height: 56px;
+            background: #d32f2f; color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 1100;
+            transition: transform 0.2s;
+        }
+        .fab-exit:active { transform: scale(0.9); }
+
+        /* Modals */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 999;
+            background: rgba(0,0,0,0.6); z-index: 2000;
             display: none; align-items: center; justify-content: center;
         }
         .modal-box {
@@ -177,79 +170,76 @@
             border-radius: 20px; padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             position: relative; animation: popUp 0.3s ease;
+            max-height: 80vh; overflow-y: auto;
         }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; max-height: 50vh; overflow-y: auto; word-break: break-all; padding: 10px; background: #f9f9f9; border-radius: 10px;}
-        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
-        .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
-        .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
-        .btn-modal-like.active { background: #ff5252; color: #fff; }
-
-        /* Menu Modal & PW */
-        .menu-list { list-style: none; padding: 0; margin: 10px 0; }
+        .menu-list { list-style: none; padding: 0; margin: 10px 0; max-height: 300px; overflow-y: auto; }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .pw-input-box { display: none; margin-top: 15px; text-align: center; background: #f9f9f9; padding: 15px; border-radius: 10px; }
         .pw-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 70%; text-align: center; font-size: 20px; letter-spacing: 5px;}
         .btn-pw-submit { padding: 10px 20px; background: #1a237e; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        
+        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; padding: 10px; background: #f9f9f9; border-radius: 10px; word-break: break-all;}
+        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
+        .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-modal-like.active { background: #ff5252; color: #fff; }
 
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Header (New Layout) -->
+        <!-- 1. Fixed Header -->
         <header class="header" translate="no">
-            <!-- Left: Exit -->
             <div class="header-left">
-                <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
-            </div>
-            
-            <!-- Center: Menu + Title -->
-            <div class="header-center">
-                <div class="header-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+                <div class="menu-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+                <!-- 초기값은 빈값, DB 로드 후 채움 -->
                 <div class="course-title" id="courseTitle">Loading...</div>
             </div>
-
-            <!-- Right: Logo -->
             <div class="header-right">
                 <img src="logo.png" alt="KAC Logo" class="kac-logo">
             </div>
         </header>
 
-        <!-- Input Area -->
-        <div class="input-section">
-            <div class="notice-text" translate="no">
-                All questions are anonymous.<br>
-                Please refrain from using offensive language.<br>
-                <br>
-                익명으로 접수됩니다.<br>
-                성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
-            </div>
+        <!-- 2. Scrollable Area (Input + List) -->
+        <div class="scroll-area">
             
-            <textarea id="qInput" class="q-input" placeholder="Type your question here..."></textarea>
-            
-            <div class="action-row" translate="no">
-                <div id="editStatusBar" class="edit-status-bar">
-                    <i class="fa-regular fa-clock"></i> <span id="editTimer">05:00</span> remaining
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="notice-text" translate="no">
+                    All questions are anonymous.<br>
+                    Please refrain from using offensive language.<br>
+                    <br>
+                    익명으로 접수됩니다.<br>
+                    성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
                 </div>
                 
-                <button id="cancelEditBtn" class="btn-cancel" onclick="cancelEditMode()">Cancel</button>
-                <button id="submitBtn" class="btn-submit" onclick="submitQuestion()">Submit</button>
+                <textarea id="qInput" class="q-input" placeholder="Type your question here..."></textarea>
+                
+                <div class="action-row" translate="no">
+                    <div id="editStatusBar" class="edit-status-bar">
+                        <i class="fa-regular fa-clock"></i> <span id="editTimer">05:00</span> remaining
+                    </div>
+                    
+                    <button id="cancelEditBtn" class="btn-cancel" onclick="cancelEditMode()">Cancel</button>
+                    <button id="submitBtn" class="btn-submit" onclick="submitQuestion()">Submit</button>
+                </div>
+            </div>
+
+            <!-- List Section -->
+            <div class="list-section">
+                <div class="list-header" translate="no">
+                    <i class="fa-solid fa-comments"></i> Live Questions
+                </div>
+                <div id="questionList">
+                    <div style="text-align:center; padding: 30px; color:#aaa;">Loading...</div>
+                </div>
             </div>
         </div>
 
-        <!-- List Area -->
-        <div class="list-section">
-            <div class="list-header" translate="no">
-                <i class="fa-solid fa-comments"></i> Live Questions
-            </div>
-            <div id="questionList">
-                <div style="text-align:center; padding: 30px; color:#aaa;">Loading...</div>
-            </div>
-        </div>
-
-        <!-- Footer -->
+        <!-- 3. Fixed Footer -->
         <div class="footer" id="appFooter" translate="no">
             KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.<br>
             문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)<br>
@@ -257,7 +247,28 @@
         </div>
     </div>
 
-    <!-- Modals (Detail & Menu) -->
+    <!-- 4. Floating Exit Button -->
+    <div class="fab-exit" onclick="exitRoom()">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+    </div>
+
+    <!-- Menu Modal (A-Z) -->
+    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
+        <div class="modal-box">
+            <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
+            <ul class="menu-list" id="roomList">
+                <!-- Javascript will populate A-Z here -->
+            </ul>
+            <div id="pwSection" class="pw-input-box">
+                <p id="pwTargetMsg" style="margin-bottom:5px;">Enter Password</p>
+                <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
+                <br>
+                <button class="btn-pw-submit" onclick="submitRoomPw()">Enter Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
         <div class="modal-box">
             <h3 style="margin:0; color:#1a237e;" translate="no">Question Detail</h3>
@@ -267,23 +278,6 @@
                 <button id="modalLikeBtn" class="btn-modal-like" onclick="doLike()">
                     <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount" style="margin-left:5px">0</span>
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
-        <div class="modal-box">
-            <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
-            <ul class="menu-list">
-                <li class="menu-item" onclick="trySwitchRoom('A')"><span>Course A</span> <i class="fa-solid fa-chevron-right"></i></li>
-                <li class="menu-item" onclick="trySwitchRoom('B')"><span>Course B</span> <i class="fa-solid fa-chevron-right"></i></li>
-                <li class="menu-item" onclick="trySwitchRoom('C')"><span>Course C</span> <i class="fa-solid fa-chevron-right"></i></li>
-            </ul>
-            <div id="pwSection" class="pw-input-box">
-                <p id="pwTargetMsg" style="margin-bottom:5px;">Enter Password</p>
-                <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
-                <br>
-                <button class="btn-pw-submit" onclick="submitRoomPw()">Enter Room</button>
             </div>
         </div>
     </div>
@@ -299,7 +293,7 @@
         let editingKey = null; 
         let editInterval = null;
 
-        // Single Tab Logic
+        // BroadcastChannel (Single Tab)
         const bc = new BroadcastChannel('catc_platform_channel');
         bc.onmessage = (event) => {
             if (event.data === 'exists') {
@@ -309,17 +303,31 @@
         };
         bc.postMessage('check');
 
+        // Populate Menu A-Z
+        const roomListEl = document.getElementById('roomList');
+        for (let i = 65; i <= 90; i++) { // ASCII A(65) to Z(90)
+            const char = String.fromCharCode(i);
+            const li = document.createElement('li');
+            li.className = 'menu-item';
+            li.onclick = () => trySwitchRoom(char);
+            li.innerHTML = `<span>Course ${char}</span> <i class="fa-solid fa-chevron-right"></i>`;
+            roomListEl.appendChild(li);
+        }
+
         window.addEventListener('load', () => {
             if (typeof firebase === 'undefined') return alert("Firebase SDK Error.");
             
-            document.getElementById('courseTitle').innerText = `Course Room ${currentRoom}`;
+            // 초기값 설정 (DB 로드 전)
+            document.getElementById('courseTitle').innerText = `Course ${currentRoom}`;
+            
             dbRef = firebase.database().ref(`courses/${currentRoom}/questions`);
             settingsRef = firebase.database().ref(`courses/${currentRoom}/settings`);
 
-            // Load Settings & Footer
+            // Listen for Settings (Course Name & Footer)
             settingsRef.on('value', snapshot => {
                 const val = snapshot.val();
                 if(val) {
+                    // 강사가 설정한 Course Name이 있으면 그것을, 없으면 기본값
                     if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
                     
                     if(val.footerText) {
@@ -329,14 +337,18 @@
             });
 
             startDataListener();
-            startLiveTimer(); 
+            
+            // 중요: 새로고침 없이 타이머 업데이트를 위해 전역 Interval 실행
+            setInterval(updateLiveTimers, 1000);
         });
 
-        // Data Listener
+        // Data Listener (Real-time updates)
         function startDataListener() {
             dbRef.on('value', (snapshot) => {
                 const listDiv = document.getElementById('questionList');
+                // 기존 내용을 지우고 다시 그립니다. (Firebase realtime)
                 listDiv.innerHTML = "";
+                
                 const data = snapshot.val();
                 questionsData = data || {};
 
@@ -346,6 +358,8 @@
                 }
 
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                
+                // 정렬: 좋아요순 > 최신순
                 items.sort((a, b) => {
                     const diffLike = (b.likes || 0) - (a.likes || 0);
                     if(diffLike !== 0) return diffLike;
@@ -357,6 +371,7 @@
                 items.forEach(item => {
                     const myPostTime = myPosts[item.id];
                     let isMineAndEditable = false;
+                    // 작성 5분 이내 체크
                     if(myPostTime && (Date.now() - myPostTime < 5 * 60 * 1000)) {
                         isMineAndEditable = true;
                     }
@@ -367,9 +382,10 @@
                     
                     let editControlsHtml = '';
                     if (isMineAndEditable) {
+                        // data-time 속성에 작성시간 저장 -> setInterval이 읽어서 업데이트
                         editControlsHtml = `
                             <div class="edit-controls">
-                                <div class="timer-badge live-timer" data-time="${myPostTime}">05:00</div>
+                                <div class="timer-badge live-timer" data-time="${myPostTime}">Calculating...</div>
                                 <button class="btn-mini-edit" onclick="event.stopPropagation(); loadToEdit('${item.id}')">
                                     <i class="fa-solid fa-pen"></i> Edit
                                 </button>
@@ -391,43 +407,50 @@
                     `;
                     listDiv.appendChild(div);
                 });
+                
+                // 리스트 렌더링 직후 타이머 한 번 업데이트 (깜빡임 방지)
+                updateLiveTimers();
             });
         }
 
-        // Timer
-        function startLiveTimer() {
-            setInterval(() => {
-                const timers = document.querySelectorAll('.live-timer');
-                const now = Date.now();
-                timers.forEach(span => {
-                    const postTime = parseInt(span.getAttribute('data-time'));
-                    const diff = 5 * 60 * 1000 - (now - postTime);
-                    if (diff <= 0) span.parentElement.innerHTML = ""; 
-                    else {
-                        const m = Math.floor(diff / 60000);
-                        const s = Math.floor((diff % 60000) / 1000);
-                        span.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
-                    }
-                });
-            }, 1000);
+        // Global Timer Function (새로고침 없이 시간 줄어들게 함)
+        function updateLiveTimers() {
+            const timers = document.querySelectorAll('.live-timer');
+            const now = Date.now();
+            
+            timers.forEach(span => {
+                const postTime = parseInt(span.getAttribute('data-time'));
+                const diff = 5 * 60 * 1000 - (now - postTime);
+                
+                if (diff <= 0) {
+                    // 시간이 다 되면 버튼과 타이머 영역 제거
+                    span.parentElement.innerHTML = ""; 
+                } else {
+                    const m = Math.floor(diff / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    span.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
+                }
+            });
         }
 
-        // Submit & Edit
+        // Submit Logic
         function submitQuestion() {
             const input = document.getElementById('qInput');
             const text = input.value.trim();
             if (!text) return alert("Please enter your question.");
 
+            // 수정 모드
             if (editingKey) {
                 dbRef.child(editingKey).update({ text: text })
                     .then(() => { 
                         alert("Modified successfully."); 
-                        cancelEditMode(); // [FIXED] Changed from resetInput() to cancelEditMode()
+                        cancelEditMode(); 
                     })
                     .catch(e => alert("Error: " + e.message));
                 return;
             }
 
+            // 도배 방지 (3분)
             const lastPostTime = localStorage.getItem('last_post_time');
             const now = Date.now();
             if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
@@ -447,26 +470,38 @@
             });
         }
 
+        // Edit Mode
         function loadToEdit(key) {
             const item = questionsData[key];
             const input = document.getElementById('qInput');
-            input.value = item.text; input.focus();
+            input.value = item.text; 
+            input.focus();
+            
             editingKey = key;
             document.getElementById('submitBtn').innerText = "Modify";
             document.getElementById('cancelEditBtn').style.display = "inline-block";
             document.getElementById('editStatusBar').style.display = 'flex';
 
+            // 입력창 내부 타이머
             const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
             const postTime = myPosts[key];
+            
             if(editInterval) clearInterval(editInterval);
             updateEditTimerDisplay(postTime); 
             editInterval = setInterval(() => updateEditTimerDisplay(postTime), 1000);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // 입력창으로 스크롤 이동 (상단)
+            document.querySelector('.scroll-area').scrollTop = 0;
         }
 
         function updateEditTimerDisplay(postTime) {
             const remaining = (5 * 60 * 1000) - (Date.now() - postTime);
-            if (remaining <= 0) { clearInterval(editInterval); cancelEditMode(); alert("Edit time expired."); return; }
+            if (remaining <= 0) { 
+                clearInterval(editInterval); 
+                cancelEditMode(); 
+                alert("Edit time expired."); 
+                return; 
+            }
             const m = Math.floor(remaining / 60000);
             const s = Math.floor((remaining % 60000) / 1000);
             document.getElementById('editTimer').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
@@ -481,15 +516,20 @@
             if(editInterval) clearInterval(editInterval);
         }
 
+        // Like Logic
         function openDetail(key) {
             const item = questionsData[key];
             if(!item) return;
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('modalLikeCount').innerText = item.likes || 0;
+            
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             const btn = document.getElementById('modalLikeBtn');
             btn.onclick = () => doLike(key);
-            if(likedMap[key]) btn.classList.add('active'); else btn.classList.remove('active');
+            
+            if(likedMap[key]) btn.classList.add('active'); 
+            else btn.classList.remove('active');
+            
             document.getElementById('detailModal').style.display = 'flex';
         }
 
@@ -497,6 +537,7 @@
             if(!key) return;
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             if (likedMap[key]) return alert("You already liked this.");
+            
             dbRef.child(key).transaction((post) => {
                 if (post) post.likes = (post.likes || 0) + 1;
                 return post;
@@ -505,7 +546,11 @@
                     likedMap[key] = true;
                     localStorage.setItem(`liked_${currentRoom}`, JSON.stringify(likedMap));
                     const btn = document.getElementById('modalLikeBtn');
-                    if(btn) { btn.classList.add('active'); const cnt = document.getElementById('modalLikeCount'); cnt.innerText = parseInt(cnt.innerText) + 1; }
+                    if(btn) { 
+                        btn.classList.add('active'); 
+                        const cnt = document.getElementById('modalLikeCount'); 
+                        cnt.innerText = parseInt(cnt.innerText) + 1; 
+                    }
                 }
             });
         }
@@ -515,6 +560,7 @@
         function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
         function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
 
+        // Room Switch Logic
         let targetSwitchRoom = null;
         function trySwitchRoom(roomId) {
             if(roomId === currentRoom) return alert("Already here.");
