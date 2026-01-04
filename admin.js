@@ -33,6 +33,8 @@ const authMgr = {
         });
     },
     logout: function() {
+        // 로그아웃 시 로컬 스토리지의 룸 고정도 해제
+        localStorage.removeItem('kac_active_room');
         sessionStorage.removeItem('isMasterAdmin');
         location.reload(); 
     }
@@ -41,7 +43,14 @@ const authMgr = {
 // --- 2. Data ---
 const dataMgr = {
     init: function() {
-        this.changeRoom('A');
+        // [중요] PC별 코스 고정 (Lock) 확인
+        const lockedRoom = localStorage.getItem('kac_active_room');
+        if (lockedRoom) {
+            this.changeRoom(lockedRoom);
+        } else {
+            this.changeRoom('A');
+        }
+
         ui.initRoomSelect(); // 실시간 리스너 등록
         
         document.getElementById('roomSelect').addEventListener('change', (e) => this.changeRoom(e.target.value));
@@ -59,8 +68,11 @@ const dataMgr = {
     changeRoom: function(room) {
         state.room = room;
         ui.updateHeaderRoom(room);
+        
+        // 기존 리스너 해제
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.quiz) dbRef.quiz.off();
+        if(dbRef.status) dbRef.status.off();
         
         const rPath = `courses/${room}`;
         dbRef.settings = db.ref(`${rPath}/settings`);
@@ -69,9 +81,14 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
-        // 설정 로드
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
-        dbRef.status.child('roomStatus').once('value', s => ui.renderRoomStatus(s.val()));
+        
+        // [중요] 상태 실시간 감지 -> 오버레이 제어
+        dbRef.status.child('roomStatus').on('value', s => {
+            const status = s.val() || 'idle';
+            ui.renderRoomStatus(status); 
+            ui.toggleMainLock(status); 
+        });
 
         const code = this.getRoomCode(room);
         const studentUrl = `${window.location.origin}/index.html?code=${code}`; 
@@ -95,16 +112,20 @@ const dataMgr = {
         const newName = document.getElementById('courseNameInput').value;
         const updates = { courseName: newName };
         
-        // 제목 즉시 반영
         document.getElementById('displayCourseTitle').innerText = newName;
 
-        // 방 상태 저장 (저장만 하면 initRoomSelect의 .on 리스너가 알아서 UI 갱신함)
         const statusVal = document.getElementById('roomStatusSelect').value;
         dbRef.status.child('roomStatus').set(statusVal);
 
         if(pw && pw.length >= 4) updates.password = pw;
         dbRef.settings.update(updates, (err) => {
-            if(err) alert("Error."); else { alert("Saved."); }
+            if(err) alert("Error."); 
+            else { 
+                // 저장 시 현재 PC를 해당 룸으로 고정
+                localStorage.setItem('kac_active_room', state.room);
+                document.getElementById('roomSelect').disabled = true;
+                alert("Saved. This PC is now locked to Room " + state.room); 
+            }
         });
     },
 
@@ -135,13 +156,14 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
-    // [수정됨] .once -> .on (실시간 감지)
     initRoomSelect: function() {
         db.ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
-            // 리렌더링 전 현재 선택값 기억
-            const currentSelection = sel.value || state.room; 
+            
+            // 로컬 스토리지에 잠긴 방 확인
+            const lockedRoom = localStorage.getItem('kac_active_room');
+            const targetRoom = lockedRoom || sel.value || state.room; 
             
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
@@ -153,18 +175,20 @@ const ui = {
                 opt.value = char;
                 if(status === 'active') {
                     opt.innerText = `Room ${char} (🟢 사용중)`;
-                    opt.style.fontWeight = 'bold';
-                    opt.style.color = '#fbbf24'; 
+                    opt.style.fontWeight = 'bold'; opt.style.color = '#fbbf24'; 
                 } else {
                     opt.innerText = `Room ${char}`;
                 }
                 
-                // 기억해둔 값으로 다시 선택
-                if(char === currentSelection) opt.selected = true;
+                if(char === targetRoom) opt.selected = true;
                 sel.appendChild(opt);
             }
-            // 강제 값 유지 (DOM 초기화 방지)
-            sel.value = currentSelection;
+            sel.value = targetRoom;
+            
+            if(lockedRoom) {
+                sel.disabled = true;
+                if(state.room !== lockedRoom) dataMgr.changeRoom(lockedRoom);
+            }
         });
     },
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
@@ -172,16 +196,15 @@ const ui = {
         document.getElementById('courseNameInput').value = data.courseName || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
-    renderRoomStatus: function(st) {
-        document.getElementById('roomStatusSelect').value = st || 'idle';
-    },
+    renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
+    
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         new QRCode(qrDiv, { text: url, width: 50, height: 50 });
     },
     
-    // QR 확대 모달
+    // [중요] QR 확대 모달 열기 (그리는 시점 지연)
     openQrModal: function() {
         const modal = document.getElementById('qrModal');
         const bigTarget = document.getElementById('qrBigTarget');
@@ -202,6 +225,16 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
+    // [NEW] 화면 잠금/해제
+    toggleMainLock: function(status) {
+        const overlay = document.getElementById('statusOverlay');
+        if (status === 'active') {
+            overlay.style.display = 'none'; 
+        } else {
+            overlay.style.display = 'flex'; 
+        }
+    },
+
     copyLink: function() {
         document.getElementById('studentLink').select();
         document.execCommand('copy'); alert("Copied.");
@@ -212,10 +245,7 @@ const ui = {
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
         db.ref(`courses/${state.room}/status/mode`).set(mode);
-
-        if(mode === 'quiz' && state.quizList.length > 0) {
-            quizMgr.showQuiz(); 
-        }
+        if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
     },
     filterQa: function(filter) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -403,7 +433,8 @@ const quizMgr = {
             });
         });
     },
-    setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; },
+    setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
+    ,
     closeQuizMode: function() {
         ui.setMode('qa');
     }
