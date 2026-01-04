@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - KAC Instructor</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+  body { 
+    background: #0f172a; height: 100vh; display: flex; flex-direction: column; 
+    align-items: center; justify-content: center; margin: 0; color: #fff;
+  }
+  .login-card {
+    background: #1e293b; padding: 50px 40px; border-radius: 20px; width: 400px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .logo { font-size: 26px; font-weight: 800; margin-bottom: 10px; display: block; letter-spacing: -0.5px; }
+  .logo span { color: #3b82f6; }
+  
+  .sub-title { font-size: 18px; color: #cbd5e1; margin-bottom: 30px; font-weight: 600; }
+  .info-text { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+  
+  input {
+    width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #334155;
+    background: #0f172a; color: #fff; margin-bottom: 15px; font-size: 16px; outline: none;
+    text-align: center; letter-spacing: 2px; transition: 0.3s;
+  }
+  input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+  
+  button {
+    width: 100%; padding: 15px; border-radius: 10px; border: none;
+    background: #3b82f6; color: #fff; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: 0.3s; margin-top: 10px;
+  }
+  button:hover { background: #2563eb; transform: translateY(-2px); }
+  
+  .message { margin-top: 20px; font-size: 14px; min-height: 20px; color: #ef4444; }
+</style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo">KAC <span>Q&A</span> Platform</div>
+    <div class="sub-title">강사용 (Instructor)</div>
+    <p class="info-text">접속 비밀번호를 입력하세요</p>
+    
+    <input type="password" id="pwInput" placeholder="PASSWORD" onkeyup="if(window.event.keyCode==13){tryLogin()}">
+    <button onclick="tryLogin()">Login / 접속</button>
+    <div id="msg" class="message"></div>
+  </div>
+
+  <script>
+    // Config: 5 Hours in milliseconds
+    const SESSION_DURATION = 5 * 60 * 60 * 1000;
+    const ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // '1234'
+
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function tryLogin() {
+        const input = document.getElementById('pwInput').value;
+        const msgBox = document.getElementById('msg');
+        
+        if(!input) { msgBox.textContent = "비밀번호를 입력해주세요."; return; }
+
+        const inputHash = await sha256(input);
+        
+        if(inputHash === ADMIN_HASH) {
+            msgBox.style.color = "#4ade80";
+            msgBox.textContent = "접속 성공!";
+            
+            // Save Session
+            const sessionData = {
+                token: 'admin_granted',
+                expiry: Date.now() + SESSION_DURATION
+            };
+            localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
+            
+            setTimeout(() => location.replace('admin.html'), 500);
+        } else {
+            msgBox.style.color = "#ef4444";
+            msgBox.textContent = "비밀번호가 일치하지 않습니다.";
+            document.getElementById('pwInput').value = "";
+            document.getElementById('pwInput').focus();
+        }
+    }
+    
+    // Auto Login Check
+    window.onload = function() {
+        const session = JSON.parse(localStorage.getItem('kac_admin_session'));
+        if(session && session.token === 'admin_granted') {
+            if(Date.now() < session.expiry) {
+                location.replace('admin.html');
+            } else {
+                localStorage.removeItem('kac_admin_session'); // Expired
+            }
+        }
+    }
+  </script>
+</body>
+</html>
