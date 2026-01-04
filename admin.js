@@ -166,10 +166,10 @@ const ui = {
     },
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
-        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+        const qrDiv = document.getElementById('qrcode'); 
+        qrDiv.innerHTML = "";
+        // 사이드바용 작은 QR
         new QRCode(qrDiv, { text: url, width: 50, height: 50 });
-        const big = document.getElementById('qrBigTarget'); big.innerHTML = "";
-        new QRCode(big, { text: url, width: 300, height: 300 });
     },
     copyLink: function() {
         document.getElementById('studentLink').select();
@@ -182,7 +182,6 @@ const ui = {
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
         db.ref(`courses/${state.room}/status/mode`).set(mode);
 
-        // [수정] 퀴즈 모드로 다시 들어왔을 때, 기존 문제 유지 및 표시
         if(mode === 'quiz' && state.quizList.length > 0) {
             quizMgr.showQuiz(); 
         }
@@ -212,13 +211,29 @@ const ui = {
         document.getElementById('qaModal').style.display = 'flex';
     },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
+    
+    // [중요 수정] QR 확대 로직 변경
+    openQrModal: function() {
+        const modal = document.getElementById('qrModal');
+        const bigTarget = document.getElementById('qrBigTarget');
+        const url = document.getElementById('studentLink').value;
+
+        // 1. 모달을 먼저 보여줌 (이래야 QR이 그려짐)
+        modal.style.display = 'flex';
+        
+        // 2. 기존 QR 지우고 새로 그리기
+        bigTarget.innerHTML = "";
+        
+        // 약간의 지연시간을 두어 렌더링 안정성 확보
+        setTimeout(() => {
+            new QRCode(bigTarget, { text: url, width: 300, height: 300 });
+        }, 50);
+    },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
     
-    // [수정] Day/Night Toggle 로직
     toggleNightMode: function() { 
         document.body.classList.toggle('night-mode'); 
         const isNight = document.body.classList.contains('night-mode');
-        // 아이콘 활성화 상태 변경
         if(isNight) {
             document.getElementById('iconSun').classList.remove('active');
             document.getElementById('iconMoon').classList.add('active');
@@ -227,7 +242,6 @@ const ui = {
             document.getElementById('iconMoon').classList.remove('active');
         }
     },
-    
     toggleRightPanel: function() {
         const p = document.getElementById('rightPanel'); p.classList.toggle('open');
         document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
@@ -379,38 +393,31 @@ const quizMgr = {
     },
     setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
     ,
-    // [NEW] 퀴즈 모드 종료 (문제 상태 유지, 화면 전환)
     closeQuizMode: function() {
-        ui.setMode('qa'); // Q&A 모드로 전환 (DB 업데이트 포함)
+        ui.setMode('qa');
     }
 };
 
-// --- 5. Print (수정됨: 입력 모달 -> 미리보기) ---
+// --- 5. Print ---
 const printMgr = {
-    // 1. 입력 모달 열기
     openInputModal: function() {
         document.getElementById('printDateInput').value = "";
         document.getElementById('printProfInput').value = "";
         document.getElementById('printInputModal').style.display = 'flex';
     },
-    
-    // 2. 입력 확인/스킵
     confirmPrint: function(isSkip) {
         const date = isSkip ? "" : document.getElementById('printDateInput').value;
         const prof = isSkip ? "" : document.getElementById('printProfInput').value;
         this.closeInputModal();
         this.openPreview(date, prof);
     },
-
     closeInputModal: function() {
         document.getElementById('printInputModal').style.display = 'none';
     },
-
-    // 3. 미리보기 열기 (데이터 주입)
     openPreview: function(date, prof) {
         document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value;
-        document.getElementById('doc-date').innerText = date || ""; // 입력값 사용
-        document.getElementById('doc-prof').innerText = prof || ""; // 입력값 사용
+        document.getElementById('doc-date').innerText = date || "";
+        document.getElementById('doc-prof').innerText = prof || "";
         
         const listBody = document.getElementById('docListBody'); listBody.innerHTML = "";
         let items = Object.values(state.qaData || {});
@@ -424,7 +431,6 @@ const printMgr = {
         }
         document.getElementById('printPreviewModal').style.display = 'flex';
     },
-    
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
     executePrint: function() { window.print(); }
 };
