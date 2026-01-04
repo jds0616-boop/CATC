@@ -79,10 +79,12 @@
         .btn-submit {
             background: var(--accent-color); color: white; padding: 8px 20px; 
             border-radius: 20px; font-weight: 700; border: none; font-size: 13px; cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s; display: flex; align-items: center; gap: 6px;
         }
         .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-submit:active { transform: scale(0.95); }
+        .btn-submit.mode-edit { background: #10b981; } /* 수정 모드일 때 녹색 */
+        
         .timer-msg { font-size: 11px; color: #ef4444; font-weight: 700; margin-right: 10px; visibility: hidden; }
 
         /* List Area */
@@ -116,22 +118,26 @@
         }
         .q-text.expanded { -webkit-line-clamp: unset; overflow: visible; }
         
-        .q-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        /* Bottom Action Bar */
+        .q-bottom { display: flex; justify-content: space-between; align-items: center; height: 32px; }
         
+        .q-left-actions { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; }
+        .edit-timer { font-weight: 700; color: #ef4444; font-size: 11px; background: rgba(239, 68, 68, 0.1); padding: 2px 6px; border-radius: 4px; }
+        
+        .action-btn { 
+            background: transparent; border: 1px solid #cbd5e1; color: #64748b;
+            padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+        }
+        .btn-edit { color: #3b82f6; border-color: #3b82f6; background: #eff6ff; }
+        .btn-del { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
+
         .like-btn {
             background: var(--input-bg); color: #64748b; padding: 6px 12px; border-radius: 20px;
             font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;
-            transition: 0.2s;
+            transition: 0.2s; margin-left: auto; /* 우측 정렬 */
         }
         .like-btn.active { background: #fee2e2; color: #ef4444; }
         body.night-mode .like-btn.active { background: #7f1d1d; color: #fca5a5; }
-
-        .edit-btn { 
-            background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
-            width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; cursor: pointer;
-        }
-        .edit-timer { font-size: 11px; color: #ef4444; font-weight: 700; }
 
         /* Quiz Overlay */
         .quiz-overlay {
@@ -188,7 +194,7 @@
         <!-- Input Area -->
         <div class="input-area">
             <div class="input-wrapper">
-                <textarea id="qInput" class="q-input" placeholder="질문을 입력해주세요 (익명)" maxlength="100"></textarea>
+                <textarea id="qInput" class="q-input" placeholder="질문을 입력해주세요 (100자 이내, 익명)" maxlength="100"></textarea>
                 <div class="input-bottom">
                     <span id="charCount" class="char-counter">0 / 100</span>
                     <div style="display:flex; align-items:center;">
@@ -237,64 +243,43 @@
     <!-- Scripts -->
     <script src="config.js"></script>
     <script>
-        // 전역 변수 선언 (함수 내에서 초기화됨)
         let dbRef = {}; 
         let currentRoom = null;
-        let myQs = {};
+        let myQs = {}; // { key: timestamp }
         let myLikes = {};
         let lastPostTime = 0;
         let editInterval = null;
         let currentQuizId = null;
         let canAnswer = false;
-        let editingKey = null;
+        let editingKey = null; // 현재 수정 중인 질문 키
 
-        // [중요] 초기화 로직 (Async IIFE)
+        // --- 초기화 ---
         (async function init() {
-            // 1. 브로드캐스트 채널 (중복 탭 방지)
             const bc = new BroadcastChannel('kac_student_channel');
             bc.onmessage = (e) => { 
-                if(e.data === 'here') { 
-                    alert("다른 탭에서 이미 열려있습니다."); 
-                    window.location.href="about:blank"; 
-                } 
+                if(e.data === 'here') { alert("다른 탭에서 이미 열려있습니다."); window.location.href="about:blank"; } 
             };
             bc.postMessage('here');
 
-            // 2. URL 파라미터 파싱
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             const directRoom = params.get('room');
 
-            // 3. 방 찾기 (비동기 대기)
-            if (code) {
-                // DB에서 코드 조회
-                currentRoom = await resolveRoomFromCode(code);
-                console.log("Resolved Code:", code, "-> Room:", currentRoom);
-            } else if (directRoom) {
-                currentRoom = directRoom;
-            }
+            if (code) currentRoom = await resolveRoomFromCode(code);
+            else if (directRoom) currentRoom = directRoom;
 
-            // 4. 방을 못 찾았을 경우 처리
             if (!currentRoom) {
-                document.body.innerHTML = `
-                    <div style='display:flex;height:100vh;justify-content:center;align-items:center;flex-direction:column; text-align:center;'>
-                        <h2 style='margin-bottom:10px;'>올바르지 않은 링크입니다.</h2>
-                        <p style='color:#666;'>강사님께 QR코드를 다시 확인해주세요.</p>
-                        <p style='font-size:12px; color:#aaa; margin-top:20px;'>Error: Room Not Found (${code || 'No Code'})</p>
-                    </div>`;
-                return; // 여기서 실행 종료
+                document.body.innerHTML = "<div style='display:flex;height:100vh;justify-content:center;align-items:center;flex-direction:column;text-align:center;'><h2>유효하지 않은 링크입니다.</h2></div>";
+                return;
             }
 
-            // 5. 정상 진입 -> UI 초기화 및 DB 연결
             document.getElementById('roomBadge').innerText = `ROOM ${currentRoom}`;
             
-            // 로컬 스토리지 로드
             myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
             myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
             lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
 
-            // DB 참조 생성
-            const db = firebase.database(); // config.js의 db 사용
+            const db = firebase.database();
             dbRef = {
                 qa: db.ref(`courses/${currentRoom}/questions`),
                 quiz: db.ref(`courses/${currentRoom}/activeQuiz`),
@@ -303,36 +288,31 @@
                 status: db.ref(`courses/${currentRoom}/status/mode`)
             };
 
-            // 리스너 연결
             setupListeners();
             checkCooldown();
-
-        })(); // End of Init
-
-        // --- 함수 정의 ---
+        })();
 
         function setupListeners() {
-            // 강의명 로드
             dbRef.settings.on('value', snap => {
                 const val = snap.val() || {};
                 document.getElementById('roomTitle').innerText = val.courseName ? val.courseName : `교육 과정`;
             });
 
-            // 모드 변경 감지
+            // [모드 동기화] 강사가 Q&A로 바꾸면 퀴즈창 숨김 (강제 이동)
             dbRef.status.on('value', snap => {
                 if(snap.val() === 'qa') {
                     document.getElementById('quizOverlay').style.display = 'none';
                 }
             });
 
-            // Q&A 리스트 로드
+            // [Q&A 목록 렌더링]
             dbRef.qa.on('value', snap => {
                 const data = snap.val() || {};
                 const list = document.getElementById('qList');
                 list.innerHTML = "";
                 let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
                 
-                // 정렬: 좋아요 순 -> 최신 순
+                // 공감순 -> 최신순 정렬
                 items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
                 
                 items.forEach(item => {
@@ -341,12 +321,20 @@
                     const isMine = myQs[item.id] ? 'my-q' : '';
                     const likedClass = myLikes[item.id] ? 'active' : '';
                     
-                    let editHtml = '';
+                    // 내가 쓴 글이고 5분 이내라면 수정/삭제 UI 표시
+                    let leftActions = '';
                     if(isMine) {
                         const postTime = myQs[item.id];
                         const diff = Date.now() - postTime;
-                        if(diff < 300000) { // 5분 수정 가능
-                            editHtml = `<span id="timer-${item.id}" class="edit-timer"></span><button class="edit-btn" onclick="editQ('${item.id}')"><i class="fa-solid fa-pen"></i></button>`; 
+                        // 5분(300000ms) 이내만 허용
+                        if(diff < 300000) { 
+                            leftActions = `
+                                <div class="q-left-actions" id="actions-${item.id}">
+                                    <span class="edit-timer" id="timer-${item.id}">5:00</span>
+                                    <button class="action-btn btn-edit" onclick="editQ('${item.id}')"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="action-btn btn-del" onclick="deleteQ('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            `;
                         }
                     }
                     
@@ -354,37 +342,30 @@
                         <div class="q-card ${isMine}">
                             <div class="q-text" onclick="this.classList.toggle('expanded')">${escapeHtml(item.text)}</div>
                             <div class="q-bottom">
-                                ${editHtml}
+                                ${leftActions}
                                 <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')">
-                                    <i class="fa-solid fa-heart${myLikes[item.id]?'':' has-text-grey-light'}"></i> 
+                                    <i class="fa-solid fa-thumbs-up${myLikes[item.id]?'':' has-text-grey-light'}"></i> 
                                     <span>${item.likes||0}</span>
                                 </div>
                             </div>
                         </div>`;
                 });
-                startEditTimers();
+                startEditTimers(); // 타이머 가동
             });
 
-            // 퀴즈 상태 감지
+            // 퀴즈 처리 (생략 - 기존 유지)
             dbRef.quiz.on('value', snap => {
                 const q = snap.val();
                 const overlay = document.getElementById('quizOverlay');
-                
-                if(!q || q.status === 'result') { 
-                    overlay.style.display = 'none'; 
-                    return; 
-                }
-
+                if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
                 if(currentQuizId !== q.id) {
                     document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
                     document.getElementById('quizWait').style.display = 'none';
                     currentQuizId = q.id;
                 }
-
                 overlay.style.display = 'flex';
                 const btns = document.querySelectorAll('.quiz-opt-btn');
                 const msg = document.getElementById('quizStatusMsg');
-
                 if(q.status === 'open') {
                     canAnswer = true;
                     msg.innerText = "정답을 선택하세요!";
@@ -404,7 +385,6 @@
             });
         }
 
-        // 입력창 글자수 카운트
         const qInput = document.getElementById('qInput');
         const charCount = document.getElementById('charCount');
         qInput.addEventListener('input', () => {
@@ -414,7 +394,7 @@
             else charCount.classList.remove('limit');
         });
 
-        // 5분 타이머 로직
+        // 5분 카운트다운 로직
         function startEditTimers() {
             if(editInterval) clearInterval(editInterval);
             editInterval = setInterval(() => {
@@ -423,9 +403,12 @@
                     const key = el.id.split('-')[1];
                     const postTime = myQs[key];
                     if(postTime) {
-                        const remain = 300000 - (now - postTime);
-                        if(remain <= 0) { el.parentElement.querySelector('.edit-btn').style.display='none'; el.innerText=""; } 
-                        else { 
+                        const remain = 300000 - (now - postTime); // 5분
+                        if(remain <= 0) { 
+                            // 시간 초과 시 버튼 그룹 숨김
+                            const actionDiv = document.getElementById(`actions-${key}`);
+                            if(actionDiv) actionDiv.style.display = 'none';
+                        } else { 
                             const m = Math.floor(remain/60000); 
                             const s = Math.floor((remain%60000)/1000); 
                             el.innerText = `${m}:${s<10?'0'+s:s}`; 
@@ -435,40 +418,61 @@
             }, 1000);
         }
 
-        // 질문 수정 모드 진입
+        // [수정 모드]
         function editQ(key) {
             dbRef.qa.child(key).once('value', s => {
                 const txt = s.val().text;
                 document.getElementById('qInput').value = txt;
-                document.getElementById('submitBtn').innerHTML = '수정 <i class="fa-solid fa-check"></i>';
-                editingKey = key; 
+                
+                const btn = document.getElementById('submitBtn');
+                btn.innerHTML = 'Update <i class="fa-solid fa-pen"></i>';
+                btn.classList.add('mode-edit'); // 초록색 변경
+                
+                editingKey = key; // 현재 수정중인 키 저장
                 document.getElementById('qInput').focus();
             });
         }
 
-        // 질문 등록/수정 제출
+        // [삭제]
+        function deleteQ(key) {
+            if(confirm("정말 삭제하시겠습니까?")) {
+                dbRef.qa.child(key).remove();
+                alert("삭제되었습니다.");
+            }
+        }
+
+        // [제출] (신규 등록 & 수정 공통)
         function submitQ() {
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
             
+            // 1. 수정 모드일 경우 (쿨타임 체크 안함)
             if(editingKey) {
                 dbRef.qa.child(editingKey).update({ text: txt });
+                
+                // 초기화
                 editingKey = null; 
-                document.getElementById('submitBtn').innerHTML = 'Send <i class="fa-solid fa-paper-plane"></i>'; 
+                const btn = document.getElementById('submitBtn');
+                btn.innerHTML = 'Send <i class="fa-solid fa-paper-plane"></i>'; 
+                btn.classList.remove('mode-edit');
+                
                 document.getElementById('qInput').value = ""; 
                 alert("수정되었습니다."); 
                 return;
             }
             
+            // 2. 신규 등록일 경우 (쿨타임 체크)
             const now = Date.now();
             if(now - lastPostTime < 120000) return; // 2분 쿨타임
             
             const ref = dbRef.qa.push();
             ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'normal' });
             
+            // 로컬에 내 글 기록 (5분 수정용)
             myQs[ref.key] = now; 
             localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
             
+            // 쿨타임 기록 (2분 제한용)
             lastPostTime = now; 
             localStorage.setItem(`lastTime_${currentRoom}`, now);
             
@@ -476,23 +480,23 @@
             checkCooldown();
         }
 
-        // 쿨타임 UI 처리
         function checkCooldown() {
             const diff = Date.now() - lastPostTime;
             const btn = document.getElementById('submitBtn');
             const msg = document.getElementById('coolTimer');
-            if(diff < 120000) {
+            
+            // 수정 모드가 아닐 때만 쿨타임 적용
+            if(!editingKey && diff < 120000) {
                 btn.disabled = true; 
                 msg.style.visibility = 'visible';
-                msg.innerText = `대기 ${Math.ceil((120000 - diff)/1000)}초`; 
+                msg.innerText = `Wait ${Math.ceil((120000 - diff)/1000)}s`; 
                 setTimeout(checkCooldown, 1000);
             } else { 
-                btn.disabled = false; 
+                if(!editingKey) btn.disabled = false; // 수정모드가 아닐때만 품
                 msg.style.visibility = 'hidden'; 
             }
         }
 
-        // 좋아요 토글
         function toggleLike(key) {
             if(myLikes[key]) return; 
             dbRef.qa.child(key).transaction(post => { 
@@ -503,26 +507,16 @@
             localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
         }
 
-        // 퀴즈 정답 제출
         function sendAns(choice) {
             if(!canAnswer) return;
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.quiz-opt-btn')[choice-1].classList.add('selected');
-            
             let myToken = localStorage.getItem('userToken');
-            if(!myToken) { 
-                myToken = Math.random().toString(36).substr(2); 
-                localStorage.setItem('userToken', myToken); 
-            }
-            
-            dbRef.ans.child(currentQuizId).child(myToken).set({ 
-                choice: choice, 
-                timestamp: firebase.database.ServerValue.TIMESTAMP 
-            });
+            if(!myToken) { myToken = Math.random().toString(36).substr(2); localStorage.setItem('userToken', myToken); }
+            dbRef.ans.child(currentQuizId).child(myToken).set({ choice: choice, timestamp: firebase.database.ServerValue.TIMESTAMP });
             document.getElementById('quizWait').style.display = 'block';
         }
 
-        // 메뉴 모달
         function openMenu() {
             const list = document.getElementById('roomList'); list.innerHTML = "";
             for(let i=65; i<=90; i++) { 
@@ -537,8 +531,7 @@
             if(!pw) return;
             const db = firebase.database();
             db.ref(`courses/${targetRoom}/settings/password`).once('value', snap => {
-                if(String(snap.val()) === String(pw) || String(snap.val()) === 'undefined' && pw === '1234') {
-                    // 수동 방 이동 (URL에 직접 room=A 붙임 - 테스트용)
+                if(String(snap.val()) === String(pw) || (String(snap.val()) === 'undefined' && pw === '1234')) {
                     window.location.search = `?room=${targetRoom}`;
                 } else {
                     alert("비밀번호가 틀렸습니다.");
