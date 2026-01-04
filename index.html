@@ -38,27 +38,27 @@
         }
         .header-icon { font-size: 20px; color: #fff; cursor: pointer; padding: 10px; }
         
-        /* 2단계 키운 폰트 사이즈 */
         .course-title { 
             font-size: 20px; font-weight: bold; color: #fff; 
             flex-grow: 1; text-align: center; line-height: 1.2;
             padding: 0 10px; word-break: keep-all;
         }
         
-        /* 로고 크기 축소 (2/3 수준) */
-        .kac-logo { height: 22px; width: auto; object-fit: contain; margin-left: 5px; background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 3px; }
+        /* 로고 배경 제거 및 깔끔하게 처리 */
+        .kac-logo { 
+            height: 22px; width: auto; object-fit: contain; 
+            margin-left: 10px; 
+        }
 
         /* --- Input Section --- */
-        /* 배경색 추가로 입력창 강조 */
         .input-section { 
             padding: 20px; 
-            background: #e8eaf6; /* 연한 남색 배경 */
+            background: #e8eaf6; 
             border-bottom: 1px solid #c5cae9; 
             margin-bottom: 10px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
         }
         
-        /* 경고 문구 진하게 */
         .notice-text { 
             font-size: 13px; color: #333; font-weight: 500;
             margin-bottom: 15px; line-height: 1.5; 
@@ -67,10 +67,9 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        /* 입력창 디자인: 굵은 테두리(Navy) */
         .q-input {
             width: 100%; height: 110px; padding: 15px;
-            border: 2px solid #1a237e; /* 상단바 색상과 동일 */
+            border: 2px solid #1a237e; 
             border-radius: 12px;
             font-size: 16px; resize: none;
             background: #fff;
@@ -81,7 +80,6 @@
         
         .action-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 12px; }
         
-        /* 수정 시 입력창 상단에 뜨는 타이머 */
         .edit-status-bar { flex-grow: 1; font-weight: bold; color: #d32f2f; display: none; align-items: center; gap: 5px;}
 
         .btn-submit {
@@ -106,7 +104,7 @@
         }
         .q-card:active { transform: scale(0.98); background: #fafafa; }
         
-        .q-left { display: flex; align-items: center; width: 65%; } /* Width reduced to make room for edit controls */
+        .q-left { display: flex; align-items: center; width: 65%; } 
         .user-icon { 
             width: 40px; height: 40px; background: #e8eaf6; color: #1a237e; 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -118,16 +116,9 @@
             overflow: hidden; text-overflow: ellipsis; word-break: break-all;
         }
         
-        /* 오른쪽 영역 (타이머 + 수정버튼 + 좋아요) */
-        .q-right { 
-            width: 35%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; 
-        }
+        .q-right { width: 35%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 
-        /* 수정 컨트롤 영역 (타이머, 수정버튼) */
-        .edit-controls {
-            display: flex; flex-direction: column; align-items: flex-end;
-            justify-content: center;
-        }
+        .edit-controls { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
         .timer-badge { 
             font-size: 11px; font-weight: bold; color: #e53935; 
             background: #ffebee; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;
@@ -138,7 +129,6 @@
             font-size: 11px; padding: 4px 10px; border-radius: 12px;
             cursor: pointer; font-weight: bold;
         }
-        .btn-mini-edit:hover { background: #1a237e; color: white; }
 
         .like-badge { 
             font-size: 14px; font-weight: bold; color: #ff5252; 
@@ -147,8 +137,18 @@
             min-width: 50px; justify-content: center;
         }
 
-        /* Footer */
-        .footer { text-align: center; padding: 20px; font-size: 11px; color: #999; background: #f0f2f5; margin-top: auto; }
+        /* --- Footer (Updated) --- */
+        .footer {
+            text-align: center; 
+            padding: 15px 10px; /* 타이트한 상하 여백 */
+            font-size: 11px; 
+            color: #ccc; 
+            background: #2c3e50; /* 짙은 회색 배경 */
+            margin-top: auto;
+            line-height: 1.6;
+            border-top: 1px solid #444;
+        }
+        .footer p { margin: 0; }
 
         /* Modal */
         .modal-overlay {
@@ -185,16 +185,13 @@
         <!-- Header -->
         <header class="header" translate="no">
             <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
-            <!-- 글자 크기 키움 -->
             <div class="course-title" id="courseTitle">Loading...</div>
-            <!-- 로고 크기 줄임 -->
             <img src="logo.png" alt="KAC Logo" class="kac-logo">
             <div class="header-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
         </header>
 
         <!-- Input Area -->
         <div class="input-section">
-            <!-- 경고 문구 디자인 개선 -->
             <div class="notice-text" translate="no">
                 All questions are anonymous.<br>
                 Please refrain from using offensive language.<br>
@@ -206,7 +203,6 @@
             <textarea id="qInput" class="q-input" placeholder="Type your question here..."></textarea>
             
             <div class="action-row" translate="no">
-                <!-- 수정 모드일 때만 보이는 상단 타이머 -->
                 <div id="editStatusBar" class="edit-status-bar">
                     <i class="fa-regular fa-clock"></i> <span id="editTimer">05:00</span> remaining
                 </div>
@@ -226,12 +222,15 @@
             </div>
         </div>
 
-        <div class="footer" translate="no">
-            Developer Dooseok Jang (jds0616@airport.co.kr)
+        <!-- Footer (요청하신 문구 반영) -->
+        <div class="footer" id="appFooter" translate="no">
+            KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.<br>
+            문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)<br>
+            © 2026 Korea Airports Corporation. All rights reserved.
         </div>
     </div>
 
-    <!-- Detail Modal -->
+    <!-- Modals (Detail & Menu) -->
     <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
         <div class="modal-box">
             <h3 style="margin:0; color:#1a237e;" translate="no">Question Detail</h3>
@@ -242,11 +241,9 @@
                     <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount" style="margin-left:5px">0</span>
                 </button>
             </div>
-            <!-- 수정/삭제 버튼은 리스트에서 직접 접근하므로 모달 내 버튼은 제거하거나 보조용으로 둡니다 -->
         </div>
     </div>
 
-    <!-- Menu Modal -->
     <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
         <div class="modal-box">
             <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
@@ -267,49 +264,53 @@
     <script src="config.js"></script>
 
     <script>
-        // --- 1. Global Variables & Init ---
+        // Init & Globals
         let currentRoom = new URLSearchParams(window.location.search).get('room') || 'A';
         let dbRef = null;
         let settingsRef = null;
         let questionsData = {};
-        
         let editingKey = null; 
-        let editInterval = null; // Interval for Input Timer
+        let editInterval = null;
 
         // Single Tab Logic
         const bc = new BroadcastChannel('catc_platform_channel');
         bc.onmessage = (event) => {
             if (event.data === 'exists') {
                 alert("Already open in another tab.");
-                window.location.href = "about:blank"; 
-                window.close(); 
+                window.location.href = "about:blank"; window.close(); 
             } else if (event.data === 'check') bc.postMessage('exists');
         };
         bc.postMessage('check');
 
-        // Init
         window.addEventListener('load', () => {
-            if (typeof firebase === 'undefined') return alert("Firebase SDK Error. Check config.js");
+            if (typeof firebase === 'undefined') return alert("Firebase SDK Error.");
             
             document.getElementById('courseTitle').innerText = `Course Room ${currentRoom}`;
             dbRef = firebase.database().ref(`courses/${currentRoom}/questions`);
             settingsRef = firebase.database().ref(`courses/${currentRoom}/settings`);
 
-            settingsRef.once('value', snapshot => {
+            // Load Settings & Footer
+            settingsRef.on('value', snapshot => {
                 const val = snapshot.val();
-                if(val && val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
+                if(val) {
+                    if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
+                    
+                    // 하단바 텍스트 DB 연동 (값이 있으면 DB 값으로 교체)
+                    if(val.footerText) {
+                        document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
+                    }
+                }
             });
 
             startDataListener();
-            startLiveTimer(); // Start global timer for list items
+            startLiveTimer(); 
         });
 
-        // --- 2. Data Listener ---
+        // Data Listener
         function startDataListener() {
             dbRef.on('value', (snapshot) => {
                 const listDiv = document.getElementById('questionList');
                 listDiv.innerHTML = "";
-                
                 const data = snapshot.val();
                 questionsData = data || {};
 
@@ -319,7 +320,6 @@
                 }
 
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                // Sort: Likes > Time
                 items.sort((a, b) => {
                     const diffLike = (b.likes || 0) - (a.likes || 0);
                     if(diffLike !== 0) return diffLike;
@@ -331,15 +331,12 @@
                 items.forEach(item => {
                     const myPostTime = myPosts[item.id];
                     let isMineAndEditable = false;
-                    
-                    // Check if editable (< 5min)
                     if(myPostTime && (Date.now() - myPostTime < 5 * 60 * 1000)) {
                         isMineAndEditable = true;
                     }
 
                     const div = document.createElement('div');
                     div.className = `q-card`;
-                    // Clicking card body opens detail, but clicking Edit button shouldn't (handled via stopPropagation)
                     div.onclick = () => openDetail(item.id);
                     
                     let editControlsHtml = '';
@@ -371,7 +368,7 @@
             });
         }
 
-        // --- 3. Live Timer for List Items ---
+        // Timer
         function startLiveTimer() {
             setInterval(() => {
                 const timers = document.querySelectorAll('.live-timer');
@@ -379,10 +376,8 @@
                 timers.forEach(span => {
                     const postTime = parseInt(span.getAttribute('data-time'));
                     const diff = 5 * 60 * 1000 - (now - postTime);
-                    
-                    if (diff <= 0) {
-                        span.parentElement.innerHTML = ""; // Remove timer & button if expired
-                    } else {
+                    if (diff <= 0) span.parentElement.innerHTML = ""; 
+                    else {
                         const m = Math.floor(diff / 60000);
                         const s = Math.floor((diff % 60000) / 1000);
                         span.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
@@ -391,42 +386,32 @@
             }, 1000);
         }
 
-        // --- 4. Submit & Edit Logic ---
+        // Submit & Edit
         function submitQuestion() {
             const input = document.getElementById('qInput');
             const text = input.value.trim();
             if (!text) return alert("Please enter your question.");
 
             if (editingKey) {
-                // Update existing
                 dbRef.child(editingKey).update({ text: text })
-                    .then(() => {
-                        alert("Modified successfully.");
-                        resetInput();
-                    })
+                    .then(() => { alert("Modified successfully."); resetInput(); })
                     .catch(e => alert("Error: " + e.message));
                 return;
             }
 
-            // New Post Cooltime
             const lastPostTime = localStorage.getItem('last_post_time');
             const now = Date.now();
             if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
                 const remain = Math.ceil((3 * 60 * 1000 - (now - lastPostTime)) / 1000);
-                return alert(`Please wait ${remain} seconds before posting again.`);
+                return alert(`Please wait ${remain} seconds.`);
             }
 
             const newRef = dbRef.push();
-            const payload = {
-                text: text, likes: 0, isDone: false,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            newRef.set(payload).then(() => {
+            newRef.set({ text: text, likes: 0, isDone: false, timestamp: firebase.database.ServerValue.TIMESTAMP })
+            .then(() => {
                 alert("Question Submitted!");
                 input.value = "";
                 localStorage.setItem('last_post_time', now);
-                
                 let myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
                 myPosts[newRef.key] = now;
                 localStorage.setItem(`my_posts_${currentRoom}`, JSON.stringify(myPosts));
@@ -434,40 +419,25 @@
         }
 
         function loadToEdit(key) {
-            // Load data into Input Area
             const item = questionsData[key];
             const input = document.getElementById('qInput');
-            
-            input.value = item.text;
-            input.focus();
-            
+            input.value = item.text; input.focus();
             editingKey = key;
             document.getElementById('submitBtn').innerText = "Modify";
             document.getElementById('cancelEditBtn').style.display = "inline-block";
-            
-            // Show Status Bar
             document.getElementById('editStatusBar').style.display = 'flex';
 
-            // Internal Timer for Input Area
             const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
             const postTime = myPosts[key];
-            
             if(editInterval) clearInterval(editInterval);
-            updateEditTimerDisplay(postTime); // init
+            updateEditTimerDisplay(postTime); 
             editInterval = setInterval(() => updateEditTimerDisplay(postTime), 1000);
-            
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updateEditTimerDisplay(postTime) {
             const remaining = (5 * 60 * 1000) - (Date.now() - postTime);
-            if (remaining <= 0) {
-                clearInterval(editInterval);
-                cancelEditMode();
-                alert("Edit time expired.");
-                return;
-            }
+            if (remaining <= 0) { clearInterval(editInterval); cancelEditMode(); alert("Edit time expired."); return; }
             const m = Math.floor(remaining / 60000);
             const s = Math.floor((remaining % 60000) / 1000);
             document.getElementById('editTimer').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
@@ -482,23 +452,15 @@
             if(editInterval) clearInterval(editInterval);
         }
 
-        // --- 5. Interactions ---
         function openDetail(key) {
             const item = questionsData[key];
             if(!item) return;
-            
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('modalLikeCount').innerText = item.likes || 0;
-            
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             const btn = document.getElementById('modalLikeBtn');
-            
-            // Re-bind onclick with specific key
             btn.onclick = () => doLike(key);
-
-            if(likedMap[key]) btn.classList.add('active');
-            else btn.classList.remove('active');
-
+            if(likedMap[key]) btn.classList.add('active'); else btn.classList.remove('active');
             document.getElementById('detailModal').style.display = 'flex';
         }
 
@@ -506,7 +468,6 @@
             if(!key) return;
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             if (likedMap[key]) return alert("You already liked this.");
-
             dbRef.child(key).transaction((post) => {
                 if (post) post.likes = (post.likes || 0) + 1;
                 return post;
@@ -514,67 +475,47 @@
                 if (committed) {
                     likedMap[key] = true;
                     localStorage.setItem(`liked_${currentRoom}`, JSON.stringify(likedMap));
-                    
-                    // If modal is open
                     const btn = document.getElementById('modalLikeBtn');
-                    if(btn) {
-                        btn.classList.add('active');
-                        const cnt = document.getElementById('modalLikeCount');
-                        cnt.innerText = parseInt(cnt.innerText) + 1;
-                    }
+                    if(btn) { btn.classList.add('active'); const cnt = document.getElementById('modalLikeCount'); cnt.innerText = parseInt(cnt.innerText) + 1; }
                 }
             });
         }
 
-        // --- 6. Navigation ---
-        function exitRoom() {
-            if(confirm("Leave the room?")) window.location.href = "about:blank"; 
-        }
+        function exitRoom() { if(confirm("Leave the room?")) window.location.href = "about:blank"; }
         function openMenu() { document.getElementById('menuModal').style.display = 'flex'; }
         function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
         function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
 
-        // Room Switch
         let targetSwitchRoom = null;
         function trySwitchRoom(roomId) {
             if(roomId === currentRoom) return alert("Already here.");
             targetSwitchRoom = roomId;
             document.getElementById('pwSection').style.display = 'block';
             document.getElementById('pwTargetMsg').innerText = `Enter Password for Course ${roomId}`;
-            document.getElementById('roomPw').value = "";
-            document.getElementById('roomPw').focus();
+            document.getElementById('roomPw').value = ""; document.getElementById('roomPw').focus();
         }
 
         function submitRoomPw() {
             const inputPw = document.getElementById('roomPw').value;
             if(inputPw.length !== 4) return alert("Please enter 4 digits.");
-            
-            firebase.database().ref(`courses/${targetSwitchRoom}/settings/password`).once('value')
-                .then(snap => {
-                    const hash = snap.val();
-                    if (!hash) moveToRoom(targetSwitchRoom);
-                    else {
-                        verifyPassword(inputPw, hash).then(ok => {
-                            if(ok) moveToRoom(targetSwitchRoom);
-                            else alert("Wrong Password.");
-                        });
-                    }
-                });
+            firebase.database().ref(`courses/${targetSwitchRoom}/settings/password`).once('value').then(snap => {
+                const hash = snap.val();
+                if (!hash) moveToRoom(targetSwitchRoom);
+                else {
+                    verifyPassword(inputPw, hash).then(ok => { if(ok) moveToRoom(targetSwitchRoom); else alert("Wrong Password."); });
+                }
+            });
         }
-        
         function moveToRoom(r) { window.location.search = `?room=${r}`; }
-        
         async function verifyPassword(p, h) {
             const m = new TextEncoder().encode(p);
             const hb = await crypto.subtle.digest('SHA-256', m);
             const ha = Array.from(new Uint8Array(hb));
-            const hh = ha.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hh === h;
+            return ha.map(b => b.toString(16).padStart(2, '0')).join('') === h;
         }
-
         function escapeHtml(t) {
             if(!t) return "";
-            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
     </script>
 </body>
