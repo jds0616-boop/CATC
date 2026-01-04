@@ -7,11 +7,8 @@
     
     <!-- Firebase Libraries (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<!-- ▼▼▼ 이 줄을 꼭 추가해주세요! ▼▼▼ -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
     
     <!-- QRCode & Icons & Font -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -23,14 +20,12 @@
 </head>
 <body class="day-mode">
 
-    <!-- 0. Login Overlay (보안 로그인) -->
+    <!-- 0. Login Overlay -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
-            <div class="login-logo">
-                <i class="fa-solid fa-user-shield"></i>
-            </div>
+            <div class="login-logo"><i class="fa-solid fa-user-shield"></i></div>
             <h2>Instructor Login</h2>
-            <p>강사 전용 접속 페이지입니다.<br>비밀번호를 입력하세요.</p>
+            <p>강사 전용 접속 페이지입니다.</p>
             <input type="password" id="loginPwInput" class="login-input" placeholder="Password" onkeyup="if(event.key==='Enter') authMgr.tryLogin()">
             <button class="login-btn" onclick="authMgr.tryLogin()">Login <i class="fa-solid fa-arrow-right"></i></button>
             <div class="login-footer">KAC Training Platform</div>
@@ -40,9 +35,7 @@
     <!-- 1. Change Password Modal -->
     <div id="changePwModal" class="modal-overlay">
         <div class="modal-box" style="width: 450px;">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3>
-            </div>
+            <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
             <div class="setting-container">
                 <div class="setting-group">
                     <label class="setting-label">현재 비밀번호</label>
@@ -65,26 +58,16 @@
         </div>
     </div>
 
-    <!-- 2. QR Code Zoom Modal -->
-    <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()">
-        <div class="qr-big-box" id="qrBigTarget"></div>
-    </div>
+    <!-- 2. QR Modal -->
+    <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
 
-    <!-- 3. Print Input Modal -->
+    <!-- 3. Print Modal -->
     <div id="printInputModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
-            <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">
-                📜 리포트 정보 입력
-            </div>
+            <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">📜 리포트 정보 입력</div>
             <div class="setting-container">
-                <div class="setting-group">
-                    <label class="setting-label">교육 기간</label>
-                    <input type="text" id="printDateInput" class="setting-input" placeholder="예: 2026.01.01 ~ 01.05">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">담당 교수</label>
-                    <input type="text" id="printProfInput" class="setting-input" placeholder="예: 홍길동 교수">
-                </div>
+                <div class="setting-group"><label class="setting-label">교육 기간</label><input type="text" id="printDateInput" class="setting-input" placeholder="예: 2026.01.01 ~ 01.05"></div>
+                <div class="setting-group"><label class="setting-label">담당 교수</label><input type="text" id="printProfInput" class="setting-input" placeholder="예: 홍길동 교수"></div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
                 <button class="m-btn m-btn-later" onclick="printMgr.closeInputModal()" style="background:#64748b; color:white;">취소</button>
@@ -94,7 +77,7 @@
         </div>
     </div>
 
-    <!-- 4. Print Preview Modal -->
+    <!-- Print Preview -->
     <div id="printPreviewModal" class="modal-overlay">
         <div class="print-preview-box">
             <div class="preview-header">
@@ -125,6 +108,7 @@
 
     <!-- Sidebar Section -->
     <div class="sidebar">
+        <!-- Top Scrollable Area -->
         <div class="sidebar-top">
             <div class="sidebar-header">KAC Training Platform</div>
             <div class="setting-container">
@@ -143,47 +127,46 @@
                     <label class="setting-label">Course Name</label>
                     <input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name">
                 </div>
-                <!-- [수정] type="password"로 변경하여 입력값 숨김 -->
+                
+                <!-- [수정] 안내 문구 추가 -->
                 <div class="setting-group">
                     <label class="setting-label">Student Room PW</label>
-                    <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="****">
+                    <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭">
                 </div>
 
-                <button class="btn-action btn-primary" id="btnSaveInfo">Save Settings</button>
+                <!-- [수정] 버튼 텍스트 변경 -->
+                <button class="btn-action btn-primary" id="btnSaveInfo">Save Settings (설정 저장)</button>
                 
                 <div class="divider"></div>
                 
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box">
-                        <div class="qr-row">
-                            <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
-                            <button class="btn-action btn-small btn-dark" id="btnCopyLink" style="flex-grow:1;">Copy Link</button>
+                        <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
+                        <div class="url-text-area">
+                            <span class="url-preview">Student Link QR</span>
+                            <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
                         </div>
-                        <input type="text" id="studentLink" class="setting-input url-input" readonly>
+                        <input type="hidden" id="studentLink">
                     </div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
                     <div class="file-row">
-                        <input type="file" id="quizFile" accept=".txt" class="setting-input file-input">
+                        <input type="file" id="quizFile" accept=".txt" class="setting-input file-input" style="width:100px;">
                         <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()">Sample</button>
                     </div>
                 </div>
             </div>
         </div>
         
+        <!-- Bottom Fixed Area -->
         <div class="sidebar-bottom">
             <div class="action-buttons">
                 <button class="btn-action btn-secondary" onclick="ui.openPwModal()"><i class="fa-solid fa-key"></i> Change Password</button>
                 <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
                 <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Print Report</button>
-    <!-- ▼▼▼ [추가] 전체 방 비활성화 버튼 ▼▼▼ -->
-    <button class="btn-action btn-danger" onclick="dataMgr.deactivateAllRooms()" style="background:#b91c1c;">
-        <i class="fa-solid fa-power-off"></i> All Rooms Idle
-    </button>
-    <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
-
+                <button class="btn-action btn-danger" onclick="dataMgr.deactivateAllRooms()" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Rooms Idle</button>
                 <button class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset Course</button>
             </div>
             <div class="dev-info">(Developed by DooSeok, Jang)<br>E-mail : jds0616@airport.co.kr</div>
@@ -192,7 +175,6 @@
 
     <!-- Main Content Area -->
     <div class="main-stage">
-        <!-- Status Lock Overlay -->
         <div id="statusOverlay" class="status-overlay">
             <div class="lock-message">
                 <i class="fa-solid fa-lock"></i>
@@ -202,15 +184,9 @@
         </div>
 
         <header class="header">
-            <div class="header-title">
-                <span id="displayRoomName">Connecting...</span>
-                <span class="course-sub-name" id="displayCourseTitle"></span>
-            </div>
+            <div class="header-title"><span id="displayRoomName">Connecting...</span><span class="course-sub-name" id="displayCourseTitle"></span></div>
             <div class="header-controls">
-                <div class="theme-toggle" onclick="ui.toggleNightMode()">
-                    <i class="fa-solid fa-sun active" id="iconSun"></i>
-                    <i class="fa-solid fa-moon" id="iconMoon"></i>
-                </div>
+                <div class="theme-toggle" onclick="ui.toggleNightMode()"><i class="fa-solid fa-sun active" id="iconSun"></i><i class="fa-solid fa-moon" id="iconMoon"></i></div>
                 <img src="logo.png" alt="Logo" class="kac-logo" onerror="this.style.display='none'"> 
             </div>
         </header>
@@ -221,7 +197,6 @@
         </div>
 
         <div class="content-area">
-            <!-- VIEW: Q&A -->
             <div id="view-qa">
                 <div class="qa-filters">
                     <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
@@ -231,22 +206,16 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <!-- VIEW: Quiz -->
             <div id="view-quiz">
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text">Press 'Test Mode' or Select Quiz</div>
                     <div id="quizContent">
-                        <div class="quiz-header-part">
-                            <div class="digital-timer" id="quizTimer">00:30</div>
-                            <div class="quiz-question" id="d-qtext">Ready?</div>
-                        </div>
+                        <div class="quiz-header-part"><div class="digital-timer" id="quizTimer">00:30</div><div class="quiz-question" id="d-qtext">Ready?</div></div>
                         <div class="quiz-options" id="d-options"></div>
                         <div class="chart-area" id="d-chart"></div>
                     </div>
                     <div class="quiz-status-bar">
-                        <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()">
-                            <i class="fa-solid fa-flask"></i> <span>Start Test Mode</span>
-                        </button>
+                        <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()"><i class="fa-solid fa-flask"></i> <span>Start Test Mode</span></button>
                         <div id="quizControls" style="display:none;">
                             <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)"><i class="fa-solid fa-backward"></i> Prev</button>
                             <button class="q-btn btn-start" onclick="quizMgr.action('open')"><i class="fa-solid fa-play"></i> Start</button>
@@ -255,14 +224,11 @@
                             <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)">Next <i class="fa-solid fa-forward"></i></button>
                         </div>
                     </div>
-                    <div class="quiz-exit-btn" onclick="quizMgr.closeQuizMode()" title="Exit Quiz Mode" style="position: absolute; top: 30px; left: 30px;">
-                        <i class="fa-solid fa-xmark"></i>
-                    </div>
+                    <div class="quiz-exit-btn" onclick="quizMgr.closeQuizMode()" title="Exit Quiz Mode"><i class="fa-solid fa-xmark"></i></div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Slide Panel -->
         <div class="overlay-panel" id="rightPanel">
             <div class="overlay-toggle-tab" onclick="ui.toggleRightPanel()"><i class="fa-solid fa-chevron-left" id="panelIcon"></i></div>
             <div class="panel-header"><h3>Quiz Editor</h3></div>
@@ -280,19 +246,12 @@
         </div>
     </div>
 
-    <!-- Q&A Detail Modal -->
     <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
         <div class="modal-box">
             <div class="modal-q-text" id="m-text"></div>
             <div class="modal-actions">
-                <div class="modal-left-btns">
-                    <button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')" title="Pin"><i class="fa-solid fa-thumbtack"></i></button>
-                    <button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                </div>
-                <div class="modal-right-btns">
-                    <button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button>
-                    <button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button>
-                </div>
+                <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
+                <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
             </div>
         </div>
     </div>
