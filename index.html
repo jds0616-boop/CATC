@@ -15,7 +15,7 @@
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5; 
+            background-color: #f0f2f5; /* Light Gray Background */
             margin: 0; 
             padding: 0; 
             color: #333;
@@ -28,7 +28,7 @@
         .app-container {
             width: 100%;
             max-width: 600px;
-            background: #fff;
+            background: #f0f2f5;
             min-height: 100vh;
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
@@ -36,128 +36,160 @@
             flex-direction: column;
         }
 
-        /* --- Header --- */
+        /* --- Header (Dark Blue Theme) --- */
         .header {
-            height: 60px;
-            background: #fff;
+            min-height: 60px;
+            background: #1a237e; /* Navy Color */
+            color: white;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 15px;
-            border-bottom: 1px solid #eee;
+            padding: 10px 15px;
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .header-icon { font-size: 20px; color: #555; cursor: pointer; padding: 10px; }
-        .course-title { font-size: 18px; font-weight: bold; color: #000; flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .kac-logo { height: 30px; width: auto; object-fit: contain; margin: 0 10px; }
+        .header-icon { font-size: 20px; color: #fff; cursor: pointer; padding: 10px; }
+        
+        .course-title { 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #fff; 
+            flex-grow: 1; 
+            text-align: center; 
+            line-height: 1.2;
+            padding: 0 10px;
+            word-break: keep-all; /* Prevent awkward word breaks */
+        }
+        
+        .kac-logo { height: 34px; width: auto; object-fit: contain; margin-left: 5px; background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 4px; }
 
         /* --- Input Section --- */
-        .input-section { padding: 20px; background: #fff; border-bottom: 1px solid #f0f0f0; }
-        .notice-text { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.4; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .input-section { padding: 20px; background: #fff; border-bottom: 1px solid #ddd; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .notice-text { 
+            font-size: 12px; color: #666; margin-bottom: 12px; 
+            line-height: 1.6; background: #f8f9fa; padding: 12px; 
+            border-radius: 8px; border-left: 4px solid #1a237e;
+        }
+        
         .q-input {
             width: 100%;
             height: 100px;
-            padding: 12px;
-            border: 1px solid #ddd;
+            padding: 15px;
+            border: 1px solid #ccc;
             border-radius: 12px;
-            font-size: 15px;
+            font-size: 16px;
             resize: none;
             transition: 0.2s;
+            background: #fff;
         }
-        .q-input:focus { border-color: #007bff; }
+        .q-input:focus { border-color: #1a237e; box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1); }
         
-        .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .timer-display { font-size: 13px; color: #d32f2f; font-weight: bold; display: none; }
+        .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .timer-display { font-size: 13px; color: #d32f2f; font-weight: bold; display: none; background: #ffebee; padding: 5px 10px; border-radius: 20px;}
         
         .btn-submit {
-            background: #007bff; color: white; border: none; padding: 10px 24px;
-            border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+            background: #1a237e; color: white; border: none; padding: 12px 30px;
+            border-radius: 50px; font-weight: bold; font-size: 14px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s;
         }
+        .btn-submit:active { transform: scale(0.95); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
         
-        .btn-cancel { background: #eee; color: #555; border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
+        .btn-cancel { background: #eee; color: #333; border: none; padding: 10px 20px; border-radius: 50px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
 
         /* --- List Section --- */
-        .list-section { flex-grow: 1; padding: 15px; background: #f8f9fa; padding-bottom: 50px; }
-        .list-header { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 10px; padding-left: 5px; }
+        .list-section { flex-grow: 1; padding: 15px; background: #f0f2f5; padding-bottom: 50px; }
+        .list-header { font-size: 15px; font-weight: bold; color: #555; margin-bottom: 15px; padding-left: 5px; display: flex; align-items: center; gap: 5px; }
 
         .q-card {
             background: #fff;
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* Better Shadow */
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
             transition: transform 0.1s;
+            border-left: 5px solid transparent;
         }
-        .q-card:active { transform: scale(0.98); }
+        .q-card:active { transform: scale(0.98); background: #f9f9f9; }
         
-        .q-left { display: flex; align-items: center; width: 80%; }
+        /* My Post Style */
+        .q-card.my-post { border-left-color: #1a237e; background: #fefeff; }
+
+        .q-left { display: flex; align-items: center; width: 75%; }
         .user-icon { 
-            width: 36px; height: 36px; background: #eef2f5; color: #888; 
+            width: 40px; height: 40px; background: #e8eaf6; color: #1a237e; 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin-right: 12px; font-size: 16px; flex-shrink: 0;
+            margin-right: 15px; font-size: 18px; flex-shrink: 0;
         }
+        .q-text-content { display: flex; flex-direction: column; width: 100%; }
         .q-text-preview {
-            font-size: 15px; color: #333; line-height: 1.4;
+            font-size: 16px; color: #222; line-height: 1.4;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
             overflow: hidden; text-overflow: ellipsis; word-break: break-all;
         }
         
-        .q-right { text-align: right; min-width: 40px; }
-        .like-count { font-size: 14px; font-weight: bold; color: #ff5252; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+        /* Edit Badge */
+        .edit-badge {
+            font-size: 11px; color: #fff; background: #28a745; 
+            padding: 2px 6px; border-radius: 4px; display: inline-block; 
+            margin-bottom: 4px; align-self: flex-start;
+        }
+
+        .q-right { text-align: right; min-width: 50px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;}
+        .like-count { font-size: 14px; font-weight: bold; color: #ff5252; display: flex; align-items: center; gap: 5px; background: #ffebee; padding: 5px 10px; border-radius: 15px; }
 
         /* --- Footer --- */
         .footer {
-            text-align: center; padding: 20px; font-size: 10px; color: #bbb;
-            background: #f8f9fa; margin-top: auto;
+            text-align: center; padding: 20px; font-size: 11px; color: #999;
+            background: #f0f2f5; margin-top: auto;
         }
 
         /* --- Modal (Detail & Menu) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 999;
+            background: rgba(0,0,0,0.6); z-index: 999;
             display: none; align-items: center; justify-content: center;
         }
         .modal-box {
             background: #fff; width: 90%; max-width: 500px;
             border-radius: 20px; padding: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             position: relative; animation: popUp 0.3s ease;
         }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* Detail Modal Specifics */
-        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; max-height: 50vh; overflow-y: auto; word-break: break-all; }
+        .modal-content-text { font-size: 18px; line-height: 1.6; color: #333; margin: 20px 0; max-height: 50vh; overflow-y: auto; word-break: break-all; padding: 10px; background: #f9f9f9; border-radius: 10px;}
         .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; }
         .btn-modal-close { background: #eee; color: #333; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; }
         .btn-modal-like { background: #fff; border: 2px solid #ff5252; color: #ff5252; padding: 12px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
         .btn-modal-like.active { background: #ff5252; color: #fff; }
 
-        /* Menu Modal Specifics */
+        /* Menu Modal */
         .menu-list { list-style: none; padding: 0; margin: 10px 0; }
-        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .menu-item:last-child { border-bottom: none; }
-        .menu-item:hover { background: #f9f9f9; }
-
-        /* Password Input in Modal */
-        .pw-input-box { display: none; margin-top: 10px; text-align: center; }
-        .pw-input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 60%; text-align: center; font-size: 18px; }
-        .btn-pw-submit { padding: 8px 15px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .menu-item i { color: #ccc; }
+        
+        /* Password Input */
+        .pw-input-box { display: none; margin-top: 15px; text-align: center; background: #f9f9f9; padding: 15px; border-radius: 10px; }
+        .pw-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 70%; text-align: center; font-size: 20px; letter-spacing: 5px;}
+        .btn-pw-submit { padding: 10px 20px; background: #1a237e; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
 
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Header -->
-        <header class="header">
+        <!-- Header: translate="no" to prevent UI translation errors -->
+        <header class="header" translate="no">
             <div class="header-icon" onclick="exitRoom()"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
             <div class="course-title" id="courseTitle">Loading...</div>
             <img src="logo.png" alt="KAC Logo" class="kac-logo">
@@ -166,12 +198,18 @@
 
         <!-- Input Area -->
         <div class="input-section">
-            <div class="notice-text">
-                All questions are anonymous. Please refrain from using offensive language. <br>
-                익명으로 접수됩니다. 성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
+            <div class="notice-text" translate="no">
+                All questions are anonymous.<br>
+                Please refrain from using offensive language.<br>
+                <br>
+                익명으로 접수됩니다.<br>
+                성적/불쾌한 표현 시 관련 규정에 의거 조치될 수 있습니다.
             </div>
-            <textarea id="qInput" class="q-input" placeholder="Type your question here (Anonymous)"></textarea>
-            <div class="action-row">
+            
+            <!-- Input is allowed to be translated -->
+            <textarea id="qInput" class="q-input" placeholder="Type your question here..."></textarea>
+            
+            <div class="action-row" translate="no">
                 <span id="editTimer" class="timer-display">Edit Time: 05:00</span>
                 <div style="margin-left: auto;">
                     <button id="cancelEditBtn" class="btn-cancel" onclick="cancelEditMode()">Cancel</button>
@@ -182,15 +220,17 @@
 
         <!-- List Area -->
         <div class="list-section">
-            <div class="list-header">Live Questions</div>
+            <div class="list-header" translate="no">
+                <i class="fa-solid fa-comments"></i> Live Questions
+            </div>
             <div id="questionList">
                 <!-- Dynamic Content -->
-                <div style="text-align:center; padding: 20px; color:#aaa;">Loading questions...</div>
+                <div style="text-align:center; padding: 30px; color:#aaa;">Loading questions...</div>
             </div>
         </div>
 
         <!-- Developer Footer -->
-        <div class="footer">
+        <div class="footer" translate="no">
             Developer Dooseok Jang (jds0616@airport.co.kr)
         </div>
     </div>
@@ -198,19 +238,19 @@
     <!-- Question Detail Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
         <div class="modal-box">
-            <h3 style="margin:0; color:#007bff;">Question</h3>
+            <h3 style="margin:0; color:#1a237e;" translate="no">Question Detail</h3>
             <div id="modalText" class="modal-content-text"></div>
-            <div class="modal-actions">
+            <div class="modal-actions" translate="no">
                 <button class="btn-modal-close" onclick="document.getElementById('detailModal').style.display='none'">Close</button>
                 <button id="modalLikeBtn" class="btn-modal-like" onclick="doLike()">
-                    <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount">0</span>
+                    <i class="fa-regular fa-thumbs-up"></i> Like <span id="modalLikeCount" style="margin-left:5px">0</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Room Switch Menu Modal -->
-    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)">
+    <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
         <div class="modal-box">
             <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
             <ul class="menu-list">
@@ -219,11 +259,11 @@
                 <li class="menu-item" onclick="trySwitchRoom('C')"><span>Course C</span> <i class="fa-solid fa-chevron-right"></i></li>
             </ul>
             
-            <!-- Password Entry (Hidden by default) -->
             <div id="pwSection" class="pw-input-box">
-                <p id="pwTargetMsg" style="font-size:14px; margin-bottom:5px;">Enter Password for Course A</p>
+                <p id="pwTargetMsg" style="font-size:14px; margin-bottom:5px; color:#555;">Enter Password</p>
                 <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
-                <button class="btn-pw-submit" onclick="submitRoomPw()">Go</button>
+                <br>
+                <button class="btn-pw-submit" onclick="submitRoomPw()">Enter Room</button>
             </div>
             
             <div style="text-align:right; margin-top:15px;">
@@ -242,25 +282,21 @@
         let settingsRef = null;
         let questionsData = {};
         
-        let editingKey = null; // Currently editing question ID
-        let editTimeout = null; // Timer object
+        let editingKey = null; 
+        let editTimeout = null;
 
         // Single Tab Logic
         const bc = new BroadcastChannel('catc_platform_channel');
-        
-        // Listen for other tabs
         bc.onmessage = (event) => {
             if (event.data === 'exists') {
                 alert("The platform is already open in another tab. This window will be closed.");
-                window.location.href = "about:blank"; // Fallback
+                window.location.href = "about:blank"; 
                 window.close(); 
             } else if (event.data === 'check') {
                 bc.postMessage('exists');
             }
         };
-        // Check if anyone else exists
         bc.postMessage('check');
-
 
         // On Load
         window.addEventListener('load', () => {
@@ -268,20 +304,16 @@
                 alert("Firebase SDK Error. Check config.js");
                 return;
             }
-            // Update Header
             document.getElementById('courseTitle').innerText = `Course Room ${currentRoom}`;
             
-            // Connect DB
             dbRef = firebase.database().ref(`courses/${currentRoom}/questions`);
             settingsRef = firebase.database().ref(`courses/${currentRoom}/settings`);
 
-            // Load Settings (Title, etc.) - Optional expansion
             settingsRef.once('value', snapshot => {
                 const val = snapshot.val();
                 if(val && val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
             });
 
-            // Start Listener
             startDataListener();
         });
 
@@ -296,11 +328,10 @@
                 questionsData = data || {};
 
                 if (!data) {
-                    listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet. Be the first!</p>";
+                    listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet.</p>";
                     return;
                 }
 
-                // Sorting: 1. Likes (Desc) 2. Timestamp (Desc)
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                 items.sort((a, b) => {
                     const diffLike = (b.likes || 0) - (a.likes || 0);
@@ -308,18 +339,34 @@
                     return b.timestamp - a.timestamp;
                 });
 
+                // My Post Check
+                const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
+
                 items.forEach(item => {
-                    // Check if 'Done' (Completed) - Optional: Students might still want to see it, 
-                    // or we move it to bottom. For now, showing all.
-                    // If you want to hide completed: if(item.isDone) return;
+                    // Check if it is my post and editable (< 5min)
+                    const myPostTime = myPosts[item.id];
+                    let isEditable = false;
+                    if(myPostTime && (Date.now() - myPostTime < 5 * 60 * 1000)) {
+                        isEditable = true;
+                    }
 
                     const div = document.createElement('div');
-                    div.className = 'q-card';
+                    // Add 'my-post' class for styling if needed
+                    div.className = `q-card ${myPostTime ? 'my-post' : ''}`;
                     div.onclick = () => openDetail(item.id);
+                    
+                    // Conditionally render Edit Badge
+                    const editBadgeHtml = isEditable 
+                        ? `<div class="edit-badge"><i class="fa-solid fa-pen-to-square"></i> Edit (5m)</div>` 
+                        : '';
+
                     div.innerHTML = `
                         <div class="q-left">
                             <div class="user-icon"><i class="fa-solid fa-user"></i></div>
-                            <div class="q-text-preview">${escapeHtml(item.text)}</div>
+                            <div class="q-text-content">
+                                ${editBadgeHtml}
+                                <div class="q-text-preview">${escapeHtml(item.text)}</div>
+                            </div>
                         </div>
                         <div class="q-right">
                             <div class="like-count">
@@ -329,19 +376,18 @@
                     `;
                     listDiv.appendChild(div);
                 });
-
-                // Update My Edit Status if currently in list
-                checkMyPostsExpiry();
+                
+                // Trigger auto-refresh for timers?
+                // For simplicity, we just rely on data updates or user interaction.
             });
         }
 
-        // --- 3. Posting Logic (Create / Update) ---
+        // --- 3. Posting Logic ---
         function submitQuestion() {
             const input = document.getElementById('qInput');
             const text = input.value.trim();
             if (!text) return alert("Please enter your question.");
 
-            // 1) Edit Mode
             if (editingKey) {
                 dbRef.child(editingKey).update({ text: text })
                     .then(() => {
@@ -352,7 +398,6 @@
                 return;
             }
 
-            // 2) New Post Mode - Check Cool Time (3 mins)
             const lastPostTime = localStorage.getItem('last_post_time');
             const now = Date.now();
             if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
@@ -360,7 +405,6 @@
                 return alert(`Please wait ${remain} seconds before posting again.`);
             }
 
-            // Push to DB
             const newRef = dbRef.push();
             const payload = {
                 text: text,
@@ -372,36 +416,22 @@
             newRef.set(payload).then(() => {
                 alert("Question Submitted!");
                 input.value = "";
-                // Save Local Constraints
                 localStorage.setItem('last_post_time', now);
                 
-                // Save ownership for editing (Key : Timestamp)
                 let myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
                 myPosts[newRef.key] = now;
                 localStorage.setItem(`my_posts_${currentRoom}`, JSON.stringify(myPosts));
-
-                // Start visual timer for this user? 
-                // Actually the list updates, and we can identify 'my post' there if we want to add Edit button in list.
-                // But request says: "Question Input box has buttons". 
-                // Since Input box is single, user can only edit ONE active question they just selected?
-                // Request clarification: "User can edit within 5 mins". 
-                // Implementation: I will allow clicking one's own post in the list to load it into the input box for editing.
             });
         }
 
         // --- 4. Editing Logic ---
-        // When clicking a post in the list, if it's mine and < 5 mins, show in Detail Modal with "Edit" button.
-        // Or directly load into input box? Let's use Detail Modal -> "Edit" button loads into Input box.
-
         function openDetail(key) {
             const item = questionsData[key];
             if(!item) return;
             
-            // Set Content
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('modalLikeCount').innerText = item.likes || 0;
             
-            // Like Button State
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             const btn = document.getElementById('modalLikeBtn');
             if(likedMap[key]) {
@@ -412,26 +442,22 @@
                 btn.onclick = () => doLike(key);
             }
 
-            // Check if it's mine for Edit/Delete
+            // Edit/Delete Check
             const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
             const postTime = myPosts[key];
-            
-            // Remove existing edit buttons from modal if any
             const existingEdit = document.getElementById('modalEditActions');
             if(existingEdit) existingEdit.remove();
 
             if (postTime) {
                 const diff = Date.now() - postTime;
                 if (diff < 5 * 60 * 1000) {
-                    // Create Edit/Delete buttons in Modal
                     const actionsDiv = document.createElement('div');
                     actionsDiv.id = 'modalEditActions';
                     actionsDiv.style.marginTop = "15px";
                     actionsDiv.style.textAlign = "center";
                     actionsDiv.innerHTML = `
-                        <button onclick="loadToEdit('${key}')" style="margin-right:10px; padding:8px 15px; border-radius:15px; border:1px solid #aaa;">Edit</button>
-                        <button onclick="deletePost('${key}')" style="padding:8px 15px; border-radius:15px; border:1px solid red; color:red;">Delete</button>
-                        <div style="font-size:12px; color:red; margin-top:5px;">Edit/Delete available for 5 mins</div>
+                        <button onclick="loadToEdit('${key}')" style="margin-right:10px; padding:10px 20px; border-radius:20px; border:1px solid #aaa; background:#fff; font-weight:bold;">Modify</button>
+                        <button onclick="deletePost('${key}')" style="padding:10px 20px; border-radius:20px; border:1px solid #d32f2f; color:#d32f2f; background:#fff; font-weight:bold;">Delete</button>
                     `;
                     document.querySelector('.modal-box').appendChild(actionsDiv);
                 }
@@ -452,7 +478,6 @@
             document.getElementById('submitBtn').innerText = "Modify";
             document.getElementById('cancelEditBtn').style.display = "inline-block";
             
-            // Timer Logic
             const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
             const postTime = myPosts[key];
             const timerDisplay = document.getElementById('editTimer');
@@ -491,22 +516,27 @@
             });
         }
 
-        function checkMyPostsExpiry() {
-            // Clean up localStorage for old posts
-            let myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
-            const now = Date.now();
-            let changed = false;
-            for(let key in myPosts) {
-                if(now - myPosts[key] > 5 * 60 * 1000 + 10000) { // 5 min + buffer
-                    // Actually we might want to keep it to know "I wrote this", but user can't edit.
-                    // Requirement: 5 mins passed -> modify impossible. 
-                }
-            }
-        }
-
         // --- 5. Like Logic ---
         function doLike(key) {
-            if(!key && editingKey) return; // Should not happen
+            // Using editingKey check to prevent errors if logic gets mixed, but mainly use key from closure
+            if(typeof key === 'undefined' && editingKey) return; 
+            // In modal, we use the closure variable 'key' passed to openDetail, but here we need to know WHICH key.
+            // Simplified: The modal button calls doLike() without args, we need to store currentModalKey.
+            // FIX: update openDetail to pass key to onclick properly.
+            
+            // Re-implementing correctly:
+            // Actually, openDetail sets onclick="doLike('ID')". 
+            // If called from modal without ID, we need to track it.
+            // Better: update openDetail to set the onclick attribute dynamically.
+        }
+        
+        // Overwriting doLike to handle specific key from Modal
+        window.doLike = function(key) {
+            if(!key) {
+                // If called from modal button directly, we need the key.
+                // Let's rely on the onclick assignment in openDetail.
+                return; 
+            }
             
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             if (likedMap[key]) return alert("You already liked this question.");
@@ -520,7 +550,7 @@
                 if (committed) {
                     likedMap[key] = true;
                     localStorage.setItem(`liked_${currentRoom}`, JSON.stringify(likedMap));
-                    // Update Modal UI if open
+                    
                     document.getElementById('modalLikeBtn').classList.add('active');
                     const countSpan = document.getElementById('modalLikeCount');
                     countSpan.innerText = parseInt(countSpan.innerText) + 1;
@@ -528,10 +558,11 @@
             });
         }
 
+
         // --- 6. Navigation & Modals ---
         function exitRoom() {
             if(confirm("Do you want to leave the room?")) {
-                window.location.href = "about:blank"; // Or redirect to a landing page
+                window.location.href = "about:blank"; 
             }
         }
 
@@ -539,17 +570,12 @@
         function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
         function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
 
-        // Room Switching with Password
+        // Room Switching
         let targetSwitchRoom = null;
 
         function trySwitchRoom(roomId) {
             if(roomId === currentRoom) return alert("You are already in this room.");
-            
-            // Check if password required (Simulated Logic)
-            // Ideally, we check DB: courses/B/settings/password
             targetSwitchRoom = roomId;
-            
-            // Show Password Input
             document.getElementById('pwSection').style.display = 'block';
             document.getElementById('pwTargetMsg').innerText = `Enter Password for Course ${roomId}`;
             document.getElementById('roomPw').value = "";
@@ -560,19 +586,12 @@
             const inputPw = document.getElementById('roomPw').value;
             if(inputPw.length !== 4) return alert("Please enter 4 digits.");
 
-            // HASH CHECK LOGIC 
-            // Since we are client-side only for now and Admin sets PW in DB:
-            // We should read the password from DB to verify.
             firebase.database().ref(`courses/${targetSwitchRoom}/settings/password`).once('value')
                 .then(snapshot => {
                     const savedHash = snapshot.val();
-                    
                     if (!savedHash) {
-                        // If no password set by admin, allow entry? Or block?
-                        // Let's allow entry if no PW set, or treat as '0000'
                         moveToRoom(targetSwitchRoom);
                     } else {
-                        // Verify Hash
                         verifyPassword(inputPw, savedHash).then(isValid => {
                             if(isValid) moveToRoom(targetSwitchRoom);
                             else alert("Incorrect Password.");
@@ -585,7 +604,6 @@
             window.location.search = `?room=${roomId}`;
         }
 
-        // SHA-256 Helper
         async function verifyPassword(plain, hash) {
             const msgBuffer = new TextEncoder().encode(plain);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -598,15 +616,9 @@
             cancelEditMode();
         }
         
-        // Helper
         function escapeHtml(text) {
             if(!text) return "";
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
     </script>
