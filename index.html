@@ -21,22 +21,24 @@
             height: 60px; background: var(--bg-color); display: flex; align-items: center; justify-content: space-between;
             padding: 0 15px; border-bottom: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; z-index: 100;
         }
-        .header-left { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
+        .header-left { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; width: 80%; }
         .header-right { display: flex; align-items: center; gap: 10px; }
-        .room-badge { background: var(--theme-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .room-badge { background: var(--theme-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; }
+        .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
 
-        /* Input Area (Dark Navy Theme) */
+        /* Input Area (Rectangular & Sharp) */
         .input-area {
             background: #1e293b; padding: 20px; flex-shrink: 0; z-index: 90;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            /* No round radius as requested */
             position: relative;
         }
         .q-input {
-            width: 100%; border: 2px solid #334155; padding: 15px; border-radius: 12px;
+            width: 100%; border: 3px solid #334155; padding: 15px; border-radius: 4px; /* Slight edge */
             font-size: 16px; margin-bottom: 10px; resize: none; height: 90px;
             background: #0f172a; color: #fff;
         }
-        .q-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+        .q-input:focus { outline: none; border-color: #3b82f6; }
         .q-input.limit-reached { border-color: #ef4444; }
         
         .char-counter { position: absolute; right: 25px; bottom: 70px; color: #94a3b8; font-size: 11px; }
@@ -45,7 +47,7 @@
         .input-actions { display: flex; justify-content: space-between; align-items: center; }
         .timer-msg { font-size: 12px; color: #ef4444; font-weight: bold; visibility: hidden; }
         .btn-submit {
-            background: #3b82f6; color: white; padding: 10px 25px; border-radius: 30px;
+            background: #3b82f6; color: white; padding: 10px 25px; border-radius: 4px;
             font-weight: bold; border: none; font-size: 14px;
         }
         .btn-submit:disabled { background: #64748b; }
@@ -59,13 +61,20 @@
         }
         .q-list { padding: 0 15px; }
         .q-card {
-            background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            background: #fff; border-radius: 4px; padding: 15px; margin-bottom: 12px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative;
         }
         .q-card.my-q { border: 2px solid #3b82f6; background: #f0f9ff; }
-        .q-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .q-text { font-size: 15px; line-height: 1.4; color: #333; word-break: break-all; width: 85%; }
         
+        .q-text { 
+            font-size: 15px; line-height: 1.4; color: #333; word-break: break-all; margin-bottom: 10px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            cursor: pointer;
+        }
+        .q-text.expanded { -webkit-line-clamp: unset; overflow: visible; }
+        
+        .q-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
         .like-btn {
             background: #f1f5f9; color: #94a3b8; padding: 5px 10px; border-radius: 20px;
             font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;
@@ -75,17 +84,17 @@
         /* Edit Button */
         .edit-btn { 
             font-size: 11px; color: #3b82f6; border: 1px solid #3b82f6; padding: 3px 8px; 
-            border-radius: 10px; cursor: pointer; display: none; margin-left: auto;
+            border-radius: 4px; cursor: pointer; display: none; 
         }
-        .edit-timer { font-size: 10px; color: #ef4444; margin-right: 5px; }
+        .edit-timer { font-size: 10px; color: #ef4444; }
 
-        /* Fixed Dark Navy Footer */
+        /* Fixed Dark Navy Footer with Logo */
         .footer {
             position: fixed; bottom: 0; width: 100%; height: 50px; background: #1e293b; color: #94a3b8;
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            display: flex; align-items: center; justify-content: flex-end; padding: 0 20px;
             font-size: 10px; z-index: 200;
         }
-        .footer img { height: 15px; opacity: 0.7; }
+        .footer img { height: 20px; opacity: 0.8; }
 
         /* Quiz Overlay */
         .quiz-overlay {
@@ -114,16 +123,16 @@
     <div class="header">
         <div class="header-left">
             <i class="fa-solid fa-bars" onclick="openMenu()"></i>
-            <span id="roomTitle">Loading...</span>
+            <span id="roomBadge" class="room-badge">ROOM A</span>
+            <span id="roomTitle" class="title-text">...</span>
         </div>
         <div class="header-right">
-            <span id="roomBadge" class="room-badge">Room</span>
             <i class="fa-solid fa-moon" onclick="toggleNight()"></i>
         </div>
     </div>
 
     <div class="input-area">
-        <textarea id="qInput" class="q-input" placeholder="익명으로 처리되나, 불쾌한 표현은 삼가주세요." maxlength="100"></textarea>
+        <textarea id="qInput" class="q-input" placeholder="본 설문은 익명이며, 서로를 존중하는 표현을 부탁드립니다." maxlength="100"></textarea>
         <span id="charCount" class="char-counter">0 / 100</span>
         <div class="input-actions">
             <span id="coolTimer" class="timer-msg">Wait 02:00</span>
@@ -140,7 +149,6 @@
     </div>
 
     <div class="footer">
-        <span>Developed by DooSeok, Jang</span>
         <img src="logo.png" alt="KAC">
     </div>
 
@@ -172,22 +180,21 @@
         let currentRoom = getRoomFromCode(code);
         if(!currentRoom) { document.body.innerHTML = "<h2 style='text-align:center;margin-top:50px;'>Invalid Link</h2>"; throw new Error("No Room"); }
 
-        document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+        document.getElementById('roomBadge').innerText = `ROOM ${currentRoom}`;
 
         const dbRef = {
             qa: db.ref(`courses/${currentRoom}/questions`),
             quiz: db.ref(`courses/${currentRoom}/activeQuiz`),
             ans: db.ref(`courses/${currentRoom}/quizAnswers`),
             settings: db.ref(`courses/${currentRoom}/settings`),
-            status: db.ref(`courses/${currentRoom}/status/mode`) // For Mode Sync
+            status: db.ref(`courses/${currentRoom}/status/mode`)
         };
 
         dbRef.settings.on('value', snap => {
             const val = snap.val() || {};
-            document.getElementById('roomTitle').innerText = val.courseName ? val.courseName.substring(0,15) : `Course ${currentRoom}`;
+            document.getElementById('roomTitle').innerText = val.courseName ? val.courseName.substring(0,20) : `Course`;
         });
 
-        // Mode Sync (Force Close Quiz)
         dbRef.status.on('value', snap => {
             if(snap.val() === 'qa') {
                 document.getElementById('quizOverlay').style.display = 'none';
@@ -200,14 +207,14 @@
         qInput.addEventListener('input', () => {
             const len = qInput.value.length;
             charCount.innerText = `${len} / 100`;
-            if(len >= 100) {
-                qInput.classList.add('limit-reached');
-                charCount.classList.add('limit');
-            } else {
-                qInput.classList.remove('limit-reached');
-                charCount.classList.remove('limit');
-            }
+            if(len >= 100) { qInput.classList.add('limit-reached'); charCount.classList.add('limit'); } 
+            else { qInput.classList.remove('limit-reached'); charCount.classList.remove('limit'); }
         });
+
+        // Toggle Text Expand
+        window.toggleExpand = function(el) {
+            el.classList.toggle('expanded');
+        };
 
         // Q&A Logic
         let myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
@@ -232,18 +239,16 @@
                     const postTime = myQs[item.id];
                     const diff = Date.now() - postTime;
                     if(diff < 300000) { 
-                        editHtml = `<span id="timer-${item.id}" class="edit-timer"></span><button class="edit-btn" style="display:inline-block;" onclick="editQ('${item.id}')">Edit</button>`;
+                        editHtml = `<span id="timer-${item.id}" class="edit-timer"></span><button class="edit-btn" style="display:inline-block;" onclick="editQ('${item.id}')"><i class="fa-solid fa-pen"></i></button>`;
                     }
                 }
 
                 list.innerHTML += `
                     <div class="q-card ${isMine}">
-                        <div class="q-top">
-                            <div class="q-text">${escapeHtml(item.text)}</div>
-                            <div style="display:flex; align-items:center;">
-                                ${editHtml}
-                                <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div>
-                            </div>
+                        <div class="q-text" onclick="toggleExpand(this)">${escapeHtml(item.text)}</div>
+                        <div class="q-bottom">
+                            ${editHtml}
+                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div>
                         </div>
                     </div>`;
             });

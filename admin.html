@@ -55,7 +55,7 @@
         .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
         .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 16px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px; }
         .header-controls { display: flex; gap: 15px; align-items: center; }
-        .kac-logo { height: 30px; margin-left: 15px; } /* Small Logo Right */
+        .kac-logo { height: 18px; margin-left: 15px; opacity: 0.9; } /* Logo Reduced 50% */
         .icon-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; }
         .icon-btn:hover { background: var(--accent-color); }
 
@@ -64,7 +64,7 @@
         .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; }
         .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 20px; display: flex; flex-direction: column; align-items: center; }
 
-        /* Q&A View - List Style (Full Width) */
+        /* Q&A View - Refined Design */
         #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1400px; }
         .qa-filters { display: flex; gap: 10px; margin-bottom: 20px; }
         .filter-chip { padding: 6px 14px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); opacity: 0.7; }
@@ -76,125 +76,64 @@
         }
         .q-card { 
             background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #cbd5e1; 
-            cursor: pointer; transition: transform 0.2s; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #0f172a; /* Dark Navy Bar */
+            cursor: pointer; transition: all 0.2s ease; position: relative;
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
-        .q-card:hover { transform: translateY(-2px); }
+        /* Hover Effect: Green Glow */
+        .q-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 0 0 2px #10b981; /* Green Border */
+        }
         .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
         .q-card.status-later { border-left-color: #f59e0b; opacity: 0.9; }
         .q-card.status-done { border-left-color: #94a3b8; opacity: 0.6; background: #f8fafc; color: #64748b; filter: grayscale(1); }
 
-        /* --- QUIZ VIEW (HIGH END + TOP ALIGN) --- */
+        .q-content { flex-grow: 1; font-size: 18px; font-weight: 700; line-height: 1.4; color: #333; margin-right: 20px; }
+        .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 80px; }
+        .q-like-badge { 
+            font-size: 18px; font-weight: 800; color: #3b82f6; 
+            background: #eff6ff; padding: 5px 12px; border-radius: 20px;
+        }
+        .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
+
+        /* Quiz View */
         #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 50px; }
-        
-        .quiz-card {
-            width: 95%; max-width: 1200px; height: 85%; 
-            background: var(--card-bg); border-radius: 30px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1); 
-            border: 1px solid rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; align-items: center; 
-            padding: 40px; text-align: center; position: relative; overflow: hidden;
-        }
-
-        /* Digital Timer (Top Left) */
-        .digital-timer {
-            position: absolute; top: 30px; left: 40px;
-            font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900;
-            color: #333; background: #f1f5f9; padding: 5px 15px; border-radius: 8px;
-            border: 2px solid #cbd5e1; opacity: 0; transition: 0.3s;
-        }
-        .digital-timer.show { opacity: 1; }
-        .digital-timer.urgent { color: #ef4444; border-color: #ef4444; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-
-        /* Question Text (Dark Navy) */
-        .quiz-question { 
-            font-size: 48px; font-weight: 900; margin-bottom: 40px; margin-top: 20px;
-            line-height: 1.3; color: #0f172a; /* Dark Navy */
-            word-break: keep-all; width: 80%;
-        }
-
-        /* Options Area (Card Style) */
-        .quiz-options { 
-            width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; 
-            flex-grow: 1; justify-content: center; align-items: center; 
-        }
-        .quiz-opt { 
-            width: 100%; font-size: 24px; padding: 25px 30px; 
-            border: 2px solid #e2e8f0; border-radius: 15px; 
-            font-weight: 700; text-align: center; color: #475569;
-            background: white; transition: all 0.3s;
-            position: relative; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        /* Number Badge */
-        .quiz-opt .opt-num {
-            width: 50px; height: 50px; flex-shrink: 0;
-            background: #f1f5f9; border-radius: 10px; color: #64748b;
-            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;
-            margin-right: 20px;
-        }
+        .quiz-card { width: 95%; max-width: 1200px; height: 85%; background: var(--card-bg); border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center; position: relative; overflow: hidden; }
+        .timer-badge { background: #1e293b; color: #fff; padding: 8px 25px; border-radius: 30px; font-size: 18px; font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); opacity: 0; transition: 0.3s; transform: translateY(-10px); }
+        .timer-badge.show { opacity: 1; transform: translateY(0); }
+        .timer-badge.urgent { background: #ef4444; animation: pulse 1s infinite; }
+        .quiz-question { font-size: 42px; font-weight: 900; margin-bottom: 40px; line-height: 1.3; color: #0f172a; word-break: keep-all; width: 80%; margin-top: 20px;}
+        .quiz-options { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; align-items: center; }
+        .quiz-opt { width: 100%; font-size: 24px; padding: 25px 30px; border: 2px solid #e2e8f0; border-radius: 15px; font-weight: 700; text-align: center; color: #475569; background: white; transition: all 0.3s; position: relative; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .quiz-opt .opt-num { width: 50px; height: 50px; flex-shrink: 0; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 20px; }
         .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
-        
-        .quiz-opt.reveal-answer { 
-            border-color: #10b981; background: #ecfdf5; color: #065f46; 
-            transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10;
-        }
+        .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; }
         .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 
-        /* --- Chart Area (Neon Green Winner) --- */
-        .chart-area { 
-            display: none; width: 100%; height: 100%; flex-grow: 1; 
-            align-items: flex-end; justify-content: center; gap: 60px; 
-            padding-bottom: 60px; position: relative;
-        }
-        
-        .bar-wrapper { 
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            width: 90px; height: 100%; position: relative; 
-        }
+        /* Chart */
+        .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 60px; padding-bottom: 60px; position: relative; }
+        .bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 90px; height: 100%; position: relative; }
         .bar-value { margin-bottom: 10px; font-weight: 900; font-size: 24px; color: #333; }
-        
-        /* Default Bar (Gray) */
-        .bar-fill { 
-            width: 100%; border-radius: 10px 10px 0 0; transition: height 1s; 
-            background: #cbd5e1; /* Gray */
-        }
-        .bar-label { 
-            position: absolute; bottom: -60px; width: 60px; height: 60px; 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 24px; color: #fff; background: #64748b;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        /* Winner Bar (Neon Green) */
-        .bar-wrapper.correct .bar-fill { 
-            background: #39ff14; /* Neon Green */
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.5); border: 2px solid #fff;
-        }
+        .bar-fill { width: 100%; border-radius: 10px 10px 0 0; transition: height 1s; background: #cbd5e1; }
+        .bar-label { position: absolute; bottom: -60px; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; color: #fff; background: #64748b; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .bar-wrapper.correct .bar-fill { background: #39ff14; box-shadow: 0 0 20px rgba(57, 255, 20, 0.5); border: 2px solid #fff; }
         .bar-wrapper.correct .bar-label { background: #10b981; transform: scale(1.2); }
-        .bar-wrapper.correct .bar-label::after { 
-            content: 'WINNER'; font-size: 10px; position: absolute; top: -18px; 
-            background: #333; color: #fff; padding: 2px 6px; border-radius: 4px;
-        }
-
+        .bar-wrapper.correct .bar-label::after { content: 'WINNER'; font-size: 10px; position: absolute; top: -18px; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; }
         .x-axis-line { position: absolute; bottom: -30px; width: 80%; height: 3px; background: #334155; }
 
-        /* Controls */
+        /* Controls - Fixed Icons */
         .quiz-status-bar { margin-top: 30px; display: flex; gap: 20px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
-        .q-btn { 
-            padding: 15px 30px; border-radius: 50px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s; flex-shrink: 0;
-        }
+        .q-btn { padding: 15px 30px; border-radius: 50px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s; flex-shrink: 0; }
         .q-btn:active { transform: scale(0.95); }
-        .q-btn i { font-size: 22px; }
-        
+        .q-btn i { font-size: 22px; color: white !important; }
         .btn-test { background: #f59e0b; }
         .btn-start { background: #2563eb; }
         .btn-stop { background: #dc2626; }
         .btn-result { background: #10b981; }
         .btn-nav { background: #334155; border: 2px solid #fff; } 
-        
         .quiz-guide-text { background: rgba(0,0,0,0.7); color: #fff; padding: 8px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; } }
 
         /* Overlays */
         .overlay-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.3s; z-index: 100; padding: 25px; display: flex; flex-direction: column; }
@@ -212,7 +151,6 @@
         .modal-actions { display: flex; gap: 15px; justify-content: space-between; align-items: center; }
         .modal-left-btns { display: flex; gap: 10px; }
         .modal-right-btns { display: flex; gap: 10px; }
-        
         .m-btn { border: none; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .m-btn:hover { transform: translateY(-2px); }
         .m-btn-done { background: #10b981; color: white; padding: 12px 30px; font-size: 16px; }
@@ -222,11 +160,11 @@
         .m-btn-del { background: #ef4444; color: white; }
 
         /* PRINT STYLE */
-        #printHeader { display: none; }
+        #printHeader, #printPopup { display: none; }
         #printPopup { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 10px; 
-            font-size: 20px; font-weight: bold; z-index: 10000; display: none;
+            background: rgba(0,0,0,0.8); color: white; padding: 30px 50px; border-radius: 10px; 
+            font-size: 24px; font-weight: bold; z-index: 10000; display: none; text-align:center;
         }
         @media print {
             @page { margin: 10mm; }
@@ -253,7 +191,7 @@
     <!-- QR Modal -->
     <div id="qrModal" class="qr-modal" onclick="closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
     <!-- Print Popup -->
-    <div id="printPopup">📄 리포트 생성 중...</div>
+    <div id="printPopup"><i class="fa-solid fa-spinner fa-spin"></i><br>리포트 생성 중... (100%)</div>
 
     <!-- Print Layout (Hidden) -->
     <div id="printHeader">
@@ -349,7 +287,7 @@
         </div>
 
         <div class="content-area">
-            <!-- Q&A View (List Type) -->
+            <!-- Q&A View -->
             <div id="view-qa">
                 <div class="qa-filters">
                     <div class="filter-chip active" onclick="filterQa('all')">All Questions</div>
@@ -359,7 +297,7 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <!-- Quiz View (High-End Top Align) -->
+            <!-- Quiz View -->
             <div id="view-quiz">
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text" style="display:none;"></div>
@@ -371,7 +309,6 @@
                         <div class="quiz-question" id="d-qtext">Press 'Test Mode' first.</div>
                         <div class="quiz-options" id="d-options"></div>
                         
-                        <!-- 2D Clean Chart with Neon Green Winner -->
                         <div class="chart-area" id="d-chart">
                             <div class="x-axis-line"></div>
                         </div>
@@ -420,7 +357,7 @@
         </div>
     </div>
 
-    <!-- Modal (Left/Right Split Buttons) -->
+    <!-- Modal -->
     <div id="qaModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
             <div class="modal-q-text" id="m-text"></div>
@@ -489,7 +426,7 @@
         function resetCourse() {
             const MASTER_KEY = "3126";
             const DEFAULT_PW = "9999";
-            const inputPw = prompt("Enter Master Key (3126) to RESET:\n(Room Password allows operation, but Master Key is required for deletion)");
+            const inputPw = prompt("Enter Master Key to RESET:\n(Room Password allows operation, but Master Key is required for deletion)");
             
             if(inputPw === MASTER_KEY) {
                 if(confirm("WARNING: All Data (Questions, Quiz, Info) will be deleted.")) {
@@ -500,7 +437,7 @@
                     });
                 }
             } else {
-                alert("Reset requires Master Key (3126).");
+                alert("Reset requires Master Key.");
             }
         }
 
@@ -529,7 +466,7 @@
             setTimeout(() => {
                 popup.style.display = 'none';
                 window.print();
-            }, 500);
+            }, 800);
         }
 
         function loadQaData() { dbRef.qa.on('value', s => { qaData = s.val() || {}; renderQa('all'); }); }
@@ -544,7 +481,14 @@
             items.forEach(i => {
                 const cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
                 const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
-                list.innerHTML += `<div class="q-card ${cls}" onclick="openQaModal('${i.id}')"><div style="font-size:16px; font-weight:700;">${icon}${i.text}</div><div style="font-size:11px; color:#64748b;">👍 ${i.likes||0} | ${new Date(i.timestamp).toLocaleTimeString()}</div></div>`;
+                list.innerHTML += `
+                    <div class="q-card ${cls}" onclick="openQaModal('${i.id}')">
+                        <div class="q-content">${icon}${i.text}</div>
+                        <div class="q-meta">
+                            <div class="q-like-badge">👍 ${i.likes||0}</div>
+                            <div class="q-time">${new Date(i.timestamp).toLocaleTimeString()}</div>
+                        </div>
+                    </div>`;
             });
         }
         function filterQa(mode) { document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); event.target.classList.add('active'); renderQa(mode); }
@@ -633,7 +577,6 @@
             }
         }
         
-        // 2D Clean Chart with Neon Green Winner
         function renderCleanChart(id, correct) {
             const chartDiv = document.getElementById('d-chart');
             dbRef.ans.child(id).once('value', s => {
@@ -641,10 +584,10 @@
                 const counts=[0,0,0,0]; Object.values(ans).forEach(v=>{if(v.choice>=1&&v.choice<=4)counts[v.choice-1]++});
                 const max = Math.max(...counts, 1);
                 
-                chartDiv.innerHTML = '<div class="x-axis-line"></div>'; // Reset with Axis
+                chartDiv.innerHTML = '<div class="x-axis-line"></div>'; 
                 
                 counts.forEach((c, i) => {
-                    const h = (c/max)*80; // Scale to 80% height
+                    const h = (c/max)*80; 
                     const isCor = (i+1) === correct;
                     const correctClass = isCor ? 'correct' : '';
                     
