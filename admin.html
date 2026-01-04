@@ -17,7 +17,7 @@
         :root {
             --header-bg: #0f172a; 
             --accent-color: #3b82f6;
-            --bg-color: #f8fafc;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
             --text-color: #1e293b;
             --sidebar-width: 300px;
@@ -54,7 +54,8 @@
         .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10; }
         .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
         .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 16px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px; }
-        .header-controls { display: flex; gap: 15px; }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        .kac-logo { height: 30px; margin-left: 15px; }
         .icon-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; }
         .icon-btn:hover { background: var(--accent-color); }
 
@@ -75,13 +76,13 @@
         .q-card.status-later { border-left-color: #f59e0b; opacity: 0.9; }
         .q-card.status-done { border-left-color: #94a3b8; opacity: 0.5; background: #f1f5f9; color: #64748b; filter: grayscale(1); }
 
-        /* --- QUIZ VIEW (HIGH END DESIGN) --- */
+        /* --- QUIZ VIEW (REFINED) --- */
         #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
         
         .quiz-card {
             width: 100%; max-width: 1100px; height: 100%; 
             background: var(--card-bg); border-radius: 30px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15); 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); 
             border: 1px solid rgba(0,0,0,0.05);
             display: flex; flex-direction: column; align-items: center; 
             padding: 40px; text-align: center; position: relative; overflow: hidden;
@@ -104,7 +105,7 @@
             word-break: keep-all; width: 100%;
         }
 
-        /* Options Area */
+        /* Options Area (Centered) */
         .quiz-options { 
             width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; 
             flex-grow: 1; justify-content: center; align-items: center; 
@@ -113,7 +114,7 @@
             width: 100%; font-size: 24px; padding: 25px; 
             border: 2px solid #e2e8f0; border-radius: 20px; 
             font-weight: 700; text-align: center; color: #475569;
-            background: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white; transition: all 0.3s;
             position: relative; cursor: default;
         }
         .quiz-opt .opt-num {
@@ -122,70 +123,56 @@
             display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
         
-        /* Reveal Effect */
         .quiz-opt.reveal-answer { 
             border-color: #10b981; background: #ecfdf5; color: #065f46; 
             transform: scale(1.05); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10;
         }
         .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 
-        /* --- 3D Cylinder Chart --- */
+        /* --- 2D Clean Chart (Fixed Alignment) --- */
         .chart-area { 
             display: none; width: 100%; height: 100%; flex-grow: 1; 
-            align-items: flex-end; justify-content: center; gap: 80px; 
-            padding-bottom: 50px; position: relative;
+            align-items: flex-end; justify-content: center; gap: 50px; 
+            padding-bottom: 60px; position: relative;
         }
         
-        .bar-container { 
-            position: relative; width: 100px; height: 100%; 
-            display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
+        .bar-wrapper { 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            width: 80px; height: 100%; position: relative; 
         }
         
-        /* 3D Cylinder CSS */
-        .cylinder { position: relative; width: 100%; transition: height 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 5; border-radius: 0 0 50% 50% / 0 0 15px 15px; }
-        
-        /* Top Cap */
-        .cylinder::before {
-            content: ''; position: absolute; top: -15px; left: 0; width: 100%; height: 30px;
-            border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); z-index: 2;
+        /* Bar Design */
+        .bar-value { margin-bottom: 10px; font-weight: 900; font-size: 24px; color: #333; }
+        .bar-fill { 
+            width: 100%; border-radius: 10px 10px 0 0; transition: height 1s; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        /* Body */
-        .cylinder-body { width: 100%; height: 100%; border-left: 1px solid rgba(0,0,0,0.1); border-right: 1px solid rgba(0,0,0,0.1); }
-        
-        /* Default Gray Style (Wrong) */
-        .cylinder.wrong .cylinder-body { background: linear-gradient(to right, #94a3b8, #cbd5e1, #94a3b8); }
-        .cylinder.wrong::before { background: #cbd5e1; }
-        
-        /* Correct Style (Neon Emerald) */
-        .cylinder.correct .cylinder-body { background: linear-gradient(to right, #059669, #34d399, #059669); }
-        .cylinder.correct::before { background: #6ee7b7; box-shadow: 0 0 20px #34d399; }
-        
-        /* Value Label */
-        .cylinder-label { 
-            position: absolute; top: -50px; width: 100%; text-align: center; 
-            font-weight: 900; font-size: 24px; color: #333; 
-            text-shadow: 0 2px 5px rgba(255,255,255,0.8);
+        .bar-label { 
+            position: absolute; bottom: -50px; width: 50px; height: 50px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        
-        /* X-Axis Badges */
-        .x-axis-line { position: absolute; bottom: 0; width: 100%; height: 4px; background: #334155; border-radius: 2px; }
-        .x-label-badge { 
-            margin-top: 20px; width: 50px; height: 50px; 
-            border-radius: 50%; background: #1e293b; color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 800; font-size: 22px; z-index: 10; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
+
+        /* Specific Colors */
+        .col-1 .bar-fill { background: #3b82f6; } .col-1 .bar-label { background: #1e3a8a; } /* Blue */
+        .col-2 .bar-fill { background: #ef4444; } .col-2 .bar-label { background: #991b1b; } /* Red */
+        .col-3 .bar-fill { background: #f59e0b; } .col-3 .bar-label { background: #92400e; } /* Yellow */
+        .col-4 .bar-fill { background: #10b981; } .col-4 .bar-label { background: #065f46; } /* Green */
+
+        /* Correct Highlight */
+        .bar-wrapper.correct .bar-fill { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+        .bar-wrapper.correct .bar-label::after { content: 'WIN'; font-size: 10px; position: absolute; top: -15px; color: #333; }
+
+        .x-axis-line { position: absolute; bottom: -25px; width: 80%; height: 2px; background: #cbd5e1; }
 
         /* Controls */
         .quiz-status-bar { margin-top: 30px; display: flex; gap: 20px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
         .q-btn { 
             padding: 15px 30px; border-radius: 50px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s; flex-shrink: 0;
         }
         .q-btn:active { transform: scale(0.95); }
         .q-btn i { font-size: 22px; }
-        .q-btn span { font-size: 12px; font-weight: 500; opacity: 0.9; }
         
         .btn-test { background: #f59e0b; }
         .btn-start { background: #2563eb; }
@@ -210,35 +197,33 @@
         .modal-q-text { font-size: 28px; font-weight: 800; margin-bottom: 30px; line-height: 1.4; color: var(--text-color); }
         .modal-actions { display: flex; gap: 15px; justify-content: space-between; align-items: center; }
         .m-btn { border: none; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .m-btn:hover { transform: translateY(-2px); }
         .m-btn-done { background: #10b981; color: white; padding: 12px 30px; font-size: 16px; }
         .m-btn-later { background: #f59e0b; color: white; }
         .m-btn-icon { width: 45px; height: 45px; border-radius: 50%; padding: 0; justify-content: center; font-size: 18px; }
         .m-btn-pin { background: #3b82f6; color: white; }
         .m-btn-del { background: #ef4444; color: white; }
 
-        /* PRINT STYLE */
+        /* PRINT STYLE (FIXED) */
         #printHeader { display: none; }
         @media print {
             @page { margin: 10mm; }
-            body * { visibility: hidden; }
-            .sidebar, .header, .mode-tabs, .overlay-toggle-tab, .qa-filters, .overlay-panel { display: none !important; }
-            #printHeader { display: block !important; visibility: visible; position: absolute; top: 0; left: 0; width: 100%; font-family: "Malgun Gothic", "Dotum", sans-serif; }
+            body > * { display: none !important; } /* Hide everything by default */
+            #printHeader { display: block !important; visibility: visible; position: absolute; top: 0; left: 0; width: 100%; }
+            #printHeader * { visibility: visible; }
+            
             .p-container { border: 2px solid #000; width: 100%; margin-bottom: 20px; }
-            .p-title { background: #e5e7eb; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; border-bottom: 1px solid #000; }
+            .p-title { background: #f3f4f6 !important; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; border-bottom: 1px solid #000; -webkit-print-color-adjust: exact; }
             .p-table { width: 100%; border-collapse: collapse; }
-            .p-table th { background: #e5e7eb; width: 20%; padding: 10px; border: 1px solid #000; font-weight: bold; text-align: center; }
+            .p-table th { background: #f3f4f6 !important; width: 20%; padding: 10px; border: 1px solid #000; font-weight: bold; text-align: center; -webkit-print-color-adjust: exact; }
             .p-table td { padding: 10px; border: 1px solid #000; width: 80%; font-weight: bold; font-size: 14px; }
-            .p-summary { background: #fdba74; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; border: 1px solid #000; border-top: 2px solid #000; }
+            .p-summary { background: #fdba74 !important; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; border: 1px solid #000; border-top: 2px solid #000; -webkit-print-color-adjust: exact; }
+            
             .list-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-            .list-table th { background: #e5e7eb; border: 1px solid #000; padding: 8px; text-align: center; }
+            .list-table th { background: #f3f4f6 !important; border: 1px solid #000; padding: 8px; text-align: center; -webkit-print-color-adjust: exact; }
             .list-table td { border: 1px solid #000; padding: 8px; }
             .td-no { width: 10%; text-align: center; font-weight: bold; }
             .td-q { width: 80%; font-weight: bold; font-size: 14px; }
             .td-like { width: 10%; text-align: center; }
-            .content-area, #view-qa { visibility: visible; position: absolute; top: 350px; width: 100%; height: auto; }
-            .qa-list { display: none !important; } 
-            #printListArea { display: block !important; visibility: visible; }
         }
     </style>
 </head>
@@ -247,7 +232,7 @@
     <!-- QR Modal -->
     <div id="qrModal" class="qr-modal" onclick="closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
 
-    <!-- Print Layout (Hidden) -->
+    <!-- Print Layout (Hidden on Screen) -->
     <div id="printHeader">
         <div class="p-container">
             <div class="p-title">KAC Training Platform</div>
@@ -328,6 +313,7 @@
             </div>
             <div class="header-controls">
                 <div class="icon-btn" onclick="toggleNightMode()" title="Day/Night"><i class="fa-solid fa-moon"></i></div>
+                <img src="logo.png" alt="Logo" class="kac-logo">
                 <div class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></div>
             </div>
         </header>
@@ -348,7 +334,7 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <!-- Quiz View (High-End) -->
+            <!-- Quiz View (Refined 2D Design) -->
             <div id="view-quiz">
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text" style="display:none;"></div>
@@ -361,7 +347,7 @@
                         <div class="quiz-question" id="d-qtext">Press 'Test Mode' first.</div>
                         <div class="quiz-options" id="d-options"></div>
                         
-                        <!-- 3D Chart Area -->
+                        <!-- 2D Chart Area -->
                         <div class="chart-area" id="d-chart">
                             <div class="x-axis-line"></div>
                         </div>
@@ -372,7 +358,7 @@
                             <i class="fa-solid fa-triangle-exclamation"></i> <span>Start Test Mode</span>
                         </button>
                         
-                        <div id="quizControls" style="display:none; gap:15px; align-items:center;">
+                        <div id="quizControls" style="display:none; gap:10px; align-items:center;">
                             <button class="q-btn btn-nav" onclick="prevNextQuiz(-1)">
                                 <i class="fa-solid fa-backward"></i> <span>Prev</span>
                             </button>
@@ -479,28 +465,19 @@
         function resetCourse() {
             const MASTER_KEY = "3126";
             const DEFAULT_PW = "9999";
-            const inputPw = prompt("Enter Room Password (or Master Key) to RESET:");
-            if(!inputPw) return;
-
-            db.ref(`courses/${currentRoom}/settings/password`).once('value', snap => {
-                const realPw = snap.val();
-                if((realPw && realPw == inputPw) || inputPw === MASTER_KEY) {
-                    if(confirm("WARNING: All Data (Questions, Quiz, Info) will be deleted.")) {
-                        // 1. Determine next password
-                        let nextPw = (inputPw === MASTER_KEY) ? DEFAULT_PW : inputPw;
-                        
-                        // 2. Wipe everything in Room
-                        db.ref(`courses/${currentRoom}`).set(null).then(() => {
-                            // 3. Restore Password
-                            db.ref(`courses/${currentRoom}/settings/password`).set(nextPw);
-                            alert(`Reset Complete.\nRoom Password: ${nextPw}`);
-                            location.reload();
-                        });
-                    }
-                } else {
-                    alert("Wrong Password.");
+            const inputPw = prompt("Enter Master Key (3126) to RESET:\n(Room Password allows operation, but Master Key is required for deletion)");
+            
+            if(inputPw === MASTER_KEY) {
+                if(confirm("WARNING: All Data (Questions, Quiz, Info) will be deleted.")) {
+                    db.ref(`courses/${currentRoom}`).set(null).then(() => {
+                        db.ref(`courses/${currentRoom}/settings/password`).set(DEFAULT_PW);
+                        alert(`Reset Complete.\nRoom Password reset to: ${DEFAULT_PW}`);
+                        location.reload();
+                    });
                 }
-            });
+            } else {
+                alert("Reset requires Master Key (3126).");
+            }
         }
 
         function printReport() {
@@ -545,7 +522,7 @@
         function updateQa(act) {
             if(!activeQaKey) return;
             if(act==='delete') {
-                const pw = prompt("Password to Delete:");
+                const pw = prompt("Room Password to Delete:");
                 db.ref(`courses/${currentRoom}/settings/password`).once('value', s => { if(s.val()==pw) dbRef.qa.child(activeQaKey).remove(); else alert("Wrong."); });
             } else {
                 let st = act; if(qaData[activeQaKey].status===act) st='normal';
@@ -619,32 +596,37 @@
                 } else if(act === 'result') {
                     optDiv.style.display='none'; chartDiv.style.display='flex'; 
                     setGuide("RESULT: Statistics.");
-                    render3DChart(id, correct);
+                    renderCleanChart(id, correct);
                 }
             }
         }
-        function render3DChart(id, correct) {
+        
+        // 2D Clean Chart Render
+        function renderCleanChart(id, correct) {
             const chartDiv = document.getElementById('d-chart');
             dbRef.ans.child(id).once('value', s => {
                 const ans = s.val()||{};
                 const counts=[0,0,0,0]; Object.values(ans).forEach(v=>{if(v.choice>=1&&v.choice<=4)counts[v.choice-1]++});
                 const max = Math.max(...counts, 1);
-                chartDiv.innerHTML = '<div class="x-axis-line"></div>';
+                
+                chartDiv.innerHTML = '<div class="x-axis-line"></div>'; // Reset with Axis
+                
                 counts.forEach((c, i) => {
-                    const h = (c/max)*90;
+                    const h = (c/max)*80; // Scale to 80% height
                     const isCor = (i+1) === correct;
-                    const cls = isCor ? 'correct' : 'wrong';
+                    const colClass = `col-${i+1}`;
+                    const correctClass = isCor ? 'correct' : '';
+                    
                     chartDiv.innerHTML += `
-                        <div class="bar-container">
-                            <div class="cylinder-label">${c}</div>
-                            <div class="cylinder ${cls}" style="height:${h}%">
-                                <div class="cylinder-body"></div>
-                            </div>
-                            <div class="x-label-badge">${i+1}</div>
+                        <div class="bar-wrapper ${colClass} ${correctClass}">
+                            <div class="bar-value">${c}</div>
+                            <div class="bar-fill" style="height:${h}%"></div>
+                            <div class="bar-label">${i+1}</div>
                         </div>`;
                 });
             });
         }
+
         function prevNextQuiz(dir) {
             if(isTestMode) { if(dir>0) loadRealQuiz(); else alert("Test Mode."); return; }
             let nextIdx = currentQuizIdx + dir;

@@ -10,103 +10,133 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root { --theme-color: #0f172a; }
+        :root { --theme-color: #1e293b; --bg-color: #f1f5f9; --text-color: #333; }
+        body.night-mode { --theme-color: #0f172a; --bg-color: #111; --text-color: #eee; }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
-        body { margin: 0; background: #f1f5f9; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* Header */
         .header {
-            height: 60px; background: white; display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 16px; color: #333; flex-shrink: 0; z-index: 100;
-            border-bottom: 5px solid var(--theme-color); padding: 0 15px; text-align: center;
+            height: 60px; background: var(--bg-color); display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; border-bottom: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; z-index: 100;
         }
+        .header-left { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .kac-logo-sm { height: 20px; }
+        .room-badge { background: var(--theme-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-        /* Input */
+        /* Input Area (High Contrast) */
         .input-area {
-            background: #e2e8f0; padding: 15px; flex-shrink: 0; z-index: 90;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background: #1e293b; padding: 20px; flex-shrink: 0; z-index: 90;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 20px 20px;
         }
         .q-input {
-            width: 100%; border: 2px solid #cbd5e1; padding: 12px; border-radius: 10px;
+            width: 100%; border: 3px solid #3b82f6; padding: 15px; border-radius: 12px;
             font-size: 16px; margin-bottom: 10px; resize: none; height: 80px;
+            background: #fff; color: #333;
         }
-        .q-input:focus { outline: none; border-color: var(--theme-color); }
+        .q-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
         .input-actions { display: flex; justify-content: space-between; align-items: center; }
         .timer-msg { font-size: 12px; color: #ef4444; font-weight: bold; visibility: hidden; }
         .btn-submit {
-            background: var(--theme-color); color: white; padding: 10px 25px; border-radius: 30px;
+            background: #3b82f6; color: white; padding: 10px 25px; border-radius: 30px;
             font-weight: bold; border: none; font-size: 14px;
         }
-        .btn-submit:disabled { background: #94a3b8; }
+        .btn-submit:disabled { background: #64748b; }
 
         /* List */
-        .scroll-container { flex-grow: 1; overflow-y: auto; position: relative; }
+        .scroll-container { flex-grow: 1; overflow-y: auto; position: relative; padding-bottom: 60px; }
         .sticky-bar {
-            position: sticky; top: 0; background: #f1f5f9; padding: 15px;
+            position: sticky; top: 0; background: var(--bg-color); padding: 15px;
             font-size: 14px; font-weight: bold; color: #64748b; z-index: 80;
-            border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between;
+            display: flex; justify-content: space-between;
         }
-        .q-list { padding: 0 15px 30px 15px; }
+        .q-list { padding: 0 15px; }
         .q-card {
-            background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: flex-start;
+            background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative;
         }
-        .q-card.my-q { border: 2px solid var(--theme-color); background: #f8fafc; }
-        .q-text { font-size: 15px; line-height: 1.4; color: #333; word-break: break-all; width: 80%; }
+        .q-card.my-q { border: 2px solid #3b82f6; background: #f0f9ff; }
+        .q-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .q-text { font-size: 15px; line-height: 1.4; color: #333; word-break: break-all; width: 85%; }
+        
         .like-btn {
             background: #f1f5f9; color: #94a3b8; padding: 5px 10px; border-radius: 20px;
             font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;
         }
         .like-btn.active { background: #ffe4e6; color: #f43f5e; }
 
-        /* Menu */
-        .menu-btn { position: absolute; left: 15px; font-size: 20px; cursor: pointer; }
-        .menu-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
-            z-index: 2000; display: none; align-items: center; justify-content: center; 
+        /* Edit Button */
+        .edit-btn { 
+            font-size: 11px; color: #3b82f6; border: 1px solid #3b82f6; padding: 3px 8px; 
+            border-radius: 10px; cursor: pointer; display: none; margin-left: auto;
         }
-        .menu-box { background: white; padding: 30px; border-radius: 15px; width: 300px; text-align: center; }
-        .room-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .edit-timer { font-size: 10px; color: #ef4444; margin-right: 5px; }
+
+        /* Footer */
+        .footer {
+            position: fixed; bottom: 0; width: 100%; height: 50px; background: #1e293b; color: #94a3b8;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            font-size: 10px; z-index: 200;
+        }
+        .footer img { height: 15px; opacity: 0.7; }
 
         /* Quiz Overlay */
         .quiz-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color);
             z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
         }
-        .quiz-badge { background: var(--theme-color); color: white; padding: 5px 15px; border-radius: 20px; margin-bottom: 20px; font-size: 12px; font-weight: bold; }
-        .quiz-msg { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 40px; }
+        .quiz-badge { background: #3b82f6; color: white; padding: 5px 15px; border-radius: 20px; margin-bottom: 20px; font-size: 12px; font-weight: bold; }
+        .quiz-msg { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 40px; color: var(--text-color); }
         .quiz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
         .quiz-opt-btn { 
-            height: 100px; font-size: 30px; font-weight: 900; background: white; 
-            border: 4px solid #e2e8f0; border-radius: 15px; color: #333;
-            /* Important: Default state */
+            height: 100px; font-size: 30px; font-weight: 900; background: #fff; 
+            border: 4px solid #cbd5e1; border-radius: 15px; color: #333;
             pointer-events: none; opacity: 0.5;
         }
-        /* Active State */
         .quiz-opt-btn.active-mode { pointer-events: auto !important; opacity: 1 !important; cursor: pointer; }
-        .quiz-opt-btn.selected { border-color: var(--theme-color); background: var(--theme-color); color: white; }
+        .quiz-opt-btn.selected { border-color: #3b82f6; background: #3b82f6; color: white; }
         .quiz-wait { margin-top: 30px; color: #64748b; font-weight: bold; display: none; }
 
+        /* Menu */
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .menu-box { background: white; padding: 30px; border-radius: 15px; width: 300px; text-align: center; }
+        .room-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; color: #333; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="menu-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
-        <span id="roomTitle">Loading...</span>
+        <div class="header-left">
+            <i class="fa-solid fa-bars" onclick="openMenu()"></i>
+            <span id="roomTitle">Loading...</span>
+        </div>
+        <div class="header-right">
+            <span id="roomBadge" class="room-badge">Room</span>
+            <i class="fa-solid fa-moon" onclick="toggleNight()"></i>
+            <img src="logo.png" alt="Logo" class="kac-logo-sm">
+        </div>
     </div>
+
     <div class="input-area">
-        <textarea id="qInput" class="q-input" placeholder="Ask a question..."></textarea>
+        <textarea id="qInput" class="q-input" placeholder="익명으로 처리되나, 불쾌한 표현이나 남을 불편하게 하는 문구는 삼가주세요."></textarea>
         <div class="input-actions">
             <span id="coolTimer" class="timer-msg">Wait 02:00</span>
             <button id="submitBtn" class="btn-submit" onclick="submitQ()">Submit</button>
         </div>
     </div>
+
     <div class="scroll-container">
         <div class="sticky-bar">
             <span><i class="fa-solid fa-comments"></i> Live Questions</span>
             <span style="font-size:12px;">Sort: Likes <i class="fa-solid fa-arrow-down"></i></span>
         </div>
         <div id="qList" class="q-list"></div>
+    </div>
+
+    <div class="footer">
+        <span>Developed by DooSeok, Jang</span>
+        <img src="logo.png" alt="KAC">
     </div>
 
     <!-- Quiz Overlay -->
@@ -123,10 +153,7 @@
     </div>
 
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
-        <div class="menu-box">
-            <h3>Select Room</h3>
-            <div id="roomList" style="max-height:300px; overflow-y:auto;"></div>
-        </div>
+        <div class="menu-box"><h3>Select Room</h3><div id="roomList" style="max-height:300px; overflow-y:auto;"></div></div>
     </div>
 
     <script src="config.js"></script>
@@ -138,7 +165,9 @@
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         let currentRoom = getRoomFromCode(code);
-        if(!currentRoom) { document.body.innerHTML = "<h2 style='text-align:center;'>Invalid Link</h2>"; throw new Error("No Room"); }
+        if(!currentRoom) { document.body.innerHTML = "<h2 style='text-align:center;margin-top:50px;'>Invalid Link</h2>"; throw new Error("No Room"); }
+
+        document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
 
         const dbRef = {
             qa: db.ref(`courses/${currentRoom}/questions`),
@@ -149,13 +178,14 @@
 
         dbRef.settings.on('value', snap => {
             const val = snap.val() || {};
-            document.getElementById('roomTitle').innerText = val.courseName ? val.courseName : `Course Room ${currentRoom}`;
+            document.getElementById('roomTitle').innerText = val.courseName ? val.courseName.substring(0,15) : `Course ${currentRoom}`;
         });
 
         // Q&A Logic
         let myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
-        let myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}');
+        let myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); // { key: timestamp }
         let lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
+        let editInterval = null;
 
         dbRef.qa.on('value', snap => {
             const data = snap.val() || {};
@@ -163,25 +193,97 @@
             list.innerHTML = "";
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
             items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
+            
             items.forEach(item => {
                 if(item.status === 'delete') return;
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
-                list.innerHTML += `<div class="q-card ${isMine}"><div class="q-text">${escapeHtml(item.text)}</div><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div></div>`;
+                
+                // Edit Button Logic
+                let editHtml = '';
+                if(isMine) {
+                    const postTime = myQs[item.id];
+                    const diff = Date.now() - postTime;
+                    if(diff < 300000) { // 5 min
+                        editHtml = `<span id="timer-${item.id}" class="edit-timer"></span><button class="edit-btn" style="display:inline-block;" onclick="editQ('${item.id}')">Edit</button>`;
+                    }
+                }
+
+                list.innerHTML += `
+                    <div class="q-card ${isMine}">
+                        <div class="q-top">
+                            <div class="q-text">${escapeHtml(item.text)}</div>
+                            <div style="display:flex; align-items:center;">
+                                ${editHtml}
+                                <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div>
+                            </div>
+                        </div>
+                    </div>`;
             });
+            startEditTimers();
         });
 
+        function startEditTimers() {
+            if(editInterval) clearInterval(editInterval);
+            editInterval = setInterval(() => {
+                const now = Date.now();
+                document.querySelectorAll('.edit-timer').forEach(el => {
+                    const key = el.id.split('-')[1];
+                    const postTime = myQs[key];
+                    if(postTime) {
+                        const remain = 300000 - (now - postTime);
+                        if(remain <= 0) { el.parentElement.innerHTML = ""; } // Hide edit
+                        else {
+                            const m = Math.floor(remain/60000);
+                            const s = Math.floor((remain%60000)/1000);
+                            el.innerText = `${m}:${s<10?'0'+s:s}`;
+                        }
+                    }
+                });
+            }, 1000);
+        }
+
+        let editingKey = null;
+        function editQ(key) {
+            dbRef.qa.child(key).once('value', s => {
+                const txt = s.val().text;
+                document.getElementById('qInput').value = txt;
+                document.getElementById('submitBtn').innerText = "Update";
+                editingKey = key;
+                document.getElementById('qInput').focus();
+            });
+        }
+
         function submitQ() {
-            const now = Date.now();
-            if(now - lastPostTime < 120000) return; 
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
+
+            if(editingKey) {
+                // Update
+                dbRef.qa.child(editingKey).update({ text: txt });
+                editingKey = null;
+                document.getElementById('submitBtn').innerText = "Submit";
+                document.getElementById('qInput').value = "";
+                alert("Updated.");
+                return;
+            }
+
+            // New
+            const now = Date.now();
+            if(now - lastPostTime < 120000) return; 
+            
             const ref = dbRef.qa.push();
             ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'normal' });
-            myQs[ref.key] = true; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-            lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
-            document.getElementById('qInput').value = ""; checkCooldown();
+            
+            myQs[ref.key] = now; 
+            localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
+            lastPostTime = now; 
+            localStorage.setItem(`lastTime_${currentRoom}`, now);
+            
+            document.getElementById('qInput').value = ""; 
+            checkCooldown();
         }
+
         function checkCooldown() {
             const diff = Date.now() - lastPostTime;
             const btn = document.getElementById('submitBtn');
@@ -193,13 +295,14 @@
             } else { btn.disabled = false; msg.style.visibility = 'hidden'; }
         }
         checkCooldown();
+
         function toggleLike(key) {
             if(myLikes[key]) return;
             dbRef.qa.child(key).transaction(post => { if(post) post.likes = (post.likes||0) + 1; return post; });
             myLikes[key] = true; localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
         }
 
-        // Quiz Logic Fix
+        // Quiz Logic Fix (Reset Buttons)
         let currentQuizId = null;
         let canAnswer = false;
 
@@ -208,18 +311,25 @@
             const overlay = document.getElementById('quizOverlay');
             if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
 
+            // Check if new question
+            if(currentQuizId !== q.id) {
+                // RESET BUTTONS
+                document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('quizWait').style.display = 'none';
+                currentQuizId = q.id;
+            }
+
             overlay.style.display = 'flex';
-            currentQuizId = q.id;
             const btns = document.querySelectorAll('.quiz-opt-btn');
 
             if(q.status === 'open') {
                 canAnswer = true;
                 document.getElementById('quizStatusMsg').innerText = "Select Answer Now!";
-                btns.forEach(b => b.classList.add('active-mode')); // Force Enable
+                btns.forEach(b => b.classList.add('active-mode'));
             } else if(q.status === 'ready') {
                 canAnswer = false;
                 document.getElementById('quizStatusMsg').innerText = "Look at the Screen (Ready)";
-                btns.forEach(b => b.classList.remove('active-mode')); // Disable
+                btns.forEach(b => b.classList.remove('active-mode'));
             } else {
                 canAnswer = false;
                 document.getElementById('quizStatusMsg').innerText = "Closed.";
@@ -228,11 +338,13 @@
         });
 
         function sendAns(choice) {
-            if(!canAnswer || !currentQuizId) return;
+            if(!canAnswer) return;
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.quiz-opt-btn')[choice-1].classList.add('selected');
+            
             let myToken = localStorage.getItem('userToken');
             if(!myToken) { myToken = Math.random().toString(36).substr(2); localStorage.setItem('userToken', myToken); }
+            
             dbRef.ans.child(currentQuizId).child(myToken).set({ choice: choice, timestamp: firebase.database.ServerValue.TIMESTAMP });
             document.getElementById('quizWait').style.display = 'block';
         }
@@ -254,6 +366,7 @@
                 else alert("Wrong Password.");
             });
         }
+        function toggleNight() { document.body.classList.toggle('night-mode'); }
         function escapeHtml(t) { return t ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;") : ""; }
     </script>
 </body>
