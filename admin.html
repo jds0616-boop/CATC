@@ -37,10 +37,19 @@
         <div class="modal-box" style="width: 450px;">
             <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
             <div class="setting-container">
-                <div class="setting-group"><label class="setting-label">현재 비밀번호</label><input type="password" id="cp-current" class="setting-input" placeholder="Current Password"></div>
+                <div class="setting-group">
+                    <label class="setting-label">현재 비밀번호</label>
+                    <input type="password" id="cp-current" class="setting-input" placeholder="Current Password">
+                </div>
                 <div class="divider"></div>
-                <div class="setting-group"><label class="setting-label">새 비밀번호</label><input type="password" id="cp-new" class="setting-input" placeholder="New Password"></div>
-                <div class="setting-group"><label class="setting-label">새 비밀번호 확인</label><input type="password" id="cp-confirm" class="setting-input" placeholder="Confirm New Password"></div>
+                <div class="setting-group">
+                    <label class="setting-label">새 비밀번호</label>
+                    <input type="password" id="cp-new" class="setting-input" placeholder="New Password">
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">새 비밀번호 확인</label>
+                    <input type="password" id="cp-confirm" class="setting-input" placeholder="Confirm New Password">
+                </div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:flex-end; gap:10px;">
                 <button class="m-btn m-btn-later" onclick="ui.closePwModal()" style="background:#64748b; color:white;">취소</button>
@@ -58,7 +67,7 @@
             </p>
             <div class="setting-container">
                 <div class="setting-group">
-                    <input type="password" id="takeoverPwInput" class="setting-input" placeholder="Password or Master Key" style="text-align:center; font-size:18px; letter-spacing:4px;">
+                    <input type="password" id="takeoverPwInput" class="setting-input" placeholder="Password or Master Key" style="text-align:center; font-size:18px; letter-spacing:4px;" onkeyup="if(event.key==='Enter') dataMgr.verifyTakeover()">
                 </div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
@@ -150,18 +159,23 @@
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box">
-                        <div class="qr-row">
-                            <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
-                            <button class="btn-action btn-small btn-dark" id="btnCopyLink" style="flex-grow:1;">Copy Link</button>
+                        <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
+                        <div class="url-text-area">
+                            <span class="url-preview">Student Link QR</span>
+                            <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
                         </div>
-                        <input type="text" id="studentLink" class="setting-input url-input" readonly>
+                        <input type="hidden" id="studentLink">
                     </div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
                     <div class="file-row">
-                        <input type="file" id="quizFile" accept=".txt" class="setting-input file-input">
-                        <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()">Sample</button>
+                        <!-- [수정] 파일 디자인 변경 -->
+                        <input type="file" id="quizFile" accept=".txt" style="display: none;" onchange="alert(this.files[0].name + ' 선택됨')">
+                        <label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor: pointer; justify-content: center; flex-grow: 1;">
+                            <i class="fa-solid fa-file-import"></i> Quiz File
+                        </label>
+                        <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()" style="width: auto;">Sample</button>
                     </div>
                 </div>
             </div>
@@ -186,7 +200,7 @@
             <div class="lock-message">
                 <i class="fa-solid fa-lock"></i>
                 <h3>강의 대기 중 (Room Idle)</h3>
-                <!-- [수정] 파란 박스로 강조된 '저장' -->
+                <!-- [수정] 파란 박스 강조 -->
                 <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
             </div>
         </div>

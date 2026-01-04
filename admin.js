@@ -1,4 +1,4 @@
-/* --- admin.js (Modal Auth & UI Fixes) --- */
+/* --- admin.js (Final Polish) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -10,7 +10,7 @@ const state = {
     activeQaKey: null,
     qaData: {},
     timerInterval: null,
-    pendingRoom: null // 인증 대기 중인 방 ID 임시 저장
+    pendingRoom: null
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
@@ -90,24 +90,20 @@ const dataMgr = {
         }
     },
 
-    // [수정] 모달을 띄우는 함수로 변경
     switchRoomAttempt: async function(newRoom) {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
-        // 이미 사용 중이고 + 내가 주인이 아닌 경우 -> 모달 띄우기
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            state.pendingRoom = newRoom; // 목표 방 저장
+            state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverModal').style.display = 'flex';
             document.getElementById('takeoverPwInput').focus();
         } else {
-            // 바로 입장
             this.forceEnterRoom(newRoom);
         }
     },
 
-    // [추가] 모달에서 '확인' 눌렀을 때 실행
     verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         const input = document.getElementById('takeoverPwInput').value;
@@ -132,10 +128,9 @@ const dataMgr = {
         }
     },
 
-    // [추가] 모달 취소
     cancelTakeover: function() {
         document.getElementById('takeoverModal').style.display = 'none';
-        document.getElementById('roomSelect').value = state.room; // 원래 방으로 복구
+        document.getElementById('roomSelect').value = state.room; 
         state.pendingRoom = null;
     },
 
@@ -151,7 +146,7 @@ const dataMgr = {
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         
-        // [중요] 드롭다운 값 강제 동기화 (버그 수정)
+        // [수정] 드롭다운 값 강제 동기화
         const selectBox = document.getElementById('roomSelect');
         if(selectBox) selectBox.value = room;
 
@@ -314,7 +309,6 @@ const ui = {
                 </div>`;
         } else {
             overlay.style.display = 'flex';
-            // [수정] 안내 문구에 스타일 적용
             overlay.innerHTML = `
                 <div class="lock-message">
                     <i class="fa-solid fa-lock"></i>
@@ -359,10 +353,22 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
-    copyLink: function() {
-        document.getElementById('studentLink').select();
-        document.execCommand('copy'); alert("Copied.");
+    // [수정] 링크 복사 기능 개선
+    copyLink: async function() {
+        const urlInput = document.getElementById('studentLink');
+        const url = urlInput.value;
+        if (!url) return alert("복사할 링크가 없습니다.");
+
+        try {
+            await navigator.clipboard.writeText(url);
+            alert("링크가 복사되었습니다!");
+        } catch (err) {
+            urlInput.select();
+            document.execCommand('copy');
+            alert("링크가 복사되었습니다! (구형 방식)");
+        }
     },
+
     setMode: function(mode) {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
@@ -427,7 +433,6 @@ const ui = {
 
 // --- 4. Quiz ---
 const quizMgr = {
-    // 기존 기능 동일하여 생략, 실제 적용 시 이전 코드 그대로 유지
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
         const r = new FileReader();
