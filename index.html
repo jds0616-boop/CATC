@@ -10,21 +10,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root {
-            --theme-color: #0f172a; /* Instructor's Navy */
-        }
+        :root { --theme-color: #0f172a; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { margin: 0; background: #f1f5f9; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Level 1: Fixed Header */
+        /* Header */
         .header {
             height: 60px; background: white; display: flex; align-items: center; justify-content: center;
             font-weight: 900; font-size: 16px; color: #333; flex-shrink: 0; z-index: 100;
-            border-bottom: 5px solid var(--theme-color); /* Color Bar */
-            padding: 0 15px; text-align: center;
+            border-bottom: 5px solid var(--theme-color); padding: 0 15px; text-align: center;
         }
 
-        /* Level 2: Fixed Input Area */
+        /* Input */
         .input-area {
             background: #e2e8f0; padding: 15px; flex-shrink: 0; z-index: 90;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -42,20 +39,17 @@
         }
         .btn-submit:disabled { background: #94a3b8; }
 
-        /* Level 3: Sticky Bar */
+        /* List */
         .scroll-container { flex-grow: 1; overflow-y: auto; position: relative; }
         .sticky-bar {
             position: sticky; top: 0; background: #f1f5f9; padding: 15px;
             font-size: 14px; font-weight: bold; color: #64748b; z-index: 80;
             border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between;
         }
-
-        /* Level 4: List */
         .q-list { padding: 0 15px 30px 15px; }
         .q-card {
             background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between;
-            align-items: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: flex-start;
         }
         .q-card.my-q { border: 2px solid var(--theme-color); background: #f8fafc; }
         .q-text { font-size: 15px; line-height: 1.4; color: #333; word-break: break-all; width: 80%; }
@@ -65,7 +59,7 @@
         }
         .like-btn.active { background: #ffe4e6; color: #f43f5e; }
 
-        /* Menu Modal */
+        /* Menu */
         .menu-btn { position: absolute; left: 15px; font-size: 20px; cursor: pointer; }
         .menu-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
@@ -85,21 +79,21 @@
         .quiz-opt-btn { 
             height: 100px; font-size: 30px; font-weight: 900; background: white; 
             border: 4px solid #e2e8f0; border-radius: 15px; color: #333;
+            /* Important: Default state */
+            pointer-events: none; opacity: 0.5;
         }
+        /* Active State */
+        .quiz-opt-btn.active-mode { pointer-events: auto !important; opacity: 1 !important; cursor: pointer; }
         .quiz-opt-btn.selected { border-color: var(--theme-color); background: var(--theme-color); color: white; }
         .quiz-wait { margin-top: 30px; color: #64748b; font-weight: bold; display: none; }
 
     </style>
 </head>
 <body>
-
-    <!-- Header -->
     <div class="header">
         <div class="menu-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
         <span id="roomTitle">Loading...</span>
     </div>
-
-    <!-- Fixed Input -->
     <div class="input-area">
         <textarea id="qInput" class="q-input" placeholder="Ask a question..."></textarea>
         <div class="input-actions">
@@ -107,8 +101,6 @@
             <button id="submitBtn" class="btn-submit" onclick="submitQ()">Submit</button>
         </div>
     </div>
-
-    <!-- Scroll Area -->
     <div class="scroll-container">
         <div class="sticky-bar">
             <span><i class="fa-solid fa-comments"></i> Live Questions</span>
@@ -130,7 +122,6 @@
         <div class="quiz-wait" id="quizWait">Submitted. Waiting for result...</div>
     </div>
 
-    <!-- Menu Modal -->
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
         <div class="menu-box">
             <h3>Select Room</h3>
@@ -140,7 +131,6 @@
 
     <script src="config.js"></script>
     <script>
-        // Init
         const bc = new BroadcastChannel('kac_student_channel');
         bc.onmessage = (e) => { if(e.data === 'here') { alert("Already open in another tab."); window.location.href="about:blank"; } };
         bc.postMessage('here');
@@ -148,28 +138,21 @@
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         let currentRoom = getRoomFromCode(code);
+        if(!currentRoom) { document.body.innerHTML = "<h2 style='text-align:center;'>Invalid Link</h2>"; throw new Error("No Room"); }
 
-        if(!currentRoom) {
-            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Invalid Access Link</h2>";
-            throw new Error("No Room");
-        }
-
-        // --- Firebase ---
         const dbRef = {
             qa: db.ref(`courses/${currentRoom}/questions`),
             quiz: db.ref(`courses/${currentRoom}/activeQuiz`),
             ans: db.ref(`courses/${currentRoom}/quizAnswers`),
-            settings: db.ref(`courses/${currentRoom}/settings`) // Added settings ref
+            settings: db.ref(`courses/${currentRoom}/settings`)
         };
 
-        // Load Course Name dynamically
         dbRef.settings.on('value', snap => {
             const val = snap.val() || {};
-            const name = val.courseName ? val.courseName : `Course Room ${currentRoom}`;
-            document.getElementById('roomTitle').innerText = name;
+            document.getElementById('roomTitle').innerText = val.courseName ? val.courseName : `Course Room ${currentRoom}`;
         });
 
-        // Q&A
+        // Q&A Logic
         let myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
         let myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}');
         let lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
@@ -178,105 +161,69 @@
             const data = snap.val() || {};
             const list = document.getElementById('qList');
             list.innerHTML = "";
-
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
             items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
-
             items.forEach(item => {
                 if(item.status === 'delete') return;
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
-                
-                list.innerHTML += `
-                    <div class="q-card ${isMine}">
-                        <div class="q-text">${escapeHtml(item.text)}</div>
-                        <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')">
-                            <i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div class="q-card ${isMine}"><div class="q-text">${escapeHtml(item.text)}</div><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div></div>`;
             });
         });
 
         function submitQ() {
             const now = Date.now();
             if(now - lastPostTime < 120000) return; 
-
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
-
             const ref = dbRef.qa.push();
-            ref.set({
-                text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'normal'
-            });
-
-            myQs[ref.key] = true;
-            localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-            
-            lastPostTime = now;
-            localStorage.setItem(`lastTime_${currentRoom}`, now);
-            document.getElementById('qInput').value = "";
-            checkCooldown();
+            ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'normal' });
+            myQs[ref.key] = true; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
+            lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
+            document.getElementById('qInput').value = ""; checkCooldown();
         }
-
         function checkCooldown() {
             const diff = Date.now() - lastPostTime;
             const btn = document.getElementById('submitBtn');
             const msg = document.getElementById('coolTimer');
-            
             if(diff < 120000) {
-                btn.disabled = true;
-                msg.style.visibility = 'visible';
-                const sec = Math.ceil((120000 - diff)/1000);
-                msg.innerText = `Wait ${sec}s`;
+                btn.disabled = true; msg.style.visibility = 'visible';
+                msg.innerText = `Wait ${Math.ceil((120000 - diff)/1000)}s`;
                 setTimeout(checkCooldown, 1000);
-            } else {
-                btn.disabled = false;
-                msg.style.visibility = 'hidden';
-            }
+            } else { btn.disabled = false; msg.style.visibility = 'hidden'; }
         }
         checkCooldown();
-
         function toggleLike(key) {
             if(myLikes[key]) return;
-            dbRef.qa.child(key).transaction(post => {
-                if(post) post.likes = (post.likes||0) + 1;
-                return post;
-            });
-            myLikes[key] = true;
-            localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
+            dbRef.qa.child(key).transaction(post => { if(post) post.likes = (post.likes||0) + 1; return post; });
+            myLikes[key] = true; localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
         }
 
-        // Quiz Logic
+        // Quiz Logic Fix
         let currentQuizId = null;
         let canAnswer = false;
 
         dbRef.quiz.on('value', snap => {
             const q = snap.val();
             const overlay = document.getElementById('quizOverlay');
-            
-            if(!q || q.status === 'result') {
-                overlay.style.display = 'none';
-                return;
-            }
+            if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
 
             overlay.style.display = 'flex';
             currentQuizId = q.id;
-            
+            const btns = document.querySelectorAll('.quiz-opt-btn');
+
             if(q.status === 'open') {
                 canAnswer = true;
                 document.getElementById('quizStatusMsg').innerText = "Select Answer Now!";
-                document.getElementById('quizBtns').style.pointerEvents = 'auto';
-                document.getElementById('quizBtns').style.opacity = '1';
+                btns.forEach(b => b.classList.add('active-mode')); // Force Enable
             } else if(q.status === 'ready') {
                 canAnswer = false;
                 document.getElementById('quizStatusMsg').innerText = "Look at the Screen (Ready)";
-                document.getElementById('quizBtns').style.pointerEvents = 'none';
-                document.getElementById('quizBtns').style.opacity = '0.5';
+                btns.forEach(b => b.classList.remove('active-mode')); // Disable
             } else {
                 canAnswer = false;
                 document.getElementById('quizStatusMsg').innerText = "Closed.";
-                document.getElementById('quizBtns').style.pointerEvents = 'none';
+                btns.forEach(b => b.classList.remove('active-mode'));
             }
         });
 
@@ -284,19 +231,12 @@
             if(!canAnswer || !currentQuizId) return;
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.quiz-opt-btn')[choice-1].classList.add('selected');
-
             let myToken = localStorage.getItem('userToken');
             if(!myToken) { myToken = Math.random().toString(36).substr(2); localStorage.setItem('userToken', myToken); }
-
-            dbRef.ans.child(currentQuizId).child(myToken).set({
-                choice: choice,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-
+            dbRef.ans.child(currentQuizId).child(myToken).set({ choice: choice, timestamp: firebase.database.ServerValue.TIMESTAMP });
             document.getElementById('quizWait').style.display = 'block';
         }
 
-        // Menu & Room Switching
         function openMenu() {
             const list = document.getElementById('roomList');
             list.innerHTML = "";
@@ -306,22 +246,14 @@
             }
             document.getElementById('menuModal').style.display = 'flex';
         }
-
         function switchRoom(targetRoom) {
             const pw = prompt(`Enter Password for Room ${targetRoom}:`);
             if(!pw) return;
-
             db.ref(`courses/${targetRoom}/settings/password`).once('value', snap => {
-                const realPw = snap.val();
-                if(realPw && realPw == pw) {
-                    const nextCode = getCodeFromRoom(targetRoom);
-                    window.location.search = `?code=${nextCode}`;
-                } else {
-                    alert("Wrong Password.");
-                }
+                if(snap.val() == pw) window.location.search = `?code=${getCodeFromRoom(targetRoom)}`;
+                else alert("Wrong Password.");
             });
         }
-
         function escapeHtml(t) { return t ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;") : ""; }
     </script>
 </body>
