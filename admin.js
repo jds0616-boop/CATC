@@ -9,7 +9,7 @@ const state = {
     timerInterval: null
 };
 
-let dbRef = { qa: null, quiz: null, ans: null, settings: null };
+let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
 // --- 1. Auth ---
 const authMgr = {
@@ -60,10 +60,12 @@ const dataMgr = {
         dbRef.qa = db.ref(`${rPath}/questions`);
         dbRef.quiz = db.ref(`${rPath}/activeQuiz`);
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
+        dbRef.status = db.ref(`${rPath}/status`);
 
+        // 설정(이름, 상태) 불러오기
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
-        
-        // [FIXED] config.js에서 코드 가져오기
+        dbRef.status.child('roomStatus').once('value', s => ui.renderRoomStatus(s.val()));
+
         const code = this.getRoomCode(room);
         const studentUrl = `${window.location.origin}/index.html?code=${code}`; 
         ui.renderQr(studentUrl);
@@ -84,11 +86,12 @@ const dataMgr = {
     saveSettings: function() {
         const pw = document.getElementById('roomPw').value;
         const updates = {
-            courseName: document.getElementById('courseNameInput').value,
-            courseDate: document.getElementById('courseDateInput').value,
-            courseCoord: document.getElementById('courseCoordInput').value,
-            courseProf: document.getElementById('courseProfInput').value
+            courseName: document.getElementById('courseNameInput').value
         };
+        // 방 상태 저장
+        const statusVal = document.getElementById('roomStatusSelect').value;
+        dbRef.status.child('roomStatus').set(statusVal);
+
         if(pw && pw.length >= 4) updates.password = pw;
         dbRef.settings.update(updates, (err) => {
             if(err) alert("Error."); else { alert("Saved."); ui.renderSettings(updates); }
@@ -133,9 +136,9 @@ const ui = {
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
-        document.getElementById('courseDateInput').value = data.courseDate || "";
-        document.getElementById('courseCoordInput').value = data.courseCoord || "";
-        document.getElementById('courseProfInput').value = data.courseProf || "";
+    },
+    renderRoomStatus: function(st) {
+        document.getElementById('roomStatusSelect').value = st || 'idle';
     },
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
@@ -304,6 +307,7 @@ const quizMgr = {
     },
     stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:30"; document.getElementById('quizTimer').classList.remove('urgent'); },
+    
     renderChart: function(id, correct) {
         const div = document.getElementById('d-chart'); div.innerHTML = "";
         dbRef.ans.child(id).once('value', s => {
@@ -311,22 +315,33 @@ const quizMgr = {
             const counts = [0, 0, 0, 0];
             Object.values(data).forEach(v => { if(v.choice >= 1 && v.choice <= 4) counts[v.choice - 1]++; });
             const maxVal = Math.max(...counts);
+            
             counts.forEach((c, i) => {
                 const isCorrect = (i + 1) === correct;
                 const height = (c / Math.max(maxVal, 1)) * 80;
-                div.innerHTML += `<div class="bar-wrapper ${isCorrect ? 'correct' : ''}"><div class="bar-value">${c}</div><div class="bar-fill" style="height:${height}%"></div><div class="bar-label">${i+1}</div></div>`;
+                
+                // 왕관은 정답이면서, 높이에 따라 위치를 조정 (높이가 0이면 바닥+40px, 아니면 높이+20px)
+                const crownHtml = isCorrect 
+                    ? `<div class="crown-icon" style="bottom: ${height > 0 ? height + '%' : '40px'};">👑</div>` 
+                    : '';
+
+                div.innerHTML += `
+                    <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
+                        ${crownHtml}
+                        <div class="bar-value">${c}</div>
+                        <div class="bar-fill" style="height:${height}%"></div>
+                        <div class="bar-label">${i+1}</div>
+                    </div>`;
             });
         });
     },
     setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
 };
 
-// --- 5. Print ---
+// --- 5. Print (생략, 기존과 동일) ---
 const printMgr = {
     openPreview: function() {
         document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value;
-        document.getElementById('doc-date').innerText = document.getElementById('courseDateInput').value;
-        document.getElementById('doc-prof').innerText = document.getElementById('courseProfInput').value;
         const listBody = document.getElementById('docListBody'); listBody.innerHTML = "";
         let items = Object.values(state.qaData || {});
         document.getElementById('doc-summary-text').innerText = `Q&A 총 취합건수 : ${items.length}건`;
