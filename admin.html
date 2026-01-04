@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Admin - KAC Platform</title>
+    
     <!-- Firebase Libraries (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <!-- QRCode & Icons & Font -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,15 +19,17 @@
 </head>
 <body class="day-mode">
 
-    <!-- QR Code Modal -->
+    <!-- 1. QR Code Zoom Modal -->
     <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()">
         <div class="qr-big-box" id="qrBigTarget"></div>
     </div>
 
-    <!-- [NEW] Print Input Modal (정보 입력 팝업) -->
+    <!-- 2. Print Input Modal (리포트 정보 입력 팝업) -->
     <div id="printInputModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
-            <div class="modal-q-text" style="font-size:20px; text-align:center;">리포트 정보 입력</div>
+            <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">
+                📜 리포트 정보 입력
+            </div>
             <div class="setting-container">
                 <div class="setting-group">
                     <label class="setting-label">교육 기간</label>
@@ -36,25 +40,26 @@
                     <input type="text" id="printProfInput" class="setting-input" placeholder="예: 홍길동 교수">
                 </div>
             </div>
-            <div class="modal-actions" style="margin-top:20px; justify-content:center; gap:10px;">
-                <button class="m-btn m-btn-later" onclick="printMgr.closeInputModal()" style="background:#64748b;">취소</button>
-                <button class="m-btn m-btn-later" onclick="printMgr.confirmPrint(true)">해당사항 없음</button>
+            <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
+                <button class="m-btn m-btn-later" onclick="printMgr.closeInputModal()" style="background:#64748b; color:white;">취소</button>
+                <button class="m-btn m-btn-later" onclick="printMgr.confirmPrint(true)" style="background:#f59e0b;">해당사항 없음</button>
                 <button class="m-btn m-btn-done" onclick="printMgr.confirmPrint(false)">미리보기 생성</button>
             </div>
         </div>
     </div>
 
-    <!-- Print Preview Modal -->
+    <!-- 3. Print Preview Modal (최종 미리보기) -->
     <div id="printPreviewModal" class="modal-overlay">
         <div class="print-preview-box">
             <div class="preview-header">
-                <h3>📜 Report Preview</h3>
-                <div class="preview-actions">
-                    <button class="btn-action btn-danger" onclick="printMgr.closePreview()" style="width:auto;">Close</button>
-                    <button class="btn-action btn-primary" onclick="printMgr.executePrint()" style="width:auto;"><i class="fa-solid fa-print"></i> Print (PDF)</button>
+                <h3 style="margin:0;">🖨️ Report Preview</h3>
+                <div class="preview-actions" style="display:flex; gap:10px;">
+                    <button class="btn-action btn-danger" onclick="printMgr.closePreview()" style="width:auto; padding:10px 20px;">Close</button>
+                    <button class="btn-action btn-primary" onclick="printMgr.executePrint()" style="width:auto; padding:10px 20px;"><i class="fa-solid fa-print"></i> Print (PDF)</button>
                 </div>
             </div>
             <div class="preview-content" id="printContentArea">
+                <!-- A4 Document Layout -->
                 <div id="official-document">
                     <div class="doc-header">
                         <h2>KAC Training Platform</h2>
@@ -79,16 +84,18 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar Section -->
     <div class="sidebar">
         <div class="sidebar-top">
             <div class="sidebar-header">KAC Training Platform</div>
             <div class="setting-container">
+                <!-- Room Selection -->
                 <div class="setting-group">
                     <label class="setting-label">Select Room</label>
                     <select id="roomSelect" class="setting-select"></select>
                 </div>
                 
+                <!-- Room Status -->
                 <div class="setting-group">
                     <label class="setting-label">Room Status</label>
                     <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
@@ -102,6 +109,7 @@
                     <input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name">
                 </div>
                 
+                <!-- Save Button -->
                 <button class="btn-action btn-primary" id="btnSaveInfo">Save Settings</button>
 
                 <div class="divider"></div>
@@ -111,12 +119,16 @@
                     <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="****">
                 </div>
                 
+                <!-- [수정됨] Student Link (QR + Button + Visible Input) -->
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box">
-                        <div id="qrcode" onclick="ui.renderQr(document.getElementById('studentLink').value)" title="Click to Expand"></div>
-                        <input type="text" id="studentLink" readonly>
-                        <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
+                        <div class="qr-row" style="display:flex; align-items:center; gap:10px; width:100%;">
+                            <div id="qrcode" onclick="ui.renderQr(document.getElementById('studentLink').value)" title="Click to Expand"></div>
+                            <button class="btn-action btn-small btn-dark" id="btnCopyLink" style="flex-grow:1;">Copy Link</button>
+                        </div>
+                        <!-- 주소창 노출 -->
+                        <input type="text" id="studentLink" class="setting-input url-input" readonly style="margin-top:5px; font-size:11px; color:#94a3b8; background:#1e293b; border:1px solid #334155; padding:8px;">
                     </div>
                 </div>
 
@@ -129,6 +141,7 @@
                 </div>
             </div>
         </div>
+        
         <div class="sidebar-bottom">
             <div class="action-buttons">
                 <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -139,15 +152,16 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <div class="main-stage">
+        <!-- Header -->
         <header class="header">
             <div class="header-title">
                 <span id="displayRoomName">Course ROOM A</span>
                 <span class="course-sub-name" id="displayCourseTitle"></span>
             </div>
-            <!-- [수정] 주/야간 토글 및 로고 정렬 -->
             <div class="header-controls">
+                <!-- Day/Night Toggle -->
                 <div class="theme-toggle" onclick="ui.toggleNightMode()">
                     <i class="fa-solid fa-sun active" id="iconSun"></i>
                     <i class="fa-solid fa-moon" id="iconMoon"></i>
@@ -156,13 +170,14 @@
             </div>
         </header>
 
+        <!-- Mode Tabs -->
         <div class="mode-tabs">
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
         </div>
 
         <div class="content-area">
-            <!-- Q&A VIEW -->
+            <!-- VIEW: Q&A -->
             <div id="view-qa">
                 <div class="qa-filters">
                     <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
@@ -172,7 +187,7 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <!-- QUIZ VIEW -->
+            <!-- VIEW: Quiz -->
             <div id="view-quiz">
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text">Press 'Test Mode' or Select Quiz</div>
@@ -201,15 +216,15 @@
                         </div>
                     </div>
 
-                    <!-- [NEW] 좌측 하단 나가기 버튼 -->
-                    <div class="quiz-exit-btn" onclick="quizMgr.closeQuizMode()" title="Exit Quiz Mode">
+                    <!-- Exit Quiz Button (Top-Left Position) -->
+                    <div class="quiz-exit-btn" onclick="quizMgr.closeQuizMode()" title="Exit Quiz Mode" style="position: absolute; top: 30px; left: 30px;">
                         <i class="fa-solid fa-xmark"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Panel (Quiz Editor) -->
+        <!-- Right Slide Panel (Editor) -->
         <div class="overlay-panel" id="rightPanel">
             <div class="overlay-toggle-tab" onclick="ui.toggleRightPanel()"><i class="fa-solid fa-chevron-left" id="panelIcon"></i></div>
             <div class="panel-header"><h3>Quiz Editor</h3></div>
@@ -244,7 +259,9 @@
         </div>
     </div>
 
+    <!-- 기존 config.js 사용 -->
     <script src="config.js"></script>
+    <!-- 분리된 JS 파일 연결 -->
     <script src="admin.js"></script>
 </body>
 </html>

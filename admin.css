@@ -42,10 +42,27 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .setting-input:focus { border-color: var(--accent-color); }
 
-.qr-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 10px; }
-#qrcode { background: white; padding: 3px; border-radius: 4px; cursor: pointer; width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+/* [수정] QR Box Layout */
+.qr-box {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px; /* 위아래 간격 */
+}
+.qr-row {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+}
+#qrcode { 
+    background: white; padding: 3px; border-radius: 4px; cursor: pointer; 
+    width: 50px; height: 50px; flex-shrink: 0; 
+    display: flex; align-items: center; justify-content: center;
+}
 #qrcode img { display: block; }
-#studentLink { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+
+/* [수정] URL 입력창 스타일 (보이게 변경) */
+.url-input {
+    font-size: 11px; color: #94a3b8; background: #1e293b; 
+    border: 1px solid #334155; padding: 8px;
+    text-overflow: ellipsis; /* 너무 길면 ... 처리 */
+}
 
 .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 10px 0; }
 .file-row { display: flex; gap: 8px; align-items: center; }
@@ -70,14 +87,9 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
 .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 15px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; }
 
-/* [수정] Header Controls */
 .header-controls { display: flex; gap: 20px; align-items: center; }
-.theme-toggle { 
-    background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; display: flex; gap: 5px; cursor: pointer; 
-}
-.theme-toggle i { 
-    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #64748b; transition: 0.2s; 
-}
+.theme-toggle { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; display: flex; gap: 5px; cursor: pointer; }
+.theme-toggle i { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #64748b; transition: 0.2s; }
 .theme-toggle i.active { background: white; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .kac-logo { height: 24px; opacity: 0.9; }
 
@@ -149,15 +161,24 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 @keyframes fadeIn { to { opacity: 1; } }
 
-/* [수정] Quiz Controls Gap & Width */
+/* [수정] Quiz Controls (날씬하고 간격 넓게) */
 .quiz-status-bar { margin-top: 20px; display: flex; gap: 20px; flex-shrink: 0; justify-content: center; width: 100%; flex-wrap: wrap; }
-.q-btn { padding: 12px 25px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; transition: 0.1s; min-width: 120px; justify-content: center; }
+.q-btn { 
+    padding: 10px 15px; /* 패딩 축소 */
+    border-radius: 10px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); 
+    display: flex; align-items: center; gap: 8px; transition: 0.1s; 
+    min-width: 90px; /* 최소 너비 축소 */
+    justify-content: center; 
+}
 .q-btn:active { transform: translateY(4px); box-shadow: none; }
 .btn-test { background: #f59e0b; width: 100%; justify-content: center; }
 .btn-start { background: #3b82f6; } .btn-stop { background: #ef4444; } .btn-result { background: #10b981; } .btn-nav { background: #64748b; }
 
-/* [NEW] Quiz Exit Button */
-.quiz-exit-btn { position: absolute; bottom: 30px; left: 30px; width: 50px; height: 50px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: #64748b; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+/* [수정] Quiz Exit Button (좌측 상단으로 이동) */
+.quiz-exit-btn { 
+    position: absolute; top: 30px; left: 30px; /* 위치 상단으로 */
+    width: 50px; height: 50px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: #64748b; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+}
 .quiz-exit-btn:hover { background: #cbd5e1; color: #333; }
 
 .quiz-guide-text { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.05); color: #64748b; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
@@ -182,12 +203,8 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qr-big-box { background: white; padding: 20px; border-radius: 20px; }
 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* [수정] Print Preview Box & Spacing */
 .print-preview-box { background: #525659; width: 90%; height: 95%; max-width: 1000px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-.preview-header { 
-    background: #323639; color: white; padding: 20px 30px; /* 패딩 확대 */
-    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
-}
+.preview-header { background: #323639; color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .preview-content { flex-grow: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 50px 0; }
 #official-document { width: 210mm; min-height: 297mm; background: white; padding: 20mm; box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative; font-family: 'Malgun Gothic', 'Dotum', sans-serif; color: black; }
 .doc-header { text-align: center; margin-bottom: 10px; border-bottom: 3px solid #000; padding-bottom: 10px; }
