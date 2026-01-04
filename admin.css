@@ -149,7 +149,12 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
-.q-card:hover { transform: translateY(-3px); }
+.q-card:hover { 
+    transform: translateY(-3px); /* 위로 살짝 뜸 */
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); /* 파란색 계열 그림자 */
+    border: 1px solid var(--accent-color); /* 테두리를 파란색으로 변경 */
+    background-color: #f8fafc; /* 배경색 아주 살짝 변경 */
+}
 .q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
 .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
