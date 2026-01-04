@@ -418,18 +418,66 @@ const ui = {
         event.target.classList.add('active');
         this.renderQaList(filter);
     },
+/* admin.js 파일의 ui 객체 내부 renderQaList 함수 수정 */
+
     renderQaList: function(filter) {
-        const list = document.getElementById('qaList'); list.innerHTML = "";
+        const list = document.getElementById('qaList'); 
+        list.innerHTML = "";
+        
+        // 데이터 배열로 변환
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
-        const getScore = (i) => { if(i.status==='pin')return 1000; if(i.status==='later')return 500; if(i.status==='done')return -1000; return 0; };
+
+        // [정렬 로직 핵심 수정]
+        items.sort((a, b) => {
+            // 1. 상태별 가중치 점수 부여 (Pin > Later > Normal > Done)
+            const getStatusWeight = (status) => {
+                if (status === 'pin') return 4;    // 최상단
+                if (status === 'later') return 3;  // 핀 바로 아래
+                if (status === 'done') return 0;   // 최하단
+                return 2;                          // 일반 (Normal)
+            };
+
+            const weightA = getStatusWeight(a.status);
+            const weightB = getStatusWeight(b.status);
+
+            // 1단계: 상태 점수 비교 (내림차순)
+            if (weightA !== weightB) {
+                return weightB - weightA;
+            }
+
+            // 2단계: 좋아요 수 비교 (내림차순) - 같은 상태일 때 공감 많은 게 위로
+            const likesA = a.likes || 0;
+            const likesB = b.likes || 0;
+            if (likesA !== likesB) {
+                return likesB - likesA;
+            }
+
+            // 3단계: 작성 시간 비교 (내림차순) - 좋아요도 같으면 최신순
+            return b.timestamp - a.timestamp;
+        });
+
+        // 필터링 (상단 칩 선택 시)
         if(filter === 'pin') items = items.filter(x => x.status === 'pin');
         else if(filter === 'later') items = items.filter(x => x.status === 'later');
-        items.sort((a,b) => (getScore(b) + (b.likes||0)) - (getScore(a) + (a.likes||0)));
 
+        // HTML 렌더링
         items.forEach(i => {
             const cls = i.status === 'pin' ? 'status-pin' : (i.status === 'later' ? 'status-later' : (i.status === 'done' ? 'status-done' : ''));
-            const icon = i.status === 'pin' ? '📌 ' : (i.status === 'later' ? '⚠️ ' : (i.status === 'done' ? '✅ ' : ''));
-            list.innerHTML += `<div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')"><div class="q-content">${icon}${i.text}</div><div class="q-meta"><div class="q-like-badge">👍 ${i.likes||0}</div><div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div>`;
+            
+            // 상태별 아이콘 표시
+            let icon = '';
+            if (i.status === 'pin') icon = '📌 ';
+            else if (i.status === 'later') icon = '⚠️ ';
+            else if (i.status === 'done') icon = '✅ ';
+
+            list.innerHTML += `
+                <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
+                    <div class="q-content">${icon}${i.text}</div>
+                    <div class="q-meta">
+                        <div class="q-like-badge">👍 ${i.likes||0}</div>
+                        <div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    </div>
+                </div>`;
         });
     },
     openQaModal: function(key) {
