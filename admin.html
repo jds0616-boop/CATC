@@ -44,7 +44,7 @@
         .btn-danger { background: #7f1d1d; color: #fca5a5; margin-top: 5px; }
         .dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; line-height: 1.4; }
 
-        /* QR Code & Modal */
+        /* QR Code */
         #qrcode { background: white; padding: 5px; border-radius: 5px; width: 80px; height: 80px; margin: 5px auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .qr-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .qr-big-box { background: white; padding: 20px; border-radius: 20px; text-align: center; }
@@ -55,16 +55,16 @@
         .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
         .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 16px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px; }
         .header-controls { display: flex; gap: 15px; align-items: center; }
-        .kac-logo { height: 18px; margin-left: 15px; opacity: 0.9; } /* Logo Reduced 50% */
+        .kac-logo { height: 20px; margin-left: 15px; opacity: 0.9; } /* Logo Reduced 50% */
         .icon-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; }
         .icon-btn:hover { background: var(--accent-color); }
 
         .mode-tabs { display: flex; gap: 15px; padding: 15px 30px; border-bottom: 2px solid rgba(0,0,0,0.05); background: var(--card-bg); }
         .mode-btn { padding: 10px 25px; border-radius: 50px; border: 2px solid #cbd5e1; font-weight: 800; color: #64748b; cursor: pointer; background: transparent; font-size: 14px; transition: 0.2s; }
         .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; }
-        .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 10px; display: flex; flex-direction: column; align-items: center; }
 
-        /* Q&A View - Refined Design */
+        /* Q&A View - List Style (Full Width) */
         #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1400px; }
         .qa-filters { display: flex; gap: 10px; margin-bottom: 20px; }
         .filter-chip { padding: 6px 14px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); opacity: 0.7; }
@@ -76,65 +76,128 @@
         }
         .q-card { 
             background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #0f172a; /* Dark Navy Bar */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #0f172a; 
             cursor: pointer; transition: all 0.2s ease; position: relative;
             display: flex; justify-content: space-between; align-items: flex-start;
         }
-        /* Hover Effect: Green Glow */
-        .q-card:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 0 0 2px #10b981; /* Green Border */
-        }
+        .q-card:hover { transform: translateY(-2px); box-shadow: 0 0 0 2px #10b981; }
         .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
         .q-card.status-later { border-left-color: #f59e0b; opacity: 0.9; }
         .q-card.status-done { border-left-color: #94a3b8; opacity: 0.6; background: #f8fafc; color: #64748b; filter: grayscale(1); }
 
         .q-content { flex-grow: 1; font-size: 18px; font-weight: 700; line-height: 1.4; color: #333; margin-right: 20px; }
         .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 80px; }
-        .q-like-badge { 
-            font-size: 18px; font-weight: 800; color: #3b82f6; 
-            background: #eff6ff; padding: 5px 12px; border-radius: 20px;
-        }
+        .q-like-badge { font-size: 18px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 5px 12px; border-radius: 20px; }
         .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
-        /* Quiz View */
-        #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 50px; }
-        .quiz-card { width: 95%; max-width: 1200px; height: 85%; background: var(--card-bg); border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center; position: relative; overflow: hidden; }
-        .timer-badge { background: #1e293b; color: #fff; padding: 8px 25px; border-radius: 30px; font-size: 18px; font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); opacity: 0; transition: 0.3s; transform: translateY(-10px); }
-        .timer-badge.show { opacity: 1; transform: translateY(0); }
-        .timer-badge.urgent { background: #ef4444; animation: pulse 1s infinite; }
-        .quiz-question { font-size: 42px; font-weight: 900; margin-bottom: 40px; line-height: 1.3; color: #0f172a; word-break: keep-all; width: 80%; margin-top: 20px;}
-        .quiz-options { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; align-items: center; }
-        .quiz-opt { width: 100%; font-size: 24px; padding: 25px 30px; border: 2px solid #e2e8f0; border-radius: 15px; font-weight: 700; text-align: center; color: #475569; background: white; transition: all 0.3s; position: relative; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .quiz-opt .opt-num { width: 50px; height: 50px; flex-shrink: 0; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 20px; }
+        /* --- QUIZ VIEW (EXPANDED & TOP ALIGN) --- */
+        #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px; }
+        
+        .quiz-card {
+            width: 98%; height: 95%; /* Expanded Size */
+            background: var(--card-bg); border-radius: 30px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); 
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 40px; text-align: center; position: relative; overflow: hidden;
+        }
+
+        /* Digital Timer (Top Left) */
+        .digital-timer {
+            position: absolute; top: 40px; left: 40px;
+            font-family: 'Courier New', monospace; font-size: 42px; font-weight: 900;
+            color: #333; background: #f1f5f9; padding: 10px 20px; border-radius: 12px;
+            border: 2px solid #cbd5e1; opacity: 0; transition: 0.3s;
+        }
+        .digital-timer.show { opacity: 1; }
+        .digital-timer.urgent { color: #ef4444; border-color: #ef4444; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* Question Text */
+        .quiz-question { 
+            font-size: 48px; font-weight: 900; margin-bottom: 30px; margin-top: 20px;
+            line-height: 1.3; color: #0f172a; word-break: keep-all; width: 80%;
+        }
+
+        /* Options Area */
+        .quiz-options { 
+            width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; 
+            flex-grow: 1; justify-content: flex-start; align-items: center; /* Top align content */
+        }
+        .quiz-opt { 
+            width: 100%; font-size: 24px; padding: 25px 30px; 
+            border: 2px solid #e2e8f0; border-radius: 15px; 
+            font-weight: 700; text-align: center; color: #475569;
+            background: white; transition: all 0.3s;
+            position: relative; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .quiz-opt .opt-num {
+            width: 50px; height: 50px; flex-shrink: 0;
+            background: #f1f5f9; border-radius: 10px; color: #64748b;
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;
+            margin-right: 20px;
+        }
         .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
-        .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; }
+        
+        .quiz-opt.reveal-answer { 
+            border-color: #10b981; background: #ecfdf5; color: #065f46; 
+            transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10;
+        }
         .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 
-        /* Chart */
-        .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 60px; padding-bottom: 60px; position: relative; }
-        .bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 90px; height: 100%; position: relative; }
+        /* --- Chart Area (Gray vs Neon Green) --- */
+        .chart-area { 
+            display: none; width: 100%; height: 100%; flex-grow: 1; 
+            align-items: flex-end; justify-content: center; gap: 60px; 
+            padding-bottom: 60px; position: relative;
+        }
+        
+        .bar-wrapper { 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            width: 90px; height: 100%; position: relative; 
+        }
         .bar-value { margin-bottom: 10px; font-weight: 900; font-size: 24px; color: #333; }
-        .bar-fill { width: 100%; border-radius: 10px 10px 0 0; transition: height 1s; background: #cbd5e1; }
-        .bar-label { position: absolute; bottom: -60px; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; color: #fff; background: #64748b; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .bar-wrapper.correct .bar-fill { background: #39ff14; box-shadow: 0 0 20px rgba(57, 255, 20, 0.5); border: 2px solid #fff; }
+        
+        /* Wrong Bar (Gray) */
+        .bar-fill { 
+            width: 100%; border-radius: 10px 10px 0 0; transition: height 1s; 
+            background: #94a3b8; /* Solid Gray */
+        }
+        .bar-label { 
+            position: absolute; bottom: -60px; width: 60px; height: 60px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 24px; color: #fff; background: #475569;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Correct Bar (Neon Green) */
+        .bar-wrapper.correct .bar-fill { 
+            background: #39ff14; /* Neon Green */
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.6); border: 2px solid #fff;
+        }
         .bar-wrapper.correct .bar-label { background: #10b981; transform: scale(1.2); }
-        .bar-wrapper.correct .bar-label::after { content: 'WINNER'; font-size: 10px; position: absolute; top: -18px; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; }
+        .bar-wrapper.correct .bar-label::after { 
+            content: 'WINNER'; font-size: 10px; position: absolute; top: -20px; 
+            background: #333; color: #fff; padding: 3px 8px; border-radius: 4px; font-weight:bold;
+        }
+
         .x-axis-line { position: absolute; bottom: -30px; width: 80%; height: 3px; background: #334155; }
 
-        /* Controls - Fixed Icons */
+        /* Controls */
         .quiz-status-bar { margin-top: 30px; display: flex; gap: 20px; z-index: 20; flex-shrink: 0; align-items: center; justify-content: center; flex-wrap: wrap;}
-        .q-btn { padding: 15px 30px; border-radius: 50px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s; flex-shrink: 0; }
+        .q-btn { 
+            padding: 15px 30px; border-radius: 50px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 120px; transition: 0.2s; flex-shrink: 0;
+        }
         .q-btn:active { transform: scale(0.95); }
         .q-btn i { font-size: 22px; color: white !important; }
+        
         .btn-test { background: #f59e0b; }
         .btn-start { background: #2563eb; }
         .btn-stop { background: #dc2626; }
         .btn-result { background: #10b981; }
         .btn-nav { background: #334155; border: 2px solid #fff; } 
-        .quiz-guide-text { background: rgba(0,0,0,0.7); color: #fff; padding: 8px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; margin-bottom: 20px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; } }
-
+        
         /* Overlays */
         .overlay-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: var(--card-bg); box-shadow: -5px 0 30px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.3s; z-index: 100; padding: 25px; display: flex; flex-direction: column; }
         .overlay-panel.open { transform: translateX(0); }
@@ -152,7 +215,6 @@
         .modal-left-btns { display: flex; gap: 10px; }
         .modal-right-btns { display: flex; gap: 10px; }
         .m-btn { border: none; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .m-btn:hover { transform: translateY(-2px); }
         .m-btn-done { background: #10b981; color: white; padding: 12px 30px; font-size: 16px; }
         .m-btn-later { background: #f59e0b; color: white; }
         .m-btn-icon { width: 45px; height: 45px; border-radius: 50%; padding: 0; justify-content: center; font-size: 18px; }
@@ -188,12 +250,9 @@
 </head>
 <body class="day-mode">
 
-    <!-- QR Modal -->
     <div id="qrModal" class="qr-modal" onclick="closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
-    <!-- Print Popup -->
     <div id="printPopup"><i class="fa-solid fa-spinner fa-spin"></i><br>리포트 생성 중... (100%)</div>
 
-    <!-- Print Layout (Hidden) -->
     <div id="printHeader">
         <div class="p-container">
             <div class="p-title">KAC Training Platform</div>
@@ -210,7 +269,6 @@
         </table>
     </div>
 
-    <!-- Sidebar -->
     <div class="sidebar">
         <div>
             <div class="sidebar-header">KAC Training Platform</div>
@@ -268,7 +326,6 @@
         </div>
     </div>
 
-    <!-- Main Stage -->
     <div class="main-stage">
         <header class="header">
             <div class="header-title">
@@ -287,7 +344,6 @@
         </div>
 
         <div class="content-area">
-            <!-- Q&A View -->
             <div id="view-qa">
                 <div class="qa-filters">
                     <div class="filter-chip active" onclick="filterQa('all')">All Questions</div>
@@ -297,16 +353,13 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <!-- Quiz View -->
             <div id="view-quiz">
                 <div class="quiz-card">
-                    <div id="quizGuideArea" class="quiz-guide-text" style="display:none;"></div>
-                    
                     <div id="quizContent" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center;">
                         
                         <div class="digital-timer" id="quizTimer">00:30</div>
 
-                        <div class="quiz-question" id="d-qtext">Press 'Test Mode' first.</div>
+                        <div class="quiz-question" id="d-qtext">Press 'Start Test Mode' first.</div>
                         <div class="quiz-options" id="d-options"></div>
                         
                         <div class="chart-area" id="d-chart">
@@ -341,7 +394,6 @@
             </div>
         </div>
 
-        <!-- Overlay Editor -->
         <div class="overlay-panel" id="rightPanel">
             <div class="overlay-toggle-tab" onclick="toggleRightPanel()"><i class="fa-solid fa-chevron-left" id="panelIcon"></i></div>
             <div class="panel-header"><h3 style="margin:0; color:#333;">Quiz Editor</h3></div>
@@ -357,7 +409,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
     <div id="qaModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
             <div class="modal-q-text" id="m-text"></div>
@@ -513,7 +564,6 @@
             renderQuizOnScreen(tQ);
             document.getElementById('btnTest').style.display='none';
             document.getElementById('quizControls').style.display='flex';
-            setGuide("TEST MODE: Press [Start] to enable.");
             dbRef.quiz.set({id:'TEST', status:'ready', ...tQ});
         }
         function loadRealQuiz() {
@@ -525,7 +575,6 @@
         }
         function showCurrentQuiz() {
             const q=quizList[currentQuizIdx]; renderQuizOnScreen(q);
-            setGuide("READY: Press [Start].");
             dbRef.quiz.set({id:`Q${currentQuizIdx}`, status:'ready', ...q});
         }
         function renderQuizOnScreen(q) {
@@ -549,7 +598,6 @@
             const timerBadge = document.getElementById('quizTimer');
             if(act === 'open') {
                 optDiv.style.display='flex'; chartDiv.style.display='none';
-                setGuide("RUNNING: 30s Timer.");
                 // Timer
                 timeLeft = 30;
                 timerBadge.classList.add('show'); timerBadge.classList.remove('urgent');
@@ -568,10 +616,8 @@
                 if(act === 'close') {
                     document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
                     document.getElementById(`opt-${correct}`).classList.add('reveal-answer');
-                    setGuide("STOPPED: Answer Revealed.");
                 } else if(act === 'result') {
                     optDiv.style.display='none'; chartDiv.style.display='flex'; 
-                    setGuide("RESULT: Statistics.");
                     renderCleanChart(id, correct);
                 }
             }
@@ -610,7 +656,6 @@
             }
             alert("End of List.");
         }
-        function setGuide(txt) { const g=document.getElementById('quizGuideArea'); g.style.display='block'; g.innerText=txt; }
         
         // Utils
         function loadQuizFile(input) {
