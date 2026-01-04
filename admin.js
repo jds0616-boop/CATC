@@ -44,10 +44,17 @@ const dataMgr = {
         this.changeRoom('A');
         ui.initRoomSelect();
         
+        // 이벤트 리스너 연결
         document.getElementById('roomSelect').addEventListener('change', (e) => this.changeRoom(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
         document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
+
+        // [중요] QR코드 클릭 시 팝업 열기 강제 연결 (HTML onclick 실수 방지)
+        const qrEl = document.getElementById('qrcode');
+        if(qrEl) {
+            qrEl.onclick = function() { ui.openQrModal(); };
+        }
     },
 
     changeRoom: function(room) {
@@ -63,7 +70,6 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
-        // 설정(이름, 상태) 불러오기
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         dbRef.status.child('roomStatus').once('value', s => ui.renderRoomStatus(s.val()));
 
@@ -134,23 +140,19 @@ const ui = {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
             const currentSelection = sel.value || state.room; 
-            
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
                 const roomData = allData[char] || {};
                 const status = roomData.status ? roomData.status.roomStatus : 'idle';
-                
                 const opt = document.createElement('option');
                 opt.value = char;
                 if(status === 'active') {
                     opt.innerText = `Room ${char} (🟢 사용중)`;
-                    opt.style.fontWeight = 'bold';
-                    opt.style.color = '#fbbf24'; 
+                    opt.style.fontWeight = 'bold'; opt.style.color = '#fbbf24'; 
                 } else {
                     opt.innerText = `Room ${char}`;
                 }
-                
                 if(char === currentSelection) opt.selected = true;
                 sel.appendChild(opt);
             }
@@ -161,16 +163,40 @@ const ui = {
         document.getElementById('courseNameInput').value = data.courseName || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
-    renderRoomStatus: function(st) {
-        document.getElementById('roomStatusSelect').value = st || 'idle';
-    },
+    renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
+    
+    // 사이드바 QR 그리기
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
-        const qrDiv = document.getElementById('qrcode'); 
-        qrDiv.innerHTML = "";
-        // 사이드바용 작은 QR
+        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
         new QRCode(qrDiv, { text: url, width: 50, height: 50 });
     },
+    
+    // [핵심] QR 팝업 열기 (확대)
+    openQrModal: function() {
+        const modal = document.getElementById('qrModal');
+        const bigTarget = document.getElementById('qrBigTarget');
+        const url = document.getElementById('studentLink').value;
+
+        if(!url) return;
+
+        modal.style.display = 'flex';
+        bigTarget.innerHTML = ""; // 초기화
+
+        // 모달이 뜬 뒤에 그려야 사이즈가 잡힘
+        setTimeout(() => {
+            new QRCode(bigTarget, { 
+                text: url, 
+                width: 300, 
+                height: 300,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }, 50);
+    },
+    closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
+
     copyLink: function() {
         document.getElementById('studentLink').select();
         document.execCommand('copy'); alert("Copied.");
@@ -181,10 +207,7 @@ const ui = {
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
         db.ref(`courses/${state.room}/status/mode`).set(mode);
-
-        if(mode === 'quiz' && state.quizList.length > 0) {
-            quizMgr.showQuiz(); 
-        }
+        if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
     },
     filterQa: function(filter) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -211,25 +234,6 @@ const ui = {
         document.getElementById('qaModal').style.display = 'flex';
     },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
-    
-    // [중요 수정] QR 확대 로직 변경
-    openQrModal: function() {
-        const modal = document.getElementById('qrModal');
-        const bigTarget = document.getElementById('qrBigTarget');
-        const url = document.getElementById('studentLink').value;
-
-        // 1. 모달을 먼저 보여줌 (이래야 QR이 그려짐)
-        modal.style.display = 'flex';
-        
-        // 2. 기존 QR 지우고 새로 그리기
-        bigTarget.innerHTML = "";
-        
-        // 약간의 지연시간을 두어 렌더링 안정성 확보
-        setTimeout(() => {
-            new QRCode(bigTarget, { text: url, width: 300, height: 300 });
-        }, 50);
-    },
-    closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
     
     toggleNightMode: function() { 
         document.body.classList.toggle('night-mode'); 
