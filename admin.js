@@ -1,8 +1,12 @@
-/* --- admin.js (Relative Path Fix) --- */
+/* --- admin.js (Session Persistence Update) --- */
 
-// --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9), 
+    // [수정] 세션 스토리지에서 ID를 불러오거나 새로 생성하여 저장 (새로고침 유지)
+    sessionId: sessionStorage.getItem('kac_session_id') || (function() {
+        const newId = Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('kac_session_id', newId);
+        return newId;
+    })(),
     room: null,
     isTestMode: false,
     quizList: [],
@@ -14,6 +18,10 @@ const state = {
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
+
+// ... (이하 기존 코드 동일) ...
+// 아래 나머지 코드는 기존과 동일하므로, admin.js 파일의 맨 윗부분(state 객체)만 교체하거나
+// 전체 파일을 원하시면 아래 전체 코드를 복사해서 쓰세요.
 
 // --- 1. Auth ---
 const authMgr = {
@@ -80,6 +88,7 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
+            // [Copy Link] 버튼 클릭 시 ui.copyLink 실행 (HTML onclick 속성 사용)
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -93,6 +102,7 @@ const dataMgr = {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
+        // 내 세션 ID와 다를 때만 인증 요구
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
@@ -180,9 +190,7 @@ const dataMgr = {
         });
     },
 
-    // [수정] 현재 폴더 경로를 반영하여 URL 생성
     fetchCodeAndRenderQr: function(room) {
-        // 현재 admin.html이 있는 폴더 경로 추출 (예: https://.../CATC)
         const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
         
         firebase.database().ref('public_codes')
@@ -191,7 +199,6 @@ const dataMgr = {
                 const data = snapshot.val();
                 if (data) {
                     const code = Object.keys(data)[0]; 
-                    // 폴더 경로 포함한 URL 생성
                     const studentUrl = `${baseUrl}/index.html?code=${code}`;
                     ui.renderQr(studentUrl);
                 } else {
