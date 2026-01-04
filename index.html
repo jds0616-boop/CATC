@@ -252,6 +252,7 @@
         let currentQuizId = null;
         let canAnswer = false;
         let editingKey = null; // 현재 수정 중인 질문 키
+        let currentMode = 'qa'; // [추가] 현재 모드 상태 추적
 
         // --- 초기화 ---
         (async function init() {
@@ -300,7 +301,8 @@
 
             // [모드 동기화] 강사가 Q&A로 바꾸면 퀴즈창 숨김 (강제 이동)
             dbRef.status.on('value', snap => {
-                if(snap.val() === 'qa') {
+                currentMode = snap.val() || 'qa'; // 모드 업데이트
+                if(currentMode === 'qa') {
                     document.getElementById('quizOverlay').style.display = 'none';
                 }
             });
@@ -353,10 +355,17 @@
                 startEditTimers(); // 타이머 가동
             });
 
-            // 퀴즈 처리 (생략 - 기존 유지)
+            // [퀴즈 처리] 모드가 quiz일 때만 표시하도록 수정
             dbRef.quiz.on('value', snap => {
                 const q = snap.val();
                 const overlay = document.getElementById('quizOverlay');
+                
+                // 모드가 QA이면 무조건 숨김 (이중 안전장치)
+                if (currentMode !== 'quiz') { 
+                    overlay.style.display = 'none'; 
+                    return; 
+                }
+
                 if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
                 if(currentQuizId !== q.id) {
                     document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
