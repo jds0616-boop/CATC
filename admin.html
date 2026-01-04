@@ -37,23 +37,33 @@
         <div class="modal-box" style="width: 450px;">
             <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
             <div class="setting-container">
-                <div class="setting-group">
-                    <label class="setting-label">현재 비밀번호</label>
-                    <input type="password" id="cp-current" class="setting-input" placeholder="Current Password">
-                </div>
+                <div class="setting-group"><label class="setting-label">현재 비밀번호</label><input type="password" id="cp-current" class="setting-input" placeholder="Current Password"></div>
                 <div class="divider"></div>
-                <div class="setting-group">
-                    <label class="setting-label">새 비밀번호</label>
-                    <input type="password" id="cp-new" class="setting-input" placeholder="New Password">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">새 비밀번호 확인</label>
-                    <input type="password" id="cp-confirm" class="setting-input" placeholder="Confirm New Password">
-                </div>
+                <div class="setting-group"><label class="setting-label">새 비밀번호</label><input type="password" id="cp-new" class="setting-input" placeholder="New Password"></div>
+                <div class="setting-group"><label class="setting-label">새 비밀번호 확인</label><input type="password" id="cp-confirm" class="setting-input" placeholder="Confirm New Password"></div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:flex-end; gap:10px;">
                 <button class="m-btn m-btn-later" onclick="ui.closePwModal()" style="background:#64748b; color:white;">취소</button>
                 <button class="m-btn m-btn-done" onclick="authMgr.executeChangePw()">변경 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [NEW] Takeover Auth Modal (비밀번호 숨김용) -->
+    <div id="takeoverModal" class="modal-overlay">
+        <div class="modal-box" style="width: 400px;">
+            <div class="modal-header"><h3><i class="fa-solid fa-lock"></i> 강의실 제어권 인증</h3></div>
+            <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:20px;">
+                현재 사용 중인 강의실입니다.<br>비밀번호 또는 마스터키를 입력하세요.
+            </p>
+            <div class="setting-container">
+                <div class="setting-group">
+                    <input type="password" id="takeoverPwInput" class="setting-input" placeholder="Password or Master Key" style="text-align:center; font-size:18px; letter-spacing:4px;">
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
+                <button class="m-btn m-btn-later" onclick="dataMgr.cancelTakeover()" style="background:#64748b; color:white;">취소</button>
+                <button class="m-btn m-btn-done" onclick="dataMgr.verifyTakeover()">인증 확인</button>
             </div>
         </div>
     </div>
@@ -128,13 +138,11 @@
                     <input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name">
                 </div>
                 
-                <!-- [수정] 안내 문구 추가 -->
                 <div class="setting-group">
                     <label class="setting-label">Student Room PW</label>
                     <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭">
                 </div>
 
-                <!-- [수정] 버튼 텍스트 변경 -->
                 <button class="btn-action btn-primary" id="btnSaveInfo">Save Settings (설정 저장)</button>
                 
                 <div class="divider"></div>
@@ -142,18 +150,17 @@
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box">
-                        <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
-                        <div class="url-text-area">
-                            <span class="url-preview">Student Link QR</span>
-                            <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
+                        <div class="qr-row">
+                            <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
+                            <button class="btn-action btn-small btn-dark" id="btnCopyLink" style="flex-grow:1;">Copy Link</button>
                         </div>
-                        <input type="hidden" id="studentLink">
+                        <input type="text" id="studentLink" class="setting-input url-input" readonly>
                     </div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
                     <div class="file-row">
-                        <input type="file" id="quizFile" accept=".txt" class="setting-input file-input" style="width:100px;">
+                        <input type="file" id="quizFile" accept=".txt" class="setting-input file-input">
                         <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()">Sample</button>
                     </div>
                 </div>
@@ -179,7 +186,8 @@
             <div class="lock-message">
                 <i class="fa-solid fa-lock"></i>
                 <h3>강의 대기 중 (Room Idle)</h3>
-                <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 저장해주세요.</p>
+                <!-- [수정] 파란 박스로 강조된 '저장' -->
+                <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
             </div>
         </div>
 

@@ -1,4 +1,4 @@
-/* --- admin.js (Layout Fix & Room Select Fix) --- */
+/* --- admin.js (Modal Auth & UI Fixes) --- */
 
 // --- 전역 상태 ---
 const state = {
@@ -9,12 +9,13 @@ const state = {
     currentQuizIdx: 0,
     activeQaKey: null,
     qaData: {},
-    timerInterval: null
+    timerInterval: null,
+    pendingRoom: null // 인증 대기 중인 방 ID 임시 저장
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
-// --- 1. Auth (Firebase Authentication) ---
+// --- 1. Auth ---
 const authMgr = {
     ADMIN_EMAIL: "admin@kac.com", 
 
@@ -77,7 +78,6 @@ const dataMgr = {
 
         try {
             ui.initRoomSelect(); 
-            // [중요] 이벤트 리스너에서 값 전달
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
             document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
@@ -90,38 +90,53 @@ const dataMgr = {
         }
     },
 
+    // [수정] 모달을 띄우는 함수로 변경
     switchRoomAttempt: async function(newRoom) {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
+        // 이미 사용 중이고 + 내가 주인이 아닌 경우 -> 모달 띄우기
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
-            const settings = settingSnap.val() || {};
-            const roomPw = settings.password ? String(settings.password) : "1234";
-            const masterKey = "13281"; 
-
-            const input = prompt(`[Room ${newRoom}] 사용 중인 강의실입니다.\n진입하려면 비밀번호 또는 마스터키를 입력하세요.`);
-            
-            if (input === null) {
-                // 취소 시 원래 방으로 복구
-                document.getElementById('roomSelect').value = state.room;
-                return;
-            }
-
-            if (input === roomPw || input === masterKey) {
-                alert("인증 성공.");
-                await firebase.database().ref(`courses/${newRoom}/status`).update({
-                    ownerSessionId: state.sessionId
-                });
-                this.forceEnterRoom(newRoom);
-            } else {
-                alert("비밀번호 불일치");
-                document.getElementById('roomSelect').value = state.room;
-                return;
-            }
+            state.pendingRoom = newRoom; // 목표 방 저장
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
         } else {
+            // 바로 입장
             this.forceEnterRoom(newRoom);
         }
+    },
+
+    // [추가] 모달에서 '확인' 눌렀을 때 실행
+    verifyTakeover: async function() {
+        const newRoom = state.pendingRoom;
+        const input = document.getElementById('takeoverPwInput').value;
+        if (!newRoom || !input) return;
+
+        const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
+        const settings = settingSnap.val() || {};
+        const roomPw = settings.password ? String(settings.password) : "1234";
+        const masterKey = "13281"; 
+
+        if (input === roomPw || input === masterKey) {
+            alert("인증 성공! 제어권을 가져옵니다.");
+            await firebase.database().ref(`courses/${newRoom}/status`).update({
+                ownerSessionId: state.sessionId
+            });
+            this.forceEnterRoom(newRoom);
+            document.getElementById('takeoverModal').style.display = 'none';
+        } else {
+            alert("비밀번호가 일치하지 않습니다.");
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverPwInput').focus();
+        }
+    },
+
+    // [추가] 모달 취소
+    cancelTakeover: function() {
+        document.getElementById('takeoverModal').style.display = 'none';
+        document.getElementById('roomSelect').value = state.room; // 원래 방으로 복구
+        state.pendingRoom = null;
     },
 
     forceEnterRoom: function(room) {
@@ -136,7 +151,7 @@ const dataMgr = {
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         
-        // [중요] Select Box 값 강제 동기화 (버그 수정 핵심)
+        // [중요] 드롭다운 값 강제 동기화 (버그 수정)
         const selectBox = document.getElementById('roomSelect');
         if(selectBox) selectBox.value = room;
 
@@ -254,7 +269,6 @@ const ui = {
             const sel = document.getElementById('roomSelect');
             const currentVal = state.room;
 
-            // 목록을 새로 그릴 때 현재 선택된 값(currentVal)이 있다면 그것을 유지하도록 함
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
@@ -300,11 +314,12 @@ const ui = {
                 </div>`;
         } else {
             overlay.style.display = 'flex';
+            // [수정] 안내 문구에 스타일 적용
             overlay.innerHTML = `
                 <div class="lock-message">
                     <i class="fa-solid fa-lock"></i>
                     <h3>강의 대기 중 (Room Idle)</h3>
-                    <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 저장해주세요.</p>
+                    <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
                 </div>`;
         }
     },
@@ -410,9 +425,9 @@ const ui = {
     }
 };
 
-// --- 4. Quiz (기존 기능 유지) ---
+// --- 4. Quiz ---
 const quizMgr = {
-    // 기존과 동일하여 생략, 위 admin.js에 포함되어 있음
+    // 기존 기능 동일하여 생략, 실제 적용 시 이전 코드 그대로 유지
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
         const r = new FileReader();
@@ -554,9 +569,8 @@ const quizMgr = {
     closeQuizMode: function() { ui.setMode('qa'); }
 };
 
-// --- 5. Print (기존 기능 유지) ---
+// --- 5. Print ---
 const printMgr = {
-    // 생략 (위와 동일)
     openInputModal: function() { document.getElementById('printDateInput').value = ""; document.getElementById('printProfInput').value = ""; document.getElementById('printInputModal').style.display = 'flex'; },
     confirmPrint: function(isSkip) { const date = isSkip ? "" : document.getElementById('printDateInput').value; const prof = isSkip ? "" : document.getElementById('printProfInput').value; this.closeInputModal(); this.openPreview(date, prof); },
     closeInputModal: function() { document.getElementById('printInputModal').style.display = 'none'; },

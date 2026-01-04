@@ -1,4 +1,4 @@
-/* --- admin.css (Layout Fixed) --- */
+/* --- admin.css --- */
 
 :root {
     --header-bg: #0f172a;
@@ -31,35 +31,24 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .login-btn:hover { background: #2563eb; }
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
-/* Sidebar Styles (Fixed & Scrollable) */
+/* Sidebar Layout */
 .sidebar { 
     width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; 
-    display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; 
-    height: 100vh; 
+    display: flex; flex-direction: column; padding: 25px 20px; flex-shrink: 0; 
+    height: 100vh; justify-content: space-between; 
     border-right: 1px solid rgba(255,255,255,0.05); 
-    z-index: 50; overflow: hidden; /* 전체 스크롤 방지 */
+    z-index: 50; overflow: hidden; 
 }
 
-/* 상단 설정 영역 (내용 많으면 여기만 스크롤됨) */
 .sidebar-top { 
-    flex: 1; /* 남은 공간 모두 차지 */
-    display: flex; flex-direction: column; gap: 15px; 
-    overflow-y: auto; /* 내용 넘치면 스크롤 */
-    scrollbar-width: none; 
-    padding-bottom: 20px;
+    flex-grow: 1; display: flex; flex-direction: column; gap: 18px; 
+    overflow-y: auto; scrollbar-width: none; padding-bottom: 20px;
 }
 .sidebar-top::-webkit-scrollbar { display: none; }
 
-/* 하단 버튼 영역 (바닥 고정) */
-.sidebar-bottom {
-    flex-shrink: 0; /* 줄어들지 않음 */
-    padding-top: 15px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 10px; }
-.setting-container { display: flex; flex-direction: column; gap: 12px; } 
-.setting-group { display: flex; flex-direction: column; gap: 5px; }
+.setting-container { display: flex; flex-direction: column; gap: 15px; } 
+.setting-group { display: flex; flex-direction: column; gap: 6px; }
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
 .setting-input, .setting-select { 
     width: 100%; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; 
@@ -67,12 +56,12 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .setting-input:focus { border-color: var(--accent-color); }
 
-/* QR Box Compact Style */
-.qr-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 10px; }
-#qrcode { background: white; padding: 2px; border-radius: 4px; cursor: pointer; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+/* QR Box (Original Layout Restored) */
+.qr-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.qr-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+#qrcode { background: white; padding: 3px; border-radius: 4px; cursor: pointer; width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 #qrcode img { display: block; }
-.url-text-area { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-.url-preview { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.url-input { font-size: 11px; color: #94a3b8; background: #1e293b; border: 1px solid #334155; padding: 8px; text-overflow: ellipsis; }
 
 .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0; }
 .file-row { display: flex; gap: 8px; align-items: center; }
@@ -84,12 +73,12 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .btn-secondary { background: #475569; }
 .btn-danger { background: #7f1d1d; color: #fecaca; }
 .btn-print { background: #e2e8f0; color: #334155; }
-.btn-small { padding: 0 10px; font-size: 11px; height: 30px; white-space: nowrap; }
+.btn-small { padding: 0 15px; font-size: 12px; height: 38px; white-space: nowrap; }
 .btn-dark { background: #475569; color: white; border: 1px solid #64748b; }
-.action-buttons { display: flex; flex-direction: column; gap: 8px; }
-.dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; }
+.action-buttons { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+.dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 15px; }
 
-/* Main Layout - No changes needed below but kept for consistency */
+/* Main Stage */
 .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; height: 100vh; background: var(--bg-color); }
 .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 20; flex-shrink: 0; }
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
@@ -107,10 +96,22 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 
 .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 30px; display: flex; justify-content: center; }
 
+/* Status Overlay & Styled Save Badge */
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .lock-message i { font-size: 60px; margin-bottom: 25px; color: #94a3b8; }
 .lock-message h3 { font-size: 28px; font-weight: 800; margin: 0 0 15px 0; letter-spacing: -0.5px; }
 .lock-message p { font-size: 16px; color: #cbd5e1; line-height: 1.6; }
+/* [New] Save Badge Style */
+.text-badge {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    margin: 0 4px;
+    display: inline-block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; }
 .qa-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
