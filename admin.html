@@ -7,233 +7,353 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Base & Dark Theme */
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --header-bg: #1a237e; /* Navy Default */
+            --header-text: #ffffff;
+            --sidebar-bg: #212529;
+            --sidebar-text: #ffffff;
+        }
+
+        /* Dark Mode Variables */
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --header-bg: #0d1b2a; /* Darker Navy */
+        }
+
         body { 
-            font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; 
+            font-family: 'Noto Sans KR', sans-serif; 
             margin: 0; padding: 0; 
-            background-color: #1a1a1a; color: #fff;
-            overflow-x: hidden;
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            transition: background 0.3s, color 0.3s;
         }
-        
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #111; z-index: 9999;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-        }
-        .login-box { text-align: center; }
-        .login-input { padding: 10px; font-size: 20px; text-align: center; border-radius: 5px; border: none; }
-        .login-btn { padding: 10px 20px; font-size: 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
 
         /* Header */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 30px; background: #333; border-bottom: 2px solid #444;
-            position: sticky; top: 0; z-index: 100; transition: background 0.3s;
+            padding: 0 30px; 
+            height: 70px;
+            background: var(--header-bg); 
+            color: var(--header-text);
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            /* Course Color Line will be applied via JS */
+            border-bottom: 5px solid transparent; 
         }
         .header-left { display: flex; align-items: center; gap: 20px; }
-        .header-title { font-size: 24px; font-weight: bold; letter-spacing: -0.5px; }
-        .course-name { font-size: 20px; color: #aaa; border-left: 2px solid #555; padding-left: 15px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        .kac-logo { height: 40px; background: white; padding: 2px 5px; border-radius: 4px; }
-        .icon-btn { font-size: 24px; cursor: pointer; color: #ddd; transition: 0.2s; }
-        .icon-btn:hover { color: #fff; }
+        .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        .course-name-badge { 
+            font-size: 20px; font-weight: 700; color: #fff; 
+            background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .kac-logo { height: 30px; width: auto; object-fit: contain; } /* 투명 배경 */
+        .icon-btn { font-size: 22px; cursor: pointer; color: rgba(255,255,255,0.8); transition: 0.2s; }
+        .icon-btn:hover { color: #fff; transform: scale(1.1); }
 
         /* Layout */
-        .container { padding: 30px; max-width: 1200px; margin: 0 auto; }
-        .q-list { display: flex; flex-direction: column; gap: 20px; }
+        .container { padding: 40px; max-width: 1200px; margin: 0 auto; min-height: 80vh;}
+        .q-list { display: flex; flex-direction: column; gap: 15px; }
         
-        /* Card */
+        /* Card Design */
         .q-card {
-            background: #2a2a2a; border-radius: 10px; padding: 20px;
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 25px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border-left: 5px solid #555; transition: all 0.2s ease;
-            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-left: 6px solid #ccc; /* Default */
+            transition: all 0.2s ease; cursor: pointer;
         }
-        .q-card:hover { transform: translateY(-2px); background: #333; }
-        .state-notice { border-left-color: #ff5252; background: #2c2020; }
-        .state-verify { border-left-color: #ffb74d; border: 2px solid #ffb74d; }
-        .state-done { opacity: 0.5; border-left-color: #28a745; filter: grayscale(0.5); }
+        .q-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        
+        /* Status Colors */
+        .state-normal { border-left-color: #3b82f6; } /* Blue */
+        .state-notice { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); } /* Red */
+        .state-verify { border-left-color: #f59e0b; border: 2px solid #f59e0b; } /* Orange */
+        .state-done { opacity: 0.6; border-left-color: #10b981; filter: grayscale(0.8); } /* Green */
 
         .q-content { flex-grow: 1; margin-right: 20px; }
-        .q-badges { margin-bottom: 8px; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 5px; }
-        .bg-like { background: #ff5252; color: white; }
-        .bg-pin { background: #ffeb3b; color: black; }
+        .q-badges { margin-bottom: 10px; display: flex; gap: 5px;}
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .bg-like { background: #ef4444; color: white; }
+        .bg-pin { background: #ef4444; color: white; }
+        .bg-verify { background: #f59e0b; color: white; }
+        .bg-done { background: #10b981; color: white; }
         
-        .q-text { font-size: 22px; line-height: 1.4; word-break: break-all; }
-        .q-sub { font-size: 14px; color: #888; margin-top: 5px; display: flex; gap: 10px; }
+        .q-text { font-size: 20px; line-height: 1.5; font-weight: 500; word-break: break-all; }
+        .q-sub { font-size: 13px; color: #888; margin-top: 8px; display: flex; gap: 15px; align-items: center;}
         
-        /* Sidebar */
+        /* Sidebar (Settings) */
         .sidebar {
-            position: fixed; top: 0; left: 0; width: 400px; height: 100%;
-            background: #111; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-            transform: translateX(-100%); transition: 0.3s; z-index: 200;
-            padding: 20px; overflow-y: auto;
+            position: fixed; top: 0; left: 0; width: 450px; height: 100%;
+            background: var(--sidebar-bg); color: var(--sidebar-text);
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 200; padding: 25px; overflow-y: auto;
         }
         .sidebar.active { transform: translateX(0); }
-        .sb-header { font-size: 22px; font-weight: bold; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
         
-        .setting-group { margin-bottom: 25px; background: #222; padding: 15px; border-radius: 8px; }
-        .setting-label { font-size: 14px; color: #aaa; margin-bottom: 5px; display: block; }
-        .setting-input { width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; margin-bottom: 10px; resize: none; }
-        .btn-action { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
-        .btn-blue { background: #007bff; color: white; }
-        .btn-green { background: #28a745; color: white; }
-        .btn-red { background: #dc3545; color: white; }
-        .btn-dark { background: #444; color: white; }
+        /* Scrollbar Styling for Sidebar */
+        .sidebar::-webkit-scrollbar { width: 8px; }
+        .sidebar::-webkit-scrollbar-track { background: #333; }
+        .sidebar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: #777; }
+
+        .sb-header { font-size: 24px; font-weight: bold; margin-bottom: 30px; border-bottom: 1px solid #444; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .setting-group { margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .setting-label { font-size: 13px; color: #aaa; margin-bottom: 8px; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+        .setting-input { width: 100%; padding: 12px; background: #333; border: 1px solid #555; color: white; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .setting-input:focus { border-color: #3b82f6; outline: none; }
+        
+        /* Buttons */
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 8px; font-size: 14px; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-action:hover { filter: brightness(1.1); }
+        .btn-blue { background: #2563eb; color: white; }
+        .btn-green { background: #10b981; color: white; }
+        .btn-red { background: #ef4444; color: white; }
+        .btn-dark { background: #4b5563; color: white; }
+
+        /* Color Picker Grid */
+        .color-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 15px; }
+        .color-swatch { 
+            width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; 
+            border: 2px solid transparent; transition: transform 0.1s; position: relative;
+        }
+        .color-swatch:hover { transform: scale(1.2); z-index: 2; }
+        .color-swatch.selected { border-color: white; box-shadow: 0 0 0 2px #3b82f6; transform: scale(1.1); }
+        .color-swatch.used::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.6); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 10px; color: white; content: '✕';
+        }
 
         /* Modal */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
         }
         .modal-box { 
-            background: #222; width: 600px; max-width: 90%; 
-            padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            background: var(--card-bg); width: 650px; max-width: 95%; 
+            padding: 30px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); 
+            color: var(--text-color);
         }
-        .modal-text { font-size: 24px; line-height: 1.5; margin-bottom: 20px; border-left: 4px solid #007bff; padding-left: 15px; }
-        .comment-box { width: 100%; height: 80px; background: #333; border: 1px solid #555; color: white; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .control-btn { padding: 15px; font-size: 16px; border: 2px solid #444; background: transparent; color: #aaa; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .control-btn:hover { border-color: #fff; color: #fff; }
-        .control-btn.active { background: #007bff; border-color: #007bff; color: white; }
+        .modal-text { font-size: 22px; line-height: 1.6; margin-bottom: 25px; border-left: 5px solid #2563eb; padding-left: 20px; background: rgba(37, 99, 235, 0.05); padding: 20px; border-radius: 0 10px 10px 0; }
         
-        .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #555; }
+        .comment-box { width: 100%; height: 100px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; color: var(--text-color); padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 16px; resize: none; }
+        
+        .control-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .control-btn { 
+            padding: 15px 5px; font-size: 14px; border: 2px solid #ccc; 
+            background: transparent; color: #888; border-radius: 8px; cursor: pointer; transition: 0.2s; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-weight: bold;
+        }
+        .control-btn:hover { border-color: #2563eb; color: #2563eb; }
+        .control-btn.active { background: #2563eb; border-color: #2563eb; color: white; }
+        
+        .footer { text-align: center; margin-top: 50px; font-size: 13px; color: #888; padding-bottom: 30px;}
     </style>
 </head>
 <body>
 
-    <div id="loginOverlay">
-        <div class="login-box">
-            <h2 style="color:white;">CATC Admin Access</h2>
-            <input type="password" id="adminPw" class="login-input" placeholder="Enter Password">
-            <button onclick="checkAdminLogin()" class="login-btn">Login</button>
+    <!-- Header -->
+    <header class="header" id="mainHeader">
+        <div class="header-left">
+            <div class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
+            <div class="header-title">CATC Training Q&A Platform</div>
+            <div class="course-name-badge" id="displayCourseName">Course A</div>
+        </div>
+        <div class="header-right">
+            <div class="icon-btn" onclick="toggleDarkMode()" title="Day/Night Mode">
+                <i class="fa-solid fa-moon" id="themeIcon"></i>
+            </div>
+            <img src="logo.png" alt="KAC" class="kac-logo">
+        </div>
+    </header>
+
+    <!-- Content -->
+    <div class="container">
+        <div id="qListArea" class="q-list">
+            <div style="text-align:center; padding:50px; color:#888;">
+                <i class="fa-solid fa-spinner fa-spin fa-3x"></i><br><br>Loading data...
+            </div>
+        </div>
+        
+        <div class="footer">
+            Developer Dooseok Jang (jds0616@airport.co.kr)
         </div>
     </div>
 
-    <div id="appContainer" style="display:none;">
-        <header class="header" id="mainHeader">
-            <div class="header-left">
-                <div class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
-                <div><span class="header-title">CATC Training Q&A Platform</span></div>
-                <div class="course-name" id="displayCourseName">Course A</div>
-            </div>
-            <div class="header-right">
-                <img src="logo.png" alt="KAC" class="kac-logo">
-            </div>
-        </header>
-
-        <div class="container">
-            <div id="qListArea" class="q-list">
-                <div style="text-align:center; padding:50px; color:#555;">Loading data...</div>
-            </div>
-            <div class="footer">Developer Dooseok Jang (jds0616@airport.co.kr)</div>
-        </div>
-    </div>
-
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sb-header">
-            <span>Settings</span>
+            <span>Instructor Settings</span>
             <span style="cursor:pointer" onclick="toggleSidebar()">✕</span>
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">Current Room</label>
+            <label class="setting-label">Select Course Room</label>
             <select id="roomSelect" class="setting-input" onchange="changeRoom(this.value)">
-                <option value="A">Course A</option>
-                <option value="B">Course B</option>
-                <option value="C">Course C</option>
+                <!-- JS will populate A-Z -->
             </select>
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">Course Name</label>
-            <input type="text" id="confName" class="setting-input" placeholder="e.g. Basic Training">
-            <label class="setting-label">Room Password (4 Digits)</label>
-            <input type="password" id="confPw" class="setting-input" placeholder="****" maxlength="4">
-            <label class="setting-label">Theme Color</label>
-            <input type="color" id="confColor" class="setting-input" value="#333333">
+            <label class="setting-label">Course Config</label>
+            <input type="text" id="confName" class="setting-input" placeholder="Course Name (과정명)">
+            <input type="password" id="confPw" class="setting-input" placeholder="Password (4 Digits)" maxlength="4">
             
-            <!-- 추가된 하단바 설정 -->
+            <label class="setting-label">Theme Color (Course Line)</label>
+            <div class="color-grid" id="colorGrid">
+                <!-- JS Populates Colors -->
+            </div>
+            <input type="hidden" id="confColor" value="#3b82f6">
+
             <label class="setting-label">Footer Text (Student View)</label>
-            <textarea id="confFooter" class="setting-input" style="height:100px;" placeholder="Footer text..."></textarea>
+            <textarea id="confFooter" class="setting-input" style="height:120px; line-height:1.4;" placeholder="Footer text..."></textarea>
             
-            <button class="btn-action btn-blue" onclick="saveRoomSettings()">Save Config</button>
+            <button class="btn-action btn-blue" onclick="saveRoomSettings()">
+                <i class="fa-solid fa-floppy-disk"></i> Save Config / 설정 저장
+            </button>
         </div>
 
         <div class="setting-group">
             <label class="setting-label">Student Link</label>
             <input type="text" id="studentLinkUrl" class="setting-input" readonly>
-            <button class="btn-action btn-dark" onclick="copyLink()">Copy Link</button>
+            <button class="btn-action btn-dark" onclick="copyLink()">
+                <i class="fa-solid fa-link"></i> Copy Link / 링크 복사
+            </button>
         </div>
 
         <div class="setting-group">
-            <label class="setting-label">GitHub Integration</label>
-            <input type="text" id="ghToken" class="setting-input" placeholder="Token">
-            <input type="text" id="ghOwner" class="setting-input" placeholder="Owner">
-            <input type="text" id="ghRepo" class="setting-input" placeholder="Repo">
-            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token</button>
-            <button class="btn-action btn-green" onclick="uploadToGithub()">Push to GitHub</button>
+            <label class="setting-label">Data Management</label>
+            <input type="text" id="ghToken" class="setting-input" placeholder="GitHub Token">
+            <input type="text" id="ghOwner" class="setting-input" placeholder="Owner ID">
+            <input type="text" id="ghRepo" class="setting-input" placeholder="Repository Name">
+            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token Info</button>
+            <button class="btn-action btn-green" onclick="uploadToGithub()">Push to GitHub / 백업</button>
             <button class="btn-action btn-dark" onclick="downloadBackup()">Download JSON</button>
         </div>
         
         <div class="setting-group">
-            <button class="btn-action btn-red" onclick="clearHistory()">Clear All History</button>
+            <button class="btn-action btn-red" onclick="clearHistory()">
+                <i class="fa-solid fa-trash"></i> Clear All History / 초기화
+            </button>
         </div>
     </div>
 
+    <!-- Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
-            <h3 style="margin-top:0; color:#888;">Question Detail</h3>
+            <h3 style="margin-top:0; color:#888;">Question Control</h3>
             <div id="modalText" class="modal-text"></div>
-            <textarea id="adminMemo" class="comment-box" placeholder="Memo..."></textarea>
+            
+            <textarea id="adminMemo" class="comment-box" placeholder="Instructor's Memo (비공개 메모)..."></textarea>
+            
             <div class="control-grid">
-                <button class="control-btn" id="btnPin" onclick="setStatus('pin')">📌 Pin</button>
-                <button class="control-btn" id="btnVerify" onclick="setStatus('verify')">🧐 Verify</button>
-                <button class="control-btn" id="btnDone" onclick="setStatus('done')">✅ Done</button>
-                <button class="control-btn" onclick="openTranslate()">🌐 Translate</button>
+                <button class="control-btn" id="btnPin" onclick="setStatus('pin')">
+                    <i class="fa-solid fa-thumbtack"></i> Pin / 공지
+                </button>
+                <button class="control-btn" id="btnVerify" onclick="setStatus('verify')">
+                    <i class="fa-solid fa-magnifying-glass"></i> Check / 확인
+                </button>
+                <button class="control-btn" id="btnDone" onclick="setStatus('done')">
+                    <i class="fa-solid fa-check"></i> Done / 완료
+                </button>
+                <button class="control-btn" onclick="openTranslate()">
+                    <i class="fa-solid fa-language"></i> Translate
+                </button>
             </div>
-            <div style="text-align:right;">
-                <button class="btn-action btn-blue" style="width:auto; padding: 10px 30px;" onclick="saveDetail()">Save & Close</button>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <button class="btn-action btn-red" style="width:auto; padding:10px 20px;" onclick="deleteQuestion()">
+                    <i class="fa-solid fa-trash"></i> Delete / 삭제
+                </button>
+                <button class="btn-action btn-blue" style="width:auto; padding: 10px 30px;" onclick="saveDetail()">
+                    Save & Close / 저장
+                </button>
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script>
-        const ADMIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // 1234
+        // --- Auth Check (5 hours) ---
+        (function checkAuth() {
+            const session = JSON.parse(localStorage.getItem('kac_admin_session'));
+            if(!session || session.token !== 'admin_granted' || Date.now() > session.expiry) {
+                alert("Session expired. Please login again.");
+                location.replace('login.html');
+            }
+        })();
+
+        // --- Config & State ---
         let currentRoom = "A";
         let dbQuestionsRef = null;
         let dbSettingsRef = null;
         let currentData = {};
         let activeKey = null;
 
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
+        // 26 Modern Colors Palette
+        const PRESET_COLORS = [
+            "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4",
+            "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107",
+            "#ff9800", "#ff5722", "#795548", "#9e9e9e", "#607d8b", "#333333", "#1a237e",
+            "#b71c1c", "#880e4f", "#4a148c", "#0d47a1", "#006064"
+        ];
 
-        async function checkAdminLogin() {
-            const input = document.getElementById('adminPw').value;
-            const hash = await sha256(input);
-            if (hash === ADMIN_HASH) {
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                initApp();
-            } else { alert("Invalid Password."); }
-        }
-
-        function initApp() {
-            if (typeof firebase === 'undefined') return alert("Firebase not loaded.");
+        // --- Initialization ---
+        window.onload = function() {
+            initRoomSelector();
+            initColorPicker();
             loadGithubSettings();
+            loadThemeMode();
             loadRoom(currentRoom);
+        };
+
+        function initRoomSelector() {
+            const sel = document.getElementById('roomSelect');
+            for(let i=65; i<=90; i++) {
+                const char = String.fromCharCode(i);
+                const opt = document.createElement('option');
+                opt.value = char;
+                opt.innerText = `Course ${char}`;
+                sel.appendChild(opt);
+            }
         }
 
+        function initColorPicker() {
+            const grid = document.getElementById('colorGrid');
+            PRESET_COLORS.forEach(color => {
+                const d = document.createElement('div');
+                d.className = 'color-swatch';
+                d.style.backgroundColor = color;
+                d.onclick = () => selectColor(color, d);
+                grid.appendChild(d);
+            });
+        }
+
+        function selectColor(color, el) {
+            document.getElementById('confColor').value = color;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        // --- Core Logic ---
         function changeRoom(roomId) {
             currentRoom = roomId;
             loadRoom(roomId);
@@ -247,30 +367,46 @@
             dbQuestionsRef = firebase.database().ref(`courses/${roomId}/questions`);
             dbSettingsRef = firebase.database().ref(`courses/${roomId}/settings`);
 
+            // 1. Settings Listener
             dbSettingsRef.on('value', snap => {
                 const val = snap.val() || {};
-                document.getElementById('displayCourseName').innerText = val.courseName || `Course ${roomId}`;
-                document.getElementById('mainHeader').style.background = val.themeColor || '#333';
+                const name = val.courseName || `Course ${roomId}`;
+                const color = val.themeColor || '#3b82f6';
+
+                // Header UI Update
+                document.getElementById('displayCourseName').innerText = name;
+                document.getElementById('mainHeader').style.borderBottomColor = color;
                 
-                document.getElementById('confName').value = val.courseName || "";
-                document.getElementById('confColor').value = val.themeColor || "#333333";
+                // Sidebar Inputs
+                document.getElementById('confName').value = name;
+                document.getElementById('confColor').value = color;
+                document.getElementById('confFooter').value = val.footerText || "";
                 
-                // Footer Load
-                document.getElementById('confFooter').value = val.footerText || "KAC 항공기술훈련원 항행안전시설 교육 관련 플랫폼입니다.\n문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)\n© 2026 Korea Airports Corporation. All rights reserved.";
-                
-                const link = `${window.location.origin}/index.html?room=${roomId}`;
-                document.getElementById('studentLinkUrl').value = link;
+                // Color Picker Selection
+                document.querySelectorAll('.color-swatch').forEach(s => {
+                    s.classList.toggle('selected', rgbToHex(s.style.backgroundColor) === color.toLowerCase());
+                });
+
+                // Correct Link Generation (Current Path)
+                const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+                document.getElementById('studentLinkUrl').value = `${basePath}/index.html?room=${roomId}`;
             });
 
+            // 2. Questions Listener (Real-time)
             dbQuestionsRef.on('value', snap => {
                 const listDiv = document.getElementById('qListArea');
                 listDiv.innerHTML = "";
                 const data = snap.val();
                 currentData = data || {};
 
-                if (!data) { listDiv.innerHTML = "<p style='text-align:center; color:#555; font-size:20px;'>No questions waiting.</p>"; return; }
+                if (!data) {
+                    listDiv.innerHTML = "<p style='text-align:center; color:#888; font-size:18px; padding-top:50px;'>No questions yet.</p>";
+                    return;
+                }
 
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                
+                // Sort: Pin > Verify > Normal > Done. Then Likes > Time
                 items.sort((a, b) => {
                     const getScore = (item) => {
                         if (item.status === 'pin') return 3;
@@ -289,14 +425,15 @@
             });
         }
 
+        // --- Rendering ---
         function renderCard(item, container) {
             const el = document.createElement('div');
-            let stateClass = '';
+            let stateClass = 'state-normal';
             let badges = '';
-            
-            if (item.status === 'pin') { stateClass = 'state-notice'; badges += `<span class="badge bg-pin">NOTICE</span>`; }
-            else if (item.status === 'verify') { stateClass = 'state-verify'; badges += `<span class="badge" style="background:orange; color:white;">CHECK LATER</span>`; }
-            else if (item.status === 'done') { stateClass = 'state-done'; badges += `<span class="badge btn-green">DONE</span>`; }
+
+            if (item.status === 'pin') { stateClass = 'state-notice'; badges += `<span class="badge bg-pin">NOTICE / 공지</span>`; }
+            else if (item.status === 'verify') { stateClass = 'state-verify'; badges += `<span class="badge bg-verify">CHECK / 확인</span>`; }
+            else if (item.status === 'done') { stateClass = 'state-done'; badges += `<span class="badge bg-done">DONE / 완료</span>`; }
             
             if (item.likes > 0) badges += `<span class="badge bg-like">👍 ${item.likes}</span>`;
 
@@ -307,15 +444,16 @@
                     <div class="q-badges">${badges}</div>
                     <div class="q-text">${escapeHtml(item.text)}</div>
                     <div class="q-sub">
-                        <span>${new Date(item.timestamp).toLocaleTimeString()}</span>
-                        ${item.memo ? `<span style="color:#007bff;">💬 Memo</span>` : ''}
+                        <span><i class="fa-regular fa-clock"></i> ${new Date(item.timestamp).toLocaleTimeString()}</span>
+                        ${item.memo ? `<span style="color:#2563eb;">💬 1 Memo</span>` : ''}
                     </div>
                 </div>
-                <div><i class="fa-solid fa-chevron-right" style="color:#555;"></i></div>
+                <div><i class="fa-solid fa-chevron-right" style="color:#ccc;"></i></div>
             `;
             container.appendChild(el);
         }
 
+        // --- Modal & Control ---
         function openModal(key) {
             activeKey = key;
             const item = currentData[key];
@@ -338,8 +476,9 @@
             if (!activeKey) return;
             const item = currentData[activeKey];
             let newStatus = status;
-            if (item.status === status) newStatus = 'normal';
+            if (item.status === status) newStatus = 'normal'; // toggle off
             
+            // UI Feedback Immediate
             ['btnPin', 'btnVerify', 'btnDone'].forEach(id => document.getElementById(id).classList.remove('active'));
             if (newStatus !== 'normal') {
                 const btnId = newStatus === 'pin' ? 'btnPin' : (newStatus === 'verify' ? 'btnVerify' : 'btnDone');
@@ -356,12 +495,48 @@
             });
         }
 
+        function deleteQuestion() {
+            if(!activeKey) return;
+            if(confirm("Permanently delete this question? (삭제하시겠습니까?)")) {
+                dbQuestionsRef.child(activeKey).remove().then(() => {
+                    document.getElementById('detailModal').style.display = 'none';
+                });
+            }
+        }
+
         function openTranslate() {
             const text = document.getElementById('modalText').innerText;
             window.open(`https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(text)}&op=translate`, '_blank');
         }
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        // --- Settings & Utils ---
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('active');
+            // Check used colors when opening
+            if(sb.classList.contains('active')) checkUsedColors();
+        }
+
+        function checkUsedColors() {
+            // Check all courses for used colors (simple visualization)
+            // Note: This requires reading all courses, which might be heavy if many. 
+            // For now, let's keep it client-side visual only.
+            firebase.database().ref('courses').once('value', snap => {
+                const all = snap.val() || {};
+                const usedColors = new Set();
+                Object.keys(all).forEach(k => {
+                    if(all[k].settings && all[k].settings.themeColor && k !== currentRoom) {
+                        usedColors.add(all[k].settings.themeColor.toLowerCase());
+                    }
+                });
+                
+                document.querySelectorAll('.color-swatch').forEach(sw => {
+                    const c = rgbToHex(sw.style.backgroundColor);
+                    if(usedColors.has(c)) sw.classList.add('used');
+                    else sw.classList.remove('used');
+                });
+            });
+        }
 
         async function saveRoomSettings() {
             const name = document.getElementById('confName').value;
@@ -370,8 +545,15 @@
             const footer = document.getElementById('confFooter').value;
             
             const payload = { courseName: name, themeColor: color, footerText: footer };
-            if (pw.length === 4) payload.password = await sha256(pw);
-            else if (pw.length > 0) return alert("Password must be 4 digits.");
+            
+            if (pw.length === 4) {
+                const msgBuffer = new TextEncoder().encode(pw);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                payload.password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } else if (pw.length > 0) {
+                return alert("Password must be 4 digits.");
+            }
 
             dbSettingsRef.update(payload).then(() => alert("Settings Saved!"));
         }
@@ -382,41 +564,51 @@
             alert("Copied!");
         }
 
-        function clearHistory() { if (confirm("Delete ALL questions?")) dbQuestionsRef.set(null); }
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            localStorage.setItem('kac_admin_theme', isDark ? 'dark' : 'light');
+        }
 
+        function loadThemeMode() {
+            const theme = localStorage.getItem('kac_admin_theme');
+            if(theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
+            }
+        }
+
+        function clearHistory() { if (confirm("Delete ALL questions in this room?")) dbQuestionsRef.set(null); }
+
+        // --- GitHub ---
         function loadGithubSettings() {
             const gh = JSON.parse(localStorage.getItem('gh_config') || '{}');
             document.getElementById('ghToken').value = gh.token || "";
             document.getElementById('ghOwner').value = gh.owner || "";
             document.getElementById('ghRepo').value = gh.repo || "";
         }
-
         function saveGithubInfo() {
             const config = { token: document.getElementById('ghToken').value, owner: document.getElementById('ghOwner').value, repo: document.getElementById('ghRepo').value };
-            localStorage.setItem('gh_config', JSON.stringify(config));
-            alert("Saved.");
+            localStorage.setItem('gh_config', JSON.stringify(config)); alert("Saved.");
         }
-
         async function uploadToGithub() {
             const token = document.getElementById('ghToken').value;
             const owner = document.getElementById('ghOwner').value;
             const repo = document.getElementById('ghRepo').value;
             if (!token || !owner || !repo) return alert("Check GitHub Info.");
-
             const content = JSON.stringify(currentData, null, 2);
             const contentEncoded = btoa(unescape(encodeURIComponent(content)));
             const path = `backup_room_${currentRoom}_${Date.now()}.json`;
-
             try {
-                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: `Backup Room ${currentRoom}`, content: contentEncoded })
                 });
-                if (response.ok) alert("Uploaded: " + path); else alert("Error");
-            } catch (error) { alert("Error: " + error.message); }
+                if (res.ok) alert("Uploaded: " + path); else alert("Error");
+            } catch (e) { alert("Error: " + e.message); }
         }
-
         function downloadBackup() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
             const node = document.createElement('a');
@@ -425,9 +617,12 @@
             document.body.appendChild(node); node.click(); node.remove();
         }
 
-        function escapeHtml(t) {
-            if(!t) return "";
-            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Helper
+        function escapeHtml(t) { return t ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""; }
+        function rgbToHex(rgb) {
+            if(rgb.startsWith('#')) return rgb;
+            const res = rgb.match(/\d+/g);
+            return res ? "#" + ((1 << 24) + (+res[0] << 16) + (+res[1] << 8) + +res[2]).toString(16).slice(1) : color;
         }
     </script>
 </body>
