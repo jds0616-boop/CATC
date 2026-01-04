@@ -17,7 +17,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5; 
             margin: 0; padding: 0; color: #333;
-            overflow: hidden; /* 전체 페이지 스크롤 방지 (상하단 고정 위함) */
+            overflow: hidden; /* 전체 페이지 스크롤 방지 */
             height: 100vh;
         }
 
@@ -48,13 +48,13 @@
         }
 
         .header-right { display: flex; align-items: center; }
-        .kac-logo { height: 16px; width: auto; object-fit: contain; } /* 로고 크기 축소 */
+        .kac-logo { height: 16px; width: auto; object-fit: contain; }
 
-        /* --- 2. Scrollable Content Area (Input + List) --- */
+        /* --- 2. Scrollable Content Area --- */
         .scroll-area {
             flex-grow: 1;
-            overflow-y: auto; /* 여기가 스크롤 되는 영역 */
-            padding-bottom: 80px; /* 하단바 및 FAB 공간 확보 */
+            overflow-y: auto;
+            padding-bottom: 80px;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -62,7 +62,6 @@
         .input-section { 
             padding: 20px; background: #e8eaf6; 
             border-bottom: 1px solid #c5cae9; 
-            margin-bottom: 10px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
@@ -91,48 +90,90 @@
         .btn-cancel { background: #fff; color: #555; border: 1px solid #aaa; padding: 10px 20px; border-radius: 50px; font-size: 14px; cursor: pointer; display: none; margin-right: 10px;}
 
         /* List Section */
-        .list-section { padding: 15px; }
-        .list-header { font-size: 16px; font-weight: bold; color: #444; margin-bottom: 15px; padding-left: 5px; display: flex; align-items: center; gap: 8px; }
+        .list-section { 
+            /* padding 제거하고 내부 요소에서 처리 (sticky 헤더 위함) */
+            padding: 0; 
+        }
+
+        /* ★ Sticky Header (Live Questions) ★ */
+        .list-header { 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; /* 질문 카드보다 위에 오도록 */
+            background: #f0f2f5; /* 배경색을 줘서 뒤에 글자가 비치지 않게 함 */
+            padding: 15px 15px 10px 20px;
+            font-size: 16px; font-weight: bold; color: #444; 
+            display: flex; align-items: center; gap: 8px; 
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .list-content {
+            padding: 10px 15px; /* 실제 리스트 여백 */
+        }
 
         .q-card {
-            background: #fff; border-radius: 12px; padding: 18px;
-            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background: #fff; border-radius: 12px; padding: 15px;
+            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             display: flex; align-items: center; justify-content: space-between;
             cursor: pointer; position: relative;
         }
         .q-card:active { transform: scale(0.98); background: #fafafa; }
         
-        .q-left { display: flex; align-items: center; width: 65%; } 
+        .q-left { display: flex; align-items: center; width: 60%; } 
+        
+        /* 기본 아이콘 (남색) */
         .user-icon { 
             width: 40px; height: 40px; background: #e8eaf6; color: #1a237e; 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             margin-right: 15px; font-size: 18px; flex-shrink: 0;
         }
+
+        /* ★ 내 질문 아이콘 (빨간색) ★ */
+        .q-card.my-post .user-icon {
+            background: #ffebee; 
+            color: #d32f2f;
+        }
+
         .q-text-preview {
             font-size: 16px; color: #222; line-height: 1.4;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
             overflow: hidden; text-overflow: ellipsis; word-break: break-all;
         }
         
-        .q-right { width: 35%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+        /* ★ 우측 컨트롤 영역 (가로 정렬) ★ */
+        .q-right { 
+            width: 40%; 
+            display: flex; 
+            align-items: center; /* 수직 중앙 */
+            justify-content: flex-end; /* 우측 정렬 */
+            gap: 8px; /* 아이템 간 간격 */
+        }
 
-        .edit-controls { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        /* 수정/타이머 컨테이너 가로 정렬 */
+        .edit-controls { 
+            display: flex; 
+            flex-direction: row; /* 가로 배치 */
+            align-items: center; 
+            gap: 5px; 
+        }
+        
         .timer-badge { 
             font-size: 11px; font-weight: bold; color: #e53935; 
-            background: #ffebee; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;
-            white-space: nowrap;
+            background: #ffebee; padding: 4px 6px; border-radius: 4px;
+            white-space: nowrap; margin-bottom: 0; /* 기존 margin 제거 */
         }
+        
         .btn-mini-edit {
             background: #fff; border: 1px solid #1a237e; color: #1a237e;
-            font-size: 11px; padding: 4px 10px; border-radius: 12px;
-            cursor: pointer; font-weight: bold;
+            font-size: 11px; padding: 4px 8px; border-radius: 12px;
+            cursor: pointer; font-weight: bold; white-space: nowrap;
         }
 
         .like-badge { 
             font-size: 14px; font-weight: bold; color: #ff5252; 
-            background: #ffebee; padding: 6px 12px; border-radius: 20px; 
+            background: #ffebee; padding: 6px 10px; border-radius: 20px; 
             display: flex; align-items: center; gap: 5px; 
-            min-width: 50px; justify-content: center;
+            justify-content: center; white-space: nowrap;
         }
 
         /* --- 3. Fixed Footer --- */
@@ -140,12 +181,11 @@
             height: auto; min-height: 60px; flex-shrink: 0;
             text-align: center; padding: 15px 10px; 
             font-size: 11px; color: #ccc; 
-            background: #1a237e; /* 상단바 색상과 통일 */
-            line-height: 1.4;
-            z-index: 1000;
+            background: #1a237e; 
+            line-height: 1.4; z-index: 1000;
         }
 
-        /* --- 4. Floating Exit Button (FAB) --- */
+        /* --- 4. Floating Exit Button --- */
         .fab-exit {
             position: fixed; bottom: 90px; right: 20px;
             width: 56px; height: 56px;
@@ -195,7 +235,6 @@
         <header class="header" translate="no">
             <div class="header-left">
                 <div class="menu-icon" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
-                <!-- 초기값은 빈값, DB 로드 후 채움 -->
                 <div class="course-title" id="courseTitle">Loading...</div>
             </div>
             <div class="header-right">
@@ -203,7 +242,7 @@
             </div>
         </header>
 
-        <!-- 2. Scrollable Area (Input + List) -->
+        <!-- 2. Scrollable Area -->
         <div class="scroll-area">
             
             <!-- Input Section -->
@@ -230,10 +269,12 @@
 
             <!-- List Section -->
             <div class="list-section">
+                <!-- Sticky Header -->
                 <div class="list-header" translate="no">
                     <i class="fa-solid fa-comments"></i> Live Questions
                 </div>
-                <div id="questionList">
+                <!-- Content -->
+                <div id="questionList" class="list-content">
                     <div style="text-align:center; padding: 30px; color:#aaa;">Loading...</div>
                 </div>
             </div>
@@ -256,9 +297,7 @@
     <div id="menuModal" class="modal-overlay" onclick="closeMenu(event)" translate="no">
         <div class="modal-box">
             <h3 style="margin:0 0 15px 0;">Select Course Room</h3>
-            <ul class="menu-list" id="roomList">
-                <!-- Javascript will populate A-Z here -->
-            </ul>
+            <ul class="menu-list" id="roomList"></ul>
             <div id="pwSection" class="pw-input-box">
                 <p id="pwTargetMsg" style="margin-bottom:5px;">Enter Password</p>
                 <input type="password" id="roomPw" class="pw-input" maxlength="4" placeholder="****">
@@ -285,7 +324,6 @@
     <script src="config.js"></script>
 
     <script>
-        // Init & Globals
         let currentRoom = new URLSearchParams(window.location.search).get('room') || 'A';
         let dbRef = null;
         let settingsRef = null;
@@ -293,7 +331,6 @@
         let editingKey = null; 
         let editInterval = null;
 
-        // BroadcastChannel (Single Tab)
         const bc = new BroadcastChannel('catc_platform_channel');
         bc.onmessage = (event) => {
             if (event.data === 'exists') {
@@ -303,9 +340,8 @@
         };
         bc.postMessage('check');
 
-        // Populate Menu A-Z
         const roomListEl = document.getElementById('roomList');
-        for (let i = 65; i <= 90; i++) { // ASCII A(65) to Z(90)
+        for (let i = 65; i <= 90; i++) { 
             const char = String.fromCharCode(i);
             const li = document.createElement('li');
             li.className = 'menu-item';
@@ -316,50 +352,33 @@
 
         window.addEventListener('load', () => {
             if (typeof firebase === 'undefined') return alert("Firebase SDK Error.");
-            
-            // 초기값 설정 (DB 로드 전)
             document.getElementById('courseTitle').innerText = `Course ${currentRoom}`;
             
             dbRef = firebase.database().ref(`courses/${currentRoom}/questions`);
             settingsRef = firebase.database().ref(`courses/${currentRoom}/settings`);
 
-            // Listen for Settings (Course Name & Footer)
             settingsRef.on('value', snapshot => {
                 const val = snapshot.val();
                 if(val) {
-                    // 강사가 설정한 Course Name이 있으면 그것을, 없으면 기본값
                     if(val.courseName) document.getElementById('courseTitle').innerText = val.courseName;
-                    
-                    if(val.footerText) {
-                        document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
-                    }
+                    if(val.footerText) document.getElementById('appFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
                 }
             });
 
             startDataListener();
-            
-            // 중요: 새로고침 없이 타이머 업데이트를 위해 전역 Interval 실행
             setInterval(updateLiveTimers, 1000);
         });
 
-        // Data Listener (Real-time updates)
         function startDataListener() {
             dbRef.on('value', (snapshot) => {
                 const listDiv = document.getElementById('questionList');
-                // 기존 내용을 지우고 다시 그립니다. (Firebase realtime)
                 listDiv.innerHTML = "";
-                
                 const data = snapshot.val();
                 questionsData = data || {};
 
-                if (!data) {
-                    listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet.</p>";
-                    return;
-                }
+                if (!data) { listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#aaa;'>No questions yet.</p>"; return; }
 
                 let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                
-                // 정렬: 좋아요순 > 최신순
                 items.sort((a, b) => {
                     const diffLike = (b.likes || 0) - (a.likes || 0);
                     if(diffLike !== 0) return diffLike;
@@ -371,21 +390,20 @@
                 items.forEach(item => {
                     const myPostTime = myPosts[item.id];
                     let isMineAndEditable = false;
-                    // 작성 5분 이내 체크
                     if(myPostTime && (Date.now() - myPostTime < 5 * 60 * 1000)) {
                         isMineAndEditable = true;
                     }
 
                     const div = document.createElement('div');
-                    div.className = `q-card`;
+                    // ★ 내 질문이면 class 'my-post' 추가 (아이콘 빨간색 처리용)
+                    div.className = `q-card ${myPostTime ? 'my-post' : ''}`;
                     div.onclick = () => openDetail(item.id);
                     
                     let editControlsHtml = '';
                     if (isMineAndEditable) {
-                        // data-time 속성에 작성시간 저장 -> setInterval이 읽어서 업데이트
                         editControlsHtml = `
                             <div class="edit-controls">
-                                <div class="timer-badge live-timer" data-time="${myPostTime}">Calculating...</div>
+                                <div class="timer-badge live-timer" data-time="${myPostTime}">...</div>
                                 <button class="btn-mini-edit" onclick="event.stopPropagation(); loadToEdit('${item.id}')">
                                     <i class="fa-solid fa-pen"></i> Edit
                                 </button>
@@ -407,25 +425,18 @@
                     `;
                     listDiv.appendChild(div);
                 });
-                
-                // 리스트 렌더링 직후 타이머 한 번 업데이트 (깜빡임 방지)
                 updateLiveTimers();
             });
         }
 
-        // Global Timer Function (새로고침 없이 시간 줄어들게 함)
         function updateLiveTimers() {
             const timers = document.querySelectorAll('.live-timer');
             const now = Date.now();
-            
             timers.forEach(span => {
                 const postTime = parseInt(span.getAttribute('data-time'));
                 const diff = 5 * 60 * 1000 - (now - postTime);
-                
-                if (diff <= 0) {
-                    // 시간이 다 되면 버튼과 타이머 영역 제거
-                    span.parentElement.innerHTML = ""; 
-                } else {
+                if (diff <= 0) span.parentElement.innerHTML = ""; 
+                else {
                     const m = Math.floor(diff / 60000);
                     const s = Math.floor((diff % 60000) / 1000);
                     span.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
@@ -433,24 +444,18 @@
             });
         }
 
-        // Submit Logic
         function submitQuestion() {
             const input = document.getElementById('qInput');
             const text = input.value.trim();
             if (!text) return alert("Please enter your question.");
 
-            // 수정 모드
             if (editingKey) {
                 dbRef.child(editingKey).update({ text: text })
-                    .then(() => { 
-                        alert("Modified successfully."); 
-                        cancelEditMode(); 
-                    })
+                    .then(() => { alert("Modified successfully."); cancelEditMode(); })
                     .catch(e => alert("Error: " + e.message));
                 return;
             }
 
-            // 도배 방지 (3분)
             const lastPostTime = localStorage.getItem('last_post_time');
             const now = Date.now();
             if (lastPostTime && (now - lastPostTime < 3 * 60 * 1000)) {
@@ -470,38 +475,25 @@
             });
         }
 
-        // Edit Mode
         function loadToEdit(key) {
             const item = questionsData[key];
             const input = document.getElementById('qInput');
-            input.value = item.text; 
-            input.focus();
-            
+            input.value = item.text; input.focus();
             editingKey = key;
             document.getElementById('submitBtn').innerText = "Modify";
             document.getElementById('cancelEditBtn').style.display = "inline-block";
             document.getElementById('editStatusBar').style.display = 'flex';
-
-            // 입력창 내부 타이머
             const myPosts = JSON.parse(localStorage.getItem(`my_posts_${currentRoom}`) || '{}');
             const postTime = myPosts[key];
-            
             if(editInterval) clearInterval(editInterval);
             updateEditTimerDisplay(postTime); 
             editInterval = setInterval(() => updateEditTimerDisplay(postTime), 1000);
-            
-            // 입력창으로 스크롤 이동 (상단)
             document.querySelector('.scroll-area').scrollTop = 0;
         }
 
         function updateEditTimerDisplay(postTime) {
             const remaining = (5 * 60 * 1000) - (Date.now() - postTime);
-            if (remaining <= 0) { 
-                clearInterval(editInterval); 
-                cancelEditMode(); 
-                alert("Edit time expired."); 
-                return; 
-            }
+            if (remaining <= 0) { clearInterval(editInterval); cancelEditMode(); alert("Edit time expired."); return; }
             const m = Math.floor(remaining / 60000);
             const s = Math.floor((remaining % 60000) / 1000);
             document.getElementById('editTimer').innerText = `0${m}:${s < 10 ? '0'+s : s}`;
@@ -516,20 +508,15 @@
             if(editInterval) clearInterval(editInterval);
         }
 
-        // Like Logic
         function openDetail(key) {
             const item = questionsData[key];
             if(!item) return;
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('modalLikeCount').innerText = item.likes || 0;
-            
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             const btn = document.getElementById('modalLikeBtn');
             btn.onclick = () => doLike(key);
-            
-            if(likedMap[key]) btn.classList.add('active'); 
-            else btn.classList.remove('active');
-            
+            if(likedMap[key]) btn.classList.add('active'); else btn.classList.remove('active');
             document.getElementById('detailModal').style.display = 'flex';
         }
 
@@ -537,7 +524,6 @@
             if(!key) return;
             const likedMap = JSON.parse(localStorage.getItem(`liked_${currentRoom}`) || '{}');
             if (likedMap[key]) return alert("You already liked this.");
-            
             dbRef.child(key).transaction((post) => {
                 if (post) post.likes = (post.likes || 0) + 1;
                 return post;
@@ -546,11 +532,7 @@
                     likedMap[key] = true;
                     localStorage.setItem(`liked_${currentRoom}`, JSON.stringify(likedMap));
                     const btn = document.getElementById('modalLikeBtn');
-                    if(btn) { 
-                        btn.classList.add('active'); 
-                        const cnt = document.getElementById('modalLikeCount'); 
-                        cnt.innerText = parseInt(cnt.innerText) + 1; 
-                    }
+                    if(btn) { btn.classList.add('active'); const cnt = document.getElementById('modalLikeCount'); cnt.innerText = parseInt(cnt.innerText) + 1; }
                 }
             });
         }
@@ -560,7 +542,6 @@
         function closeMenu(e) { if(e.target.id === 'menuModal') document.getElementById('menuModal').style.display = 'none'; }
         function closeDetail(e) { if(e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
 
-        // Room Switch Logic
         let targetSwitchRoom = null;
         function trySwitchRoom(roomId) {
             if(roomId === currentRoom) return alert("Already here.");
