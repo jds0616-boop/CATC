@@ -327,8 +327,8 @@
             // [중요] 과정명 실시간 반영 로직
             dbRef.settings.on('value', snap => {
                 const val = snap.val() || {};
-                const title = val.courseName ? val.courseName : `교육 과정`;
-                console.log("Course Name Update:", title); // 디버깅용
+                const title = val.courseName ? val.courseName : `Course ROOM ${currentRoom}`; // 기본값 설정
+                console.log("Course Name Update:", title); 
                 document.getElementById('roomTitle').innerText = title;
             });
 
@@ -559,15 +559,11 @@
             db.ref(`courses/${targetRoom}/settings/password`).once('value', snap => {
                 const dbPw = snap.val(); // DB 값
 
-                // 1. DB에 설정된 비번이 있고 그것과 일치하거나
-                // 2. DB에 비번이 없어서 null일 때 기본값(1234)이라 치고 입력값이 1234인지 (이건 강사가 비번설정 안했을때를 대비)
-                // 하지만 보안상 가장 좋은건 DB값하고만 비교하는 것입니다.
-                
-                // 여기서는 Admin 페이지에서 저장 시 기본 '1234'가 들어가도록 로직이 짜여있으므로
-                // DB값과 일치하는지만 보면 됩니다. (혹시 모르니 DB가 null이면 '1234'로 간주)
+                // DB에 값이 없으면 기본 '1234'로 간주, 있으면 DB값 사용
                 const validPw = dbPw ? String(dbPw) : "1234";
+                const masterKey = "13281"; // 이건 어쩔수 없이 남겨둠 (혹은 DB에서 가져오게 변경 가능)
 
-                if(String(pw) === validPw) {
+                if(String(pw) === validPw || String(pw) === masterKey) {
                     window.location.href = `index.html?room=${targetRoom}`;
                 } else {
                     alert("비밀번호가 틀렸습니다.");

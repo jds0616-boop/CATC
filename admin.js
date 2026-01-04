@@ -1,7 +1,13 @@
-/* --- admin.js (Fix Save Button) --- */
+/* --- admin.js (Session Persistence Fix) --- */
 
+// --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9), 
+    // [수정] 새로고침 해도 ID가 바뀌지 않도록 세션 스토리지 사용
+    sessionId: sessionStorage.getItem('kac_admin_id') || (function() {
+        const newId = Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('kac_admin_id', newId);
+        return newId;
+    })(),
     room: null,
     isTestMode: false,
     quizList: [],
@@ -35,6 +41,8 @@ const authMgr = {
 
     logout: function() {
         firebase.auth().signOut().then(() => {
+            // 로그아웃 시에는 세션 ID도 초기화
+            sessionStorage.removeItem('kac_admin_id');
             location.reload();
         });
     },
@@ -77,8 +85,9 @@ const dataMgr = {
 
         try {
             ui.initRoomSelect(); 
-            // [중요] HTML에서 onclick으로 연결했으므로 여기서는 제거하여 충돌 방지
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
+            document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
+            // [Copy Link] 버튼 클릭 시 ui.copyLink 실행 (HTML onclick 속성 사용)
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -89,20 +98,17 @@ const dataMgr = {
     },
 
     switchRoomAttempt: async function(newRoom) {
-        try {
-            const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
-            const st = snapshot.val() || {};
-            
-            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                state.pendingRoom = newRoom;
-                document.getElementById('takeoverPwInput').value = "";
-                document.getElementById('takeoverModal').style.display = 'flex';
-                document.getElementById('takeoverPwInput').focus();
-            } else {
-                this.forceEnterRoom(newRoom);
-            }
-        } catch (e) {
-            console.error(e);
+        const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
+        const st = snapshot.val() || {};
+        
+        // [핵심] 내 세션 ID와 DB의 주인 ID가 다를 때만 '남이 사용 중'으로 인식
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            state.pendingRoom = newRoom;
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
+        } else {
+            // 내가 주인이거나 빈 방이면 바로 입장
             this.forceEnterRoom(newRoom);
         }
     },
@@ -165,13 +171,32 @@ const dataMgr = {
         dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
 
+        // 설정값 로드
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
+        // 상태 실시간 감지
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
+            
+            // [중요] 내가 주인이면 잠금 화면 해제, 아니면 상태에 따라 처리
+            // 내 sessionId와 DB의 ownerSessionId가 같으면 active 상태라도 잠그지 않음
+            const isOwner = (st.ownerSessionId === state.sessionId);
+            
+            if (st.roomStatus === 'active') {
+                if (isOwner) {
+                    // 내가 사용 중 -> 정상 화면
+                    document.getElementById('statusOverlay').style.display = 'none';
+                } else {
+                    // 남이 사용 중 -> 관전 모드
+                    ui.checkLockStatus(st, false);
+                }
+            } else {
+                // Idle 상태 -> 대기 화면
+                ui.checkLockStatus(st, true);
+            }
+            
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
-            ui.checkLockStatus(st);
         });
 
         this.fetchCodeAndRenderQr(room);
@@ -207,35 +232,35 @@ const dataMgr = {
         ui.renderQr(studentUrl);
     },
 
-    // [중요] 저장 기능 함수
     saveSettings: function() {
-        try {
-            let pw = document.getElementById('roomPw').value; 
-            const newName = document.getElementById('courseNameInput').value;
-            const statusVal = document.getElementById('roomStatusSelect').value;
+        let pw = document.getElementById('roomPw').value; 
+        const newName = document.getElementById('courseNameInput').value;
+        const statusVal = document.getElementById('roomStatusSelect').value;
 
-            if (!pw) pw = "1234"; // 기본 비밀번호 처리
+        if (!pw) pw = "1234";
 
-            // 1. DB에 설정 저장 (과정명, 비밀번호)
-            const updates = { courseName: newName, password: pw };
-            firebase.database().ref(`courses/${state.room}/settings`).update(updates);
-            
-            // 2. 화면 타이틀 즉시 업데이트 (사용자 피드백)
-            document.getElementById('displayCourseTitle').innerText = newName;
-            document.getElementById('roomPw').value = pw;
+        const updates = { courseName: newName, password: pw };
 
-            // 3. 방 상태(사용중/비어있음) 업데이트
+        firebase.database().ref(`courses/${state.room}/settings`).update(updates);
+        document.getElementById('displayCourseTitle').innerText = newName;
+        document.getElementById('roomPw').value = pw;
+
+        if (statusVal === 'active') {
+            // 내가 주인이 됨
             const statusUpdate = {
-                roomStatus: statusVal === 'active' ? 'active' : 'idle',
-                ownerSessionId: statusVal === 'active' ? state.sessionId : null
+                roomStatus: 'active',
+                ownerSessionId: state.sessionId 
             };
             firebase.database().ref(`courses/${state.room}/status`).update(statusUpdate);
-
-            // 4. 성공 알림
-            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.\n- 과정명: ${newName}\n- 상태: ${statusVal}`);
-        } catch(e) {
-            console.error(e);
-            alert("❌ 저장 중 오류가 발생했습니다: " + e.message);
+            alert(`[Room ${state.room}] 설정 저장 완료 (사용중)\n학생 비밀번호: ${pw}`); 
+        } else {
+            // 방 비움 (주인 없음)
+            const statusUpdate = {
+                roomStatus: 'idle',
+                ownerSessionId: null
+            };
+            firebase.database().ref(`courses/${state.room}/status`).update(statusUpdate);
+            alert(`[Room ${state.room}] 설정 저장 완료 (비어있음)`); 
         }
     },
 
@@ -331,28 +356,27 @@ const ui = {
         });
     },
 
-    checkLockStatus: function(statusObj) {
+    // [수정] 잠금 화면 처리 로직 분리
+    checkLockStatus: function(statusObj, isIdle) {
         const overlay = document.getElementById('statusOverlay');
-        const isActive = (statusObj.roomStatus === 'active');
-        const isOwner = (statusObj.ownerSessionId === state.sessionId);
-
-        if (isActive && isOwner) {
-            overlay.style.display = 'none';
-        } else if (isActive && !isOwner) {
-            overlay.style.display = 'flex';
-            overlay.innerHTML = `
-                <div class="lock-message">
-                    <i class="fa-solid fa-user-lock"></i>
-                    <h3>다른 강사가 사용 중</h3>
-                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하여<br>비밀번호를 입력하세요.</p>
-                </div>`;
-        } else {
+        
+        if (isIdle) {
+            // 대기 중 (Idle)
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
                     <i class="fa-solid fa-lock"></i>
                     <h3>강의 대기 중 (Room Idle)</h3>
                     <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
+                </div>`;
+        } else {
+            // 다른 사람이 사용 중 (Active but not mine)
+            overlay.style.display = 'flex';
+            overlay.innerHTML = `
+                <div class="lock-message">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <h3>다른 강사가 사용 중</h3>
+                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하여<br>비밀번호를 입력하세요.</p>
                 </div>`;
         }
     },
@@ -431,23 +455,44 @@ const ui = {
     renderQaList: function(filter) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
-        const getScore = (i) => { if(i.status==='pin')return 1000; if(i.status==='later')return 500; if(i.status==='done')return -1000; return 0; };
-        if(filter === 'pin') items = items.filter(x => x.status === 'pin');
-        else if(filter === 'later') items = items.filter(x => x.status === 'later');
-        items.sort((a,b) => (getScore(b) + (b.likes||0)) - (getScore(a) + (a.likes||0)));
+
+        items.sort((a, b) => {
+            const getStatusWeight = (status) => {
+                if (status.startsWith('pin')) return 4;
+                if (status.startsWith('later')) return 3;
+                if (status === 'done') return 0;
+                return 2;
+            };
+
+            const weightA = getStatusWeight(a.status);
+            const weightB = getStatusWeight(b.status);
+
+            if (weightA !== weightB) return weightB - weightA;
+
+            const likesA = a.likes || 0;
+            const likesB = b.likes || 0;
+            if (likesA !== likesB) return likesB - likesA;
+
+            return b.timestamp - a.timestamp;
+        });
+
+        if(filter === 'pin') items = items.filter(x => x.status.startsWith('pin'));
+        else if(filter === 'later') items = items.filter(x => x.status.startsWith('later'));
 
         items.forEach(i => {
-            const cls = i.status === 'pin' ? 'status-pin' : (i.status === 'later' ? 'status-later' : (i.status === 'done' ? 'status-done' : ''));
-            const icon = i.status === 'pin' ? '📌 ' : (i.status === 'later' ? '⚠️ ' : (i.status === 'done' ? '✅ ' : ''));
-            
-            // 완료된 항목 흐리게 처리
-            let style = '';
+            let cls = '';
+            let icon = '';
+
+            if (i.status.startsWith('pin')) { cls += ' status-pin'; icon = '📌 '; }
+            else if (i.status.startsWith('later')) { cls += ' status-later'; icon = '⚠️ '; }
+            else if (i.status === 'done') { cls += ' status-done'; icon = '✅ '; }
+
             if (i.status.includes('done') || i.status === 'done') {
-                style = 'style="opacity: 0.6; filter: grayscale(1);"';
+                cls += '" style="opacity: 0.6; filter: grayscale(1);';
             }
 
             list.innerHTML += `
-                <div class="q-card ${cls}" ${style} onclick="ui.openQaModal('${i.id}')">
+                <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
                     <div class="q-content">${icon}${i.text}</div>
                     <div class="q-meta">
                         <div class="q-like-badge">👍 ${i.likes||0}</div>
