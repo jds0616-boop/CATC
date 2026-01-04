@@ -24,10 +24,15 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     height: 100vh; justify-content: space-between; 
     border-right: 1px solid rgba(255,255,255,0.05); 
     z-index: 50;
+    overflow: hidden; /* 스크롤바 제거 */
 }
-.sidebar-top { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 5px; }
-.sidebar-top::-webkit-scrollbar { width: 4px; }
-.sidebar-top::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+/* 내용이 넘칠 경우에만 스크롤 허용하되 스크롤바는 숨김 */
+.sidebar-top { 
+    display: flex; flex-direction: column; gap: 20px; 
+    overflow-y: auto; padding-right: 5px; 
+    scrollbar-width: none; /* Firefox */
+}
+.sidebar-top::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
 
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 10px; letter-spacing: -0.5px; }
 .setting-container { display: flex; flex-direction: column; gap: 15px; } 
@@ -69,7 +74,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .btn-secondary { background: #475569; }
 .btn-danger { background: #7f1d1d; color: #fecaca; }
 .btn-print { background: #e2e8f0; color: #334155; }
-/* Sample, Copy 버튼 색상 진하게 수정 */
 .btn-small { padding: 0 15px; font-size: 12px; height: 38px; white-space: nowrap; }
 .btn-dark { background: #475569; color: white; border: 1px solid #64748b; }
 
@@ -97,9 +101,13 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qa-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
 .filter-chip { padding: 6px 16px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.03); color: #64748b; transition: 0.2s; }
 .filter-chip.active { background: #eff6ff; color: var(--accent-color); border-color: var(--accent-color); font-weight: 800; }
-.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; padding-right: 5px; }
+/* 첫 번째 카드 잘림 방지를 위해 상하 패딩 추가 */
+.qa-list { 
+    flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; 
+    gap: 12px; padding: 10px 5px 40px 5px; 
+}
 
-/* Q&A Card (테두리 버그 수정) */
+/* Q&A Card */
 .q-card { 
     background: var(--card-bg); padding: 20px 25px; border-radius: 12px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; 
@@ -108,7 +116,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 .q-card:hover { 
     transform: translateY(-3px); 
-    /* 테두리 겹침 방지를 위해 box-shadow 사용 */
+    /* 왼쪽 컬러바보다 위에 테두리가 오도록 z-index와 box-shadow 순서 조정 */
     box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 0 0 3px #10b981; 
     z-index: 100;
 }
@@ -120,7 +128,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
 .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
-/* --- Quiz View (레이아웃 수정) --- */
+/* --- Quiz View --- */
 #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; max-width: 1200px; }
 .quiz-card {
     width: 100%; height: 100%; background: var(--card-bg); 
@@ -131,14 +139,9 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 }
 #quizContent { width: 100%; height: 100%; display: flex; flex-direction: column; flex-grow: 1; }
 
-/* 타이머와 문제 좌우 배치 */
 .quiz-header-part { 
-    flex-shrink: 0; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 30px; /* 타이머와 문제 사이 간격 */
-    margin-bottom: 30px; 
+    flex-shrink: 0; display: flex; align-items: center; 
+    justify-content: center; gap: 30px; margin-bottom: 30px; 
 }
 
 .digital-timer {
@@ -152,16 +155,14 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .quiz-question { 
     font-size: 42px; font-weight: 900; line-height: 1.2; 
     color: var(--text-color); word-break: keep-all; 
-    margin: 0; text-align: left; /* 왼쪽 정렬 */
+    margin: 0; text-align: left; 
 }
 
-/* 퀴즈 옵션 글자 크기 확대 */
 .quiz-options { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
 .quiz-opt { 
     width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; 
     padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; 
-    font-size: 28px; /* 글자 크기 UP */
-    font-weight: 700; color: #475569; background: white; 
+    font-size: 28px; font-weight: 700; color: #475569; background: white; 
     transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 .quiz-opt .opt-num { width: 50px; height: 50px; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 25px; flex-shrink: 0; }
@@ -169,27 +170,28 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; font-weight: 800; }
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 
-/* Chart (수정 없음) */
+/* Chart */
 .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 8%; padding-bottom: 40px; border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; }
 .bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 120px; height: 100%; position: relative; }
 .bar-value { font-size: 24px; font-weight: 800; color: #334155; margin-bottom: 8px; opacity: 0; animation: fadeIn 0.5s forwards 0.8s; }
-.bar-fill { width: 100%; border-radius: 15px 15px 0 0; background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); height: 0; transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.bar-fill { width: 100%; border-radius: 15px 15px 0 0; background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); height: 0; transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: relative; }
 .bar-label { margin-top: 15px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: #fff; background: #475569; }
 .bar-wrapper.correct .bar-fill { background: linear-gradient(180deg, #34d399 0%, #059669 100%); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
 .bar-wrapper.correct .bar-label { background: #059669; transform: scale(1.2); }
 .bar-wrapper.correct .bar-value { color: #059669; transform: scale(1.2); }
-.bar-wrapper.correct::after { content: '👑'; font-size: 32px; position: absolute; top: -50px; animation: bounce 1s infinite; }
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* 왕관 아이콘 (JS에서 위치 제어) */
+.crown-icon { 
+    font-size: 32px; position: absolute; left: 50%; transform: translateX(-50%); 
+    animation: bounce 1s infinite; z-index: 10;
+}
+@keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 @keyframes fadeIn { to { opacity: 1; } }
 
-/* Controls (버튼 간격 확대) */
+/* Controls (버튼 간격 넓게) */
 .quiz-status-bar { 
-    margin-top: 20px; 
-    display: flex; 
-    gap: 40px; /* 버튼 간격 15px -> 40px 확대 */
-    flex-shrink: 0; 
-    justify-content: center; 
-    width: 100%; 
+    margin-top: 20px; display: flex; gap: 60px; /* 버튼 간격 40 -> 60 */
+    flex-shrink: 0; justify-content: center; width: 100%; 
 }
 .quiz-guide-text { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.05); color: #64748b; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 .q-btn { padding: 12px 30px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; transition: 0.1s; }
@@ -197,7 +199,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .btn-test { background: #f59e0b; width: 100%; justify-content: center; }
 .btn-start { background: #3b82f6; } .btn-stop { background: #ef4444; } .btn-result { background: #10b981; } .btn-nav { background: #64748b; }
 
-/* --- Modals & Panels --- */
+/* Modals & Print ... (나머지 동일) */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-box { background: var(--card-bg); width: 600px; padding: 30px; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); animation: popIn 0.3s; }
 .modal-q-text { font-size: 24px; font-weight: 800; margin-bottom: 30px; line-height: 1.4; color: var(--text-color); }
@@ -208,7 +210,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .m-btn-icon { width: 45px; height: 45px; border-radius: 50%; padding: 0; justify-content: center; font-size: 18px; color: white; }
 .m-btn-pin { background: #3b82f6; } .m-btn-del { background: #ef4444; }
 
-/* Right Panel */
 .overlay-panel { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: white; box-shadow: -5px 0 30px rgba(0,0,0,0.1); transform: translateX(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; display: flex; flex-direction: column; }
 .overlay-panel.open { transform: translateX(0); }
 .overlay-toggle-tab { 
@@ -225,7 +226,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qr-big-box { background: white; padding: 20px; border-radius: 20px; }
 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* --- Print --- */
 .print-preview-box { background: #525659; width: 90%; height: 95%; max-width: 1000px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
 .preview-header { background: #323639; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
 .preview-content { flex-grow: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 40px; }
@@ -241,7 +241,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .doc-list-table td { border: 1px solid #000; padding: 10px 5px; border-bottom: 1px dashed #aaa; }
 .doc-list-table tr:last-child td { border-bottom: 2px solid #000; }
 .doc-footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-
 @media print {
     body * { visibility: hidden; }
     #printPreviewModal { display: block !important; position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white; z-index: 9999; }
