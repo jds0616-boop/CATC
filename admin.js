@@ -1,5 +1,3 @@
-// admin.js
-
 // --- 전역 상태 ---
 const state = {
     room: 'A',
@@ -65,7 +63,7 @@ const dataMgr = {
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // [FIXED] Use config.js function for correct link
+        // [FIXED] config.js에서 코드 가져오기
         const code = this.getRoomCode(room);
         const studentUrl = `${window.location.origin}/index.html?code=${code}`; 
         ui.renderQr(studentUrl);
@@ -76,12 +74,11 @@ const dataMgr = {
         });
     },
 
-    // [중요 수정] config.js의 getCodeFromRoom 사용
     getRoomCode: function(r) {
         if (typeof getCodeFromRoom === 'function') {
             return getCodeFromRoom(r);
         }
-        return `KAC-${r}-TEMP`; // Fallback
+        return `KAC-${r}-TEMP`; 
     },
 
     saveSettings: function() {
@@ -143,7 +140,7 @@ const ui = {
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
-        new QRCode(qrDiv, { text: url, width: 60, height: 60 });
+        new QRCode(qrDiv, { text: url, width: 50, height: 50 });
         const big = document.getElementById('qrBigTarget'); big.innerHTML = "";
         new QRCode(big, { text: url, width: 300, height: 300 });
     },

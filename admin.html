@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     
-    <!-- 분리된 CSS 파일 연결 -->
+    <!-- CSS 파일 연결 -->
     <link rel="stylesheet" href="admin.css">
 </head>
 <body class="day-mode">
@@ -22,7 +22,7 @@
         <div class="qr-big-box" id="qrBigTarget"></div>
     </div>
 
-    <!-- Print Preview Modal (New Feature) -->
+    <!-- Print Preview Modal -->
     <div id="printPreviewModal" class="modal-overlay">
         <div class="print-preview-box">
             <div class="preview-header">
@@ -33,7 +33,6 @@
                 </div>
             </div>
             <div class="preview-content" id="printContentArea">
-                <!-- 실제 인쇄될 문서 양식 (JS에서 주입) -->
                 <div id="official-document">
                     <div class="doc-header">
                         <h2>KAC Training Platform</h2>
@@ -92,19 +91,22 @@
                     <label class="setting-label">Room Password</label>
                     <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="****">
                 </div>
+                
+                <!-- QR 및 링크 영역 (수정됨) -->
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
-                    <input type="text" id="studentLink" class="setting-input" readonly>
-                    <div class="qr-action-row">
-                        <div id="qrcode" title="Click to Expand"></div>
-                        <button class="btn-action btn-small" id="btnCopyLink">Copy</button>
+                    <div class="qr-box">
+                        <div id="qrcode" onclick="ui.renderQr(document.getElementById('studentLink').value)" title="Click to Expand"></div>
+                        <input type="text" id="studentLink" readonly> <!-- 숨겨진 입력창 -->
+                        <button class="btn-action btn-small btn-dark" id="btnCopyLink">Copy Link</button>
                     </div>
                 </div>
+
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
                     <div class="file-row">
                         <input type="file" id="quizFile" accept=".txt" class="setting-input file-input">
-                        <button class="btn-action btn-small" onclick="quizMgr.downloadSample()">Sample</button>
+                        <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()">Sample</button>
                     </div>
                 </div>
             </div>
@@ -154,15 +156,14 @@
                     <div id="quizGuideArea" class="quiz-guide-text">Press 'Test Mode' or Select Quiz</div>
                     
                     <div id="quizContent">
+                        <!-- 타이머와 문제 좌우 배치 구조 -->
                         <div class="quiz-header-part">
                             <div class="digital-timer" id="quizTimer">00:30</div>
                             <div class="quiz-question" id="d-qtext">Ready?</div>
                         </div>
 
-                        <!-- 4지선다 (Flex Box로 화면 꽉차게 수정됨) -->
                         <div class="quiz-options" id="d-options"></div>
 
-                        <!-- 차트 영역 (디자인 개선됨) -->
                         <div class="chart-area" id="d-chart"></div>
                     </div>
 
@@ -194,7 +195,7 @@
                 <input type="text" id="manualO4" class="editor-input" placeholder="Option 4">
                 <input type="number" id="manualAns" class="editor-input" placeholder="Correct Answer (1-4)">
                 <button class="btn-action btn-primary" onclick="quizMgr.addManualQuiz()">Add to List <i class="fa-solid fa-plus"></i></button>
-                <hr class="panel-divider">
+                <hr class="panel-divider" style="border:0; border-top:1px solid #e2e8f0; margin:10px 0;">
                 <div id="miniQuizList"></div>
             </div>
         </div>
@@ -217,9 +218,7 @@
         </div>
     </div>
 
-    <!-- 기존 config.js 사용 -->
     <script src="config.js"></script>
-    <!-- 분리된 JS 파일 연결 -->
     <script src="admin.js"></script>
 </body>
 </html>
