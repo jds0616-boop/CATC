@@ -159,17 +159,31 @@ const dataMgr = {
         });
     },
 
-    // 방 변경 시도 (드롭다운 선택 시)
+    // [변경됨] 방 변경 시도 로직 (강제 진입 포함)
     switchRoomAttempt: function(newRoom) {
         db.ref(`courses/${newRoom}/status`).once('value', s => {
             const st = s.val() || {};
+            
+            // 사용 중인 방일 경우 처리 로직 (강제 진입 여부 묻기)
             if(st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                alert(`Room ${newRoom}은 현재 다른 강사가 사용 중입니다.`);
-                // 다시 원래 방으로 돌림
-                document.getElementById('roomSelect').value = state.room;
+                // 경고창 띄우기
+                const confirmTakeover = confirm(
+                    `Room ${newRoom}은 현재 '사용중' 상태입니다.\n\n` +
+                    `기존 접속을 끊고 강제로 진입하여 제어권을 가져오시겠습니까?`
+                );
+
+                if(confirmTakeover) {
+                    // 확인 시: 기존 방 해제 후 -> 강제 진입 (점유권 덮어쓰기)
+                    if(state.room) this.releaseRoom(state.room);
+                    this.enterRoom(newRoom, true); // true = 강제 점유
+                } else {
+                    // 취소 시: 다시 원래 방 선택값으로 되돌림
+                    document.getElementById('roomSelect').value = state.room;
+                }
                 return;
             }
-            // 이동 가능하면 기존 방 해제 후 이동
+
+            // 일반적인 이동 (빈 방 이동)
             if(state.room) this.releaseRoom(state.room);
             this.enterRoom(newRoom, false);
         });
@@ -255,13 +269,12 @@ const dataMgr = {
                 ownerSessionId: null 
             });
             alert("저장되었습니다. 강의실이 비활성화(대기) 상태가 되었습니다.");
-            // 선택적으로 여기서 다른 빈 방을 찾아갈 수도 있음 (현재는 유지)
         }
     },
 
     updateQa: function(action) {
         if(!state.activeQaKey) return;
-        // 단순 삭제/상태변경 로직 (관리자 비번 확인 생략 - 이미 로그인했으므로)
+        // 단순 삭제/상태변경 로직
         if (action === 'delete') {
              if(confirm("정말 삭제하시겠습니까?")) {
                  dbRef.qa.child(state.activeQaKey).remove(); ui.closeQaModal();
@@ -285,6 +298,7 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
+    // [변경됨] 룸 셀렉트 초기화 (사용중인 방도 클릭 가능하게 변경)
     initRoomSelect: function() {
         db.ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
@@ -306,8 +320,9 @@ const ui = {
                         opt.innerText = `Room ${char} (🔵 내 강의실)`;
                         opt.style.fontWeight = 'bold'; opt.style.color = '#3b82f6';
                     } else {
-                        opt.innerText = `Room ${char} (🔴 사용중)`;
-                        opt.style.color = '#ef4444'; opt.disabled = true; // 다른 사람 방 선택 불가
+                        // 빨간색이지만 선택은 가능하게 처리 (강제 진입 허용)
+                        opt.innerText = `Room ${char} (🔴 사용중 - 진입 가능)`;
+                        opt.style.color = '#ef4444'; 
                     }
                 } else {
                     opt.innerText = `Room ${char}`;
@@ -440,7 +455,7 @@ const ui = {
     }
 };
 
-// --- 4. Quiz (기존 로직 유지) ---
+// --- 4. Quiz ---
 const quizMgr = {
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
