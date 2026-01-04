@@ -1,12 +1,8 @@
-/* --- admin.js (Session Persistence Update) --- */
+/* --- admin.js (Priority + Done Logic Update) --- */
 
+// --- 전역 상태 ---
 const state = {
-    // [수정] 세션 스토리지에서 ID를 불러오거나 새로 생성하여 저장 (새로고침 유지)
-    sessionId: sessionStorage.getItem('kac_session_id') || (function() {
-        const newId = Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('kac_session_id', newId);
-        return newId;
-    })(),
+    sessionId: Math.random().toString(36).substr(2, 9), 
     room: null,
     isTestMode: false,
     quizList: [],
@@ -18,10 +14,6 @@ const state = {
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
-
-// ... (이하 기존 코드 동일) ...
-// 아래 나머지 코드는 기존과 동일하므로, admin.js 파일의 맨 윗부분(state 객체)만 교체하거나
-// 전체 파일을 원하시면 아래 전체 코드를 복사해서 쓰세요.
 
 // --- 1. Auth ---
 const authMgr = {
@@ -88,7 +80,7 @@ const dataMgr = {
             ui.initRoomSelect(); 
             document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
             document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-            // [Copy Link] 버튼 클릭 시 ui.copyLink 실행 (HTML onclick 속성 사용)
+            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
             document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
             
             const qrEl = document.getElementById('qrcode');
@@ -102,7 +94,6 @@ const dataMgr = {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
-        // 내 세션 ID와 다를 때만 인증 요구
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
@@ -180,7 +171,6 @@ const dataMgr = {
             ui.checkLockStatus(st);
         });
 
-        // 보안 코드 기반 URL 생성 호출
         this.fetchCodeAndRenderQr(room);
 
         dbRef.qa.on('value', s => {
@@ -202,7 +192,6 @@ const dataMgr = {
                     const studentUrl = `${baseUrl}/index.html?code=${code}`;
                     ui.renderQr(studentUrl);
                 } else {
-                    console.warn("보안 코드를 찾을 수 없어 일반 링크를 사용합니다.");
                     const studentUrl = `${baseUrl}/index.html?room=${room}`;
                     ui.renderQr(studentUrl);
                 }
@@ -262,16 +251,36 @@ const dataMgr = {
         }
     },
 
+    // [수정] 복합 상태(핀+완료, 보류+완료) 업데이트 로직 적용
     updateQa: function(action) {
         if(!state.activeQaKey) return;
+        const currentItem = state.qaData[state.activeQaKey];
+        const currentStatus = currentItem.status || 'normal';
+
         if (action === 'delete') {
              if(confirm("정말 삭제하시겠습니까?")) {
                  dbRef.qa.child(state.activeQaKey).remove(); ui.closeQaModal();
              }
+        } else if (action === 'done') {
+            // [중요] Done 버튼 클릭 시 상태 변화 로직
+            let newStatus = 'done';
+            
+            if (currentStatus === 'pin') newStatus = 'pin-done';
+            else if (currentStatus === 'pin-done') newStatus = 'pin'; // 해제
+            else if (currentStatus === 'later') newStatus = 'later-done';
+            else if (currentStatus === 'later-done') newStatus = 'later'; // 해제
+            else if (currentStatus === 'normal') newStatus = 'done';
+            else if (currentStatus === 'done') newStatus = 'normal'; // 해제
+            
+            dbRef.qa.child(state.activeQaKey).update({ status: newStatus });
+            ui.closeQaModal();
         } else {
-            let status = action;
-            if (state.qaData[state.activeQaKey].status === action) status = 'normal';
-            dbRef.qa.child(state.activeQaKey).update({ status: status });
+            // Pin 또는 Later 버튼 클릭 시
+            let newStatus = action;
+            if (currentStatus === action) newStatus = 'normal'; // 토글
+            // 만약 done 상태였다면 done은 풀리고 해당 상태로 변경 (사용자 의도상 중요도로 이동)
+            
+            dbRef.qa.child(state.activeQaKey).update({ status: newStatus });
             ui.closeQaModal();
         }
     },
@@ -418,57 +427,53 @@ const ui = {
         event.target.classList.add('active');
         this.renderQaList(filter);
     },
-/* admin.js 파일의 ui 객체 내부 renderQaList 함수 수정 */
 
+    // [수정] 정렬 및 표시 로직 수정
     renderQaList: function(filter) {
-        const list = document.getElementById('qaList'); 
-        list.innerHTML = "";
-        
-        // 데이터 배열로 변환
+        const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
 
-        // [정렬 로직 핵심 수정]
         items.sort((a, b) => {
-            // 1. 상태별 가중치 점수 부여 (Pin > Later > Normal > Done)
+            // 1. 상태 가중치 (Pin계열 > Later계열 > 일반 > 완료)
             const getStatusWeight = (status) => {
-                if (status === 'pin') return 4;    // 최상단
-                if (status === 'later') return 3;  // 핀 바로 아래
-                if (status === 'done') return 0;   // 최하단
-                return 2;                          // 일반 (Normal)
+                if (status.startsWith('pin')) return 4;   // pin, pin-done
+                if (status.startsWith('later')) return 3; // later, later-done
+                if (status === 'done') return 0;          // 순수 done (최하단)
+                return 2;                                 // normal
             };
 
             const weightA = getStatusWeight(a.status);
             const weightB = getStatusWeight(b.status);
 
-            // 1단계: 상태 점수 비교 (내림차순)
-            if (weightA !== weightB) {
-                return weightB - weightA;
-            }
+            if (weightA !== weightB) return weightB - weightA;
 
-            // 2단계: 좋아요 수 비교 (내림차순) - 같은 상태일 때 공감 많은 게 위로
             const likesA = a.likes || 0;
             const likesB = b.likes || 0;
-            if (likesA !== likesB) {
-                return likesB - likesA;
-            }
+            if (likesA !== likesB) return likesB - likesA;
 
-            // 3단계: 작성 시간 비교 (내림차순) - 좋아요도 같으면 최신순
             return b.timestamp - a.timestamp;
         });
 
-        // 필터링 (상단 칩 선택 시)
-        if(filter === 'pin') items = items.filter(x => x.status === 'pin');
-        else if(filter === 'later') items = items.filter(x => x.status === 'later');
+        if(filter === 'pin') items = items.filter(x => x.status.startsWith('pin'));
+        else if(filter === 'later') items = items.filter(x => x.status.startsWith('later'));
 
-        // HTML 렌더링
         items.forEach(i => {
-            const cls = i.status === 'pin' ? 'status-pin' : (i.status === 'later' ? 'status-later' : (i.status === 'done' ? 'status-done' : ''));
-            
-            // 상태별 아이콘 표시
+            // 스타일 클래스 결정
+            let cls = '';
             let icon = '';
-            if (i.status === 'pin') icon = '📌 ';
-            else if (i.status === 'later') icon = '⚠️ ';
-            else if (i.status === 'done') icon = '✅ ';
+
+            // 기본 상태 클래스
+            if (i.status.startsWith('pin')) { cls += ' status-pin'; icon = '📌 '; }
+            else if (i.status.startsWith('later')) { cls += ' status-later'; icon = '⚠️ '; }
+            else if (i.status === 'done') { cls += ' status-done'; icon = '✅ '; }
+
+            // 완료된 항목(pin-done, later-done 포함)에 완료 효과 추가
+            if (i.status.includes('done') || i.status === 'done') {
+                // 기존 클래스에 투명도/흑백 효과를 주기 위해 인라인 스타일 추가
+                // 또는 admin.css에 .done-effect 클래스를 추가하여 처리 가능
+                // 여기서는 인라인 스타일로 간단히 처리 (grayscale & opacity)
+                cls += '" style="opacity: 0.6; filter: grayscale(1);';
+            }
 
             list.innerHTML += `
                 <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
@@ -480,6 +485,7 @@ const ui = {
                 </div>`;
         });
     },
+
     openQaModal: function(key) {
         state.activeQaKey = key;
         document.getElementById('m-text').innerText = state.qaData[key].text;
