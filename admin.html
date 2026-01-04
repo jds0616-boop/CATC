@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instructor Admin - CATC</title>
+    <title>Instructor Platform - CATC</title>
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- FontAwesome & Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #f4f6f9;
+            --bg-color: #f0f2f5;
             --card-bg: #ffffff;
-            --text-color: #333333;
-            --header-bg: #1a237e; 
-            --header-text: #ffffff;
+            --text-color: #333;
+            --header-bg: #1a237e; /* Navy Default */
             --sidebar-bg: #212529;
             --sidebar-text: #e9ecef;
+            --accent-color: #3b82f6;
         }
 
         body.dark-mode {
@@ -27,128 +29,157 @@
             --header-bg: #0d1b2a;
         }
 
+        * { box-sizing: border-box; }
         body { 
             font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; 
             background-color: var(--bg-color); color: var(--text-color);
             transition: background 0.3s;
+            overflow-x: hidden;
         }
 
-        /* Header */
+        /* --- Header --- */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 30px; height: 70px;
-            background: var(--header-bg); color: var(--header-text);
+            background: var(--header-bg); color: #fff;
             position: sticky; top: 0; z-index: 100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             border-bottom: 5px solid transparent; /* Dynamic Color */
         }
+        
         .header-left { display: flex; align-items: center; gap: 20px; }
-        .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-        .course-name-badge { 
-            font-size: 20px; font-weight: 700; color: #fff; 
-            background: rgba(255,255,255,0.15); padding: 5px 15px; border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.2);
+        .header-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; display:flex; align-items: center; gap:10px;}
+        .course-divider { color: rgba(255,255,255,0.4); font-size: 18px; }
+        .course-name-text { font-size: 20px; font-weight: 400; color: #fff; }
+
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .icon-btn { font-size: 20px; cursor: pointer; color: rgba(255,255,255,0.7); transition: 0.2s; padding: 5px; }
+        .icon-btn:hover { color: #fff; }
+        .kac-logo { height: 28px; width: auto; object-fit: contain; margin-left: 10px; }
+
+        /* --- Mode Switcher (Tab) --- */
+        .mode-tabs {
+            display: flex; justify-content: center; margin-top: 20px; gap: 10px;
         }
-        .header-right { display: flex; align-items: center; gap: 20px; }
-        .kac-logo { height: 30px; width: auto; object-fit: contain; } /* Transparent */
-        .icon-btn { font-size: 22px; cursor: pointer; color: rgba(255,255,255,0.8); transition: 0.2s; }
-        .icon-btn:hover { color: #fff; transform: scale(1.1); }
+        .mode-tab {
+            padding: 10px 30px; border-radius: 50px; font-weight: bold; cursor: pointer;
+            background: rgba(0,0,0,0.1); color: var(--text-color); border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .mode-tab.active { background: var(--accent-color); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
-        /* Container */
-        .container { padding: 40px; max-width: 1200px; margin: 0 auto; min-height: 80vh;}
-        .q-list { display: flex; flex-direction: column; gap: 15px; }
+        /* --- Main Container --- */
+        .container { padding: 20px 40px; max-width: 1400px; margin: 0 auto; min-height: 80vh; }
+        
+        /* View Sections */
+        #view-qa, #view-quiz { display: none; }
+        .view-active { display: block !important; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: 0; } }
 
-        /* Question Card */
+        /* --- Q&A Styling --- */
+        .q-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         .q-card {
-            background: var(--card-bg); border-radius: 12px; padding: 25px;
+            background: var(--card-bg); border-radius: 10px; padding: 20px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-left: 6px solid #ccc; transition: all 0.2s ease; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ccc;
+            cursor: pointer; transition: transform 0.2s;
         }
-        .q-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        
-        .state-normal { border-left-color: #3b82f6; }
+        .q-card:hover { transform: translateY(-2px); }
         .state-notice { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
-        .state-verify { border-left-color: #f59e0b; border: 2px solid #f59e0b; }
-        .state-done { opacity: 0.6; border-left-color: #10b981; filter: grayscale(0.8); }
+        .state-done { opacity: 0.6; filter: grayscale(1); border-left-color: #10b981; }
+        .q-text { font-size: 18px; font-weight: 500; }
+        .q-sub { font-size: 12px; color: #888; margin-top: 5px; }
 
-        .q-content { flex-grow: 1; margin-right: 20px; }
-        .q-badges { margin-bottom: 10px; display: flex; gap: 5px;}
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-        .bg-like { background: #ef4444; color: white; }
-        .bg-pin { background: #ef4444; color: white; }
-        .bg-verify { background: #f59e0b; color: white; }
-        .bg-done { background: #10b981; color: white; }
+        /* --- Quiz Styling --- */
+        .quiz-container { display: flex; gap: 20px; height: 70vh; margin-top: 20px; }
         
-        .q-text { font-size: 20px; line-height: 1.5; font-weight: 500; word-break: break-all; }
-        .q-sub { font-size: 13px; color: #888; margin-top: 8px; display: flex; gap: 15px; align-items: center;}
+        /* Quiz Sidebar (List) */
+        .quiz-sidebar { 
+            width: 300px; background: var(--card-bg); border-radius: 12px; 
+            padding: 15px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column;
+        }
+        .quiz-add-btn { width: 100%; padding: 12px; background: #212529; color: white; border:none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .quiz-item { 
+            padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s; border-radius: 8px; margin-bottom: 5px;
+        }
+        .quiz-item:hover { background: rgba(0,0,0,0.05); }
+        .quiz-item.active { background: var(--accent-color); color: white; }
+        .quiz-item.completed i { color: #10b981; } /* 완료 체크 색상 */
 
-        /* Sidebar (Expanded & Aligned) */
+        /* Quiz Main Stage */
+        .quiz-stage { 
+            flex-grow: 1; background: var(--card-bg); border-radius: 12px; 
+            padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; position: relative;
+        }
+        .quiz-question-text { font-size: 28px; font-weight: 800; margin-bottom: 40px; line-height: 1.4; }
+        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 800px; }
+        .quiz-option { 
+            padding: 20px; border: 2px solid #eee; border-radius: 12px; 
+            font-size: 20px; font-weight: 500; color: var(--text-color);
+        }
+        .quiz-option.correct { border-color: #10b981; color: #10b981; font-weight: 700; } /* 결과 공개시 정답 표시 */
+
+        .quiz-controls { margin-top: 40px; display: flex; gap: 15px; }
+        .btn-quiz { padding: 15px 40px; font-size: 18px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .btn-quiz:active { transform: scale(0.95); }
+        .btn-start { background: #2563eb; color: white; }
+        .btn-stop { background: #d32f2f; color: white; }
+        .btn-result { background: #10b981; color: white; }
+
+        /* Chart Overlay */
+        .chart-overlay {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 10; border-radius: 12px;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .dark-mode .chart-overlay { background: rgba(30,30,30,0.95); }
+        
+        .chart-box { display: flex; align-items: flex-end; gap: 30px; height: 300px; width: 60%; border-bottom: 2px solid #888; padding-bottom: 5px; margin-bottom: 20px;}
+        .bar-container { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .bar { width: 60%; background: #3b82f6; border-radius: 5px 5px 0 0; transition: height 1s ease-out; height: 0;}
+        .bar-label { margin-top: 10px; font-size: 18px; font-weight: bold; }
+        .bar-value { margin-bottom: 5px; font-weight: bold; }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center; padding: 20px; font-size: 12px; color: rgba(255,255,255,0.7);
+            background: var(--header-bg); margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- Sidebar (Settings) --- */
         .sidebar {
-            position: fixed; top: 0; left: 0; width: 500px; height: 100%;
+            position: fixed; top: 0; left: 0; width: 400px; height: 100%;
             background: var(--sidebar-bg); color: var(--sidebar-text);
             box-shadow: 5px 0 20px rgba(0,0,0,0.4);
-            transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 200; padding: 30px; overflow-y: auto;
+            transform: translateX(-100%); transition: 0.3s; z-index: 200; padding: 25px;
+            overflow-y: auto;
         }
         .sidebar.active { transform: translateX(0); }
-        .sidebar::-webkit-scrollbar { width: 8px; }
-        .sidebar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-
-        .sb-header { font-size: 24px; font-weight: bold; margin-bottom: 30px; border-bottom: 1px solid #444; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .sb-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        .setting-group { margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; }
+        .setting-label { font-size: 12px; color: #adb5bd; margin-bottom: 5px; display: block; font-weight: 700; }
+        .setting-input { width: 100%; padding: 10px; background: #343a40; border: 1px solid #495057; color: white; border-radius: 4px; margin-bottom: 10px; font-size: 13px; }
+        .setting-input:focus { border-color: var(--accent-color); outline: none; }
         
-        .setting-group { margin-bottom: 30px; background: rgba(255,255,255,0.03); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
-        .setting-label { font-size: 13px; color: #adb5bd; margin-bottom: 8px; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
-        
-        .setting-input { width: 100%; padding: 12px; background: #343a40; border: 1px solid #495057; color: white; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
-        .setting-input:focus { border-color: #3b82f6; outline: none; }
-        .setting-input::placeholder { color: #888; }
-
-        /* Course Mode Radio */
-        .radio-group { display: flex; gap: 15px; margin-bottom: 15px; background: #2b3035; padding: 10px; border-radius: 6px; }
-        .radio-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: #fff; }
-        .radio-label input { accent-color: #3b82f6; width: 16px; height: 16px; }
-
-        /* Password Grid */
-        .pw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* Color Picker (Smaller) */
-        .color-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; margin-bottom: 15px; }
-        .color-swatch { 
-            width: 100%; aspect-ratio: 1; border-radius: 4px; cursor: pointer; 
-            border: 2px solid transparent; transition: transform 0.1s; position: relative;
-        }
-        .color-swatch:hover { transform: scale(1.2); z-index: 2; }
-        .color-swatch.selected { border-color: white; box-shadow: 0 0 0 2px #3b82f6; }
-        .color-swatch.used::after {
-            content: '●'; position: absolute; top:50%; left:50%; transform: translate(-50%, -50%);
-            font-size: 8px; color: rgba(0,0,0,0.5);
-        }
-
-        /* Buttons */
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s;}
-        .btn-action:hover { filter: brightness(1.1); }
+        .btn-action { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; display: flex; justify-content: center; gap: 8px; margin-bottom: 5px;}
         .btn-blue { background: #2563eb; color: white; }
-        .btn-green { background: #10b981; color: white; }
         .btn-red { background: #ef4444; color: white; }
         .btn-dark { background: #495057; color: white; }
 
-        /* Super Admin Zone */
-        .super-admin-zone { border: 1px solid #d63384; background: rgba(214, 51, 132, 0.05); display: none; }
-        .super-badge { background: #d63384; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px; vertical-align: middle; }
-
-        /* Modal */
+        /* --- Modals --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-box { background: var(--card-bg); width: 650px; max-width: 95%; padding: 30px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); color: var(--text-color); }
-        .modal-text { font-size: 22px; line-height: 1.6; margin-bottom: 25px; border-left: 5px solid #2563eb; padding-left: 20px; background: rgba(37, 99, 235, 0.05); padding: 20px; border-radius: 0 10px 10px 0; }
-        .comment-box { width: 100%; height: 100px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; color: var(--text-color); padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 16px; resize: none; }
+        .modal-box { background: var(--card-bg); width: 600px; padding: 30px; border-radius: 12px; color: var(--text-color); position: relative; }
         
-        .control-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .control-btn { padding: 15px 5px; font-size: 14px; border: 2px solid #ccc; background: transparent; color: #888; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-weight: bold; }
-        .control-btn:hover { border-color: #2563eb; color: #2563eb; }
-        .control-btn.active { background: #2563eb; border-color: #2563eb; color: white; }
-        
-        .footer { text-align: center; margin-top: 50px; font-size: 13px; color: #888; padding-bottom: 30px;}
+        /* Quiz Editor Modal */
+        .quiz-edit-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+        .option-row { display: flex; align-items: center; gap: 10px; }
+        .radio-correct { width: 20px; height: 20px; accent-color: #10b981; }
+
     </style>
 </head>
 <body>
@@ -157,177 +188,181 @@
     <header class="header" id="mainHeader">
         <div class="header-left">
             <div class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
-            <div class="header-title">CATC Admin</div>
-            <div class="course-name-badge" id="displayCourseName">Loading...</div>
+            <div class="header-title">
+                CATC Training Platform
+                <span class="course-divider">|</span>
+                <span class="course-name-text" id="displayCourseName">Loading...</span>
+            </div>
         </div>
         <div class="header-right">
-            <div class="icon-btn" onclick="toggleDarkMode()" title="Day/Night Mode">
-                <i class="fa-solid fa-moon" id="themeIcon"></i>
-            </div>
+            <div class="icon-btn" onclick="toggleDarkMode()" title="Day/Night Mode"><i class="fa-solid fa-moon" id="themeIcon"></i></div>
+            <div class="icon-btn" onclick="logout()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></div>
             <img src="logo.png" alt="KAC" class="kac-logo">
         </div>
     </header>
 
     <!-- Content -->
     <div class="container">
-        <div id="qListArea" class="q-list">
-            <div style="text-align:center; padding:50px; color:#888;">
-                <i class="fa-solid fa-spinner fa-spin fa-3x"></i><br><br>Loading data...
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <div class="mode-tab active" id="tab-qa" onclick="switchView('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</div>
+            <div class="mode-tab" id="tab-quiz" onclick="switchView('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</div>
+        </div>
+
+        <!-- 1. Q&A View -->
+        <div id="view-qa" class="view-active">
+            <div id="qListArea" class="q-list">
+                <div style="text-align:center; padding:50px; color:#888;">Loading Q&A...</div>
             </div>
         </div>
-        <div class="footer">Developer Dooseok Jang (jds0616@airport.co.kr)</div>
+
+        <!-- 2. Quiz View -->
+        <div id="view-quiz">
+            <div class="quiz-container">
+                <!-- List -->
+                <div class="quiz-sidebar">
+                    <button class="quiz-add-btn" onclick="openQuizEditor()">+ New Question / 문제등록</button>
+                    <div id="quizListArea">
+                        <!-- Dynamic List -->
+                    </div>
+                </div>
+                
+                <!-- Stage -->
+                <div class="quiz-stage" id="quizStage">
+                    <div id="quizEmptyMsg" style="color:#888;">좌측 리스트에서 문제를 선택하세요.<br>Select a question from the list.</div>
+                    
+                    <div id="quizContent" style="display:none; width:100%;">
+                        <div class="quiz-question-text" id="stageQuestion">Q. 문제 내용이 나옵니다.</div>
+                        <div class="quiz-options" id="stageOptions">
+                            <!-- Options -->
+                        </div>
+
+                        <div class="quiz-controls">
+                            <button class="btn-quiz btn-start" onclick="startQuiz()"><i class="fa-solid fa-play"></i> Start / 출제</button>
+                            <button class="btn-quiz btn-stop" onclick="stopQuiz()"><i class="fa-solid fa-stop"></i> Stop / 종료</button>
+                            <button class="btn-quiz btn-result" onclick="showResult()"><i class="fa-solid fa-chart-simple"></i> Result / 결과</button>
+                        </div>
+                        
+                        <!-- Chart Overlay -->
+                        <div class="chart-overlay" id="chartOverlay">
+                            <div id="chartLoading" style="font-size:24px; font-weight:bold; color:#333;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> 집계 중...
+                            </div>
+                            <div id="chartContent" style="display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center;">
+                                <h2 style="margin-bottom:20px; color:#333;">Result Analysis</h2>
+                                <div class="chart-box" id="chartBox">
+                                    <!-- Bars Generated via JS -->
+                                </div>
+                                <button class="btn-action btn-dark" style="width:auto;" onclick="closeResult()">Close Result</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Sidebar (Expanded) -->
+    <!-- Footer -->
+    <div class="footer" id="mainFooter">
+        본 웹사이트는 KAC 항공기술훈련원 교육관련 Q&A플랫폼입니다.<br>
+        문의 이메일 : jds0616@airport.co.kr (Developed by DooSeok, Jang)<br>
+        © 2026 Korea Airports Corporation. All rights reserved.
+    </div>
+
+    <!-- Sidebar Settings -->
     <div class="sidebar" id="sidebar">
         <div class="sb-header">
-            <span>Instructor Settings</span>
+            <span>Settings</span>
             <span style="cursor:pointer" onclick="toggleSidebar()">✕</span>
         </div>
 
-        <!-- 1. Room Selection -->
         <div class="setting-group">
             <label class="setting-label">Select Course Room</label>
-            <select id="roomSelect" class="setting-input" onchange="changeRoom(this.value)">
-                <!-- JS populated A-Z -->
-            </select>
+            <select id="roomSelect" class="setting-input" onchange="changeRoom(this.value)"></select>
         </div>
 
-        <!-- 2. Course Config -->
         <div class="setting-group">
-            <label class="setting-label">Course Mode</label>
-            <div class="radio-group">
-                <label class="radio-label">
-                    <input type="radio" name="courseMode" value="continue" checked> 이어서 진행 (기존 데이터 유지)
-                </label>
-                <label class="radio-label">
-                    <input type="radio" name="courseMode" value="new"> 신규 개설 (초기화)
-                </label>
-            </div>
-
-            <label class="setting-label">Course Name (과정명)</label>
-            <input type="text" id="confName" class="setting-input" placeholder="예: 항공정보통신시설 초기과정">
-            
-            <label class="setting-label">Room Password (숫자 4자리)</label>
-            <div class="pw-grid">
-                <input type="password" id="confPw" class="setting-input" placeholder="비밀번호" maxlength="4">
-                <input type="password" id="confPwConfirm" class="setting-input" placeholder="비밀번호 확인" maxlength="4">
-            </div>
-
-            <label class="setting-label">Theme Color (Course Line)</label>
-            <div class="color-grid" id="colorGrid"></div>
-            <input type="hidden" id="confColor" value="#3b82f6">
-
-            <label class="setting-label">Footer Text (Student View)</label>
-            <textarea id="confFooter" class="setting-input" style="height:120px; line-height:1.4;" placeholder="해당 메세지는 교육생 플랫폼 하단에 그대로 표기됩니다.&#13;&#10;(예시) 본 과정은 KAC 항공정보통신시설 초기과정 플랫폼입니다.&#13;&#10;담임교수 : 홍길동 (연락처 : 000-0000-0000)"></textarea>
-            
-            <button class="btn-action btn-blue" onclick="handleSaveConfig()">
-                <i class="fa-solid fa-floppy-disk"></i> Save Config / 설정 저장
-            </button>
+            <label class="setting-label">Course Name</label>
+            <input type="text" id="confName" class="setting-input" placeholder="과정명">
+            <label class="setting-label">Theme Color</label>
+            <input type="color" id="confColor" class="setting-input">
+            <label class="setting-label">Footer Text (Admin Edit)</label>
+            <textarea id="confFooter" class="setting-input" style="height:80px;" placeholder="하단 문구..."></textarea>
+            <button class="btn-action btn-blue" onclick="saveConfig()">Save Config</button>
         </div>
 
-        <!-- 3. Link Copy -->
-        <div class="setting-group">
-            <label class="setting-label">Student Link</label>
-            <input type="text" id="studentLinkUrl" class="setting-input" readonly>
-            <button class="btn-action btn-dark" onclick="copyLink()">
-                <i class="fa-solid fa-link"></i> Copy Link / 링크 복사
-            </button>
-        </div>
-
-        <!-- 4. Data Management (Super Admin Only) -->
-        <div class="setting-group super-admin-zone" id="superAdminZone">
-            <label class="setting-label" style="color:#d63384;">
-                <i class="fa-solid fa-shield-halved"></i> Data Management <span class="super-badge">Super Admin</span>
-            </label>
-            <input type="password" id="ghToken" class="setting-input" placeholder="GitHub Token (***)">
-            <input type="text" id="ghOwner" class="setting-input" placeholder="Owner ID">
-            <input type="text" id="ghRepo" class="setting-input" placeholder="Repository Name">
-            
-            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token Info</button>
-            <button class="btn-action btn-green" onclick="uploadToGithub()">Push to GitHub / 백업</button>
-            <button class="btn-action btn-dark" onclick="downloadBackup()">Download JSON</button>
-            <button class="btn-action btn-red" onclick="clearHistory()">
-                <i class="fa-solid fa-trash"></i> Force Clear History
-            </button>
+        <div class="setting-group super-admin-zone" id="superAdminZone" style="display:none;">
+            <label class="setting-label" style="color:#d63384;">Super Admin Zone</label>
+            <input type="password" id="ghToken" class="setting-input" placeholder="GitHub Token">
+            <button class="btn-action btn-dark" onclick="saveGithubInfo()">Save Token</button>
+            <button class="btn-action btn-green" onclick="uploadToGithub()">Backup to GitHub</button>
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Q&A Detail Modal -->
     <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box">
-            <h3 style="margin-top:0; color:#888;">Question Control</h3>
-            <div id="modalText" class="modal-text"></div>
-            <textarea id="adminMemo" class="comment-box" placeholder="Instructor's Memo (비공개 메모)..."></textarea>
-            
-            <div class="control-grid">
-                <button class="control-btn" id="btnPin" onclick="setStatus('pin')"><i class="fa-solid fa-thumbtack"></i> Pin / 공지</button>
-                <button class="control-btn" id="btnVerify" onclick="setStatus('verify')"><i class="fa-solid fa-magnifying-glass"></i> Check / 확인</button>
-                <button class="control-btn" id="btnDone" onclick="setStatus('done')"><i class="fa-solid fa-check"></i> Done / 완료</button>
-                <button class="control-btn" onclick="openTranslate()"><i class="fa-solid fa-language"></i> Translate</button>
+            <h3>Q&A Detail</h3>
+            <div id="modalText" style="font-size:18px; margin:20px 0; background:#f9f9f9; padding:15px; border-radius:8px; color:#333;"></div>
+            <textarea id="adminMemo" style="width:100%; height:80px; padding:10px; margin-bottom:10px;" placeholder="Memo..."></textarea>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                <button class="btn-action btn-dark" id="btnPin" onclick="setQaStatus('pin')">📌 Pin</button>
+                <button class="btn-action btn-dark" id="btnDone" onclick="setQaStatus('done')">✅ Done</button>
             </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <button class="btn-action btn-red" style="width:auto; padding:10px 20px;" onclick="deleteQuestion()">
-                    <i class="fa-solid fa-trash"></i> Delete / 삭제
-                </button>
-                <button class="btn-action btn-blue" style="width:auto; padding: 10px 30px;" onclick="saveDetail()">
-                    Save & Close / 저장
-                </button>
+            <div style="display:flex; justify-content:space-between;">
+                <button class="btn-action btn-red" style="width:auto;" onclick="deleteQa()">Delete</button>
+                <button class="btn-action btn-blue" style="width:auto;" onclick="saveQa()">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Init Modal for New Course -->
-    <div id="initModal" class="modal-overlay">
-        <div class="modal-box" style="width:400px; text-align:center;">
-            <h3 style="color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
-            <p>신규 개설 시 <b>기존 질문 데이터가 모두 삭제</b>됩니다.<br>진행하시겠습니까?</p>
-            <p style="font-size:13px; color:#888;">초기화를 위해 현재 설정된 비밀번호를 입력하세요.</p>
-            <input type="password" id="resetPwVerify" class="setting-input" placeholder="Current Password" style="text-align:center;">
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-action btn-dark" onclick="document.getElementById('initModal').style.display='none'">Cancel</button>
-                <button class="btn-action btn-red" onclick="confirmResetCourse()">Initialize (초기화)</button>
+    <!-- Quiz Editor Modal -->
+    <div id="quizEditModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Quiz Editor</h3>
+            <input type="hidden" id="editQuizId">
+            <input type="text" id="editQText" class="setting-input" placeholder="Question Text (문제 내용)">
+            <div class="quiz-edit-grid">
+                <div class="option-row"><input type="radio" name="correct" value="1" class="radio-correct"><input type="text" id="opt1" class="setting-input" placeholder="Option 1"></div>
+                <div class="option-row"><input type="radio" name="correct" value="2" class="radio-correct"><input type="text" id="opt2" class="setting-input" placeholder="Option 2"></div>
+                <div class="option-row"><input type="radio" name="correct" value="3" class="radio-correct"><input type="text" id="opt3" class="setting-input" placeholder="Option 3"></div>
+                <div class="option-row"><input type="radio" name="correct" value="4" class="radio-correct"><input type="text" id="opt4" class="setting-input" placeholder="Option 4"></div>
+            </div>
+            <div style="text-align:right; margin-top:20px; display:flex; justify-content:space-between;">
+                <button class="btn-action btn-red" style="width:auto;" onclick="deleteQuiz()">Delete</button>
+                <div>
+                    <button class="btn-action btn-dark" style="width:auto; display:inline-block;" onclick="document.getElementById('quizEditModal').style.display='none'">Cancel</button>
+                    <button class="btn-action btn-blue" style="width:auto; display:inline-block;" onclick="saveQuiz()">Save Question</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script>
-        // --- Auth & Role Check ---
+        // --- 1. Init & Config ---
+        let currentRoom = "A";
         let userRole = 'instructor';
+        let currentMode = 'qa'; // qa or quiz
+        let activeQuizId = null; // Currently selected quiz in UI
+        
+        // Refs
+        let dbQaRef = null;
+        let dbQuizRef = null; 
+        let dbSettingsRef = null;
+
+        // Session Check
         (function checkAuth() {
             const session = JSON.parse(localStorage.getItem('kac_admin_session'));
-            if(!session || session.token !== 'granted' || Date.now() > session.expiry) {
-                alert("Session expired. Please login again.");
-                location.replace('login.html');
-                return;
+            if(!session || session.token !== 'granted') {
+                location.replace('login.html'); return;
             }
             userRole = session.role;
-            if(userRole === 'super_admin') {
-                document.getElementById('superAdminZone').style.display = 'block';
-            }
+            if(userRole === 'super_admin') document.getElementById('superAdminZone').style.display = 'block';
         })();
-
-        // --- Config ---
-        let currentRoom = "A";
-        let dbQuestionsRef = null;
-        let dbSettingsRef = null;
-        let currentData = {};
-        let activeKey = null;
-        let savedPasswordHash = null; // To verify reset
-
-        const PRESET_COLORS = [
-            "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4",
-            "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107",
-            "#ff9800", "#ff5722", "#795548", "#9e9e9e", "#607d8b", "#333333", "#1a237e",
-            "#b71c1c", "#880e4f", "#4a148c", "#0d47a1", "#006064", "#263238", "#ff6e40", "#76ff03", "#d50000"
-        ];
 
         window.onload = function() {
             initRoomSelector();
-            initColorPicker();
-            if(userRole === 'super_admin') loadGithubSettings();
             loadThemeMode();
             loadRoom(currentRoom);
         };
@@ -336,261 +371,282 @@
             const sel = document.getElementById('roomSelect');
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
-                const opt = document.createElement('option');
-                opt.value = char; opt.innerText = `Course ${char}`;
-                sel.appendChild(opt);
+                sel.innerHTML += `<option value="${char}">Course ${char}</option>`;
             }
         }
 
-        function initColorPicker() {
-            const grid = document.getElementById('colorGrid');
-            PRESET_COLORS.forEach(color => {
-                const d = document.createElement('div');
-                d.className = 'color-swatch';
-                d.style.backgroundColor = color;
-                d.onclick = () => {
-                    document.getElementById('confColor').value = color;
-                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-                    d.classList.add('selected');
-                };
-                grid.appendChild(d);
-            });
-        }
-
-        // --- Core Logic ---
+        // --- 2. Main Logic (Room & DB) ---
         function changeRoom(roomId) {
             currentRoom = roomId;
             loadRoom(roomId);
-            toggleSidebar();
+            // Sidebar stays open as requested
         }
 
         function loadRoom(roomId) {
-            if(dbQuestionsRef) dbQuestionsRef.off();
+            // Unsubscribe old
+            if(dbQaRef) dbQaRef.off();
+            if(dbQuizRef) dbQuizRef.off();
             if(dbSettingsRef) dbSettingsRef.off();
 
-            dbQuestionsRef = firebase.database().ref(`courses/${roomId}/questions`);
+            // Set Refs
+            dbQaRef = firebase.database().ref(`courses/${roomId}/questions`);
+            dbQuizRef = firebase.database().ref(`courses/${roomId}/quizzes`);
             dbSettingsRef = firebase.database().ref(`courses/${roomId}/settings`);
 
+            // Load Settings
             dbSettingsRef.on('value', snap => {
                 const val = snap.val() || {};
-                const name = val.courseName || `Course ${roomId}`;
-                const color = val.themeColor || '#3b82f6';
-                savedPasswordHash = val.password || null;
-
-                document.getElementById('displayCourseName').innerText = name;
-                document.getElementById('mainHeader').style.borderBottomColor = color;
+                document.getElementById('displayCourseName').innerText = val.courseName || `Course ${roomId}`;
+                document.getElementById('mainHeader').style.borderBottomColor = val.themeColor || '#3b82f6';
+                document.documentElement.style.setProperty('--accent-color', val.themeColor || '#3b82f6');
                 
+                // Sidebar Inputs
                 document.getElementById('confName').value = val.courseName || "";
-                document.getElementById('confColor').value = color;
+                document.getElementById('confColor').value = val.themeColor || "#3b82f6";
                 document.getElementById('confFooter').value = val.footerText || "";
                 
-                // Color selection visual
-                document.querySelectorAll('.color-swatch').forEach(s => {
-                    s.classList.toggle('selected', rgbToHex(s.style.backgroundColor) === color.toLowerCase());
-                });
-
-                // Link
-                const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-                document.getElementById('studentLinkUrl').value = `${basePath}/index.html?room=${roomId}`;
+                if(val.footerText) document.getElementById('mainFooter').innerHTML = val.footerText.replace(/\n/g, '<br>');
             });
 
-            dbQuestionsRef.on('value', snap => {
-                const listDiv = document.getElementById('qListArea');
-                listDiv.innerHTML = "";
-                const data = snap.val();
-                currentData = data || {};
+            // Load Q&A List
+            dbQaRef.on('value', snap => renderQaList(snap.val()));
 
-                if (!data) { listDiv.innerHTML = "<p style='text-align:center; color:#888; font-size:18px; padding-top:50px;'>No questions yet.</p>"; return; }
-
-                let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                items.sort((a, b) => {
-                    const getScore = (item) => {
-                        if (item.status === 'pin') return 3;
-                        if (item.status === 'verify') return 2;
-                        if (item.status === 'done') return 0;
-                        return 1;
-                    };
-                    const scoreA = getScore(a);
-                    const scoreB = getScore(b);
-                    if (scoreA !== scoreB) return scoreB - scoreA;
-                    if ((b.likes||0) !== (a.likes||0)) return (b.likes||0) - (a.likes||0);
-                    return b.timestamp - a.timestamp;
-                });
-
-                items.forEach(item => renderCard(item, listDiv));
-            });
+            // Load Quiz List
+            dbQuizRef.on('value', snap => renderQuizList(snap.val()));
         }
 
-        function renderCard(item, container) {
-            const el = document.createElement('div');
-            let stateClass = 'state-normal';
-            let badges = '';
+        // --- 3. Q&A Mode Logic ---
+        function renderQaList(data) {
+            const listDiv = document.getElementById('qListArea');
+            listDiv.innerHTML = "";
+            if(!data) { listDiv.innerHTML = "<p style='text-align:center; padding:30px; color:#888;'>No Questions.</p>"; return; }
 
-            if (item.status === 'pin') { stateClass = 'state-notice'; badges += `<span class="badge bg-pin">NOTICE / 공지</span>`; }
-            else if (item.status === 'verify') { stateClass = 'state-verify'; badges += `<span class="badge bg-verify">CHECK / 확인</span>`; }
-            else if (item.status === 'done') { stateClass = 'state-done'; badges += `<span class="badge bg-done">DONE / 완료</span>`; }
-            if (item.likes > 0) badges += `<span class="badge bg-like">👍 ${item.likes}</span>`;
+            let items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            items.sort((a,b) => {
+                if(a.status === 'pin') return -1; if(b.status === 'pin') return 1;
+                return b.timestamp - a.timestamp; 
+            });
 
-            el.className = `q-card ${stateClass}`;
-            el.onclick = () => openModal(item.id);
-            el.innerHTML = `
-                <div class="q-content">
-                    <div class="q-badges">${badges}</div>
-                    <div class="q-text">${escapeHtml(item.text)}</div>
-                    <div class="q-sub">
-                        <span><i class="fa-regular fa-clock"></i> ${new Date(item.timestamp).toLocaleTimeString()}</span>
-                        ${item.memo ? `<span style="color:#2563eb;">💬 1 Memo</span>` : ''}
+            items.forEach(item => {
+                let badge = item.status==='pin' ? '<span style="color:red; font-weight:bold;">[NOTICE]</span> ' : '';
+                let doneClass = item.status==='done' ? 'state-done' : (item.status==='pin'?'state-notice':'');
+                listDiv.innerHTML += `
+                    <div class="q-card ${doneClass}" onclick="openQaModal('${item.id}')">
+                        <div style="width:90%">
+                            <div class="q-text">${badge}${escapeHtml(item.text)}</div>
+                            <div class="q-sub">${new Date(item.timestamp).toLocaleTimeString()} <i class="fa-solid fa-thumbs-up"></i> ${item.likes||0}</div>
+                        </div>
                     </div>
-                </div>
-                <div><i class="fa-solid fa-chevron-right" style="color:#ccc;"></i></div>
-            `;
-            container.appendChild(el);
+                `;
+            });
+            window.currentQaData = data; // store for modal
         }
 
-        // --- Save Config Logic ---
-        async function handleSaveConfig() {
-            const mode = document.querySelector('input[name="courseMode"]:checked').value;
-            
-            if (mode === 'new') {
-                // Open Reset Verification Modal
-                document.getElementById('resetPwVerify').value = "";
-                document.getElementById('initModal').style.display = 'flex';
-            } else {
-                // Just Save Settings
-                saveRoomSettings(false);
-            }
-        }
-
-        async function confirmResetCourse() {
-            const inputPw = document.getElementById('resetPwVerify').value;
-            if(!inputPw) return alert("비밀번호를 입력하세요.");
-
-            // Verify Password Hash
-            if(savedPasswordHash) {
-                const inputHash = await sha256(inputPw);
-                if(inputHash !== savedPasswordHash) {
-                    return alert("비밀번호가 일치하지 않습니다. 관리자에게 문의하세요.");
-                }
-            } else {
-                // If no password was set, allow reset with any input or warning
-                // For safety: if no PW set, just proceed.
-            }
-
-            // Reset Data & Save Settings
-            saveRoomSettings(true);
-            document.getElementById('initModal').style.display = 'none';
-        }
-
-        async function saveRoomSettings(isReset) {
-            const name = document.getElementById('confName').value;
-            const pw = document.getElementById('confPw').value;
-            const pwConf = document.getElementById('confPwConfirm').value;
-            const color = document.getElementById('confColor').value;
-            const footer = document.getElementById('confFooter').value;
-            
-            // Password Validation
-            let pwHash = savedPasswordHash; // Keep old if not changed
-            if (pw || pwConf) {
-                if(pw.length !== 4 || isNaN(pw)) return alert("비밀번호는 숫자 4자리여야 합니다.");
-                if(pw !== pwConf) return alert("비밀번호 확인이 일치하지 않습니다.");
-                pwHash = await sha256(pw);
-            }
-
-            const payload = { 
-                courseName: name, 
-                themeColor: color, 
-                footerText: footer,
-                password: pwHash
-            };
-
-            await dbSettingsRef.update(payload);
-            
-            if(isReset) {
-                await dbQuestionsRef.set(null);
-                alert("과정이 신규 개설(초기화) 되었습니다.");
-            } else {
-                alert("설정이 저장되었습니다.");
-            }
-        }
-
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        // --- Data Management (Super Admin) ---
-        function loadGithubSettings() {
-            const encrypted = localStorage.getItem('gh_config_enc');
-            if(encrypted) {
-                try {
-                    const json = atob(encrypted); // Simple Base64 Decode
-                    const gh = JSON.parse(json);
-                    document.getElementById('ghToken').value = gh.token || "";
-                    document.getElementById('ghOwner').value = gh.owner || "";
-                    document.getElementById('ghRepo').value = gh.repo || "";
-                } catch(e) {}
-            }
-        }
-
-        function saveGithubInfo() {
-            const config = { 
-                token: document.getElementById('ghToken').value, 
-                owner: document.getElementById('ghOwner').value, 
-                repo: document.getElementById('ghRepo').value 
-            };
-            // Simple Base64 Encode (Obfuscation)
-            localStorage.setItem('gh_config_enc', btoa(JSON.stringify(config))); 
-            alert("Token Info Saved (Encrypted Locally).");
-        }
-        
-        // --- Other Utils ---
-        function openModal(key) {
-            activeKey = key;
-            const item = currentData[key];
-            if (!item) return;
+        let activeQaId = null;
+        function openQaModal(key) {
+            activeQaId = key;
+            const item = window.currentQaData[key];
             document.getElementById('modalText').innerText = item.text;
             document.getElementById('adminMemo').value = item.memo || "";
-            ['btnPin', 'btnVerify', 'btnDone'].forEach(id => document.getElementById(id).classList.remove('active'));
-            if (item.status === 'pin') document.getElementById('btnPin').classList.add('active');
-            else if (item.status === 'verify') document.getElementById('btnVerify').classList.add('active');
-            else if (item.status === 'done') document.getElementById('btnDone').classList.add('active');
             document.getElementById('detailModal').style.display = 'flex';
         }
-        function closeModal(e) { if (e.target.id === 'detailModal') document.getElementById('detailModal').style.display = 'none'; }
-        
-        function setStatus(status) {
-            if (!activeKey) return;
-            const item = currentData[activeKey];
-            let newStatus = status;
-            if (item.status === status) newStatus = 'normal';
-            ['btnPin', 'btnVerify', 'btnDone'].forEach(id => document.getElementById(id).classList.remove('active'));
-            if (newStatus !== 'normal') {
-                const btnId = newStatus === 'pin' ? 'btnPin' : (newStatus === 'verify' ? 'btnVerify' : 'btnDone');
-                document.getElementById(btnId).classList.add('active');
-            }
-            dbQuestionsRef.child(activeKey).update({ status: newStatus });
-        }
-        function saveDetail() {
-            if (!activeKey) return;
+        function saveQa() {
             const memo = document.getElementById('adminMemo').value;
-            dbQuestionsRef.child(activeKey).update({ memo: memo }).then(() => {
+            dbQaRef.child(activeQaId).update({ memo: memo });
+            document.getElementById('detailModal').style.display = 'none';
+        }
+        function setQaStatus(status) {
+            dbQaRef.child(activeQaId).update({ status: status });
+            document.getElementById('detailModal').style.display = 'none';
+        }
+        function deleteQa() {
+            if(confirm("Delete this question?")) {
+                dbQaRef.child(activeQaId).remove();
                 document.getElementById('detailModal').style.display = 'none';
+            }
+        }
+
+        // --- 4. Quiz Mode Logic ---
+        function renderQuizList(data) {
+            const listDiv = document.getElementById('quizListArea');
+            listDiv.innerHTML = "";
+            if(!data) return;
+            
+            window.quizData = data; // Store globally
+            
+            Object.keys(data).forEach(key => {
+                const q = data[key];
+                const isCompleted = q.status === 'finished';
+                const checkMark = isCompleted ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-regular fa-circle"></i>';
+                
+                listDiv.innerHTML += `
+                    <div class="quiz-item ${isCompleted?'completed':''}" onclick="selectQuiz('${key}')">
+                        <span>${checkMark} <b>${q.text.substring(0,15)}...</b></span>
+                        <i class="fa-solid fa-pen" style="font-size:12px; color:#aaa;" onclick="event.stopPropagation(); editQuiz('${key}')"></i>
+                    </div>
+                `;
             });
         }
-        function deleteQuestion() {
-            if(!activeKey) return;
-            if(confirm("Permanently delete? (영구 삭제하시겠습니까?)")) {
-                dbQuestionsRef.child(activeKey).remove().then(() => document.getElementById('detailModal').style.display = 'none');
+
+        function selectQuiz(key) {
+            activeQuizId = key;
+            const q = window.quizData[key];
+            
+            document.getElementById('quizEmptyMsg').style.display = 'none';
+            document.getElementById('quizContent').style.display = 'block';
+            document.getElementById('stageQuestion').innerText = `Q. ${q.text}`;
+            
+            const optDiv = document.getElementById('stageOptions');
+            optDiv.innerHTML = "";
+            q.options.forEach((opt, idx) => {
+                // 정답 표시 (결과화면에서만 보이게 할 수도 있지만 강사니까 미리 보여줌)
+                let cls = (idx + 1 == q.correct) ? 'quiz-option correct' : 'quiz-option';
+                optDiv.innerHTML += `<div class="${cls}">${idx+1}. ${opt}</div>`;
+            });
+            
+            // 상태에 따른 버튼 활성화는 여기서 생략 (단순화)
+        }
+
+        function openQuizEditor() {
+            document.getElementById('editQuizId').value = "";
+            document.getElementById('editQText').value = "";
+            [1,2,3,4].forEach(i => document.getElementById(`opt${i}`).value = "");
+            document.querySelectorAll('input[name="correct"]').forEach(r => r.checked = false);
+            document.getElementById('quizEditModal').style.display = 'flex';
+        }
+
+        function editQuiz(key) {
+            const q = window.quizData[key];
+            document.getElementById('editQuizId').value = key;
+            document.getElementById('editQText').value = q.text;
+            q.options.forEach((opt, i) => document.getElementById(`opt${i+1}`).value = opt);
+            document.querySelector(`input[name="correct"][value="${q.correct}"]`).checked = true;
+            document.getElementById('quizEditModal').style.display = 'flex';
+        }
+
+        function saveQuiz() {
+            const id = document.getElementById('editQuizId').value || dbQuizRef.push().key;
+            const text = document.getElementById('editQText').value;
+            const options = [1,2,3,4].map(i => document.getElementById(`opt${i}`).value);
+            const correct = document.querySelector('input[name="correct"]:checked')?.value;
+
+            if(!text || options.some(o=>!o) || !correct) return alert("Fill all fields.");
+
+            dbQuizRef.child(id).update({
+                text, options, correct, 
+                status: 'ready', // ready, active, closed, finished
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            document.getElementById('quizEditModal').style.display = 'none';
+        }
+
+        function deleteQuiz() {
+            const id = document.getElementById('editQuizId').value;
+            if(id && confirm("Delete this quiz?")) {
+                dbQuizRef.child(id).remove();
+                document.getElementById('quizEditModal').style.display = 'none';
             }
         }
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('active'); 
+
+        // Quiz Execution
+        function startQuiz() {
+            if(!activeQuizId) return;
+            if(confirm("문제를 출제하시겠습니까? (교육생 화면에 팝업됩니다)")) {
+                // 1. 해당 퀴즈 상태 Active
+                dbQuizRef.child(activeQuizId).update({ status: 'active' });
+                // 2. Room 전체 상태에 현재 활성 퀴즈 ID 기록 (교육생이 감지)
+                firebase.database().ref(`courses/${currentRoom}/activeQuiz`).set({
+                    id: activeQuizId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                alert("문제가 출제되었습니다. (교육생 입력 대기중)");
+            }
         }
-        function copyLink() {
-            const copyText = document.getElementById("studentLinkUrl");
-            copyText.select(); document.execCommand("copy"); alert("Copied!");
+
+        function stopQuiz() {
+            if(!activeQuizId) return;
+            if(confirm("설문을 종료하시겠습니까? (입력 차단)")) {
+                dbQuizRef.child(activeQuizId).update({ status: 'closed' });
+                firebase.database().ref(`courses/${currentRoom}/activeQuiz`).set(null); // active 해제
+                alert("설문이 종료되었습니다.");
+            }
         }
+
+        function showResult() {
+            if(!activeQuizId) return;
+            const overlay = document.getElementById('chartOverlay');
+            overlay.style.display = 'flex';
+            document.getElementById('chartLoading').style.display = 'block';
+            document.getElementById('chartContent').style.display = 'none';
+
+            // DB에서 응답 데이터 가져오기 (가상의 경로: courses/A/quiz_answers/quizId)
+            // 여기서는 시뮬레이션을 위해 랜덤값 사용 (실제 구현 시 DB 연동)
+            // 실제 구현: firebase.database().ref(`courses/${currentRoom}/quiz_answers/${activeQuizId}`).once('value')...
+            
+            setTimeout(() => {
+                document.getElementById('chartLoading').style.display = 'none';
+                document.getElementById('chartContent').style.display = 'flex';
+                
+                // Demo Data Generation (나중에 실제 DB 연동 필요)
+                const counts = [0, 0, 0, 0]; 
+                // DB 연동 시: snap.forEach(c => counts[c.val().choice - 1]++)
+                
+                // 가짜 데이터 (테스트용)
+                for(let i=0; i<4; i++) counts[i] = Math.floor(Math.random() * 20);
+                
+                const max = Math.max(...counts, 1);
+                const chartBox = document.getElementById('chartBox');
+                chartBox.innerHTML = "";
+                
+                // 정답 정보
+                const q = window.quizData[activeQuizId];
+                
+                counts.forEach((val, idx) => {
+                    const isCorrect = (idx + 1) == q.correct;
+                    const color = isCorrect ? '#10b981' : '#3b82f6';
+                    const height = (val / max) * 100;
+                    
+                    chartBox.innerHTML += `
+                        <div class="bar-container">
+                            <div class="bar-value">${val}명</div>
+                            <div class="bar" style="height:${height}%; background:${color}"></div>
+                            <div class="bar-label" style="${isCorrect?'color:#10b981':''}">${idx+1}번</div>
+                        </div>
+                    `;
+                });
+                
+                // 완료 상태 업데이트
+                dbQuizRef.child(activeQuizId).update({ status: 'finished' });
+                
+            }, 2000); // 2초 로딩
+        }
+
+        function closeResult() {
+            document.getElementById('chartOverlay').style.display = 'none';
+        }
+
+        // --- UI Utils ---
+        function switchView(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+            
+            document.getElementById('view-qa').classList.remove('view-active');
+            document.getElementById('view-quiz').classList.remove('view-active');
+            document.getElementById(`view-${mode}`).classList.add('view-active');
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function closeModal(e) { if(e.target.className.includes('modal-overlay')) e.target.style.display='none'; }
+        
+        function saveConfig() {
+            const name = document.getElementById('confName').value;
+            const color = document.getElementById('confColor').value;
+            const footer = document.getElementById('confFooter').value;
+            dbSettingsRef.update({ courseName: name, themeColor: color, footerText: footer })
+                .then(() => alert("Settings Saved."));
+        }
+
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -598,42 +654,13 @@
             localStorage.setItem('kac_admin_theme', isDark ? 'dark' : 'light');
         }
         function loadThemeMode() {
-            const theme = localStorage.getItem('kac_admin_theme');
-            if(theme === 'dark') {
-                document.body.classList.add('dark-mode');
-                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
-            }
+            if(localStorage.getItem('kac_admin_theme') === 'dark') toggleDarkMode();
         }
-        
-        // GH Upload
-        async function uploadToGithub() {
-            const token = document.getElementById('ghToken').value;
-            const owner = document.getElementById('ghOwner').value;
-            const repo = document.getElementById('ghRepo').value;
-            if (!token || !owner || !repo) return alert("Check Data Management Info.");
-            
-            const content = JSON.stringify(currentData, null, 2);
-            const contentEncoded = btoa(unescape(encodeURIComponent(content)));
-            const path = `backup_room_${currentRoom}_${Date.now()}.json`;
-            try {
-                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Backup Room ${currentRoom}`, content: contentEncoded })
-                });
-                if (res.ok) alert("Backup Success: " + path); else alert("Error");
-            } catch (e) { alert("Error: " + e.message); }
+        function logout() {
+            localStorage.removeItem('kac_admin_session');
+            location.replace('login.html');
         }
-        function downloadBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
-            const node = document.createElement('a'); node.setAttribute("href", dataStr);
-            node.setAttribute("download", `backup_${currentRoom}_${Date.now()}.json`);
-            document.body.appendChild(node); node.click(); node.remove();
-        }
-        function clearHistory() { if (confirm("FORCE CLEAR ALL DATA?")) dbQuestionsRef.set(null); }
-        function openTranslate() { window.open(`https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(document.getElementById('modalText').innerText)}&op=translate`, '_blank'); }
         function escapeHtml(t) { return t ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""; }
-        function rgbToHex(rgb) { if(rgb.startsWith('#')) return rgb; const res = rgb.match(/\d+/g); return res ? "#" + ((1 << 24) + (+res[0] << 16) + (+res[1] << 8) + +res[2]).toString(16).slice(1) : color; }
     </script>
 </body>
 </html>
