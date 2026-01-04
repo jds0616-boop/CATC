@@ -1,6 +1,6 @@
-/* --- admin.js (Login Fix Version) --- */
+/* --- admin.js (Security & Default PW Update) --- */
 
-// [중요] 상단의 const auth = ... 부분을 모두 제거하여 충돌을 방지했습니다.
+// [중요] 변수 선언 충돌 방지를 위해 전역 변수 선언 제거
 
 // --- 전역 상태 ---
 const state = {
@@ -18,7 +18,6 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
 // --- 1. Auth (Firebase Authentication) ---
 const authMgr = {
-    // 관리자 이메일 (고정)
     ADMIN_EMAIL: "admin@kac.com", 
 
     tryLogin: async function() {
@@ -26,9 +25,9 @@ const authMgr = {
         if(!inputPw) return alert("비밀번호를 입력해주세요.");
 
         try {
-            // [수정] 충돌 방지를 위해 firebase.auth() 직접 사용
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
-            console.log("로그인 성공 처리 중...");
+            document.getElementById('loginOverlay').style.display = 'none';
+            dataMgr.loadInitialData();
         } catch (error) {
             console.error(error);
             alert("로그인 실패: " + error.message);
@@ -64,14 +63,11 @@ const authMgr = {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
-        // [수정] 인증 상태 감지
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // 로그인 성공 시
                 document.getElementById('loginOverlay').style.display = 'none';
                 this.loadInitialData();
             } else {
-                // 로그아웃 상태일 시
                 document.getElementById('loginOverlay').style.display = 'flex';
             }
         });
@@ -81,34 +77,63 @@ const dataMgr = {
         const lastRoom = localStorage.getItem('kac_last_room') || 'A';
         this.forceEnterRoom(lastRoom); 
 
-        ui.initRoomSelect(); 
-        
-        document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
-        document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
-        document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
-        document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
-        
-        const qrEl = document.getElementById('qrcode');
-        if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
+        try {
+            ui.initRoomSelect(); 
+            document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
+            document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
+            document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
+            document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
+            
+            const qrEl = document.getElementById('qrcode');
+            if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
+        } catch(e) {
+            console.error("Initialization Error:", e);
+        }
     },
 
+    // ▼▼▼ [수정된 핵심 로직] 비밀번호 및 마스터키 검증 ▼▼▼
     switchRoomAttempt: async function(newRoom) {
-        // [수정] firebase.database() 직접 사용
-        const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
-        const st = snapshot.val() || {};
+        // 1. 방 상태 확인
+        const statusSnap = await firebase.database().ref(`courses/${newRoom}/status`).get();
+        const st = statusSnap.val() || {};
         
+        // 2. 이미 사용 중이고 + 내가 주인이 아닌 경우 -> 인증 절차 시작
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            const confirmMsg = `[Room ${newRoom}] 현재 다른 강사가 사용 중입니다.\n강제 진입하시겠습니까?`;
-            if (!confirm(confirmMsg)) {
+            
+            // 3. 해당 방의 설정된 비밀번호 가져오기
+            const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
+            const settings = settingSnap.val() || {};
+            
+            // 비밀번호가 없으면 디폴트 '1234'로 설정
+            const roomPw = settings.password ? String(settings.password) : "1234";
+            const masterKey = "13281"; // 마스터키 번호
+
+            // 4. 입력 받기
+            const input = prompt(`[Room ${newRoom}] 현재 사용 중인 강의실입니다.\n제어권을 가져오려면 '학생 비밀번호' 또는 '마스터키'를 입력하세요.`);
+            
+            if (input === null) {
+                // 취소 누르면 원래 방으로 복귀
                 document.getElementById('roomSelect').value = state.room;
                 return;
             }
+
+            // 5. 검증 (방 비번 OR 마스터키)
+            if (input === roomPw || input === masterKey) {
+                alert("인증 성공! 제어권을 가져옵니다.");
+                // 소유권 강제 이전
+                await firebase.database().ref(`courses/${newRoom}/status`).update({
+                    ownerSessionId: state.sessionId
+                });
+                this.forceEnterRoom(newRoom);
+            } else {
+                alert("비밀번호가 일치하지 않습니다.");
+                document.getElementById('roomSelect').value = state.room;
+                return;
+            }
+        } else {
+            // 사용 중이 아니거나 내가 주인이면 바로 입장
+            this.forceEnterRoom(newRoom);
         }
-        
-        await firebase.database().ref(`courses/${newRoom}/status`).update({
-            ownerSessionId: state.sessionId
-        });
-        this.forceEnterRoom(newRoom);
     },
 
     forceEnterRoom: function(room) {
@@ -128,15 +153,14 @@ const dataMgr = {
         state.qaData = {};
         
         const rPath = `courses/${room}`;
-        // 편의상 로컬 변수로 할당
-        const db = firebase.database();
+        
+        dbRef.settings = firebase.database().ref(`${rPath}/settings`);
+        dbRef.qa = firebase.database().ref(`${rPath}/questions`);
+        dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
+        dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
+        dbRef.status = firebase.database().ref(`${rPath}/status`);
 
-        dbRef.settings = db.ref(`${rPath}/settings`);
-        dbRef.qa = db.ref(`${rPath}/questions`);
-        dbRef.quiz = db.ref(`${rPath}/activeQuiz`);
-        dbRef.ans = db.ref(`${rPath}/quizAnswers`);
-        dbRef.status = db.ref(`${rPath}/status`);
-
+        // 설정값 로드 (비밀번호 디폴트 처리 포함)
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
         dbRef.status.on('value', s => {
@@ -161,22 +185,29 @@ const dataMgr = {
     },
 
     saveSettings: function() {
-        const pw = document.getElementById('roomPw').value; 
+        let pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
-        const updates = { courseName: newName };
-        if(pw) updates.password = pw; 
+        // 비번 입력 안했으면 기본 1234로 저장 (혹은 유지)
+        if (!pw) pw = "1234";
+
+        const updates = { 
+            courseName: newName,
+            password: pw 
+        };
 
         firebase.database().ref(`courses/${state.room}/settings`).update(updates);
         document.getElementById('displayCourseTitle').innerText = newName;
+        // 저장 후 입력창에도 반영
+        document.getElementById('roomPw').value = pw;
 
         if (statusVal === 'active') {
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
-            alert(`[Room ${state.room}] 설정 저장 완료 (사용중)`); 
+            alert(`[Room ${state.room}] 설정 저장 완료 (사용중)\n학생 비밀번호: ${pw}`); 
         } else {
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'idle',
@@ -277,7 +308,7 @@ const ui = {
                 <div class="lock-message">
                     <i class="fa-solid fa-user-lock"></i>
                     <h3>다른 강사가 사용 중</h3>
-                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하거나<br>강제 진입하세요.</p>
+                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하여<br>비밀번호를 입력하세요.</p>
                 </div>`;
         } else {
             overlay.style.display = 'flex';
@@ -291,17 +322,20 @@ const ui = {
     },
 
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
+    
+    // [수정] 비밀번호 없으면 1234 보여주기
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
-        document.getElementById('roomPw').value = data.password || "";
+        document.getElementById('roomPw').value = data.password || "1234"; // 기본값
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
+    
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
-        new QRCode(qrDiv, { text: url, width: 50, height: 50 });
+        try { new QRCode(qrDiv, { text: url, width: 50, height: 50 }); } catch(e) {}
     },
     
     openQrModal: function() {
@@ -312,11 +346,13 @@ const ui = {
         modal.style.display = 'flex';
         bigTarget.innerHTML = ""; 
         setTimeout(() => {
-            new QRCode(bigTarget, { 
-                text: url, width: 300, height: 300,
-                colorDark : "#000000", colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            try {
+                new QRCode(bigTarget, { 
+                    text: url, width: 300, height: 300,
+                    colorDark : "#000000", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } catch(e) {}
         }, 50);
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
@@ -360,8 +396,11 @@ const ui = {
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     
     openPwModal: function() { 
-        document.getElementById('cp-current').value = "Protected"; 
-        document.getElementById('cp-current').disabled = true;
+        const curInput = document.getElementById('cp-current');
+        curInput.value = ""; 
+        curInput.disabled = false;
+        curInput.placeholder = "현재 비밀번호를 입력하세요";
+        
         document.getElementById('cp-new').value = "";
         document.getElementById('cp-confirm').value = "";
         document.getElementById('changePwModal').style.display = 'flex'; 
