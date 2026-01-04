@@ -59,7 +59,7 @@ const authMgr = {
     },
 
     logout: function() {
-        if(state.room) dataMgr.releaseRoom(state.room);
+        // [수정] 로그아웃 시에는 해제하지 않음 (관리 목적이므로 상태 유지)
         sessionStorage.removeItem('kac_admin_auth');
         location.reload(); 
     },
@@ -91,7 +91,7 @@ const authMgr = {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
-        this.autoAssignRoom();
+        this.autoAssignRoom(); // 초기 접속 시에만 빈 방 탐색
         ui.initRoomSelect(); 
         document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
@@ -119,14 +119,14 @@ const dataMgr = {
                 }
             }
 
-            // 2. 없으면 빈 방 찾기 (단, 자동 Active는 하지 않음)
+            // 2. 없으면 빈 방 찾기 (View Only)
             if(!targetRoom) {
                 for(let key of roomKeys) {
                     const rData = allRooms[key] || {};
                     const st = rData.status || {};
                     if(!st.roomStatus || st.roomStatus === 'idle') {
                         targetRoom = key;
-                        shouldClaim = false; // [수정] 들어는 가지만 '사용중'으로 바꾸진 않음
+                        shouldClaim = false; 
                         break;
                     }
                 }
@@ -135,7 +135,9 @@ const dataMgr = {
             if(targetRoom) {
                 this.enterRoom(targetRoom, shouldClaim);
             } else {
-                alert("현재 사용 가능한 빈 강의실이 없습니다.");
+                alert("사용 가능한 강의실이 없습니다. (모두 사용중)");
+                // 만약 모두 사용중이라면 A로 강제 진입하여 볼 수 있게 함
+                this.enterRoom('A', false);
             }
         });
     },
@@ -143,20 +145,26 @@ const dataMgr = {
     switchRoomAttempt: function(newRoom) {
         db.ref(`courses/${newRoom}/status`).once('value', s => {
             const st = s.val() || {};
+            
+            // [중요 수정] 방을 이동한다고 해서 기존 방을 'release' 하지 않음 (Manual Control)
+            // 그냥 해당 방으로 화면만 전환함.
+            
             if(st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
                 const confirmTakeover = confirm(
                     `Room ${newRoom}은 현재 '사용중' 상태입니다.\n\n` +
-                    `기존 접속을 끊고 강제로 진입하여 제어권을 가져오시겠습니까?`
+                    `제어권을 가져오시겠습니까? (확인: 제어권 획득 / 취소: 단순 관전)`
                 );
                 if(confirmTakeover) {
-                    if(state.room) this.releaseRoom(state.room);
+                    // 뺏어오기
                     this.enterRoom(newRoom, true); 
                 } else {
-                    document.getElementById('roomSelect').value = state.room;
+                    // 관전 모드 (Active 상태지만 내 소유 아님 -> 잠금화면 보임)
+                    this.enterRoom(newRoom, false);
                 }
                 return;
             }
-            if(state.room) this.releaseRoom(state.room);
+            
+            // 빈 방이거나 내 방이면 그냥 이동
             this.enterRoom(newRoom, false);
         });
     },
@@ -176,6 +184,7 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
+        // 강제 점유 시에만 DB 업데이트
         if(autoClaim) {
             dbRef.status.update({ roomStatus: 'active', ownerSessionId: state.sessionId });
         }
@@ -208,30 +217,29 @@ const dataMgr = {
     },
 
     saveSettings: function() {
-        // [복구] 학생용 비밀번호 읽기 및 저장
         const pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
         const updates = { courseName: newName };
-        if(pw) updates.password = pw; // 비번이 있으면 업데이트
+        if(pw) updates.password = pw; 
 
         dbRef.settings.update(updates);
         document.getElementById('displayCourseTitle').innerText = newName;
 
-        // [수정] 상태 저장 로직 명확화
+        // [중요] 사용자가 '저장'을 눌렀을 때만 상태가 바뀜
         if (statusVal === 'active') {
             dbRef.status.update({
                 roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
-            alert("저장되었습니다. 강의실이 활성화되었습니다."); // [추가] 팝업
+            alert("저장되었습니다. 강의실이 활성화되었습니다."); 
         } else {
             dbRef.status.update({
                 roomStatus: 'idle',
                 ownerSessionId: null 
             });
-            alert("저장되었습니다. 강의실이 비활성화(대기) 상태가 되었습니다."); // [추가] 팝업
+            alert("저장되었습니다. 강의실이 비활성화(대기) 상태가 되었습니다."); 
         }
     },
 
@@ -299,12 +307,19 @@ const ui = {
         const isActive = (statusObj.roomStatus === 'active');
         const isOwner = (statusObj.ownerSessionId === state.sessionId);
 
+        // [수정] 자동 이동(Timeout) 제거
         if (isActive && isOwner) {
             overlay.style.display = 'none';
         } else if (isActive && !isOwner) {
+            // 다른 사람 방이지만, 억지로 들어왔을 때 -> 관전 모드
             overlay.style.display = 'flex';
-            overlay.innerHTML = `<div class="lock-message"><i class="fa-solid fa-ban"></i><h3>접속 불가</h3><p>다른 강사가 사용 중입니다.<br>자동으로 다른 빈 방을 탐색합니다...</p></div>`;
-            setTimeout(() => dataMgr.autoAssignRoom(), 2000);
+            overlay.innerHTML = `
+                <div class="lock-message">
+                    <i class="fa-solid fa-ban"></i>
+                    <h3>다른 강사가 사용 중</h3>
+                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 다시 방을 선택하여 [확인]을 누르세요.</p>
+                </div>`;
+            // setTimeout 제거됨: 쫓겨나지 않음
         } else {
             overlay.style.display = 'flex';
             overlay.innerHTML = `
@@ -319,7 +334,6 @@ const ui = {
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
-        // [복구] 비밀번호 불러오기
         document.getElementById('roomPw').value = data.password || "";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
@@ -587,11 +601,9 @@ const printMgr = {
     executePrint: function() { window.print(); }
 };
 
-// [수정] 페이지 로드 시 자동 로그인 체크
 window.onload = function() {
     if(sessionStorage.getItem('kac_admin_auth') === 'true') {
         document.getElementById('loginOverlay').style.display = 'none';
         dataMgr.initSystem();
     }
-    // 인증 안 되어 있으면 오버레이 유지 (HTML 기본값)
 };
