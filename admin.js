@@ -42,7 +42,8 @@ const authMgr = {
 const dataMgr = {
     init: function() {
         this.changeRoom('A');
-        ui.initRoomSelect();
+        ui.initRoomSelect(); // initRoomSelect를 호출하지만, 내부에서 비동기로 데이터를 가져옵니다.
+        
         document.getElementById('roomSelect').addEventListener('change', (e) => this.changeRoom(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
@@ -85,16 +86,22 @@ const dataMgr = {
 
     saveSettings: function() {
         const pw = document.getElementById('roomPw').value;
-        const updates = {
-            courseName: document.getElementById('courseNameInput').value
-        };
+        const newName = document.getElementById('courseNameInput').value;
+        const updates = { courseName: newName };
+        
+        // [수정] 즉시 화면 반영 (새로고침 없이)
+        document.getElementById('displayCourseTitle').innerText = newName;
+
         // 방 상태 저장
         const statusVal = document.getElementById('roomStatusSelect').value;
-        dbRef.status.child('roomStatus').set(statusVal);
+        dbRef.status.child('roomStatus').set(statusVal).then(() => {
+            // 상태 저장 후 드롭다운 목록도 갱신 (선택된 방의 상태가 바뀌었으므로)
+            ui.initRoomSelect(); 
+        });
 
         if(pw && pw.length >= 4) updates.password = pw;
         dbRef.settings.update(updates, (err) => {
-            if(err) alert("Error."); else { alert("Saved."); ui.renderSettings(updates); }
+            if(err) alert("Error."); else { alert("Saved."); }
         });
     },
 
@@ -125,12 +132,36 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
+    // [수정] 모든 방의 상태를 조회하여 드롭다운 생성
     initRoomSelect: function() {
-        const sel = document.getElementById('roomSelect');
-        for(let i=65; i<=90; i++) {
-            const c = String.fromCharCode(i);
-            sel.innerHTML += `<option value="${c}">Room ${c}</option>`;
-        }
+        db.ref('courses').once('value', snapshot => {
+            const allData = snapshot.val() || {};
+            const sel = document.getElementById('roomSelect');
+            // 기존 선택된 값 기억
+            const currentSelection = sel.value || state.room; 
+            
+            sel.innerHTML = "";
+            for(let i=65; i<=90; i++) {
+                const char = String.fromCharCode(i);
+                // 해당 방의 상태 확인 (undefined 체크)
+                const roomData = allData[char] || {};
+                const status = roomData.status ? roomData.status.roomStatus : 'idle';
+                
+                const opt = document.createElement('option');
+                opt.value = char;
+                // 상태에 따라 텍스트 변경
+                if(status === 'active') {
+                    opt.innerText = `Room ${char} (🟢 사용중)`;
+                    opt.style.fontWeight = 'bold';
+                    opt.style.color = '#fbbf24'; // 노란색/골드 강조
+                } else {
+                    opt.innerText = `Room ${char}`;
+                }
+                
+                if(char === currentSelection) opt.selected = true;
+                sel.appendChild(opt);
+            }
+        });
     },
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
     renderSettings: function(data) {
@@ -338,7 +369,7 @@ const quizMgr = {
     setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; }
 };
 
-// --- 5. Print (생략, 기존과 동일) ---
+// --- 5. Print ---
 const printMgr = {
     openPreview: function() {
         document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value;
