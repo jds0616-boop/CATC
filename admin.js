@@ -1,13 +1,12 @@
-/* --- admin.js (Fixed Version) --- */
+/* --- admin.js (Final Fixed Version) --- */
 
-// ▼▼▼ [삭제됨] 이 부분 때문에 오류가 났습니다. 지우면 해결됩니다! ▼▼▼
-// const auth = firebase.auth();
-// const db = firebase.database();
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+// --- Firebase Instances ---
+// [중요] 변수 선언을 제거하고, 필요할 때 firebase.auth()를 직접 호출합니다.
+// 이렇게 하면 config.js와의 충돌도 없고, 변수 못 찾는 오류도 사라집니다.
 
 // --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9), // 브라우저 탭 고유값
+    sessionId: Math.random().toString(36).substr(2, 9), 
     room: null,
     isTestMode: false,
     quizList: [],
@@ -21,7 +20,7 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
 // --- 1. Auth (Firebase Authentication) ---
 const authMgr = {
-    // 관리자 이메일 (Firebase Console에서 생성한 계정)
+    // 관리자 이메일
     ADMIN_EMAIL: "admin@kac.com", 
 
     tryLogin: async function() {
@@ -29,24 +28,24 @@ const authMgr = {
         if(!inputPw) return alert("비밀번호를 입력해주세요.");
 
         try {
-            // [보안] 클라이언트 해시 비교가 아닌 서버 인증 사용
-            await auth.signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
-            // 성공 시 onAuthStateChanged에서 처리됨
+            // [수정 포인트] auth.signIn... 대신 firebase.auth().signIn... 사용
+            await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
+            // 로그인 성공 시 onAuthStateChanged 리스너가 작동하여 화면이 전환됩니다.
         } catch (error) {
             console.error(error);
-            alert("로그인 실패: 비밀번호가 올바르지 않습니다.");
+            alert("로그인 실패: 비밀번호가 올바르지 않거나 시스템 오류입니다.\n(" + error.message + ")");
             document.getElementById('loginPwInput').value = "";
         }
     },
 
     logout: function() {
-        auth.signOut().then(() => {
+        firebase.auth().signOut().then(() => {
             location.reload();
         });
     },
 
     executeChangePw: async function() {
-        const user = auth.currentUser;
+        const user = firebase.auth().currentUser; // [수정] 직접 호출
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
 
@@ -67,8 +66,8 @@ const authMgr = {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
-        // 인증 상태 감지
-        auth.onAuthStateChanged(user => {
+        // [수정] 인증 상태 감지 리스너도 직접 호출
+        firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginOverlay').style.display = 'none';
                 this.loadInitialData();
@@ -79,13 +78,11 @@ const dataMgr = {
     },
 
     loadInitialData: function() {
-        // 마지막 접속 방 기억 (없으면 A)
         const lastRoom = localStorage.getItem('kac_last_room') || 'A';
         this.forceEnterRoom(lastRoom); 
 
         ui.initRoomSelect(); 
         
-        // 이벤트 리스너 연결
         document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
@@ -95,82 +92,70 @@ const dataMgr = {
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
 
-    // 방 변경 시도
     switchRoomAttempt: async function(newRoom) {
-        const snapshot = await db.ref(`courses/${newRoom}/status`).get();
+        // [수정] db 변수 대신 firebase.database() 직접 사용 권장 (안전성 위해)
+        const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
-        // 이미 사용중이고 내가 주인이 아닌 경우 경고
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             const confirmMsg = `[Room ${newRoom}] 현재 다른 강사가 사용 중입니다.\n강제 진입하시겠습니까?`;
             if (!confirm(confirmMsg)) {
-                // 취소 시 원래 방 선택 유지
                 document.getElementById('roomSelect').value = state.room;
                 return;
             }
         }
         
-        // 관리자 권한으로 강제 점유
-        await db.ref(`courses/${newRoom}/status`).update({
+        await firebase.database().ref(`courses/${newRoom}/status`).update({
             ownerSessionId: state.sessionId
         });
         this.forceEnterRoom(newRoom);
     },
 
-    // [중요] 실제 방 입장 로직 (Ghost Listener 수정 적용)
     forceEnterRoom: function(room) {
-        // 1. 이전 방의 리스너를 확실하게 제거
         if (state.room) {
             const oldPath = `courses/${state.room}`;
-            db.ref(`${oldPath}/questions`).off();
-            db.ref(`${oldPath}/activeQuiz`).off();
-            db.ref(`${oldPath}/status`).off();
-            db.ref(`${oldPath}/settings`).off();
+            // 안전하게 firebase.database() 사용
+            firebase.database().ref(`${oldPath}/questions`).off();
+            firebase.database().ref(`${oldPath}/activeQuiz`).off();
+            firebase.database().ref(`${oldPath}/status`).off();
+            firebase.database().ref(`${oldPath}/settings`).off();
         }
 
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         ui.updateHeaderRoom(room);
 
-        // UI 초기화 (이전 데이터 잔상 제거)
         document.getElementById('qaList').innerHTML = "";
         state.qaData = {};
         
         const rPath = `courses/${room}`;
-        dbRef.settings = db.ref(`${rPath}/settings`);
-        dbRef.qa = db.ref(`${rPath}/questions`);
-        dbRef.quiz = db.ref(`${rPath}/activeQuiz`);
-        dbRef.ans = db.ref(`${rPath}/quizAnswers`);
-        dbRef.status = db.ref(`${rPath}/status`);
+        const dbRoot = firebase.database(); // 편의상 지역 변수 사용
+        
+        dbRef.settings = dbRoot.ref(`${rPath}/settings`);
+        dbRef.qa = dbRoot.ref(`${rPath}/questions`);
+        dbRef.quiz = dbRoot.ref(`${rPath}/activeQuiz`);
+        dbRef.ans = dbRoot.ref(`${rPath}/quizAnswers`);
+        dbRef.status = dbRoot.ref(`${rPath}/status`);
 
-        // 설정값 로드
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // 상태 실시간 감지 (Ghost Check 적용)
         dbRef.status.on('value', s => {
-            // 현재 내가 보고 있는 방이 아니면 무시
             if(state.room !== room) return;
-
             const st = s.val() || {};
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
         });
 
-        // QR 생성
         this.renderQrForRoom(room);
 
-        // Q&A 로드 (Ghost Check 적용)
         dbRef.qa.on('value', s => {
             if(state.room !== room) return;
-
             state.qaData = s.val() || {};
             ui.renderQaList('all');
         });
     },
 
-    // QR코드 링크 생성 (직접 링크 방식)
     renderQrForRoom: function(room) {
-        // index.html 수정사항에 맞춰 room 파라미터 직접 사용
         const studentUrl = `${window.location.origin}/index.html?room=${room}`;
         ui.renderQr(studentUrl);
     },
@@ -183,17 +168,17 @@ const dataMgr = {
         const updates = { courseName: newName };
         if(pw) updates.password = pw; 
 
-        db.ref(`courses/${state.room}/settings`).update(updates);
+        firebase.database().ref(`courses/${state.room}/settings`).update(updates);
         document.getElementById('displayCourseTitle').innerText = newName;
 
         if (statusVal === 'active') {
-            db.ref(`courses/${state.room}/status`).update({
+            firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
             alert(`[Room ${state.room}] 설정 저장 완료 (사용중)`); 
         } else {
-            db.ref(`courses/${state.room}/status`).update({
+            firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'idle',
                 ownerSessionId: null
             });
@@ -201,7 +186,6 @@ const dataMgr = {
         }
     },
 
-    // [신규 기능] 모든 방 강제 초기화
     deactivateAllRooms: async function() {
         if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         
@@ -213,9 +197,8 @@ const dataMgr = {
         }
 
         try {
-            await db.ref().update(updates);
+            await firebase.database().ref().update(updates);
             alert("모든 강의실이 비활성화되었습니다.");
-            // 현재 화면 상태 반영을 위해 재진입
             this.forceEnterRoom(state.room);
         } catch(e) {
             alert("오류 발생: " + e.message);
@@ -238,7 +221,7 @@ const dataMgr = {
 
     resetCourse: function() {
         if(confirm("현재 강의실 데이터를 초기화하시겠습니까?\n(질문, 퀴즈 내역이 모두 삭제됩니다)")) {
-            db.ref(`courses/${state.room}`).set(null).then(() => {
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
                 alert("초기화 완료."); location.reload();
             });
         }
@@ -248,7 +231,7 @@ const dataMgr = {
 // --- 3. UI ---
 const ui = {
     initRoomSelect: function() {
-        db.ref('courses').on('value', snapshot => {
+        firebase.database().ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
             const currentVal = state.room;
@@ -287,10 +270,8 @@ const ui = {
         const isOwner = (statusObj.ownerSessionId === state.sessionId);
 
         if (isActive && isOwner) {
-            // 내가 주인 -> 정상 화면
             overlay.style.display = 'none';
         } else if (isActive && !isOwner) {
-            // 남이 사용중 -> 관전 모드
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
@@ -299,7 +280,6 @@ const ui = {
                     <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하거나<br>강제 진입하세요.</p>
                 </div>`;
         } else {
-            // 비어있음 -> 대기 화면
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
@@ -350,7 +330,7 @@ const ui = {
         document.getElementById(`tab-${mode}`).classList.add('active');
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
-        db.ref(`courses/${state.room}/status/mode`).set(mode);
+        firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
         if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
     },
     filterQa: function(filter) {
@@ -380,7 +360,7 @@ const ui = {
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     
     openPwModal: function() { 
-        document.getElementById('cp-current').value = "Protected"; // 보안상 현재 비번 숨김
+        document.getElementById('cp-current').value = "Protected"; 
         document.getElementById('cp-current').disabled = true;
         document.getElementById('cp-new').value = "";
         document.getElementById('cp-confirm').value = "";
