@@ -1,7 +1,6 @@
 // config.js
 
 const firebaseConfig = {
-  // 기존 설정 그대로 유지
   apiKey: "AIzaSyDo3BPMV8qayQ3MdKBglYNtsvii0ZtCHHs",
   authDomain: "catcqna.firebaseapp.com",
   databaseURL: "https://catcqna-default-rtdb.firebaseio.com",
@@ -16,17 +15,17 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// 인증 및 DB 인스턴스
-const auth = firebase.auth();
-const db = firebase.database();
-
-// [보안 수정] 클라이언트 코드에서 비밀키 매핑 로직 제거
-// 룸 코드는 이제 DB의 'public_codes' 경로에서 조회합니다.
-
+// [중요] 비동기 코드 조회 함수
 async function resolveRoomFromCode(code) {
     try {
+        const db = firebase.database();
         const snap = await db.ref(`public_codes/${code}`).get();
-        return snap.exists() ? snap.val() : null;
+        if (snap.exists()) {
+            return snap.val(); // "A", "B" 등 방 ID 반환
+        } else {
+            console.error("Code not found in DB:", code);
+            return null;
+        }
     } catch (e) {
         console.error("Code resolution failed", e);
         return null;
