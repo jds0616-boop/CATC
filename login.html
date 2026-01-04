@@ -1,81 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instructor Login - KAC Platform</title>
-<style>
-  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-  * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
-  body { 
-    background: #0f172a; height: 100vh; display: flex; flex-direction: column; 
-    align-items: center; justify-content: center; margin: 0; color: #fff;
-  }
-  .login-card {
-    background: #1e293b; padding: 50px 40px; border-radius: 20px; width: 400px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .logo { font-size: 26px; font-weight: 800; margin-bottom: 10px; display: block; }
-  .logo span { color: #3b82f6; }
-  .sub-title { font-size: 16px; color: #94a3b8; margin-bottom: 30px; }
-  input {
-    width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #334155;
-    background: #0f172a; color: #fff; margin-bottom: 15px; font-size: 16px; outline: none;
-    text-align: center; letter-spacing: 4px; transition: 0.3s;
-  }
-  input:focus { border-color: #3b82f6; }
-  button {
-    width: 100%; padding: 15px; border-radius: 10px; border: none;
-    background: #3b82f6; color: #fff; font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: 0.3s; margin-top: 10px;
-  }
-  button:hover { background: #2563eb; transform: translateY(-2px); }
-  .message { margin-top: 20px; font-size: 14px; min-height: 20px; color: #ef4444; }
-</style>
-</head>
-<body>
-  <div class="login-card">
-    <div class="logo">KAC <span>Instructor</span></div>
-    <div class="sub-title">Instructor & Admin Access</div>
+<script>
+    // ... (config.js 로드 필수) ...
     
-    <input type="password" id="pwInput" placeholder="PASSWORD" maxlength="4" onkeyup="if(window.event.keyCode==13){tryLogin()}">
-    <button onclick="tryLogin()">Login</button>
-    <div id="msg" class="message"></div>
-  </div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="config.js"></script>
-  
-  <script>
-    const SESSION_DURATION = 5 * 60 * 60 * 1000; // 5 hours
-
+    // [보안] 클라이언트 우회 방지를 위해 Firebase Auth 사용
     async function tryLogin() {
         const input = document.getElementById('pwInput').value;
         const msgBox = document.getElementById('msg');
         
         if(!input) { msgBox.textContent = "Please enter password."; return; }
 
-        // [DEV BYPASS] 암호화 없이 1234/9999 통과
-        if(input === "1234") {
-            loginSuccess('instructor'); return;
+        try {
+            // 관리자 이메일 고정 (Firebase Console 생성 계정)
+            await firebase.auth().signInWithEmailAndPassword("admin@kac.com", input);
+            
+            msgBox.style.color = "#4ade80";
+            msgBox.textContent = "Access Granted.";
+            
+            // 로그인 성공 시 이동
+            setTimeout(() => location.replace('admin.html'), 500);
+        } catch (e) {
+            msgBox.style.color = "#ef4444";
+            msgBox.textContent = "Invalid Password.";
+            console.error(e);
         }
-        if(input === "9999") {
-            loginSuccess('super_admin'); return;
-        }
-
-        msgBox.textContent = "Invalid Password (Try: 1234)";
     }
-
-    function loginSuccess(role) {
-        const msgBox = document.getElementById('msg');
-        msgBox.style.color = "#4ade80";
-        msgBox.textContent = "Access Granted.";
-        const sessionData = { token: 'granted', role: role, expiry: Date.now() + SESSION_DURATION };
-        localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
-        setTimeout(() => location.replace('admin.html'), 500);
-    }
-  </script>
-</body>
-</html>
+</script>
