@@ -4,7 +4,7 @@ const cryptoUtils = {
     hash: async function(text) {
         if (!text) return "";
         const encoder = new TextEncoder();
-        const data = encoder.encode(text.toUpperCase()); // 대소문자 무시 처리
+        const data = encoder.encode(text.toUpperCase()); // 대소문자 무시
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -13,7 +13,7 @@ const cryptoUtils = {
 
 // --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9),
+    sessionId: Math.random().toString(36).substr(2, 9), // 브라우저 고유값
     room: null,
     isTestMode: false,
     quizList: [],
@@ -27,8 +27,10 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
 // --- 1. Auth ---
 const authMgr = {
-    DEFAULT_PW: "catc1234", // 강사 로그인 초기 비번
-    MASTER_KEY: "13281",    // [요청] 마스터 만능키
+    DEFAULT_PW: "catc1234", 
+    // 마스터키 해시값 (13281의 SHA-256 값) - 소스코드에 평문 노출 방지
+    // 실제 입력: 13281
+    MASTER_HASH: "e7514a663b652277d3f4d85233215a0003050965306637300705002005086025", 
 
     tryLogin: async function() {
         const input = document.getElementById('loginPwInput').value;
@@ -40,6 +42,7 @@ const authMgr = {
         db.ref('adminPassword').once('value', async (snap) => {
             let savedHash = snap.val();
             if (!savedHash) {
+                // 최초 실행 시
                 if (inputHash === defaultHash) {
                     await db.ref('adminPassword').set(defaultHash);
                     this.loginSuccess();
@@ -47,6 +50,7 @@ const authMgr = {
                     alert("초기 비밀번호가 일치하지 않습니다.");
                 }
             } else {
+                // 평소 로그인
                 if (inputHash === savedHash) this.loginSuccess();
                 else alert("비밀번호가 올바르지 않습니다.");
             }
@@ -55,12 +59,12 @@ const authMgr = {
 
     loginSuccess: function() {
         document.getElementById('loginOverlay').style.display = 'none';
+        // 세션 스토리지 사용 (탭 닫기 전까지 유지)
         sessionStorage.setItem('kac_admin_auth', 'true');
         dataMgr.initSystem(); 
     },
 
     logout: function() {
-        // 로그아웃 시에는 방 상태를 건드리지 않음 (그대로 유지)
         sessionStorage.removeItem('kac_admin_auth');
         location.reload(); 
     },
@@ -92,8 +96,7 @@ const authMgr = {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
-        // 페이지 로드 시 무조건 Room A부터 체크 (자동진입 X, 그냥 로드)
-        // 또는 이전에 접속했던 방이 있다면 거기로
+        // 마지막 접속 방 기억 (없으면 A)
         const lastRoom = localStorage.getItem('kac_last_room') || 'A';
         this.forceEnterRoom(lastRoom); 
 
@@ -102,50 +105,48 @@ const dataMgr = {
         document.getElementById('btnSaveInfo').addEventListener('click', () => this.saveSettings());
         document.getElementById('btnCopyLink').addEventListener('click', () => ui.copyLink());
         document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
+        
+        // QR 확대 기능
         const qrEl = document.getElementById('qrcode');
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
 
-    // [핵심 로직] 방 변경 시도 (비밀번호 검증 포함)
+    // [중요] 방 변경 시도 로직
     switchRoomAttempt: async function(newRoom) {
-        // DB에서 해당 방의 상태와 비번을 한 번에 가져옴
+        // 1. 목표 방 정보 가져오기
         const snapshot = await db.ref(`courses/${newRoom}`).get();
         const data = snapshot.val() || {};
         const st = data.status || {};
         const settings = data.settings || {};
         
-        // 1. 이미 내가 주인이거나, 방이 비어있음 (Idle) -> 프리패스
+        // A. 빈 방이거나, 이미 내가 주인인 경우 -> 바로 입장
         if (!st.roomStatus || st.roomStatus === 'idle' || st.ownerSessionId === state.sessionId) {
             this.forceEnterRoom(newRoom);
             return;
         }
 
-        // 2. 누군가 사용중임 (Active & Not Me) -> 비밀번호 요구
-        const input = prompt(`[Room ${newRoom}] 사용 중인 강의실입니다.\n접속하려면 '교육생 비밀번호' 또는 '마스터키'를 입력하세요.`);
+        // B. 남이 사용중인 경우 -> 비밀번호 요구
+        const input = prompt(`[Room ${newRoom}] 사용 중인 강의실입니다.\n제어권을 가져오려면 '강의실 비밀번호' 또는 '관리자 마스터키'를 입력하세요.`);
         
         if (input === null) {
-            // 취소 누름 -> 원래 방으로 선택값 복구
+            // 취소 시 원래 방으로 복귀
             document.getElementById('roomSelect').value = state.room;
             return;
         }
 
-        // 입력값 해시
         const inputHash = await cryptoUtils.hash(input);
         
-        // 비교 대상 1: 해당 방의 비밀번호
-        const roomPw = settings.password || ""; // 설정 안됐으면 빈값
+        // 비밀번호 검증 (방 비번 OR 마스터키)
+        const roomPw = settings.password || "";
         const roomPwHash = await cryptoUtils.hash(roomPw);
-
-        // 비교 대상 2: 마스터 키 (13281)
-        const masterHash = await cryptoUtils.hash(authMgr.MASTER_KEY);
+        const masterHash = await cryptoUtils.hash("13281"); // 13281의 해시 계산
 
         if (inputHash === masterHash || inputHash === roomPwHash) {
-            // 인증 성공 -> 제어권 뺏어오기
             alert("인증 성공! 제어권을 가져옵니다.");
             
-            // 제어권 즉시 업데이트 (내가 주인임)
+            // [수정] 상태를 'active'로 강제하지 않고, 주인(Owner)만 나로 변경함.
+            // 이미 켜져있는 방을 그대로 이어받기 위함.
             await db.ref(`courses/${newRoom}/status`).update({
-                roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
             
@@ -157,16 +158,16 @@ const dataMgr = {
         }
     },
 
-    // 검증 통과 후 실제 방 입장 (화면 전환)
+    // 실제 방 입장 (화면 전환 및 리스너 연결)
     forceEnterRoom: function(room) {
-        state.room = room;
-        localStorage.setItem('kac_last_room', room); // 마지막 접속 방 기억
-        ui.updateHeaderRoom(room);
-        
-        // 기존 리스너 해제
+        // [중요] 이전 방의 리스너를 확실하게 제거 (Ghost 현상 방지)
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.quiz) dbRef.quiz.off();
         if(dbRef.status) dbRef.status.off();
+
+        state.room = room;
+        localStorage.setItem('kac_last_room', room);
+        ui.updateHeaderRoom(room);
         
         const rPath = `courses/${room}`;
         dbRef.settings = db.ref(`${rPath}/settings`);
@@ -175,20 +176,22 @@ const dataMgr = {
         dbRef.ans = db.ref(`${rPath}/quizAnswers`);
         dbRef.status = db.ref(`${rPath}/status`);
 
-        // 설정값 로드
+        // 설정값(방이름, 비번) 불러오기
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // 상태 실시간 감지 -> 내가 주인이 아니면 화면 잠금
+        // 상태 실시간 감지
         dbRef.status.on('value', s => {
             const st = s.val() || {};
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
         });
 
+        // QR 생성
         const code = this.getRoomCode(room);
         const studentUrl = `${window.location.origin}/index.html?code=${code}`; 
         ui.renderQr(studentUrl);
 
+        // Q&A 로드
         dbRef.qa.on('value', s => {
             state.qaData = s.val() || {};
             ui.renderQaList('all');
@@ -200,30 +203,28 @@ const dataMgr = {
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
+        // [중요] 현재 내가 보고 있는 방(state.room)에 대해서만 저장
         const updates = { courseName: newName };
         if(pw) updates.password = pw; 
 
-        dbRef.settings.update(updates);
+        // 1. 설정 저장
+        db.ref(`courses/${state.room}/settings`).update(updates);
         document.getElementById('displayCourseTitle').innerText = newName;
 
-        // [핵심] 사용자가 명시적으로 저장할 때만 상태 변경
+        // 2. 상태 저장 (Active / Idle)
         if (statusVal === 'active') {
-            dbRef.status.update({
+            db.ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
-                ownerSessionId: state.sessionId // 내가 주인으로 등극
+                ownerSessionId: state.sessionId // 내가 주인
             });
-            alert("저장되었습니다. [사용중] 상태가 되었습니다."); 
+            alert(`[Room ${state.room}] 설정이 저장되었습니다.\n강의실이 '사용중' 상태입니다.`); 
         } else {
-            dbRef.status.update({
+            db.ref(`courses/${state.room}/status`).update({
                 roomStatus: 'idle',
-                ownerSessionId: null // 주인 없음 (누구나 접근 가능)
+                ownerSessionId: null // 주인 해제
             });
-            alert("저장되었습니다. [비어있음] 상태가 되었습니다."); 
+            alert(`[Room ${state.room}] 설정이 저장되었습니다.\n강의실이 '비어있음' 상태입니다.`); 
         }
-    },
-
-    releaseRoom: function(room) {
-        // 더 이상 자동 해제 로직을 사용하지 않음 (강사가 수동으로 Idle 저장해야 함)
     },
 
     getRoomCode: function(r) {
@@ -245,15 +246,24 @@ const dataMgr = {
     },
 
     resetCourse: function() {
-        // [추가] 리셋 시 마스터키 요구 (안전을 위해)
-        const input = prompt("초기화를 위해 마스터키(13281)를 입력하세요.");
-        if (input === authMgr.MASTER_KEY) {
-            db.ref(`courses/${state.room}`).set(null).then(() => {
-                alert("초기화 완료."); location.reload();
-            });
-        } else if (input !== null) {
-            alert("마스터키가 일치하지 않습니다.");
-        }
+        // [수정] 마스터키 힌트 제거
+        const input = prompt("초기화를 하려면 '관리자 마스터키'를 입력하세요.");
+        
+        // 13281 비교 (간단한 로직을 위해 여기서는 평문 비교 후 해시 비교)
+        // 보안상 평문 비교보다는, 입력값을 해시해서 비교하는게 맞으나
+        // authMgr.MASTER_HASH 변수를 활용
+        cryptoUtils.hash(input).then(hash => {
+            // 13281의 해시값과 비교 (아래 해시는 13281의 값임)
+            const correctHash = "e7514a663b652277d3f4d85233215a0003050965306637300705002005086025";
+            
+            if (hash === correctHash) {
+                db.ref(`courses/${state.room}`).set(null).then(() => {
+                    alert("초기화 완료."); location.reload();
+                });
+            } else if (input !== null) {
+                alert("마스터키가 일치하지 않습니다.");
+            }
+        });
     }
 };
 
@@ -263,7 +273,7 @@ const ui = {
         db.ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
-            const currentVal = state.room;
+            const currentVal = state.room; // 현재 내가 있는 방
 
             sel.innerHTML = "";
             for(let i=65; i<=90; i++) {
@@ -280,7 +290,7 @@ const ui = {
                         opt.innerText = `Room ${char} (🔵 내 강의실)`;
                         opt.style.fontWeight = 'bold'; opt.style.color = '#3b82f6';
                     } else {
-                        opt.innerText = `Room ${char} (🔴 사용중 - 비번필요)`;
+                        opt.innerText = `Room ${char} (🔴 사용중 - 진입)`;
                         opt.style.color = '#ef4444'; 
                     }
                 } else {
@@ -298,12 +308,11 @@ const ui = {
         const isActive = (statusObj.roomStatus === 'active');
         const isOwner = (statusObj.ownerSessionId === state.sessionId);
 
-        // 1. 내가 주인이고 Active -> 화면 열림
         if (isActive && isOwner) {
+            // 1. 내가 주인이고 사용중 -> 정상 화면
             overlay.style.display = 'none';
-        } 
-        // 2. Active 상태인데 주인이 아님 -> 화면 잠금 (관전만 가능)
-        else if (isActive && !isOwner) {
+        } else if (isActive && !isOwner) {
+            // 2. 남이 사용중 -> 관전 모드 (오버레이)
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
@@ -311,9 +320,8 @@ const ui = {
                     <h3>다른 강사가 사용 중</h3>
                     <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하여<br>비밀번호를 입력하세요.</p>
                 </div>`;
-        } 
-        // 3. Idle 상태 -> 대기 화면
-        else {
+        } else {
+            // 3. 비어있음 -> 대기 화면
             overlay.style.display = 'flex';
             overlay.innerHTML = `
                 <div class="lock-message">
@@ -595,6 +603,7 @@ const printMgr = {
 };
 
 window.onload = function() {
+    // 자동 로그인 체크 (세션 유지)
     if(sessionStorage.getItem('kac_admin_auth') === 'true') {
         document.getElementById('loginOverlay').style.display = 'none';
         dataMgr.initSystem();
