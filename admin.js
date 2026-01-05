@@ -1,8 +1,8 @@
-/* --- admin.js (Final Integrated Version: Persistence & Full Logic) --- */
+/* --- admin.js (무중단 지속 운용 최적화 버전) --- */
 
 // --- 전역 상태 ---
 const state = {
-    // [보정] 세션 스토리지를 사용하여 탭 유지 중 새로고침 시 동일 세션ID 유지
+    // [보정] 세션 스토리지를 확인해서 기존 ID가 있으면 쓰고, 없으면 새로 만듭니다. (새로고침 대응)
     sessionId: (function() {
         let id = sessionStorage.getItem('kac_admin_sid');
         if (!id) {
@@ -23,7 +23,7 @@ const state = {
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
 
-// --- 1. Auth Manager ---
+// --- 1. Auth ---
 const authMgr = {
     ADMIN_EMAIL: "admin@kac.com", 
 
@@ -44,7 +44,7 @@ const authMgr = {
 
     logout: function() {
         if(confirm("로그아웃 하시겠습니까?")) {
-            sessionStorage.removeItem('kac_admin_sid'); // 세션 삭제
+            sessionStorage.removeItem('kac_admin_sid'); // 세션 정보 삭제
             firebase.auth().signOut().then(() => {
                 location.reload();
             });
@@ -70,7 +70,7 @@ const authMgr = {
     }
 };
 
-// --- 2. Data & Room Logic (Persistence 핵심) ---
+// --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
@@ -89,7 +89,7 @@ const dataMgr = {
 
         try {
             ui.initRoomSelect(); 
-            // 중복 리스너 방지를 위해 .onchange 직접 할당
+            // 중복 리스너 방지를 위해 .onchange로 할당
             document.getElementById('roomSelect').onchange = (e) => this.switchRoomAttempt(e.target.value);
             document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
             
@@ -104,7 +104,6 @@ const dataMgr = {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         
-        // 방이 사용 중인데 세션 ID가 다르면 인증창 호출
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
@@ -127,7 +126,8 @@ const dataMgr = {
 
         if (input === roomPw || input === masterKey) {
             alert("인증 성공! 제어권을 가져옵니다.");
-            localStorage.setItem(`last_owned_room`, newRoom); // 제어권 획득 기록
+            // 내가 이 방의 주인임을 브라우저에 기록
+            localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({
                 ownerSessionId: state.sessionId
             });
@@ -167,6 +167,7 @@ const dataMgr = {
         state.qaData = {};
         
         const rPath = `courses/${room}`;
+        
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
         dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
@@ -175,13 +176,13 @@ const dataMgr = {
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // [보정] 방 상태 감시: 새로고침 후 자동 제어권 탈환
+        // [보정] 방 상태를 감시하면서 자동으로 제어권을 가져오는 로직 (F5 새로고침 대응)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
 
+            // 1% 보정: 방이 '사용중'인데 현재 브라우저가 마지막 주인이라면 자동으로 세션 업데이트
             if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                // 내가 마지막으로 주인이라고 선언했던 방이면 자동으로 주인으로 등록
                 if (localStorage.getItem(`last_owned_room`) === room) {
                     dbRef.status.update({ ownerSessionId: state.sessionId });
                     return; 
@@ -234,19 +235,20 @@ const dataMgr = {
         document.getElementById('roomPw').value = pw;
 
         if (statusVal === 'active') {
-            localStorage.setItem(`last_owned_room`, state.room); // 주인 기록
+            // [중요] 저장 시 '내가 이 방의 주인임'을 브라우저에 기록
+            localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
-            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.`); 
+            alert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
         } else {
-            localStorage.removeItem(`last_owned_room`); // 강의 종료 시 주인 기록 삭제
+            localStorage.removeItem(`last_owned_room`);
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'idle',
                 ownerSessionId: null
             });
-            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.\n- 상태: 비어있음`); 
+            alert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
         }
     },
 
@@ -307,13 +309,12 @@ const dataMgr = {
     }
 };
 
-// --- 3. UI Manager (통합 렌더링) ---
+// --- 3. UI ---
 const ui = {
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
-            if(!sel) return;
             const currentVal = state.room;
 
             sel.innerHTML = "";
@@ -325,10 +326,18 @@ const ui = {
                 
                 const opt = document.createElement('option');
                 opt.value = char;
+                
                 if(st.roomStatus === 'active') {
-                    opt.innerText = isMyRoom ? `Room ${char} (🔵 내 강의실)` : `Room ${char} (🔴 사용중)`;
-                    if(isMyRoom) opt.style.fontWeight = '800';
-                } else { opt.innerText = `Room ${char}`; }
+                    if(isMyRoom) {
+                        opt.innerText = `Room ${char} (🔵 내 강의실)`;
+                        opt.style.fontWeight = 'bold'; opt.style.color = '#3b82f6';
+                    } else {
+                        opt.innerText = `Room ${char} (🔴 사용중)`;
+                        opt.style.color = '#ef4444'; 
+                    }
+                } else {
+                    opt.innerText = `Room ${char}`;
+                }
                 
                 if(char === currentVal) opt.selected = true;
                 sel.appendChild(opt);
@@ -346,24 +355,30 @@ const ui = {
         } else if (isActive && !isOwner) {
             overlay.style.display = 'flex';
             overlay.innerHTML = `
-                <div class="lock-message"><i class="fa-solid fa-user-lock"></i>
-                    <h3>다른 강사가 사용 중</h3><p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하세요.</p>
+                <div class="lock-message">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <h3>다른 강사가 사용 중</h3>
+                    <p>현재 <b>관전 모드</b>입니다.<br>제어권을 가져오려면 상단 메뉴에서 방을 다시 선택하여<br>비밀번호를 입력하세요.</p>
                 </div>`;
         } else {
             overlay.style.display = 'flex';
             overlay.innerHTML = `
-                <div class="lock-message"><i class="fa-solid fa-lock"></i>
-                    <h3>강의 대기 중 (Room Idle)</h3><p>좌측에서 <b>[사용중]</b>으로 변경하고 저장하세요.</p>
+                <div class="lock-message">
+                    <i class="fa-solid fa-lock"></i>
+                    <h3>강의 대기 중 (Room Idle)</h3>
+                    <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
                 </div>`;
         }
     },
 
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
+    
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
         document.getElementById('roomPw').value = data.password || "1234";
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
+    
     renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
     
     renderQr: function(url) {
@@ -374,19 +389,44 @@ const ui = {
     
     openQrModal: function() {
         const modal = document.getElementById('qrModal');
+        const bigTarget = document.getElementById('qrBigTarget');
         const url = document.getElementById('studentLink').value;
         if(!url) return;
         modal.style.display = 'flex';
-        const target = document.getElementById('qrBigTarget');
-        target.innerHTML = ""; 
-        setTimeout(() => { new QRCode(target, { text: url, width: 300, height: 300 }); }, 50);
+        bigTarget.innerHTML = ""; 
+        setTimeout(() => {
+            try {
+                new QRCode(bigTarget, { 
+                    text: url, width: 300, height: 300,
+                    colorDark : "#000000", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } catch(e) {}
+        }, 50);
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
 
     copyLink: function() {
         const urlInput = document.getElementById('studentLink');
-        urlInput.select(); document.execCommand('copy');
-        alert("링크가 복사되었습니다!");
+        const url = urlInput.value;
+        if (!url) return alert("복사할 링크가 없습니다.");
+
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999);
+        
+        try {
+            const successful = document.execCommand('copy');
+            if(successful) alert("링크가 복사되었습니다!");
+            else throw new Error("Copy failed");
+        } catch (err) {
+            if(navigator.clipboard) {
+                navigator.clipboard.writeText(url)
+                    .then(() => alert("링크가 복사되었습니다!"))
+                    .catch(() => alert("복사 실패. 수동으로 복사해주세요."));
+            } else {
+                alert("복사 실패.");
+            }
+        }
     },
 
     setMode: function(mode) {
@@ -423,14 +463,35 @@ const ui = {
     },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     
-    openPwModal: function() { document.getElementById('changePwModal').style.display = 'flex'; },
+    openPwModal: function() { 
+        const curInput = document.getElementById('cp-current');
+        curInput.value = ""; 
+        curInput.disabled = false;
+        curInput.placeholder = "현재 비밀번호를 입력하세요";
+        document.getElementById('cp-new').value = "";
+        document.getElementById('cp-confirm').value = "";
+        document.getElementById('changePwModal').style.display = 'flex'; 
+    },
     closePwModal: function() { document.getElementById('changePwModal').style.display = 'none'; },
 
-    toggleNightMode: function() { document.body.classList.toggle('night-mode'); },
-    toggleRightPanel: function() { document.getElementById('rightPanel').classList.toggle('open'); }
+    toggleNightMode: function() { 
+        document.body.classList.toggle('night-mode'); 
+        const isNight = document.body.classList.contains('night-mode');
+        if(isNight) {
+            document.getElementById('iconSun').classList.remove('active');
+            document.getElementById('iconMoon').classList.add('active');
+        } else {
+            document.getElementById('iconSun').classList.add('active');
+            document.getElementById('iconMoon').classList.remove('active');
+        }
+    },
+    toggleRightPanel: function() {
+        const p = document.getElementById('rightPanel'); p.classList.toggle('open');
+        document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
+    }
 };
 
-// --- 4. Quiz Manager (Full Logic) ---
+// --- 4. Quiz ---
 const quizMgr = {
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
@@ -455,15 +516,16 @@ const quizMgr = {
         if(!q || !a) return alert("Fill all fields.");
         state.quizList.push({ text: q, options: opts, correct: parseInt(a), checked: true });
         this.renderMiniList();
+        document.querySelectorAll('.panel-body input, .panel-body textarea').forEach(i => i.value = "");
     },
     renderMiniList: function() {
         const d = document.getElementById('miniQuizList'); d.innerHTML = "";
         state.quizList.forEach((q, i) => {
-            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"> Q${i+1}. ${q.text.substring(0, 20)}...</div>`;
+            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>Q${i+1}.</b> ${q.text.substring(0, 20)}...</div>`;
         });
     },
     downloadSample: function() {
-        const txt = "KAC의 약자는 무엇인가?\nKorea Airports Corporation\nKorea Army Company\nKing And Cat\nKick And Cry\n1";
+        const txt = "KAC의 약자는 무엇인가?\nKorea Airports Corporation\nKorea Army Company\nKing And Cat\nKick And Cry\n1\n\n다음 중 수도는?\n부산\n서울\n대구\n광주\n2";
         const blob = new Blob([txt], {type: "text/plain"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "quiz_sample.txt"; a.click();
     },
@@ -473,17 +535,33 @@ const quizMgr = {
         this.renderScreen(testQ);
         document.getElementById('btnTest').style.display = 'none';
         document.getElementById('quizControls').style.display = 'flex';
+        this.setGuide("TEST MODE: Press [Start] to enable.");
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: 'TEST', status: 'ready', ...testQ });
     },
     prevNext: function(dir) {
+        if(state.isTestMode) { if(dir > 0) this.startRealQuiz(); else alert("Test Mode."); return; }
         let next = state.currentQuizIdx + dir;
-        if(next < 0 || next >= state.quizList.length) return alert("No more quiz.");
-        state.currentQuizIdx = next;
+        while(next >= 0 && next < state.quizList.length) {
+            if(state.quizList[next].checked) { state.currentQuizIdx = next; this.showQuiz(); return; }
+            next += dir;
+        }
+        alert("End.");
+    },
+    startRealQuiz: function() {
+        if(state.quizList.length === 0) return alert("Load file first.");
+        state.isTestMode = false;
+        const idx = state.quizList.findIndex(q => q.checked);
+        if(idx === -1) return alert("No questions selected.");
+        state.currentQuizIdx = idx;
         this.showQuiz();
+        document.getElementById('btnTest').style.display = 'none';
+        document.getElementById('quizControls').style.display = 'flex';
     },
     showQuiz: function() {
         const q = state.quizList[state.currentQuizIdx];
+        this.resetTimerUI();
         this.renderScreen(q);
+        this.setGuide(`Q${state.currentQuizIdx + 1}. Ready`);
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', ...q });
     },
     renderScreen: function(q) {
@@ -499,61 +577,69 @@ const quizMgr = {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         const correct = state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct;
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
-        if(act === 'open') { this.startTimer(); }
+        if(act === 'open') { this.startTimer(); this.setGuide("RUNNING..."); }
         else if(act === 'close') {
-            clearInterval(state.timerInterval);
+            this.stopTimer();
+            document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
             document.getElementById(`opt-${correct}`).classList.add('reveal-answer');
+            this.setGuide("STOPPED.");
         } else if(act === 'result') {
+            this.stopTimer();
             document.getElementById('d-options').style.display = 'none';
             document.getElementById('d-chart').style.display = 'flex';
             this.renderChart(id, correct);
+            this.setGuide("RESULT.");
         }
     },
     startTimer: function() {
+        this.stopTimer();
         let timeLeft = 30;
         const display = document.getElementById('quizTimer');
+        display.classList.remove('urgent');
+        const endTime = Date.now() + (timeLeft * 1000);
         state.timerInterval = setInterval(() => {
-            timeLeft--;
-            display.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
-            if (timeLeft <= 0) { clearInterval(state.timerInterval); this.action('close'); }
-        }, 1000);
+            const now = Date.now();
+            const remain = Math.ceil((endTime - now) / 1000);
+            if (remain <= 10) display.classList.add('urgent');
+            display.innerText = `00:${remain < 10 ? '0'+remain : remain}`;
+            if (remain <= 0) this.action('close');
+        }, 200);
     },
+    stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
+    resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:30"; document.getElementById('quizTimer').classList.remove('urgent'); },
+    
     renderChart: function(id, correct) {
         const div = document.getElementById('d-chart'); div.innerHTML = "";
         firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
-            const counts = [0,0,0,0];
-            Object.values(s.val() || {}).forEach(v => { counts[v.choice-1]++; });
-            const maxVal = Math.max(...counts, 1);
+            const data = s.val() || {};
+            const counts = [0, 0, 0, 0];
+            Object.values(data).forEach(v => { if(v.choice >= 1 && v.choice <= 4) counts[v.choice - 1]++; });
+            const maxVal = Math.max(...counts);
+            
             counts.forEach((c, i) => {
-                const isCorrect = (i+1)===correct;
-                div.innerHTML += `<div class="bar-wrapper ${isCorrect?'correct':''}">
-                    <div class="bar-value">${c}</div><div class="bar-fill" style="height:${(c/maxVal)*100}%"></div><div class="bar-label">${i+1}</div>
-                </div>`;
+                const isCorrect = (i + 1) === correct;
+                const height = (c / Math.max(maxVal, 1)) * 80;
+                const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${height > 0 ? height + '%' : '40px'};">👑</div>` : '';
+                div.innerHTML += `
+                    <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
+                        ${crownHtml}
+                        <div class="bar-value">${c}</div>
+                        <div class="bar-fill" style="height:${height}%"></div>
+                        <div class="bar-label">${i+1}</div>
+                    </div>`;
             });
         });
     },
+    setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; },
     closeQuizMode: function() { ui.setMode('qa'); }
 };
 
-// --- 5. Print Manager (Full Logic) ---
+// --- 5. Print ---
 const printMgr = {
-    openInputModal: function() { document.getElementById('printInputModal').style.display = 'flex'; },
-    confirmPrint: function(isSkip) { 
-        const date = isSkip ? "" : document.getElementById('printDateInput').value;
-        const prof = isSkip ? "" : document.getElementById('printProfInput').value;
-        this.closeInputModal(); this.openPreview(date, prof); 
-    },
+    openInputModal: function() { document.getElementById('printDateInput').value = ""; document.getElementById('printProfInput').value = ""; document.getElementById('printInputModal').style.display = 'flex'; },
+    confirmPrint: function(isSkip) { const date = isSkip ? "" : document.getElementById('printDateInput').value; const prof = isSkip ? "" : document.getElementById('printProfInput').value; this.closeInputModal(); this.openPreview(date, prof); },
     closeInputModal: function() { document.getElementById('printInputModal').style.display = 'none'; },
-    openPreview: function(date, prof) {
-        document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value;
-        document.getElementById('doc-date').innerText = date;
-        document.getElementById('doc-prof').innerText = prof;
-        const listBody = document.getElementById('docListBody'); listBody.innerHTML = "";
-        Object.values(state.qaData).forEach((item, idx) => {
-            listBody.innerHTML += `<tr><td style="text-align:center">${idx+1}</td><td>${item.text}</td><td style="text-align:center">${item.likes||0}</td></tr>`;
-        });
-        document.getElementById('printPreviewModal').style.display = 'flex';
-    },
+    openPreview: function(date, prof) { document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value; document.getElementById('doc-date').innerText = date || ""; document.getElementById('doc-prof').innerText = prof || ""; const listBody = document.getElementById('docListBody'); listBody.innerHTML = ""; let items = Object.values(state.qaData || {}); document.getElementById('doc-summary-text').innerText = `Q&A 총 취합건수 : ${items.length}건`; if (items.length === 0) listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:20px;'>내역 없음</td></tr>"; else { items.forEach((item, idx) => { listBody.innerHTML += `<tr><td style="text-align:center">${idx + 1}</td><td style="font-weight:bold;">${item.text}</td><td style="text-align:center">${item.likes || 0}</td></tr>`; }); } document.getElementById('printPreviewModal').style.display = 'flex'; },
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
     executePrint: function() { window.print(); }
 };

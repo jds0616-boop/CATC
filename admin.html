@@ -152,6 +152,7 @@
                     <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭">
                 </div>
 
+                <!-- [수정] onclick 속성 직접 추가 -->
                 <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings (설정 저장)</button>
                 
                 <div class="divider"></div>
@@ -265,35 +266,12 @@
         </div>
     </div>
 
-    <!-- Q&A Detail Modal (개선된 디자인 적용) -->
     <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
         <div class="modal-box">
-            <!-- 질문 텍스트 영역 (박스 처리) -->
-            <div class="modal-q-text" id="m-text">질문 내용이 표시됩니다.</div>
-            
-            <!-- 하단 버튼 영역 -->
+            <div class="modal-q-text" id="m-text"></div>
             <div class="modal-actions">
-                <div class="modal-left-btns">
-                    <!-- 고정 버튼 -->
-                    <button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')" title="중요 질문 고정">
-                        <i class="fa-solid fa-thumbtack"></i>
-                    </button>
-                    <!-- 삭제 버튼 -->
-                    <button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')" title="삭제">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-                
-                <div class="modal-right-btns">
-                    <!-- 나중에 답변 버튼 -->
-                    <button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Answer Later
-                    </button>
-                    <!-- 완료 버튼 -->
-                    <button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')">
-                        <i class="fa-solid fa-check"></i> Done (Close)
-                    </button>
-                </div>
+                <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
+                <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
             </div>
         </div>
     </div>
