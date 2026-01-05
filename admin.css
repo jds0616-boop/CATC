@@ -185,6 +185,11 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; 
     cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; 
     display: flex; justify-content: space-between; align-items: flex-start; 
+
+    /* 👇 [여기 추가!] 마우스 클릭 시 커서 깜빡임/드래그 방지 👇 */
+    user-select: none;
+    -webkit-user-select: none; /* 크롬, 사파리용 */
+    outline: none; /* 클릭 시 포커스 테두리 제거 */
 }
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
