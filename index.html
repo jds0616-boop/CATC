@@ -14,20 +14,14 @@
     <style>
         :root { 
             --header-bg: #0f172a; 
-            --bg-color: #0f172a; /* 기존 배경색 유지 */
+            --bg-color: #0f172a; 
             --accent-color: #3b82f6; 
+            --btn-yellow: #facc15;
+            --btn-text: #1e293b;
             --card-bg: #ffffff; 
             --text-color: #1e293b;
-            --input-bg: #f1f5f9;
-            --safe-area-bottom: env(safe-area-inset-bottom, 20px); /* 기본값 추가 */
-        }
-        
-        body.night-mode { 
-            --header-bg: #000000;
-            --bg-color: #111111; 
-            --card-bg: #1e1e1e; 
-            --text-color: #e2e8f0;
-            --input-bg: #1e1e1e;
+            --input-bg: #f8fafc; /* 밝은 회색 톤 */
+            --safe-area-bottom: env(safe-area-inset-bottom);
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', sans-serif; }
@@ -35,17 +29,40 @@
         body { 
             margin: 0; background: var(--bg-color);
             color: var(--text-color); 
-            height: 100dvh; /* 모바일 주소창 대응 */
-            display: flex; justify-content: center; overflow: hidden; 
+            height: 100dvh; /* 모바일 대응 높이 */
+            overflow: hidden; 
         }
 
+        /* --- 0. Landing Page (Entrance) --- */
+        .landing-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--header-bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; padding: 40px 20px; text-align: center;
+        }
+        .landing-course { font-size: 24px; font-weight: 800; margin-bottom: 10px; line-height: 1.3; }
+        .landing-room { font-size: 16px; opacity: 0.7; font-weight: 500; margin-bottom: 60px; padding: 5px 15px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; }
+        
+        .btn-enter {
+            background: var(--btn-yellow); color: var(--btn-text);
+            width: 200px; height: 56px; border-radius: 30px;
+            font-size: 18px; font-weight: 800; border: none; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.1s;
+        }
+        .btn-enter:active { transform: scale(0.96); }
+        
+        .landing-logo { position: absolute; bottom: 40px; width: 120px; opacity: 0.8; filter: grayscale(1) invert(1); }
+
+        /* --- Main App Container --- */
         .app-container {
-            width: 100%; max-width: 600px;
-            height: 100%; display: flex; flex-direction: column; position: relative;
-            background: var(--bg-color);
+            width: 100%; height: 100%; display: none; /* 입장 전 숨김 */
+            flex-direction: column; position: relative;
+            background: var(--bg-color); max-width: 600px; margin: 0 auto;
         }
 
-        /* 1. Header (Fixed) */
+        /* 1. Header */
         .header {
             height: 56px; background: var(--header-bg); color: white; 
             display: flex; align-items: center; justify-content: space-between;
@@ -53,42 +70,29 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         
-        .header-left { /* Back Button */
-            width: 40px; display: flex; align-items: center; justify-content: center; 
-            font-size: 20px; cursor: pointer; color: white;
-        }
-        .header-center { 
-            flex-grow: 1; text-align: center; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; overflow: hidden;
-        }
+        .header-btn { width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: white; }
+        .header-center { flex-grow: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .header-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .header-sub { 
-            font-size: 11px; opacity: 0.8; margin-top: 2px; display: flex; 
-            gap: 6px; align-items: center; color: white;
-        }
-        .live-badge { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; }
-        .user-count { /* For real-time user count */ }
+        .header-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+        .live-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #22c55e; }
 
         /* 2. Sort Tab */
         .sort-bar {
             padding: 10px 15px; background: var(--bg-color);
-            display: flex; gap: 10px; z-index: 80;
+            display: flex; gap: 10px; z-index: 80; flex-shrink: 0;
         }
         .sort-chip {
             padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
             background: rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer;
             transition: 0.2s; border: 1px solid transparent;
         }
-        .sort-chip.active {
-            background: var(--accent-color); color: white; border-color: var(--accent-color);
-        }
+        .sort-chip.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
         /* 3. List Area */
         .scroll-container { 
             flex-grow: 1; overflow-y: auto; position: relative;
-            padding: 0 15px 120px 15px; /* Input Dock 공간 확보 */
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
+            padding: 0 15px 80px 15px; /* 하단 입력창 높이만큼 여백 */
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
         }
         .scroll-container::-webkit-scrollbar { display: none; }
 
@@ -99,28 +103,20 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;
         }
         .q-card.my-q { border: 2px solid var(--accent-color); background: #f0f9ff; }
-        body.night-mode .q-card.my-q { background: #1e293b; border-color: #3b82f6; }
-
+        
         .q-avatar {
             width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            font-size: 16px; color: #64748b; margin-top: 2px; /* align with text */
+            font-size: 16px; color: #64748b;
         }
         .my-q .q-avatar { background: var(--accent-color); color: white; }
 
         .q-content { flex-grow: 1; min-width: 0; }
-        .q-text { 
-            font-size: 15px; line-height: 1.5; color: var(--text-color); margin-bottom: 8px;
-            word-break: break-word; font-weight: 500;
-        }
+        .q-text { font-size: 15px; line-height: 1.5; color: var(--text-color); margin-bottom: 8px; word-break: break-word; font-weight: 500; }
         .q-meta { font-size: 11px; color: #94a3b8; display: flex; gap: 8px; align-items: center; }
-        .btn-mini { cursor: pointer; padding: 4px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-weight: 600; }
+        .btn-mini { cursor: pointer; padding: 4px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; }
         
-        /* Like Button (Big & Right) */
-        .q-like-area {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-width: 44px; flex-shrink: 0; gap: 4px;
-        }
+        .q-like-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 44px; flex-shrink: 0; gap: 4px; }
         .like-btn {
             width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9;
             display: flex; align-items: center; justify-content: center;
@@ -130,20 +126,18 @@
         .like-count { font-size: 12px; font-weight: 700; color: #64748b; }
         .like-btn.active + .like-count { color: #ef4444; }
 
-        /* 4. Input Area (Fixed Bottom) */
+        /* 4. Input Area (Fixed Bottom, Keyboard safe) */
         .input-dock {
-            position: fixed; bottom: 0; left: 0; width: 100%;
+            position: absolute; bottom: 0; left: 0; width: 100%;
             background: var(--input-bg);
-            padding: 12px 15px calc(12px + var(--safe-area-bottom)) 15px; /* Safe area */
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-            z-index: 200;
-            transition: transform 0s; /* 키보드 올라올 때 애니메이션 없이 즉시 반영 */
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200;
         }
-        /* Fixed Input Box within Dock */
         .input-box {
-            background: var(--card-bg); border-radius: 25px; padding: 5px 5px 5px 20px;
-            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.05);
+            background: white; border-radius: 25px; padding: 5px 5px 5px 15px;
+            display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
         }
         .real-input {
             flex-grow: 1; border: none; background: transparent; font-size: 15px;
@@ -156,11 +150,8 @@
         }
         .send-btn:active { transform: scale(0.9); }
         .send-btn.editing { background: #10b981; }
-        
-        /* Input dock should not hide when keyboard appears */
-        .input-dock.keyboard-visible { transform: translateY(-100%); } /* To adjust position if needed */
 
-        /* Footer Logo (Centered, Behind content) */
+        /* Footer Logo */
         .footer-logo {
             position: absolute; bottom: 20px; left: 0; width: 100%;
             display: flex; justify-content: center; opacity: 0.4; pointer-events: none; z-index: 50;
@@ -174,60 +165,68 @@
             z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
         }
         .quiz-box { width: 100%; background: white; border-radius: 24px; padding: 30px 20px; text-align: center; }
-        .quiz-opt-btn { 
-            width: 100%; height: 70px; margin-bottom: 10px; border-radius: 12px; 
-            font-size: 20px; font-weight: 800; border: 2px solid #e2e8f0; 
-            background: #f8fafc; color: #333; cursor: pointer; transition: 0.2s;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .quiz-opt-btn.active-mode { border-color: #cbd5e1; box-shadow: 0 4px 0 #cbd5e1; }
-        .quiz-opt-btn.active-mode:active { transform: translateY(4px); box-shadow: none; }
-        .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 0 #1d4ed8; }
+        .quiz-opt-btn { width: 100%; height: 70px; margin-bottom: 10px; border-radius: 12px; font-size: 20px; font-weight: 800; border: 2px solid #e2e8f0; background: #f8fafc; color: #333; }
+        .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
-        /* Menu Modal */
-        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .menu-box { background: var(--card-bg); width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .menu-header { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: var(--text-color); }
-        .menu-item { padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; color: var(--text-color); font-weight: 600; font-size: 15px; transition: 0.2s; }
-        .menu-item:hover { background: rgba(0,0,0,0.03); color: var(--accent-color); }
+        /* Menu */
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
+        .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- 1. Fixed Header -->
+    <!-- Landing Page (Entrance) -->
+    <div id="landingPage" class="landing-page">
+        <div class="landing-course" id="landingTitle">Loading...</div>
+        <div class="landing-room" id="landingBadge">Room ...</div>
+        
+        <button class="btn-enter" onclick="enterApp()">
+            입장하기 <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        </button>
+        
+        <img src="logo.png" alt="KAC" class="landing-logo">
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="mainApp">
+        <!-- Header -->
         <div class="header">
-            <div class="header-left" onclick="goBack()"><i class="fa-solid fa-chevron-left"></i></div>
+            <!-- Left: Exit -->
+            <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
+            
             <div class="header-center">
-                <div class="header-title" id="roomTitle">Loading...</div>
+                <div class="header-title" id="roomTitle">Course Name</div>
                 <div class="header-sub">
-                    <span class="live-badge"></span>
-                    <span id="userCount" class="user-count">0명 접속</span> · <span id="roomBadge">Room A</span>
+                    <span class="live-dot"></span>
+                    <span id="realUserCount">1명 접속</span> · <span id="roomBadge">Room A</span>
                 </div>
             </div>
-            <div class="header-right" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+            
+            <!-- Right: Menu -->
+            <div class="header-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
         </div>
 
-        <!-- 2. Sort Tab -->
+        <!-- Sort Tab -->
         <div class="sort-bar">
             <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
             <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
         </div>
 
-        <!-- 3. Question List -->
+        <!-- List -->
         <div class="scroll-container" id="scrollContainer">
             <div id="qList" class="q-list"></div>
             <div class="footer-logo"><img src="logo.png" alt="KAC"></div>
         </div>
 
-        <!-- 4. Input Area (Fixed Bottom) -->
+        <!-- Input (Fixed Bottom) -->
         <div class="input-dock" id="inputDock">
             <div class="input-box">
-                <input type="text" id="qInput" class="real-input" placeholder="질문을 입력하세요 (익명)" maxlength="100">
+                <!-- Autocomplete Off to prevent extra keyboard toolbar -->
+                <input type="text" id="qInput" class="real-input" 
+                       placeholder="질문을 입력하세요 (익명)" maxlength="100"
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <button id="submitBtn" class="send-btn" onclick="submitQ()"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-            <div style="text-align:right; font-size:11px; color:#64748b; margin-top:6px; padding-right:10px;">
-                <span id="charCount">0/100</span> <span id="coolTimer" style="color:#ef4444; font-weight:bold;"></span>
             </div>
         </div>
     </div>
@@ -237,10 +236,10 @@
         <div class="quiz-box">
             <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
             <div id="quizStatusMsg" style="margin-bottom:30px; font-size:16px; color:#333;">정답을 선택하세요</div>
-            <button class="quiz-opt-btn active-mode" onclick="sendAns(1)">1</button>
-            <button class="quiz-opt-btn active-mode" onclick="sendAns(2)">2</button>
-            <button class="quiz-opt-btn active-mode" onclick="sendAns(3)">3</button>
-            <button class="quiz-opt-btn active-mode" onclick="sendAns(4)">4</button>
+            <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button>
+            <button class="quiz-opt-btn" onclick="sendAns(2)">2번</button>
+            <button class="quiz-opt-btn" onclick="sendAns(3)">3번</button>
+            <button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
             <div id="quizWait" style="margin-top:15px; font-weight:bold; color:#64748b; display:none;">제출완료!</div>
         </div>
     </div>
@@ -248,8 +247,8 @@
     <!-- Menu Modal -->
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
         <div class="menu-box">
-            <div class="menu-header">강의실 선택</div>
-            <div class="menu-list" id="roomList"></div>
+            <h3>강의실 이동</h3>
+            <div id="roomList" style="max-height:300px; overflow-y:auto;"></div>
             <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#e2e8f0;">닫기</button>
         </div>
     </div>
@@ -259,20 +258,15 @@
         let dbRef = {}; 
         let currentRoom = null;
         let myQs = {}; 
-        let myLikes = {}; // Stores keys of liked questions
+        let myLikes = {};
         let lastPostTime = 0;
         let editingKey = null; 
         let currentSort = 'new';
         let currentQuizId = null;
         let canAnswer = false;
-        let lastScrollTop = 0; // For scroll direction detection
-        let userCountChannel = null; // BroadcastChannel for user counting
-        let currentUserCount = 0;
-
-        // --- Initialize ---
+        
+        // --- 1. Init & Landing Logic ---
         (async function init() {
-            window.scrollTo(0,1); // Hide browser UI elements on mobile
-
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             const directRoom = params.get('room');
@@ -281,12 +275,14 @@
             else if (directRoom) currentRoom = directRoom;
 
             if (!currentRoom) {
-                alert("유효하지 않은 주소입니다. 관리자에게 문의해주세요.");
-                return;
+                alert("유효하지 않은 주소입니다."); return;
             }
+
+            // Init UI Text
             document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+            document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
             
-            // Load local state
+            // Load Local Data
             myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
             myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
             lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
@@ -299,110 +295,98 @@
                 quiz: db.ref(`${rPath}/activeQuiz`),
                 ans: db.ref(`${rPath}/quizAnswers`),
                 settings: db.ref(`${rPath}/settings`),
-                status: db.ref(`${rPath}/status`)
+                status: db.ref(`${rPath}/status`),
+                connections: db.ref(`${rPath}/connections`) // 실시간 접속자 경로
             };
 
             setupListeners();
-            setupScrollLogic();
             checkCooldown();
-
-            // Initialize BroadcastChannel for user counting
-            userCountChannel = new BroadcastChannel('kac_student_channel');
-            userCountChannel.onmessage = (event) => {
-                if (event.data === 'user_joined') {
-                    updateUserCount(1);
-                } else if (event.data === 'user_left') {
-                    updateUserCount(-1);
-                }
-            };
-            // Announce my arrival and get initial count
-            userCountChannel.postMessage('user_joined');
-            // [Important] If page is reloaded, the user count will reset. 
-            // A more robust solution would involve server-side session management or Firebase Presence.
-            // For now, we simulate with a base count and add 1 for the current tab.
-            setTimeout(() => {
-                // Simulate some initial users if no BroadcastChannel message received yet
-                if (currentUserCount === 0) {
-                    updateUserCount(Math.floor(Math.random() * 5 + 2)); // Simulate 2-6 users
-                }
-            }, 1000);
         })();
 
-        // --- 1. Scroll & Input Logic ---
-        function setupScrollLogic() {
-            const container = document.getElementById('scrollContainer');
-            const dock = document.getElementById('inputDock');
-            
-            container.addEventListener('scroll', () => {
-                const st = container.scrollTop;
-                // Hide input when scrolling down, show when scrolling up
-                if (st > lastScrollTop && st > 50) { // Scrolling down
-                    dock.style.transform = 'translateY(100%)'; // Hide dock
-                } else { // Scrolling up or at top
-                    dock.style.transform = 'translateY(0)'; // Show dock
+        // 입장 버튼 클릭 시
+        function enterApp() {
+            // 1. 전체화면 시도 (브라우저 정책상 사용자 클릭 시만 가능)
+            const doc = document.documentElement;
+            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
+            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
+
+            // 2. 화면 전환
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'flex';
+
+            // 3. 실시간 접속 카운팅 시작
+            startPresence();
+        }
+
+        function exitApp() {
+            if(confirm("대기화면으로 나가시겠습니까?")) {
+                location.reload();
+            }
+        }
+
+        // --- 2. Real-time Presence ---
+        function startPresence() {
+            const connectedRef = firebase.database().ref(".info/connected");
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    // 접속 시 목록에 추가, 연결 끊기면 자동 삭제
+                    const con = dbRef.connections.push();
+                    con.onDisconnect().remove();
+                    con.set(true);
                 }
-                lastScrollTop = st <= 0 ? 0 : st;
             });
 
-            // Input focus logic to keep dock visible
-            document.getElementById('qInput').addEventListener('focus', () => {
-                dock.style.transform = 'translateY(0)'; // Ensure dock is visible when input focused
+            // 접속자 수 모니터링
+            dbRef.connections.on("value", (snap) => {
+                const count = snap.numChildren();
+                document.getElementById('realUserCount').innerText = `${count}명 접속`;
             });
         }
 
-        // --- 2. Data Listeners ---
+        // --- 3. Data Listeners ---
         function setupListeners() {
-            // Course Name & Room Info
+            // Course Info
             dbRef.settings.on('value', s => {
                 const val = s.val() || {};
-                document.getElementById('roomTitle').innerText = val.courseName || `Course ${currentRoom}`;
-            });
-            
-            // Real-time Question List
-            dbRef.qa.on('value', snap => {
-                renderList(snap.val() || {});
+                const title = val.courseName || `Course ${currentRoom}`;
+                document.getElementById('roomTitle').innerText = title;
+                document.getElementById('landingTitle').innerText = title;
             });
 
-            // Quiz Mode Status
+            // Q&A List
+            dbRef.qa.on('value', snap => {
+                const data = snap.val() || {};
+                renderList(data);
+            });
+
+            // Quiz
             dbRef.status.child('mode').on('value', s => {
-                const mode = s.val();
-                if(mode !== 'quiz') document.getElementById('quizOverlay').style.display = 'none';
+                if(s.val() !== 'quiz') document.getElementById('quizOverlay').style.display = 'none';
             });
             dbRef.quiz.on('value', s => {
                 const q = s.val();
-                const overlay = document.getElementById('quizOverlay');
-                if(!q || q.status === 'result') { overlay.style.display = 'none'; return; }
-                
+                if(!q || q.status === 'result') { 
+                    document.getElementById('quizOverlay').style.display = 'none'; return; 
+                }
                 firebase.database().ref(`courses/${currentRoom}/status/mode`).once('value', m => {
                     if(m.val() === 'quiz') {
-                        overlay.style.display = 'flex';
-                        if(currentQuizId !== q.id) { // New quiz started
-                            currentQuizId = q.id;
-                            canAnswer = true;
+                        document.getElementById('quizOverlay').style.display = 'flex';
+                        if(currentQuizId !== q.id) {
+                            currentQuizId = q.id; canAnswer = true;
                             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
                             document.getElementById('quizWait').style.display = 'none';
-                        }
-                        // Update button states based on quiz status
-                        const btns = overlay.querySelectorAll('.quiz-opt-btn');
-                        const msg = overlay.querySelector('#quizStatusMsg');
-                        if(q.status === 'open') {
-                            msg.innerText = "정답을 선택하세요!";
-                            btns.forEach(b => { b.classList.add('active-mode'); b.disabled = false; });
-                        } else {
-                            msg.innerText = "답변이 마감되었습니다.";
-                            btns.forEach(b => { b.classList.remove('active-mode'); b.disabled = true; });
                         }
                     }
                 });
             });
         }
 
-        // --- 3. Rendering & UI Updates ---
+        // --- 4. Rendering ---
         function setSort(type) {
             currentSort = type;
             document.getElementById('sortNew').classList.toggle('active', type === 'new');
             document.getElementById('sortLike').classList.toggle('active', type === 'like');
-            dbRef.qa.once('value', s => renderList(s.val()||{})); // Re-render
+            dbRef.qa.once('value', s => renderList(s.val()||{}));
         }
 
         function renderList(data) {
@@ -410,7 +394,6 @@
             list.innerHTML = "";
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
 
-            // Sort Logic
             if(currentSort === 'like') {
                 items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
             } else {
@@ -423,7 +406,6 @@
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
                 
-                // Edit/Delete meta for own questions (within 5 mins)
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
                 if(isMine && (Date.now() - myQs[item.id] < 300000)) {
                     metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span>
@@ -448,58 +430,41 @@
                 `;
             });
         }
-        
-        function updateUserCount(delta) {
-            currentUserCount += delta;
-            if (currentUserCount < 0) currentUserCount = 0; // Ensure non-negative
-            document.getElementById('userCount').innerText = `${currentUserCount}명 접속`;
-        }
 
-        // --- 4. Actions ---
+        // --- 5. Actions ---
         function submitQ() {
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
 
-            // Editing mode
             if(editingKey) {
-                dbRef.qa.child(editingKey).update({ text: txt }).then(() => {
-                    alert("수정 완료"); resetInput();
-                });
+                dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); });
                 return;
             }
-
-            // Cooldown Check
             const now = Date.now();
-            if(now - lastPostTime < 120000) { alert("잠시 후 다시 질문해주세요 (도배 방지)"); return; }
+            if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
 
-            // New Post
             const ref = dbRef.qa.push();
             ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
             
-            myQs[ref.key] = now; // Store post time for edit permission
+            myQs[ref.key] = now; 
             localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
             lastPostTime = now;
             localStorage.setItem(`lastTime_${currentRoom}`, now);
-            
-            resetInput();
-            checkCooldown();
+            resetInput(); checkCooldown();
         }
 
         function toggleLike(key) {
-            if(myLikes[key]) { // Unlike
-                dbRef.qa.child(key).transaction(p => { if(p) p.likes = Math.max(0, (p.likes||0)-1); return p; });
+            // [수정] 토글 방식
+            if(myLikes[key]) {
+                // 취소
+                dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; });
                 delete myLikes[key];
-            } else { // Like
+            } else {
+                // 좋아요
                 dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; });
                 myLikes[key] = true;
             }
             localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
-            // Update UI immediately for visual feedback
-            const likeBtn = event.currentTarget;
-            const likeCount = likeBtn.nextElementSibling;
-            const currentLikes = parseInt(likeCount.innerText);
-            likeCount.innerText = myLikes[key] ? currentLikes + 1 : currentLikes - 1;
-            likeBtn.classList.toggle('active');
         }
 
         function editQ(key) {
@@ -508,116 +473,56 @@
                 document.getElementById('submitBtn').classList.add('editing');
                 document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
                 editingKey = key;
+                document.getElementById('qInput').focus();
             });
         }
-
-        function deleteQ(key) {
-            if(confirm("삭제하시겠습니까?")) {
-                dbRef.qa.child(key).remove();
-            }
-        }
-
+        function deleteQ(key) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(key).remove(); }
         function resetInput() {
             document.getElementById('qInput').value = "";
             document.getElementById('submitBtn').classList.remove('editing');
             document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
             editingKey = null;
-            checkCooldown(); // Ensure cooldown is reset if editing was done
         }
 
+        // --- 6. Utilities ---
+        function checkCooldown() {
+            if(editingKey) return;
+            const diff = Date.now() - lastPostTime;
+            if(diff < 120000) {
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('submitBtn').style.opacity = 0.5;
+                setTimeout(checkCooldown, 1000);
+            } else {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').style.opacity = 1;
+            }
+        }
+        function formatTime(ts) {
+            const d = new Date(ts);
+            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+        function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
+        
         function sendAns(c) {
             if(!canAnswer) return;
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             event.target.classList.add('selected');
             document.getElementById('quizWait').style.display = 'block';
-            
-            let userToken = localStorage.getItem('userToken');
-            if(!userToken) { userToken = Math.random().toString(36).substr(2, 9); localStorage.setItem('userToken', userToken); }
-            
-            dbRef.ans.child(currentQuizId).child(userToken).set({ choice: c, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            let t = localStorage.getItem('uToken');
+            if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
+            dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
-
-        // --- 5. Utilities ---
-        function checkCooldown() {
-            if(editingKey) return; // Don't apply cooldown when editing
-            const diff = Date.now() - lastPostTime;
-            const timer = document.getElementById('coolTimer');
-            const submitBtn = document.getElementById('submitBtn');
-
-            if(diff < 120000) { // 2 minutes cooldown
-                const remainingSec = Math.ceil((120000 - diff) / 1000);
-                timer.innerText = `${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2,'0')}`;
-                submitBtn.disabled = true;
-                submitBtn.style.opacity = 0.5;
-                setTimeout(checkCooldown, 1000);
-            } else {
-                timer.innerText = ""; // Hide timer
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = 1;
-            }
-        }
-        
-        // Input length counter
-        document.getElementById('qInput').addEventListener('input', function() {
-            document.getElementById('charCount').innerText = this.value.length + "/100";
-        });
-
-        // Time Formatting
-        function formatTime(ts) {
-            const d = new Date(ts);
-            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-        }
-
-        // HTML Escaping
-        function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
-
-        // Theme Toggle
-        function toggleNight() { 
-            document.body.classList.toggle('night-mode'); 
-            const isNight = document.body.classList.contains('night-mode');
-            document.getElementById('themeIcon').className = isNight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-        }
-
-        // Menu Logic
         function openMenu() {
             const box = document.getElementById('roomList'); box.innerHTML = "";
-            // Populate room list (A-Z)
             for(let i=65; i<=90; i++) {
                 let c = String.fromCharCode(i);
                 box.innerHTML += `<div class="menu-item" onclick="changeRoom('${c}')">Room ${c}</div>`;
             }
             document.getElementById('menuModal').style.display = 'flex';
         }
-
         function changeRoom(r) {
-            const pw = prompt(`Room ${r} 비밀번호 입력:`); 
-            if (!pw) return; // User cancelled
-            
-            // In a real app, this should be a server-side check.
-            // For this example, we'll use a placeholder check.
-            // Assume '1234' is the default password, or specific room passwords from DB.
-            // This check is illustrative and NOT SECURE for production.
-            firebase.database().ref(`courses/${r}/settings/password`).once('value', snap => {
-                const dbPw = snap.val();
-                const validPw = dbPw ? String(dbPw) : "1234"; // Default to 1234 if not set
-
-                // NOTE: Master Key logic is removed from student-side for security.
-                // It should be handled by the admin panel.
-
-                if(String(pw) === validPw) {
-                    window.location.href = `index.html?room=${r}`;
-                } else {
-                    alert("비밀번호가 틀렸습니다.");
-                }
-            });
-        }
-        
-        // Navigation
-        function goBack() {
-            // Implement actual back navigation logic if needed, e.g., back to a lobby or login page.
-            // For now, a simple alert or reload might suffice depending on app flow.
-            alert("뒤로가기 기능이 구현되지 않았습니다.");
-            // window.history.back(); // If this page is part of a navigation stack
+            const pw = prompt("Enter Password:");
+            if(pw) window.location.href=`?room=${r}`;
         }
     </script>
 </body>
