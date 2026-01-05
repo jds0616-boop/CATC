@@ -1,8 +1,16 @@
-/* --- admin.js (Fix Double Save Popup) --- */
+/* --- admin.js (무중단 지속 운용 최적화 버전) --- */
 
 // --- 전역 상태 ---
 const state = {
-    sessionId: Math.random().toString(36).substr(2, 9), 
+    // [보정] 세션 스토리지를 확인해서 기존 ID가 있으면 쓰고, 없으면 새로 만듭니다. (새로고침 대응)
+    sessionId: (function() {
+        let id = sessionStorage.getItem('kac_admin_sid');
+        if (!id) {
+            id = Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('kac_admin_sid', id);
+        }
+        return id;
+    })(),
     room: null,
     isTestMode: false,
     quizList: [],
@@ -35,9 +43,12 @@ const authMgr = {
     },
 
     logout: function() {
-        firebase.auth().signOut().then(() => {
-            location.reload();
-        });
+        if(confirm("로그아웃 하시겠습니까?")) {
+            sessionStorage.removeItem('kac_admin_sid'); // 세션 정보 삭제
+            firebase.auth().signOut().then(() => {
+                location.reload();
+            });
+        }
     },
 
     executeChangePw: async function() {
@@ -78,11 +89,9 @@ const dataMgr = {
 
         try {
             ui.initRoomSelect(); 
-            document.getElementById('roomSelect').addEventListener('change', (e) => this.switchRoomAttempt(e.target.value));
-            
-            // [수정] btnSaveInfo와 btnCopyLink는 HTML onclick 속성으로 처리하므로 여기서는 제거 (중복 방지)
-            
-            document.getElementById('quizFile').addEventListener('change', (e) => quizMgr.loadFile(e));
+            // 중복 리스너 방지를 위해 .onchange로 할당
+            document.getElementById('roomSelect').onchange = (e) => this.switchRoomAttempt(e.target.value);
+            document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
             
             const qrEl = document.getElementById('qrcode');
             if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
@@ -117,6 +126,8 @@ const dataMgr = {
 
         if (input === roomPw || input === masterKey) {
             alert("인증 성공! 제어권을 가져옵니다.");
+            // 내가 이 방의 주인임을 브라우저에 기록
+            localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({
                 ownerSessionId: state.sessionId
             });
@@ -165,9 +176,19 @@ const dataMgr = {
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
+        // [보정] 방 상태를 감시하면서 자동으로 제어권을 가져오는 로직 (F5 새로고침 대응)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
+
+            // 1% 보정: 방이 '사용중'인데 현재 브라우저가 마지막 주인이라면 자동으로 세션 업데이트
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                if (localStorage.getItem(`last_owned_room`) === room) {
+                    dbRef.status.update({ ownerSessionId: state.sessionId });
+                    return; 
+                }
+            }
+
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
         });
@@ -182,9 +203,8 @@ const dataMgr = {
     },
 
     fetchCodeAndRenderQr: function(room) {
-        // [수정] 상대 경로 사용 (catc 폴더 등 하위 폴더 호환)
         const pathArr = window.location.pathname.split('/');
-        pathArr.pop(); // 파일명(admin.html) 제거
+        pathArr.pop(); 
         const baseUrl = window.location.origin + pathArr.join('/');
         
         firebase.database().ref('public_codes')
@@ -202,21 +222,12 @@ const dataMgr = {
             });
     },
 
-    renderQrForRoom: function(room) {
-        const pathArr = window.location.pathname.split('/');
-        pathArr.pop();
-        const baseUrl = window.location.origin + pathArr.join('/');
-        const studentUrl = `${baseUrl}/index.html?room=${room}`;
-        ui.renderQr(studentUrl);
-    },
-
     saveSettings: function() {
         let pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
         if (!pw) pw = "1234";
-
         const updates = { courseName: newName, password: pw };
 
         firebase.database().ref(`courses/${state.room}/settings`).update(updates);
@@ -224,17 +235,20 @@ const dataMgr = {
         document.getElementById('roomPw').value = pw;
 
         if (statusVal === 'active') {
+            // [중요] 저장 시 '내가 이 방의 주인임'을 브라우저에 기록
+            localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
                 ownerSessionId: state.sessionId
             });
-            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.\n- 과정명: ${newName}\n- 상태: ${statusVal}\n- 비밀번호: ${pw}`); 
+            alert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
         } else {
+            localStorage.removeItem(`last_owned_room`);
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'idle',
                 ownerSessionId: null
             });
-            alert(`✅ [Room ${state.room}] 설정이 저장되었습니다.\n- 상태: ${statusVal}`); 
+            alert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
         }
     },
 
@@ -249,6 +263,7 @@ const dataMgr = {
         }
 
         try {
+            localStorage.removeItem(`last_owned_room`);
             await firebase.database().ref().update(updates);
             alert("모든 강의실이 비활성화되었습니다.");
             this.forceEnterRoom(state.room);
