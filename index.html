@@ -53,7 +53,23 @@
         }
         .btn-enter:active { transform: scale(0.96); }
         
-        .landing-logo { position: absolute; bottom: 40px; width: 120px; opacity: 0.8; filter: grayscale(1) invert(1); }
+/* 기존 코드 */
+        /* .landing-logo { position: absolute; bottom: 40px; width: 120px; opacity: 0.8; filter: grayscale(1) invert(1); } */
+
+        /* [수정] 로고를 맨 앞으로 당기고 선명하게 변경 */
+        .landing-logo { 
+            position: absolute; 
+            bottom: 40px; 
+            width: 120px; 
+            
+            /* 수정된 부분 */
+            z-index: 10;     /* 다른 요소보다 앞으로 배치 */
+            opacity: 1;      /* 투명도 제거 (선명하게) */
+            
+            /* 로고 색상 관련 설정 (필요에 따라 선택) */
+            filter: grayscale(1) invert(1); /* 로고를 흰색으로 반전 (배경이 어두울 때 추천) */
+            /* 만약 원본 색상 그대로 쓰고 싶다면 위 filter 줄을 지우세요 */
+        }
 
         /* --- Main App Container --- */
         .app-container {
