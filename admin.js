@@ -1,8 +1,8 @@
-/* --- admin.js (무중단 지속 운용 최적화 버전) --- */
+/* --- admin.js (Final Integrated Version) --- */
 
 // --- 전역 상태 ---
 const state = {
-    // [보정] 세션 스토리지를 확인해서 기존 ID가 있으면 쓰고, 없으면 새로 만듭니다. (새로고침 대응)
+    // 세션 스토리지를 확인해서 기존 ID가 있으면 쓰고, 없으면 새로 만듭니다.
     sessionId: (function() {
         let id = sessionStorage.getItem('kac_admin_sid');
         if (!id) {
@@ -83,14 +83,19 @@ const dataMgr = {
         });
     },
 
+    // [수정] 초기 데이터 로드 (무조건 대기실로 시작)
     loadInitialData: function() {
-        const lastRoom = localStorage.getItem('kac_last_room') || 'A';
-        this.forceEnterRoom(lastRoom); 
+        // 기존 자동 입장 로직 제거
+        
+        // [변경] 대기실 UI 활성화
+        ui.initRoomSelect(); // 룸 리스트 불러오기
+        ui.showWaitingRoom(); // 대기실 화면 보여주기
 
         try {
-            ui.initRoomSelect(); 
-            // 중복 리스너 방지를 위해 .onchange로 할당
-            document.getElementById('roomSelect').onchange = (e) => this.switchRoomAttempt(e.target.value);
+            document.getElementById('roomSelect').onchange = (e) => {
+                if(e.target.value === "") return; // 선택 안함이면 무시
+                this.switchRoomAttempt(e.target.value);
+            };
             document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
             
             const qrEl = document.getElementById('qrcode');
@@ -114,6 +119,7 @@ const dataMgr = {
         }
     },
 
+    // [수정] 제어권 인증 함수 (암호화 비교)
     verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         const input = document.getElementById('takeoverPwInput').value;
@@ -121,12 +127,16 @@ const dataMgr = {
 
         const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
         const settings = settingSnap.val() || {};
-        const roomPw = settings.password ? String(settings.password) : "1234";
-        const masterKey = "13281"; 
+        
+        // DB에 저장된 비번 (암호화된 상태) vs 입력값 암호화 비교
+        // 기본값은 7777의 암호화 값
+        const dbPw = settings.password || btoa("7777"); 
+        const inputEncrypted = btoa(input);
+        
+        const masterKey = "13281"; // 마스터키는 평문 유지
 
-        if (input === roomPw || input === masterKey) {
+        if (inputEncrypted === dbPw || input === masterKey) {
             alert("인증 성공! 제어권을 가져옵니다.");
-            // 내가 이 방의 주인임을 브라우저에 기록
             localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({
                 ownerSessionId: state.sessionId
@@ -142,7 +152,7 @@ const dataMgr = {
 
     cancelTakeover: function() {
         document.getElementById('takeoverModal').style.display = 'none';
-        document.getElementById('roomSelect').value = state.room; 
+        document.getElementById('roomSelect').value = state.room || ""; 
         state.pendingRoom = null;
     },
 
@@ -162,6 +172,7 @@ const dataMgr = {
         if(selectBox) selectBox.value = room;
 
         ui.updateHeaderRoom(room);
+        ui.setMode('qa'); // 방 입장 시 QA 모드로 전환 (대기실 숨김)
 
         document.getElementById('qaList').innerHTML = "";
         state.qaData = {};
@@ -176,12 +187,10 @@ const dataMgr = {
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         
-        // [보정] 방 상태를 감시하면서 자동으로 제어권을 가져오는 로직 (F5 새로고침 대응)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
 
-            // 1% 보정: 방이 '사용중'인데 현재 브라우저가 마지막 주인이라면 자동으로 세션 업데이트
             if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
                 if (localStorage.getItem(`last_owned_room`) === room) {
                     dbRef.status.update({ ownerSessionId: state.sessionId });
@@ -222,20 +231,28 @@ const dataMgr = {
             });
     },
 
+    // [수정] 설정 저장 함수 (암호화 및 7777 기본값 적용)
     saveSettings: function() {
         let pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
-        if (!pw) pw = "1234";
-        const updates = { courseName: newName, password: pw };
+        // 1. 비밀번호가 비어있으면 기본값 7777
+        if (!pw) pw = "7777";
+        
+        // 2. 암호화 (여기서는 Base64 인코딩 사용 - btoa)
+        const encryptedPw = btoa(pw); 
 
+        const updates = { courseName: newName, password: encryptedPw };
+
+        // 설정 저장
         firebase.database().ref(`courses/${state.room}/settings`).update(updates);
+        
+        // 화면 업데이트
         document.getElementById('displayCourseTitle').innerText = newName;
-        document.getElementById('roomPw').value = pw;
+        document.getElementById('roomPw').value = pw; 
 
         if (statusVal === 'active') {
-            // [중요] 저장 시 '내가 이 방의 주인임'을 브라우저에 기록
             localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({
                 roomStatus: 'active',
@@ -266,7 +283,7 @@ const dataMgr = {
             localStorage.removeItem(`last_owned_room`);
             await firebase.database().ref().update(updates);
             alert("모든 강의실이 비활성화되었습니다.");
-            this.forceEnterRoom(state.room);
+            if(state.room) this.forceEnterRoom(state.room);
         } catch(e) {
             alert("오류 발생: " + e.message);
         }
@@ -311,13 +328,15 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
+    // [수정] 룸 선택 박스 초기화 (Select Room 옵션 추가)
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
             const sel = document.getElementById('roomSelect');
             const currentVal = state.room;
 
-            sel.innerHTML = "";
+            sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
+
             for(let i=65; i<=90; i++) {
                 const char = String.fromCharCode(i);
                 const roomData = allData[char] || {};
@@ -336,7 +355,7 @@ const ui = {
                         opt.style.color = '#ef4444'; 
                     }
                 } else {
-                    opt.innerText = `Room ${char}`;
+                    opt.innerText = `Room ${char} (⚪ 대기)`;
                 }
                 
                 if(char === currentVal) opt.selected = true;
@@ -375,7 +394,16 @@ const ui = {
     
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
-        document.getElementById('roomPw').value = data.password || "1234";
+        // 암호화된 비밀번호는 디코딩해서 보여주지 않고, 그냥 평문 입력값을 유지하거나 비워둡니다.
+        // 여기서는 편의상 입력된 값을 그대로 두거나 기본값 처리만 합니다.
+        // 만약 저장된 값을 복호화해서 보여주려면: atob(data.password) 사용 (단, 형식이 맞을 때만)
+        let savedPw = "7777";
+        try {
+            if(data.password) savedPw = atob(data.password);
+        } catch(e) {
+            savedPw = data.password || "7777"; // 구버전 데이터 호환
+        }
+        document.getElementById('roomPw').value = savedPw;
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
     },
     
@@ -430,12 +458,18 @@ const ui = {
     },
 
     setMode: function(mode) {
+        // [추가] 대기실 화면 숨김
+        document.getElementById('view-waiting').style.display = 'none';
+        
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
-        firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
-        if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
+        
+        if (state.room) {
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            if(mode === 'quiz' && state.quizList.length > 0) quizMgr.showQuiz(); 
+        }
     },
     filterQa: function(filter) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -488,6 +522,21 @@ const ui = {
     toggleRightPanel: function() {
         const p = document.getElementById('rightPanel'); p.classList.toggle('open');
         document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
+    },
+
+    // [추가] 대기실 화면 표시 함수
+    showWaitingRoom: function() {
+        state.room = null; // 현재 방 상태 초기화
+        document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
+        document.getElementById('displayCourseTitle').innerText = "강의실을 선택해주세요";
+        
+        // 모든 뷰 숨기고 대기실만 표시
+        document.getElementById('view-qa').style.display = 'none';
+        document.getElementById('view-quiz').style.display = 'none';
+        document.getElementById('view-waiting').style.display = 'flex';
+        
+        document.getElementById('courseNameInput').value = "";
+        document.getElementById('roomPw').value = "";
     }
 };
 
