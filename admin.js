@@ -85,8 +85,6 @@ const dataMgr = {
 
     // [수정] 초기 데이터 로드 (무조건 대기실로 시작)
     loadInitialData: function() {
-        // 기존 자동 입장 로직 제거
-        
         // [변경] 대기실 UI 활성화
         ui.initRoomSelect(); // 룸 리스트 불러오기
         ui.showWaitingRoom(); // 대기실 화면 보여주기
