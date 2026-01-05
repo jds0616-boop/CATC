@@ -36,12 +36,17 @@ const authMgr = {
             document.getElementById('loginOverlay').style.display = 'none';
             dataMgr.loadInitialData();
         } catch (error) {
-            console.error(error);
-            alert("로그인 실패: " + error.message);
+            // [수정] 에러 내용을 그대로 띄우지 않고, 깔끔한 한글 메시지로 변경
+            console.error("Login Error:", error); // 개발자 확인용 로그는 남김
+            
+            // 사용자에게는 깔끔하게 안내
+            alert("⛔ 비밀번호가 올바르지 않습니다.\n다시 확인해주세요.");
+            
+            // 입력창 비우고 다시 커서 두기
             document.getElementById('loginPwInput').value = "";
+            document.getElementById('loginPwInput').focus();
         }
     },
-
     logout: function() {
         if(confirm("로그아웃 하시겠습니까?")) {
             sessionStorage.removeItem('kac_admin_sid'); // 세션 정보 삭제
