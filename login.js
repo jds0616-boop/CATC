@@ -1,44 +1,44 @@
     // login.html 파일 안의 <script> 태그 내부
     // 기존 tryLogin 함수를 지우고 아래 걸로 붙여넣으세요.
 
+// [보안 수정완료] 하드코딩된 비번(1234) 삭제 및 에러메시지 개선
     async function tryLogin() {
         const input = document.getElementById('pwInput').value;
         const msgBox = document.getElementById('msg');
         
-        // 입력값이 없으면 경고
+        // 1. 입력 확인
         if(!input) { 
             msgBox.textContent = "비밀번호를 입력하세요."; 
+            msgBox.style.color = "#ef4444";
             return; 
         }
 
-        // [개발용 수정] 암호화 없이 1234 입력하면 강사로 바로 통과!
-        if(input === "1234") {
-            msgBox.style.color = "#4ade80";
-            msgBox.textContent = "강사 접속 성공!";
+        try {
+            msgBox.textContent = "확인 중...";
+            msgBox.style.color = "#fbbf24"; // 노란색(대기)
+
+            // 2. Firebase 서버 인증 (소스코드에 비번 없음)
+            // 관리자 이메일은 admin@kac.com 으로 고정
+            await firebase.auth().signInWithEmailAndPassword("admin@kac.com", input);
             
-            const sessionData = {
-                token: 'granted',
-                role: 'instructor',
-                expiry: Date.now() + (5 * 60 * 60 * 1000) // 5시간
+            // 3. 성공 시 메시지 및 이동
+            msgBox.style.color = "#4ade80"; // 녹색
+            msgBox.textContent = "접속 성공! 이동합니다.";
+            
+            // 세션 저장 (선택사항)
+            const sessionData = { 
+                token: 'granted', 
+                role: 'instructor', 
+                expiry: Date.now() + (12 * 60 * 60 * 1000) 
             };
             localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
             
-            // 0.5초 뒤 관리자 페이지로 이동
             setTimeout(() => location.replace('admin.html'), 500);
-            return;
-        }
 
-        // 관리자용 (9999)
-        if(input === "9999") {
-             msgBox.style.color = "#4ade80";
-             msgBox.textContent = "관리자 접속 성공!";
-             const sessionData = { token: 'granted', role: 'super_admin', expiry: Date.now() + 5*60*60*1000 };
-             localStorage.setItem('kac_admin_session', JSON.stringify(sessionData));
-             setTimeout(() => location.replace('admin.html'), 500);
-             return;
+        } catch (e) {
+            // 4. 실패 시 명확한 메시지 처리
+            console.error(e);
+            msgBox.style.color = "#ef4444"; // 빨간색
+            msgBox.textContent = "⛔ 비밀번호가 올바르지 않습니다.";
         }
-
-        // 틀렸을 때
-        msgBox.style.color = "#ef4444";
-        msgBox.textContent = "비밀번호 오류 (테스트: 1234)";
     }
