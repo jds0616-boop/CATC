@@ -1,4 +1,4 @@
-/* --- admin.js (Updated with 10s Timer & Fullscreen Fix) --- */
+/* --- admin.js (Final Fix for Fullscreen & Quiz Buttons) --- */
 
 const state = {
     sessionId: (function() {
@@ -27,13 +27,13 @@ const authMgr = {
     ADMIN_EMAIL: "admin@kac.com", 
     tryLogin: async function() {
         const inputPw = document.getElementById('loginPwInput').value;
-        if(!inputPw) return alert("비밀번호를 입력해주세요.");
+        if(!inputPw) return ui.showAlert("비밀번호를 입력해주세요.");
         try {
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
             document.getElementById('loginOverlay').style.display = 'none';
             dataMgr.loadInitialData();
         } catch (error) {
-            alert("⛔ 비밀번호가 올바르지 않습니다.\n다시 확인해주세요.");
+            ui.showAlert("⛔ 비밀번호가 올바르지 않습니다.\n다시 확인해주세요.");
             document.getElementById('loginPwInput').value = "";
             document.getElementById('loginPwInput').focus();
         }
@@ -48,10 +48,10 @@ const authMgr = {
         const user = firebase.auth().currentUser;
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
-        if(!user) return alert("로그인 상태가 아닙니다.");
-        if(!newPw || !confirmPw) return alert("모든 필드를 입력해주세요.");
-        if(newPw !== confirmPw) return alert("새 비밀번호가 일치하지 않습니다.");
-        try { await user.updatePassword(newPw); alert("비밀번호가 변경되었습니다."); ui.closePwModal(); } catch (e) { alert("변경 실패: " + e.message); }
+        if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
+        if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
+        if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
+        try { await user.updatePassword(newPw); ui.showAlert("비밀번호가 변경되었습니다."); ui.closePwModal(); } catch (e) { ui.showAlert("변경 실패: " + e.message); }
     }
 };
 
@@ -90,13 +90,13 @@ const dataMgr = {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
         if (btoa(input) === dbPw || input === "13281") {
-            alert("인증 성공! 제어권을 가져옵니다.");
+            ui.showAlert("인증 성공! 제어권을 가져옵니다.");
             localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({ ownerSessionId: state.sessionId });
             this.forceEnterRoom(newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
         } else {
-            alert("비밀번호가 일치하지 않습니다.");
+            ui.showAlert("비밀번호가 일치하지 않습니다.");
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverPwInput').focus();
         }
@@ -124,10 +124,7 @@ const dataMgr = {
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         document.getElementById('roomSelect').value = room;
-        
-        // [수정] 방 입장 시 상태 셀렉트 활성화
-        const statusSel = document.getElementById('roomStatusSelect');
-        statusSel.disabled = false;
+        document.getElementById('roomStatusSelect').disabled = false;
 
         ui.updateHeaderRoom(room);
         ui.setMode('qa');
@@ -180,11 +177,11 @@ const dataMgr = {
         if (statusVal === 'active') {
             localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'active', ownerSessionId: state.sessionId });
-            alert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
+            ui.showAlert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
         } else {
             localStorage.removeItem(`last_owned_room`);
             firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'idle', ownerSessionId: null });
-            alert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
+            ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
         }
     },
     deactivateAllRooms: async function() {
@@ -196,7 +193,7 @@ const dataMgr = {
             updates[`courses/${char}/status/ownerSessionId`] = null;
         }
         await firebase.database().ref().update(updates);
-        alert("모든 강의실이 비활성화되었습니다.");
+        ui.showAlert("모든 강의실이 비활성화되었습니다.");
         if(state.room) this.forceEnterRoom(state.room);
     },
     updateQa: function(action) {
@@ -213,13 +210,18 @@ const dataMgr = {
     },
     resetCourse: function() {
         if(confirm("현재 강의실 데이터를 초기화하시겠습니까?\n(질문, 퀴즈 내역이 모두 삭제됩니다)")) {
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => { alert("초기화 완료."); location.reload(); });
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => { ui.showAlert("초기화 완료."); location.reload(); });
         }
     }
 };
 
 // --- 3. UI ---
 const ui = {
+    // [신규] 커스텀 알림창 (전체화면 안 깨지게)
+    showAlert: function(msg) {
+        document.getElementById('customAlertText').innerText = msg;
+        document.getElementById('customAlertModal').style.display = 'flex';
+    },
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
@@ -267,7 +269,7 @@ const ui = {
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
     copyLink: function() {
         const u = document.getElementById('studentLink'); u.select();
-        document.execCommand('copy'); alert("링크가 복사되었습니다!");
+        document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
     },
     setMode: function(mode) {
         document.getElementById('view-waiting').style.display = 'none';
@@ -301,22 +303,17 @@ const ui = {
         document.getElementById('iconMoon').classList.toggle('active', n);
     },
     toggleRightPanel: function() { document.getElementById('rightPanel').classList.toggle('open'); },
-    
-    // [수정] 전체화면 로직: .main-stage만 타겟
     toggleFullScreen: function() {
         const elem = document.querySelector('.main-stage');
         if (!document.fullscreenElement) elem.requestFullscreen().catch(err => console.log(err));
         else if (document.exitFullscreen) document.exitFullscreen();
     },
-    
-    // [수정] 대기실 상태 강제 고정
     showWaitingRoom: function() {
         state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
         document.getElementById('view-qa').style.display = 'none';
         document.getElementById('view-quiz').style.display = 'none';
         document.getElementById('view-waiting').style.display = 'flex';
-        
         const statusSel = document.getElementById('roomStatusSelect');
         statusSel.value = 'waiting';
         statusSel.disabled = true;
@@ -336,17 +333,18 @@ const quizMgr = {
                 if (l.length >= 6) state.quizList.push({ text: l[0], options: [l[1], l[2], l[3], l[4]], correct: parseInt(l[5].replace(/[^0-9]/g, '')), checked: true });
                 else if (l.length === 4) state.quizList.push({ text: l[0], options: [l[1], l[2]], correct: parseInt(l[3].replace(/[^0-9]/g, '')), checked: true, isOX: true });
             });
-            alert(`${state.quizList.length} Loaded.`); this.renderMiniList();
+            ui.showAlert(`${state.quizList.length} Loaded.`); this.renderMiniList();
             
-            // [수정] 파일 업로드 시 테스트 버튼 숨김
+            // 파일 로드 시 테스트 버튼 숨김 & 컨트롤 표시 준비
             document.getElementById('btnTest').style.display = 'none';
+            state.isTestMode = false;
         };
         r.readAsText(f);
     },
     addManualQuiz: function() {
         const q = document.getElementById('manualQ').value, a = document.getElementById('manualAns').value;
         const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
-        if(!q || !a) return alert("Fill fields");
+        if(!q || !a) return ui.showAlert("Fill fields");
         state.quizList.push({ text: q, options: opts, correct: parseInt(a), checked: true, isOX: opts.length === 2 });
         this.renderMiniList();
     },
@@ -360,32 +358,36 @@ const quizMgr = {
         const t = "KAC는?\nO\nX\n1\n1"; const b = new Blob([t], {type: "text/plain"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "sample.txt"; a.click();
     },
-    // [수정] 테스트 모드 문제 변경
+    // [수정] 테스트 모드: 실제 리스트에 문제 추가 (Next 동작하게)
     startTestMode: function() {
         state.isTestMode = true;
-        this.renderScreen({ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2 });
-        document.getElementById('btnTest').style.display = 'none'; document.getElementById('quizControls').style.display = 'flex';
+        // 기존 리스트 백업? 아니, 테스트모드 전용 1문제 리스트로 교체 혹은 추가
+        // 간편하게 리스트 초기화 후 1문제 추가
+        state.quizList = [{ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2, isOX: false, checked: true }];
+        state.currentQuizIdx = 0;
+        
+        this.renderScreen(state.quizList[0]);
+        document.getElementById('btnTest').style.display = 'none'; 
+        document.getElementById('quizControls').style.display = 'flex';
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: 'TEST', status: 'ready', text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2 });
     },
-    // [수정] Prev/Next Alert 제거 및 테스트모드 막힘 해결
     prevNext: function(d) {
-        if(state.isTestMode) {
-            // 테스트 모드일 땐 아무 동작 안 함 (경고창도 안 띄움 -> 전체화면 유지)
-            return; 
-        }
         let n = state.currentQuizIdx + d;
         while(n >= 0 && n < state.quizList.length) { 
             if(state.quizList[n].checked) { state.currentQuizIdx = n; this.showQuiz(); return; } 
             n += d; 
         }
-        if (d > 0) alert("모든 퀴즈 문항이 종료되었습니다.\n수고하셨습니다.");
+        if (d > 0) ui.showAlert("모든 퀴즈 문항이 종료되었습니다.\n수고하셨습니다.");
     },
     showQuiz: function() {
         const q = state.quizList[state.currentQuizIdx];
         this.resetTimerUI(); this.renderScreen(q);
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
-        document.getElementById('btnTest').style.display = 'none'; document.getElementById('quizControls').style.display = 'flex';
+        
+        // [중요] 퀴즈가 시작되면 무조건 컨트롤은 보이고 테스트버튼은 숨김
+        document.getElementById('btnTest').style.display = 'none'; 
+        document.getElementById('quizControls').style.display = 'flex';
     },
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
@@ -411,7 +413,6 @@ const quizMgr = {
             this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
         }
     },
-    // [수정] 타이머 10초로 변경
     startTimer: function() {
         this.stopTimer(); 
         let t = 10; 
@@ -425,14 +426,13 @@ const quizMgr = {
         }, 200);
     },
     stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
-    // [수정] 초기 UI 00:10
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:10"; document.getElementById('quizTimer').classList.remove('urgent'); },
     openResetModal: function() { document.getElementById('resetChoiceModal').style.display = 'flex'; },
     executeReset: async function(type) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         if(type === 'all') await firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
         else await firebase.database().ref(`courses/${state.room}/quizAnswers/${id}`).set(null);
-        document.getElementById('resetChoiceModal').style.display = 'none'; alert("리셋 완료."); this.action('ready');
+        document.getElementById('resetChoiceModal').style.display = 'none'; ui.showAlert("리셋 완료."); this.action('ready');
     },
     showFinalSummary: async function() {
         await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
@@ -460,16 +460,27 @@ const quizMgr = {
         if(type === 'reset') {
             state.isTestMode = false;
             state.currentQuizIdx = 0;
-            state.quizList = [];
-            document.getElementById('btnTest').style.display = 'flex';
-            document.getElementById('quizControls').style.display = 'none';
-            document.getElementById('d-options').style.display = 'flex';
-            document.getElementById('d-chart').style.display = 'none';
-            document.getElementById('d-options').innerHTML = "";
-            document.getElementById('d-qtext').innerText = "Ready?";
+            
+            // [수정] 파일이 로드된 상태면 Q1으로 복구, 아니면 테스트모드 버튼 표시
+            if(state.quizList.length > 0 && state.quizList[0].text !== "1 + 1 = ?") {
+                // 파일 로드된 상태
+                this.showQuiz();
+            } else {
+                // 파일 없음 (또는 테스트모드였음) -> 초기화
+                state.quizList = [];
+                document.getElementById('btnTest').style.display = 'flex';
+                document.getElementById('quizControls').style.display = 'none';
+                document.getElementById('d-options').style.display = 'flex';
+                document.getElementById('d-chart').style.display = 'none';
+                document.getElementById('d-options').innerHTML = "";
+                document.getElementById('d-qtext').innerText = "Ready?";
+            }
+            
+            // DB Clean
             firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
             firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
         }
+        // Resume인 경우 그냥 닫기만 함 (UI 유지)
         ui.setMode('qa');
     }
 };

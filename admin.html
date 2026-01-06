@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body class="day-mode">
-    <!-- Login & Common Modals (기존과 동일) -->
+    <!-- Login & Global Modals (전체화면과 무관한 것들) -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
             <div class="login-logo"><i class="fa-solid fa-user-shield"></i></div>
@@ -25,7 +25,6 @@
         </div>
     </div>
     
-    <!-- PW Change, Takeover, QR, Print Modals (기존과 동일) -->
     <div id="changePwModal" class="modal-overlay">
         <div class="modal-box" style="width: 450px;">
             <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
@@ -79,7 +78,6 @@
                 <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
                 <div class="setting-group">
                     <label class="setting-label">Room Status</label>
-                    <!-- [수정] 대기중 옵션 추가 -->
                     <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
                         <option value="active">🟢 사용중</option>
                         <option value="idle">⚪ 비어있음</option>
@@ -148,7 +146,6 @@
                     <div class="quiz-top-bar">
                         <div class="quiz-top-info">
                             <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
-                            <!-- [수정] 타이머 초기값 10초로 변경 -->
                             <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:10</div></div>
                             <div class="quiz-info-item"><i class="fa-solid fa-users"></i> <span id="currentJoinCount" style="font-weight:800;">0</span>명</div>
                         </div>
@@ -202,48 +199,58 @@
                 <div id="miniQuizList"></div>
             </div>
         </div>
-    </div>
-
-    <!-- Modals (Q&A Detail, Reset, Exit, Stats) - 기존과 동일 -->
-    <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
-        <div class="modal-box">
-            <div class="modal-q-text-wrapper"><div class="modal-q-text" id="m-text"></div></div>
-            <div class="modal-actions">
-                <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
-                <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
+        
+        <!-- [핵심 수정] Modals inside Main Stage (전체화면 시 보이도록 이동) -->
+        <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
+            <div class="modal-box">
+                <div class="modal-q-text-wrapper"><div class="modal-q-text" id="m-text"></div></div>
+                <div class="modal-actions">
+                    <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
+                    <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
+                </div>
+            </div>
+        </div>
+        <div id="resetChoiceModal" class="modal-overlay">
+            <div class="modal-box" style="width: 400px; text-align: center;">
+                <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
+                <p style="color:#64748b; margin-bottom:20px;">어떤 항목을 초기화하시겠습니까?</p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button class="btn-action btn-secondary" onclick="quizMgr.executeReset('current')">현재 문항 기록만 리셋</button>
+                    <button class="btn-action btn-danger" onclick="quizMgr.executeReset('all')">전체 문항 기록 리셋</button>
+                    <button class="btn-action btn-print" style="color:#333;" onclick="document.getElementById('resetChoiceModal').style.display='none'">취소</button>
+                </div>
+            </div>
+        </div>
+        <div id="quizExitModal" class="modal-overlay">
+            <div class="modal-box" style="width: 400px; text-align: center;">
+                <div class="modal-header"><h3><i class="fa-solid fa-door-open"></i> 퀴즈 모드 종료</h3></div>
+                <p style="color:#64748b; margin-bottom:20px;">퀴즈 모드를 닫습니다.<br>진행 상황을 유지할까요?</p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button class="btn-action btn-primary" onclick="quizMgr.confirmExitQuiz('resume')">일시 중단 (이어서 하기)</button>
+                    <button class="btn-action btn-danger" onclick="quizMgr.confirmExitQuiz('reset')">완전 초기화 (처음부터)</button>
+                    <button class="btn-action btn-print" style="color:#333;" onclick="document.getElementById('quizExitModal').style.display='none'">취소</button>
+                </div>
+            </div>
+        </div>
+        <div id="quizSummaryOverlay" class="status-overlay" style="background: rgba(255,255,255,0.98); color:#1e293b; backdrop-filter: none; z-index: 2000;">
+            <div style="width: 90%; max-width: 600px; text-align: center;">
+                <h2 style="font-size:32px; font-weight:800; color:var(--accent-color); margin-bottom:30px;">QUIZ REPORT</h2>
+                <div id="summaryStats" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;"></div>
+                <div id="mostMissedArea" style="background:#fff1f2; border:1px solid #fecaca; padding:15px; border-radius:12px; margin-bottom:30px; display:none;"><h4 style="margin:0 0 10px 0; color:#e11d48;">🔥 오답률이 가장 높았던 문제</h4><p id="mostMissedText" style="margin:0; font-weight:bold;"></p></div>
+                <button class="btn-action btn-primary" onclick="document.getElementById('quizSummaryOverlay').style.display='none'">닫기</button>
+            </div>
+        </div>
+        
+        <!-- [신규] Custom Alert Modal (전체화면 깨짐 방지용) -->
+        <div id="customAlertModal" class="modal-overlay">
+            <div class="modal-box" style="width: 350px; text-align: center;">
+                <div style="font-size:40px; margin-bottom:15px; color:#3b82f6;"><i class="fa-solid fa-circle-info"></i></div>
+                <p id="customAlertText" style="font-size:16px; color:#1e293b; font-weight:bold; margin-bottom:25px;"></p>
+                <button class="btn-action btn-primary" onclick="document.getElementById('customAlertModal').style.display='none'">확인</button>
             </div>
         </div>
     </div>
-    <div id="resetChoiceModal" class="modal-overlay">
-        <div class="modal-box" style="width: 400px; text-align: center;">
-            <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
-            <p style="color:#64748b; margin-bottom:20px;">어떤 항목을 초기화하시겠습니까?</p>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-action btn-secondary" onclick="quizMgr.executeReset('current')">현재 문항 기록만 리셋</button>
-                <button class="btn-action btn-danger" onclick="quizMgr.executeReset('all')">전체 문항 기록 리셋</button>
-                <button class="btn-action btn-print" style="color:#333;" onclick="document.getElementById('resetChoiceModal').style.display='none'">취소</button>
-            </div>
-        </div>
-    </div>
-    <div id="quizExitModal" class="modal-overlay">
-        <div class="modal-box" style="width: 400px; text-align: center;">
-            <div class="modal-header"><h3><i class="fa-solid fa-door-open"></i> 퀴즈 모드 종료</h3></div>
-            <p style="color:#64748b; margin-bottom:20px;">퀴즈 모드를 닫습니다.<br>진행 상황을 유지할까요?</p>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-action btn-primary" onclick="quizMgr.confirmExitQuiz('resume')">일시 중단 (이어서 하기)</button>
-                <button class="btn-action btn-danger" onclick="quizMgr.confirmExitQuiz('reset')">완전 초기화 (처음부터)</button>
-                <button class="btn-action btn-print" style="color:#333;" onclick="document.getElementById('quizExitModal').style.display='none'">취소</button>
-            </div>
-        </div>
-    </div>
-    <div id="quizSummaryOverlay" class="status-overlay" style="background: rgba(255,255,255,0.98); color:#1e293b; backdrop-filter: none; z-index: 2000;">
-        <div style="width: 90%; max-width: 600px; text-align: center;">
-            <h2 style="font-size:32px; font-weight:800; color:var(--accent-color); margin-bottom:30px;">QUIZ REPORT</h2>
-            <div id="summaryStats" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;"></div>
-            <div id="mostMissedArea" style="background:#fff1f2; border:1px solid #fecaca; padding:15px; border-radius:12px; margin-bottom:30px; display:none;"><h4 style="margin:0 0 10px 0; color:#e11d48;">🔥 오답률이 가장 높았던 문제</h4><p id="mostMissedText" style="margin:0; font-weight:bold;"></p></div>
-            <button class="btn-action btn-primary" onclick="document.getElementById('quizSummaryOverlay').style.display='none'">닫기</button>
-        </div>
-    </div>
+    
     <script src="config.js"></script>
     <script src="admin.js"></script>
 </body>
