@@ -225,19 +225,43 @@ const ui = {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
-            const cur = state.room;
+            
+            // 현재 선택된 값 유지 (리스트가 갱신되어도 선택 풀리지 않게)
+            const savedValue = sel.value || state.room; 
+
             sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
+            
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
-                const st = (d[c] && d[c].status) || {};
+                const roomData = d[c] || {};
+                const st = roomData.status || {};
+                
+                // [추가] 접속자 수 계산 로직
+                const connObj = roomData.connections || {};
+                const userCount = Object.keys(connObj).length;
+
                 const opt = document.createElement('option');
                 opt.value = c;
+                
                 if(st.roomStatus === 'active') {
-                    opt.innerText = st.ownerSessionId === state.sessionId ? `Room ${c} (🔵 내 강의실)` : `Room ${c} (🔴 사용중)`;
-                    opt.style.color = st.ownerSessionId === state.sessionId ? '#3b82f6' : '#ef4444';
-                    opt.style.fontWeight = st.ownerSessionId === state.sessionId ? 'bold' : 'normal';
-                } else { opt.innerText = `Room ${c} (⚪ 대기)`; }
-                if(c === cur) opt.selected = true;
+                    if (st.ownerSessionId === state.sessionId) {
+                        // 내 강의실
+                        opt.innerText = `Room ${c} (🔵 내 강의실, ${userCount}명)`;
+                        opt.style.color = '#3b82f6';
+                        opt.style.fontWeight = 'bold';
+                    } else {
+                        // 다른 강사 사용중
+                        opt.innerText = `Room ${c} (🔴 사용중, ${userCount}명)`;
+                        opt.style.color = '#ef4444';
+                    }
+                } else {
+                    // 대기 상태 (여기에도 인원이 있을 수 있음)
+                    opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
+                }
+                
+                // 기존 선택값 유지
+                if(c === savedValue) opt.selected = true;
+                
                 sel.appendChild(opt);
             }
         });
