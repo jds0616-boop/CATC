@@ -245,7 +245,8 @@
         <div id="customAlertModal" class="modal-overlay">
             <div class="modal-box" style="width: 350px; text-align: center;">
                 <div style="font-size:40px; margin-bottom:15px; color:#3b82f6;"><i class="fa-solid fa-circle-info"></i></div>
-                <p id="customAlertText" style="font-size:16px; color:#1e293b; font-weight:bold; margin-bottom:25px;"></p>
+               <!-- 여기가 수정됨: color:#1e293b 를 color:var(--text-color) 로 변경 -->
+                <p id="customAlertText" style="font-size:16px; color:var(--text-color); font-weight:bold; margin-bottom:25px;"></p>
                 <button class="btn-action btn-primary" onclick="document.getElementById('customAlertModal').style.display='none'">확인</button>
             </div>
         </div>
