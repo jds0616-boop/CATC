@@ -193,7 +193,6 @@
         .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.02); }
         .quiz-opt-btn.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
 
-        /* [추가] 결과창 애니메이션 및 1등 도장 스타일 */
         #quizResultBox { animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -279,14 +278,12 @@
         </div>
     </div>
 
-    <!-- Quiz Overlay (개편됨) -->
+    <!-- Quiz Overlay -->
     <div id="quizOverlay" class="quiz-overlay">
-        <!-- 퀴즈 진행 박스 -->
         <div id="quizActiveBox" class="quiz-box">
             <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
             <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">강사님이 퀴즈를 시작하기를 기다리고 있습니다...</div>
 
-            <!-- 4지선다형 버튼 컨테이너 -->
             <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;">
                 <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button>
                 <button class="quiz-opt-btn" onclick="sendAns(2)">2번</button>
@@ -294,7 +291,6 @@
                 <button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
             </div>
 
-            <!-- O/X형 버튼 컨테이너 -->
             <div id="btnGroupOX" style="display:none; gap:15px;">
                 <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
                 <button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
@@ -303,9 +299,7 @@
             <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
         </div>
 
-        <!-- 최종 성적표 박스 -->
         <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); position:relative; overflow:hidden;">
-            <!-- 1등 전용 도장 -->
             <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp">
                 <span style="font-size:30px;">👑</span>
                 <span>퀴즈왕</span>
@@ -320,7 +314,8 @@
             <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">
                 현재 <span id="myFinalRank">0</span>등 (전체 참여자 중)
             </div>
-            <button class="btn-enter" onclick="location.reload()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
+            <!-- [수정] 무한루프 방지: 새로고침 대신 닫기 함수 호출 -->
+            <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
         </div>
     </div>
 
@@ -344,9 +339,9 @@
         let currentSort = 'new';
         let currentQuizId = null;
         let canAnswer = false;
-        let myLastChoice = null; // 내가 방금 누른 번호/기호 저장
+        let myLastChoice = null;
+        let hasClosedSummary = false; // [추가] 성적표 수동 닫기 상태
         
-        // --- 1. Init & Landing Logic ---
         (async function init() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
@@ -359,16 +354,13 @@
                 alert("유효하지 않은 주소입니다."); return;
             }
 
-            // Init UI Text
             document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
             document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
             
-            // Load Local Data
             myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
             myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
             lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
 
-            // Firebase Refs
             const db = firebase.database();
             const rPath = `courses/${currentRoom}`;
             dbRef = {
@@ -400,7 +392,6 @@
             }
         }
 
-        // --- 2. Real-time Presence ---
         function startPresence() {
             const connectedRef = firebase.database().ref(".info/connected");
             connectedRef.on("value", (snap) => {
@@ -417,7 +408,6 @@
             });
         }
 
-        // --- 3. Data Listeners ---
         function setupListeners() {
             dbRef.settings.on('value', s => {
                 const val = s.val() || {};
@@ -431,15 +421,15 @@
                 renderList(data);
             });
 
-            // [수정] 강사 상태 동기화 리스너 보강
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
                 
-                // 종료 리포트 화면 동기화
+                // [수정] 성적표 표시 로직 개선 (수동 닫기 여부 체크)
                 if(st.quizStep === 'summary') {
-                    showFinalRanking(); 
-                } else if(st.quizStep === 'none') {
-                    // 강사가 통계창을 닫으면 학생 폰도 퀴즈 오버레이 종료
+                    if(!hasClosedSummary) showFinalRanking(); 
+                } else {
+                    // 강사가 창을 닫으면 닫기 상태 초기화 및 오버레이 숨김
+                    hasClosedSummary = false;
                     document.getElementById('quizOverlay').style.display = 'none';
                 }
 
@@ -448,7 +438,6 @@
                 }
             });
 
-            // Quiz 로직 개편
             dbRef.quiz.on('value', s => {
                 const q = s.val();
                 if(!q) return;
@@ -456,7 +445,6 @@
                 dbRef.status.child('mode').once('value', m => {
                     if(m.val() !== 'quiz') return;
 
-                    // 결과 확인(차트) 모드일 때는 오버레이를 일단 숨김 (강사가 summary 버튼 누르기 전까지)
                     if(q.status === 'result') {
                         document.getElementById('quizOverlay').style.display = 'none';
                         return;
@@ -515,7 +503,6 @@
             });
         }
 
-        // --- 4. Rendering ---
         function setSort(type) {
             currentSort = type;
             document.getElementById('sortNew').classList.toggle('active', type === 'new');
@@ -560,7 +547,6 @@
             });
         }
 
-        // --- 5. Actions ---
         function submitQ() {
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
@@ -651,31 +637,25 @@
         }
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
         
-        // [수정] OX 피드백 지원을 위한 sendAns 개편
         async function sendAns(c) {
             if(!canAnswer) return;
-            
-            // 현재 문제 타입 확인
             const qSnap = await dbRef.quiz.once('value');
             const qData = qSnap.val() || {};
             const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`;
-            
             myLastChoice = choiceLabel; 
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             event.target.classList.add('selected');
             document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${choiceLabel} 선택 중...`;
-            
             let t = localStorage.getItem('uToken');
             if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
             dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
 
-        // [수정] 최종 성적표 계산 및 도장 효과 구현
+        // [수정] 로직: 강사가 계산한 결과 수신
         async function showFinalRanking() {
             const myToken = localStorage.getItem('uToken');
             if(!myToken) return;
 
-            // 강사 페이지에서 계산된 데이터 수신
             const resSnap = await firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).get();
             const myResult = resSnap.val();
 
@@ -683,20 +663,23 @@
                 document.getElementById('quizOverlay').style.display = 'flex';
                 document.getElementById('quizActiveBox').style.display = 'none';
                 document.getElementById('quizResultBox').style.display = 'block';
-                
                 document.getElementById('myFinalScore').innerText = `${myResult.score}점`;
                 document.getElementById('myFinalRank').innerText = myResult.rank;
 
-                // 1등이면 퀴즈왕 도장 표시
                 if(myResult.rank === 1) {
                     document.getElementById('quizKingStamp').style.display = 'flex';
                 } else {
                     document.getElementById('quizKingStamp').style.display = 'none';
                 }
             } else {
-                // 데이터가 없는 경우 오버레이 숨김
                 document.getElementById('quizOverlay').style.display = 'none';
             }
+        }
+
+        // [추가] 닫기 전용 함수: 새로고침 없이 화면만 닫고 다시 뜨지 않게 제어
+        function closeResultOverlay() {
+            hasClosedSummary = true;
+            document.getElementById('quizOverlay').style.display = 'none';
         }
 
         function openMenu() {
