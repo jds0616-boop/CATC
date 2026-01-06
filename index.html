@@ -345,7 +345,7 @@
         let canAnswer = false;
         let myLastChoice = null; 
         let hasClosedSummary = false;
-        let rankingListener = null; // [추가] 실시간 등수 리스너 보관용
+        let rankingListener = null; 
         
         // --- 1. Init & Landing Logic ---
         (async function init() {
@@ -429,7 +429,7 @@
                 renderList(data);
             });
 
-            // [수정] 강사 상태 동기화 리스너 보강
+            // [수정] 강사 상태 동기화 리스너
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
                 
@@ -439,24 +439,29 @@
                     return;
                 }
 
-                // 종료 리포트 단계
+                // 종료 리포트 단계 (summary 신호 오자마자 등수 집계 함수 호출)
                 if (st.quizStep === 'summary') {
                     if(!hasClosedSummary) showFinalRanking(); 
                 }
             });
 
-            // 실시간 퀴즈 문항 리스너
+            // [수정] 실시간 퀴즈 문항 리스너 (성적표 노출 시 간섭 방지 로직 보강)
             dbRef.quiz.on('value', s => {
                 const q = s.val();
                 if(!q) return;
 
-                dbRef.status.child('mode').once('value', m => {
-                    if(m.val() !== 'quiz') {
+                dbRef.status.once('value', statusSnap => {
+                    const st = statusSnap.val() || {};
+                    
+                    // 성적표(summary)가 떠 있는 상태라면 문항 리스너가 오버레이를 닫지 못하게 막음
+                    if (st.quizStep === 'summary') return;
+
+                    if(st.mode !== 'quiz') {
                         forceCloseQuiz();
                         return;
                     }
 
-                    // 강사가 차트 결과 보고 있을 땐 입력창 숨김
+                    // 강사가 차트 결과(result)를 보고 있을 땐 입력창 숨김
                     if(q.status === 'result') {
                         document.getElementById('quizOverlay').style.display = 'none';
                         return;
@@ -515,7 +520,6 @@
             });
         }
 
-        // --- 4. Rendering ---
         function setSort(type) {
             currentSort = type;
             document.getElementById('sortNew').classList.toggle('active', type === 'new');
@@ -664,15 +668,12 @@
             dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
 
-        // [수정] 실시간 점수 대기 로직 적용
         function showFinalRanking() {
             const myToken = localStorage.getItem('uToken');
             if(!myToken) return;
 
-            // 이미 감시 중이면 중복 방지
             if(rankingListener) return;
 
-            // 로딩 UI 표시
             document.getElementById('quizOverlay').style.display = 'flex';
             document.getElementById('quizActiveBox').style.display = 'block';
             document.getElementById('quizResultBox').style.display = 'none';
@@ -699,7 +700,6 @@
             });
         }
 
-        // [추가] 모든 퀴즈 UI 및 리스너 강제 종료 함수
         function forceCloseQuiz() {
             hasClosedSummary = false;
             canAnswer = false;
