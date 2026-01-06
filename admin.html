@@ -229,18 +229,29 @@
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text">Press 'Test Mode' or Select Quiz</div>
                     <div id="quizContent">
-                        <div class="quiz-header-part"><div class="digital-timer" id="quizTimer">00:30</div><div class="quiz-question" id="d-qtext">Ready?</div></div>
+                        <div class="quiz-header-part">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                                <div class="digital-timer" id="quizTimer">00:30</div>
+                                <div id="quizParticipantCount" style="font-size:12px; font-weight:bold; color:#3b82f6; background:#eff6ff; padding:2px 8px; border-radius:10px; display:none;">
+                                    <i class="fa-solid fa-users"></i> 참여: <span id="currentJoinCount">0</span>명
+                                </div>
+                            </div>
+                            <div class="quiz-question" id="d-qtext">Ready?</div>
+                        </div>
                         <div class="quiz-options" id="d-options"></div>
                         <div class="chart-area" id="d-chart"></div>
                     </div>
                     <div class="quiz-status-bar">
                         <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()"><i class="fa-solid fa-flask"></i> <span>Start Test Mode</span></button>
-                        <div id="quizControls" style="display:none;">
+                        <div id="quizControls" style="display:none; gap:10px;">
                             <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)"><i class="fa-solid fa-backward"></i> Prev</button>
                             <button class="q-btn btn-start" onclick="quizMgr.action('open')"><i class="fa-solid fa-play"></i> Start</button>
                             <button class="q-btn btn-stop" onclick="quizMgr.action('close')"><i class="fa-solid fa-stop"></i> Stop</button>
                             <button class="q-btn btn-result" onclick="quizMgr.action('result')"><i class="fa-solid fa-chart-simple"></i> Result</button>
                             <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)">Next <i class="fa-solid fa-forward"></i></button>
+                            <!-- 리셋 및 종료 버튼 추가 -->
+                            <button class="q-btn" style="background:#64748b;" onclick="quizMgr.openResetModal()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                            <button class="q-btn" style="background:#0f172a;" onclick="quizMgr.showFinalSummary()"><i class="fa-solid fa-flag-checkered"></i> 종료</button>
                         </div>
                     </div>
                     <div class="quiz-exit-btn" onclick="quizMgr.closeQuizMode()" title="Exit Quiz Mode"><i class="fa-solid fa-xmark"></i></div>
@@ -302,6 +313,34 @@
                 <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
                 <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
             </div>
+        </div>
+    </div>
+
+    <!-- [추가] 리셋 선택 모달 -->
+    <div id="resetChoiceModal" class="modal-overlay">
+        <div class="modal-box" style="width: 400px; text-align: center;">
+            <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
+            <p style="color:#64748b; margin-bottom:20px;">어떤 항목을 초기화하시겠습니까?</p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn-action btn-secondary" onclick="quizMgr.executeReset('current')">현재 문항 기록만 리셋</button>
+                <button class="btn-action btn-danger" onclick="quizMgr.executeReset('all')">전체 문항 기록 리셋</button>
+                <button class="btn-action btn-print" style="color:#333;" onclick="document.getElementById('resetChoiceModal').style.display='none'">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [추가] 최종 통계 오버레이 -->
+    <div id="quizSummaryOverlay" class="status-overlay" style="background: rgba(255,255,255,0.98); color:#1e293b; backdrop-filter: none; z-index: 2000;">
+        <div style="width: 90%; max-width: 600px; text-align: center;">
+            <h2 style="font-size:32px; font-weight:800; color:var(--accent-color); margin-bottom:30px;">QUIZ REPORT</h2>
+            <div id="summaryStats" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;">
+                <!-- 통계 카드가 여기에 들어감 -->
+            </div>
+            <div id="mostMissedArea" style="background:#fff1f2; border:1px solid #fecaca; padding:15px; border-radius:12px; margin-bottom:30px; display:none;">
+                <h4 style="margin:0 0 10px 0; color:#e11d48;">🔥 오답률이 가장 높았던 문제</h4>
+                <p id="mostMissedText" style="margin:0; font-weight:bold;"></p>
+            </div>
+            <button class="btn-action btn-primary" onclick="document.getElementById('quizSummaryOverlay').style.display='none'">닫기</button>
         </div>
     </div>
 

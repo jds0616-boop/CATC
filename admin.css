@@ -315,3 +315,36 @@ body.night-mode .q-card.status-pin:hover {
     background-color: #5c1414 !important; /* 살짝 더 밝은 어두운 붉은색 */
     color: #ffffff !important;             /* 글자는 흰색 */
 }
+
+/* --- [추가] 퀴즈 기능 보강 스타일 --- */
+
+/* O/X 퀴즈를 위한 스타일 보강 */
+.quiz-opt.ox-mode {
+    flex: 1;
+    min-height: 150px;
+    font-size: 60px; /* O, X를 크게 표시 */
+    justify-content: center;
+}
+
+.quiz-opt.ox-mode .opt-num { display: none; } /* OX일때는 숫자 숨김 */
+
+/* 통계 카드 스타일 */
+.summary-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+}
+.summary-card span { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 700; }
+.summary-card b { font-size: 24px; color: #1e293b; }
+
+/* 참여자 카운트 애니메이션 */
+#quizParticipantCount {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
