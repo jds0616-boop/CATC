@@ -53,16 +53,12 @@
         }
         .btn-enter:active { transform: scale(0.96); }
         
-/* [수정] 원본이 흰색이므로 filter 제거 */
         .landing-logo { 
             position: absolute; 
             bottom: 40px; 
             width: 120px; 
-            
             z-index: 9999; 
-            opacity: 1;      /* 투명도 없이 선명하게 */
-            
-            /* filter 줄을 삭제했습니다. 원본(흰색) 그대로 나옵니다. */
+            opacity: 1;      
             filter: none; 
         }
 
@@ -186,7 +182,7 @@
         
         .cooldown-text { color: #ef4444; font-weight: 800; }
 
-        /* Quiz Overlay (수정됨) */
+        /* Quiz Overlay */
         .quiz-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(5px);
@@ -197,9 +193,23 @@
         .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.02); }
         .quiz-opt-btn.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
 
-        /* [추가] 결과창 애니메이션 */
+        /* [추가] 결과창 애니메이션 및 1등 도장 스타일 */
         #quizResultBox { animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .quiz-king-stamp {
+            position: absolute; top: 5px; right: 5px;
+            width: 95px; height: 95px; border: 4px double #facc15;
+            border-radius: 50%; color: #facc15; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 14px; transform: rotate(15deg);
+            background: rgba(250, 204, 21, 0.1); z-index: 10;
+            animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stampIn {
+            from { transform: scale(3) rotate(45deg); opacity: 0; }
+            to { transform: scale(1) rotate(15deg); opacity: 1; }
+        }
 
         /* Menu */
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
@@ -249,7 +259,6 @@
         <!-- List -->
         <div class="scroll-container" id="scrollContainer">
             <div id="qList" class="q-list"></div>
-            <!-- 로고 삭제됨 -->
         </div>
 
         <!-- Input (Fixed Bottom, Textarea) -->
@@ -270,7 +279,7 @@
         </div>
     </div>
 
-    <!-- Quiz Overlay (구조 개편) -->
+    <!-- Quiz Overlay (개편됨) -->
     <div id="quizOverlay" class="quiz-overlay">
         <!-- 퀴즈 진행 박스 -->
         <div id="quizActiveBox" class="quiz-box">
@@ -287,15 +296,21 @@
 
             <!-- O/X형 버튼 컨테이너 -->
             <div id="btnGroupOX" style="display:none; gap:15px;">
-                <button class="quiz-opt-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
-                <button class="quiz-opt-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
+                <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
+                <button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
             </div>
 
             <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
         </div>
 
         <!-- 최종 성적표 박스 -->
-        <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);">
+        <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); position:relative; overflow:hidden;">
+            <!-- 1등 전용 도장 -->
+            <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp">
+                <span style="font-size:30px;">👑</span>
+                <span>퀴즈왕</span>
+            </div>
+            
             <div style="font-size:50px; margin-bottom:10px;">🏆</div>
             <h2 style="margin:0; font-weight:900; color:#0f172a;">QUIZ RESULT</h2>
             <div style="margin:25px 0;">
@@ -329,7 +344,7 @@
         let currentSort = 'new';
         let currentQuizId = null;
         let canAnswer = false;
-        let myLastChoice = null; // 내가 방금 누른 번호 저장
+        let myLastChoice = null; // 내가 방금 누른 번호/기호 저장
         
         // --- 1. Init & Landing Logic ---
         (async function init() {
@@ -362,25 +377,20 @@
                 ans: db.ref(`${rPath}/quizAnswers`),
                 settings: db.ref(`${rPath}/settings`),
                 status: db.ref(`${rPath}/status`),
-                connections: db.ref(`${rPath}/connections`) // 실시간 접속자 경로
+                connections: db.ref(`${rPath}/connections`)
             };
 
             setupListeners();
             checkCooldown();
         })();
 
-        // 입장 버튼 클릭 시
         function enterApp() {
-            // 1. 전체화면 시도
             const doc = document.documentElement;
             if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
             else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
 
-            // 2. 화면 전환
             document.getElementById('landingPage').style.display = 'none';
             document.getElementById('mainApp').style.display = 'flex';
-
-            // 3. 실시간 접속 카운팅 시작
             startPresence();
         }
 
@@ -395,14 +405,12 @@
             const connectedRef = firebase.database().ref(".info/connected");
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
-                    // 접속 시 목록에 추가, 연결 끊기면 자동 삭제
                     const con = dbRef.connections.push();
                     con.onDisconnect().remove();
                     con.set(true);
                 }
             });
 
-            // 접속자 수 모니터링
             dbRef.connections.on("value", (snap) => {
                 const count = snap.numChildren();
                 document.getElementById('realUserCount').innerText = `${count}명 접속`;
@@ -411,7 +419,6 @@
 
         // --- 3. Data Listeners ---
         function setupListeners() {
-            // Course Info
             dbRef.settings.on('value', s => {
                 const val = s.val() || {};
                 const title = val.courseName || `Course ${currentRoom}`;
@@ -419,30 +426,38 @@
                 document.getElementById('landingTitle').innerText = title;
             });
 
-            // Q&A List
             dbRef.qa.on('value', snap => {
                 const data = snap.val() || {};
                 renderList(data);
             });
 
-            // [추가] 강사의 퀴즈 전체 종료 신호 감지
+            // [수정] 강사 상태 동기화 리스너 보강
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
+                
+                // 종료 리포트 화면 동기화
                 if(st.quizStep === 'summary') {
-                    showFinalRanking(); // 최종 성적표 계산 함수 실행
+                    showFinalRanking(); 
+                } else if(st.quizStep === 'none') {
+                    // 강사가 통계창을 닫으면 학생 폰도 퀴즈 오버레이 종료
+                    document.getElementById('quizOverlay').style.display = 'none';
                 }
-                if(st.mode !== 'quiz') {
+
+                if(st.mode !== 'quiz' && st.quizStep !== 'summary') {
                     document.getElementById('quizOverlay').style.display = 'none';
                 }
             });
 
-            // Quiz 로직 (개편)
+            // Quiz 로직 개편
             dbRef.quiz.on('value', s => {
                 const q = s.val();
                 if(!q) return;
 
-                firebase.database().ref(`courses/${currentRoom}/status/mode`).once('value', m => {
-                    if(m.val() !== 'quiz') {
+                dbRef.status.child('mode').once('value', m => {
+                    if(m.val() !== 'quiz') return;
+
+                    // 결과 확인(차트) 모드일 때는 오버레이를 일단 숨김 (강사가 summary 버튼 누르기 전까지)
+                    if(q.status === 'result') {
                         document.getElementById('quizOverlay').style.display = 'none';
                         return;
                     }
@@ -451,7 +466,6 @@
                     document.getElementById('quizActiveBox').style.display = 'block';
                     document.getElementById('quizResultBox').style.display = 'none';
 
-                    // [상태 1] 준비 중 (Ready)
                     if(q.status === 'ready') {
                         canAnswer = false;
                         myLastChoice = null;
@@ -462,12 +476,10 @@
                         currentQuizId = q.id;
                         document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected', 'locked'));
                     } 
-                    // [상태 2] 진행 중 (Open)
                     else if(q.status === 'open') {
                         canAnswer = true;
                         document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!";
                         
-                        // 타입에 따른 버튼 스위칭 (OX vs 4지)
                         if(q.type === 'OX') {
                             document.getElementById('btnGroupMultiple').style.display = 'none';
                             document.getElementById('btnGroupOX').style.display = 'flex';
@@ -475,38 +487,29 @@
                             document.getElementById('btnGroupMultiple').style.display = 'flex';
                             document.getElementById('btnGroupOX').style.display = 'none';
                         }
-                        
                         document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked'));
                     }
-                    // [상태 3] 종료 (Close)
                     else if(q.status === 'close') {
                         canAnswer = false;
                         document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
                         
                         if(myLastChoice) {
                             document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다.";
-                            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}번으로 최종 제출되었습니다.`;
+                            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
                         } else {
                             document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다.";
                         }
                     }
-                    else if(q.status === 'result' || q.status === 'ready') {
-                        // 결과 차트 보기 중에는 입력창 가림
-                        if(q.status === 'result') document.getElementById('quizOverlay').style.display = 'none';
-                    }
                 });
             });
 
-            // Input Auto-Resize & Counter Logic
             const qInputEl = document.getElementById('qInput');
             const charCountEl = document.getElementById('charCount');
-
             qInputEl.addEventListener('input', function() {
                 const len = this.value.length;
                 charCountEl.innerText = `${len} / 100`;
                 if (len >= 90) charCountEl.classList.add('limit');
                 else charCountEl.classList.remove('limit');
-
                 this.style.height = '1px'; 
                 this.style.height = (this.scrollHeight) + 'px'; 
             });
@@ -524,26 +527,21 @@
             const list = document.getElementById('qList');
             list.innerHTML = "";
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-
             if(currentSort === 'like') {
                 items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
             } else {
                 items.sort((a,b) => b.timestamp - a.timestamp);
             }
-
             items.forEach(item => {
                 if(item.status === 'delete') return;
-                
                 const isMine = myQs[item.id] ? 'my-q' : '';
                 const likedClass = myLikes[item.id] ? 'active' : '';
-                
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
                 if(isMine && (Date.now() - myQs[item.id] < 300000)) {
                     metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span>
                                  <span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
                 }
                 metaHtml += `</div>`;
-
                 list.innerHTML += `
                     <div class="q-card ${isMine}">
                         <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
@@ -566,17 +564,14 @@
         function submitQ() {
             const txt = document.getElementById('qInput').value.trim();
             if(!txt) return;
-
             if(editingKey) {
                 dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); });
                 return;
             }
             const now = Date.now();
             if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
-
             const ref = dbRef.qa.push();
             ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
-            
             myQs[ref.key] = now; 
             localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
             lastPostTime = now;
@@ -599,14 +594,10 @@
             dbRef.qa.child(key).once('value', s => {
                 const el = document.getElementById('qInput');
                 el.value = s.val().text;
-                
-                // 높이 자동조절
                 el.style.height = '1px';
                 el.style.height = (el.scrollHeight) + 'px';
-                
                 const cnt = document.getElementById('charCount');
                 cnt.innerText = `${el.value.length} / 100`;
-
                 document.getElementById('submitBtn').classList.add('editing');
                 document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
                 editingKey = key;
@@ -619,37 +610,31 @@
         function resetInput() {
             const el = document.getElementById('qInput');
             el.value = "";
-            el.style.height = '24px'; // 초기화
+            el.style.height = '24px';
             el.focus();
-            
             const cnt = document.getElementById('charCount');
             cnt.innerText = "0 / 100";
             cnt.classList.remove('limit');
-
             document.getElementById('submitBtn').classList.remove('editing');
             document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
             editingKey = null;
         }
 
-        // --- 6. Utilities ---
         function checkCooldown() {
             if(editingKey) return;
             const diff = Date.now() - lastPostTime;
             const timerEl = document.getElementById('coolTimer');
             const btn = document.getElementById('submitBtn');
             const input = document.getElementById('qInput');
-
             if(diff < 120000) {
                 const remain = Math.ceil((120000 - diff) / 1000);
                 const mm = Math.floor(remain / 60);
                 const ss = remain % 60;
-                
                 timerEl.innerText = `⏳ 질문 제한: ${mm}:${ss.toString().padStart(2, '0')} 남음`;
                 btn.disabled = true;
                 btn.style.opacity = 0.5;
                 input.disabled = true;
                 input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
-                
                 setTimeout(checkCooldown, 1000);
             } else {
                 timerEl.innerText = "";
@@ -666,60 +651,52 @@
         }
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
         
-        // 퀴즈 응답 (수정됨)
-        function sendAns(c) {
+        // [수정] OX 피드백 지원을 위한 sendAns 개편
+        async function sendAns(c) {
             if(!canAnswer) return;
-            myLastChoice = c;
+            
+            // 현재 문제 타입 확인
+            const qSnap = await dbRef.quiz.once('value');
+            const qData = qSnap.val() || {};
+            const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`;
+            
+            myLastChoice = choiceLabel; 
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
             event.target.classList.add('selected');
-            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${c}번 선택 중...`;
+            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${choiceLabel} 선택 중...`;
             
             let t = localStorage.getItem('uToken');
             if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
             dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
 
-        // 최종 성적표 계산 함수 (신규)
+        // [수정] 최종 성적표 계산 및 도장 효과 구현
         async function showFinalRanking() {
-            document.getElementById('quizActiveBox').style.display = 'none';
-            document.getElementById('quizResultBox').style.display = 'block';
-
             const myToken = localStorage.getItem('uToken');
-            const ansSnap = await dbRef.ans.get();
-            const allAns = ansSnap.val() || {};
-            
-            // 모든 문제의 정답 데이터 추출 (activeQuiz 이력을 기반으로 계산하는 것이 이상적이나, 
-            // 현재 구조상 답안 데이터에서 정답 여부를 판단하기 위해 강사 리스트의 정답 정보 대조가 필요함)
-            // 여기서는 점수 계산을 위해 강사 페이지에서 보낸 각 문항의 정답(correct) 정보를 
-            // activeQuiz 상태가 바뀔 때마다 로컬에 수집해 두었다고 가정하거나, 
-            // 직접 DB에서 모든 퀴즈 정보를 조회하여 계산합니다.
-            
-            // 실시간 등수 계산 로직
-            const userScores = {}; // { token: score }
-            
-            // 강사 페이지에서 각 문제의 정답을 저장해둔 이력이 있다고 가정하고 계산
-            // (실제 안정성을 위해 강사가 '종료'를 누를 때 점수표를 생성해주는 방식이 좋지만, 
-            // 현재 코드 흐름상 실시간 계산 방식을 사용합니다.)
-            
-            // [참고] 본 로직은 각 문항의 정답 데이터를 순회하며 점수를 합산합니다.
-            firebase.database().ref(`courses/${currentRoom}/activeQuiz`).once('value', qSnap => {
-                // 사실 모든 문제 정답 정보는 퀴즈 진행 중에 기록되어야 함.
-                // 여기서는 예시로 '참여한 기록이 있는 경우' 점수를 1점씩 부여하는 틀을 유지합니다.
-                // 정답 대조 기능을 강화하려면 강사 페이지 소스에서 정답 데이터를 DB 특정 경로에 남겨야 합니다.
-                
-                let myScore = 0;
-                Object.keys(allAns).forEach(qId => {
-                    const submissions = allAns[qId];
-                    if(submissions && submissions[myToken]) {
-                        // 정답 여부 체크 로직 (정답 정보가 DB에 있을 경우)
-                        // myScore++; // 일단 제출 시 가산점 예시
-                    }
-                });
+            if(!myToken) return;
 
-                // 등수 더미 데이터 (정교한 계산을 위해선 전체 유저 순회 필요)
-                document.getElementById('myFinalScore').innerText = `${myScore}점`;
-                document.getElementById('myFinalRank').innerText = "1"; // 등수 계산 로직 생략(전체 순회 필요)
-            });
+            // 강사 페이지에서 계산된 데이터 수신
+            const resSnap = await firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).get();
+            const myResult = resSnap.val();
+
+            if(myResult) {
+                document.getElementById('quizOverlay').style.display = 'flex';
+                document.getElementById('quizActiveBox').style.display = 'none';
+                document.getElementById('quizResultBox').style.display = 'block';
+                
+                document.getElementById('myFinalScore').innerText = `${myResult.score}점`;
+                document.getElementById('myFinalRank').innerText = myResult.rank;
+
+                // 1등이면 퀴즈왕 도장 표시
+                if(myResult.rank === 1) {
+                    document.getElementById('quizKingStamp').style.display = 'flex';
+                } else {
+                    document.getElementById('quizKingStamp').style.display = 'none';
+                }
+            } else {
+                // 데이터가 없는 경우 오버레이 숨김
+                document.getElementById('quizOverlay').style.display = 'none';
+            }
         }
 
         function openMenu() {
