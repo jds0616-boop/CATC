@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body class="day-mode">
-    <!-- Login & Common Modals -->
+    <!-- Login & Common Modals (기존과 동일) -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
             <div class="login-logo"><i class="fa-solid fa-user-shield"></i></div>
@@ -25,7 +25,7 @@
         </div>
     </div>
     
-    <!-- PW Change, Takeover, QR, Print Modals (Same as before) -->
+    <!-- PW Change, Takeover, QR, Print Modals (기존과 동일) -->
     <div id="changePwModal" class="modal-overlay">
         <div class="modal-box" style="width: 450px;">
             <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
@@ -77,7 +77,15 @@
             <div class="sidebar-header">KAC Training Platform</div>
             <div class="setting-container">
                 <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
-                <div class="setting-group"><label class="setting-label">Room Status</label><select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;"><option value="active">🟢 사용중</option><option value="idle">⚪ 비어있음</option></select></div>
+                <div class="setting-group">
+                    <label class="setting-label">Room Status</label>
+                    <!-- [수정] 대기중 옵션 추가 -->
+                    <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
+                        <option value="active">🟢 사용중</option>
+                        <option value="idle">⚪ 비어있음</option>
+                        <option value="waiting" disabled hidden>🟡 대기중</option>
+                    </select>
+                </div>
                 <div class="setting-group"><label class="setting-label">Course Name</label><input type="text" id="courseNameInput" class="setting-input"></div>
                 <div class="setting-group"><label class="setting-label">Student Room PW</label><input type="password" id="roomPw" class="setting-input" maxlength="4"></div>
                 <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings</button>
@@ -112,7 +120,6 @@
         <header class="header">
             <div class="header-title"><span id="displayRoomName">Connecting...</span><span class="course-sub-name" id="displayCourseTitle"></span></div>
             <div class="header-controls">
-                <!-- [수정] 아이콘 그룹 및 정렬 개선 -->
                 <div class="icon-btn-group">
                     <div class="theme-toggle" onclick="ui.toggleNightMode()"><i class="fa-solid fa-sun active" id="iconSun"></i><i class="fa-solid fa-moon" id="iconMoon"></i></div>
                     <div class="control-icon-btn" onclick="ui.toggleFullScreen()" title="Full Screen"><i class="fa-solid fa-expand"></i></div>
@@ -138,11 +145,11 @@
 
             <div id="view-quiz">
                 <div class="quiz-card">
-                    <!-- [수정] 상단 바 (Top Bar) -->
                     <div class="quiz-top-bar">
                         <div class="quiz-top-info">
                             <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
-                            <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:30</div></div>
+                            <!-- [수정] 타이머 초기값 10초로 변경 -->
+                            <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:10</div></div>
                             <div class="quiz-info-item"><i class="fa-solid fa-users"></i> <span id="currentJoinCount" style="font-weight:800;">0</span>명</div>
                         </div>
                         <div class="quiz-exit-icon" onclick="quizMgr.closeQuizMode()" title="Exit"><i class="fa-solid fa-xmark"></i></div>
@@ -197,10 +204,9 @@
         </div>
     </div>
 
-    <!-- Q&A Detail Modal (Design Updated) -->
+    <!-- Modals (Q&A Detail, Reset, Exit, Stats) - 기존과 동일 -->
     <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
         <div class="modal-box">
-            <!-- [수정] 박스 감싸기 -->
             <div class="modal-q-text-wrapper"><div class="modal-q-text" id="m-text"></div></div>
             <div class="modal-actions">
                 <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
@@ -208,8 +214,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Quiz Reset Type Modal -->
     <div id="resetChoiceModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px; text-align: center;">
             <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
@@ -221,8 +225,6 @@
             </div>
         </div>
     </div>
-
-    <!-- [신규] Quiz Exit Modal -->
     <div id="quizExitModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px; text-align: center;">
             <div class="modal-header"><h3><i class="fa-solid fa-door-open"></i> 퀴즈 모드 종료</h3></div>
@@ -234,8 +236,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Stats Overlay -->
     <div id="quizSummaryOverlay" class="status-overlay" style="background: rgba(255,255,255,0.98); color:#1e293b; backdrop-filter: none; z-index: 2000;">
         <div style="width: 90%; max-width: 600px; text-align: center;">
             <h2 style="font-size:32px; font-weight:800; color:var(--accent-color); margin-bottom:30px;">QUIZ REPORT</h2>
@@ -244,7 +244,6 @@
             <button class="btn-action btn-primary" onclick="document.getElementById('quizSummaryOverlay').style.display='none'">닫기</button>
         </div>
     </div>
-
     <script src="config.js"></script>
     <script src="admin.js"></script>
 </body>
