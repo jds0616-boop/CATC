@@ -1,4 +1,4 @@
-/* --- admin.js (Final Integrated Version - Updated) --- */
+/* --- admin.js (Final Integrated Version) --- */
 
 const state = {
     sessionId: (function() {
@@ -116,7 +116,6 @@ const dataMgr = {
             firebase.database().ref(`${oldPath}/connections`).off();
         }
 
-        // [New] Clean up stale quiz data upon entry
         await firebase.database().ref(`courses/${room}/activeQuiz`).set(null);
         await firebase.database().ref(`courses/${room}/quizAnswers`).set(null);
         await firebase.database().ref(`courses/${room}/quizFinalResults`).set(null);
@@ -150,7 +149,6 @@ const dataMgr = {
             ui.checkLockStatus(st);
         });
         
-        // [Changed] Monitor total connections
         dbRef.connections.on('value', s => {
             const count = s.numChildren();
             document.getElementById('currentJoinCount').innerText = count;
@@ -300,7 +298,7 @@ const ui = {
     },
     toggleRightPanel: function() { document.getElementById('rightPanel').classList.toggle('open'); },
     toggleFullScreen: function() {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => alert("전체화면을 지원하지 않는 브라우저입니다."));
         else if (document.exitFullscreen) document.exitFullscreen();
     },
     showWaitingRoom: function() {
@@ -312,7 +310,7 @@ const ui = {
     }
 };
 
-// --- 4. Quiz Logic ---
+// --- 4. Quiz Logic (Revised) ---
 const quizMgr = {
     loadFile: function(e) {
         const f = e.target.files[0]; if (!f) return;
@@ -351,12 +349,16 @@ const quizMgr = {
         this.renderScreen({ text: "Test Q?", options: ["1","2","3","4"], correct: 2 });
         document.getElementById('btnTest').style.display = 'none'; document.getElementById('quizControls').style.display = 'flex';
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: 'TEST', status: 'ready', text: "Test Q?", options: ["1","2","3","4"], correct: 2 });
-        document.getElementById('quizParticipantCount').style.display = 'block';
     },
     prevNext: function(d) {
         if(state.isTestMode) return alert("Test Mode.");
         let n = state.currentQuizIdx + d;
-        while(n >= 0 && n < state.quizList.length) { if(state.quizList[n].checked) { state.currentQuizIdx = n; this.showQuiz(); return; } n += d; }
+        while(n >= 0 && n < state.quizList.length) { 
+            if(state.quizList[n].checked) { state.currentQuizIdx = n; this.showQuiz(); return; } 
+            n += d; 
+        }
+        // [수정] 마지막 문제 이후 정중한 안내
+        if (d > 0) alert("모든 퀴즈 문항이 종료되었습니다.\n수고하셨습니다.");
     },
     showQuiz: function() {
         const q = state.quizList[state.currentQuizIdx];
@@ -364,15 +366,19 @@ const quizMgr = {
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('btnTest').style.display = 'none'; document.getElementById('quizControls').style.display = 'flex';
-        document.getElementById('quizParticipantCount').style.display = 'block';
     },
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
+        // [추가] 상단 바 문항 번호 업데이트
+        const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
+        document.getElementById('quizNumberLabel').innerText = qNum;
+
         const oDiv = document.getElementById('d-options'); oDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none';
         oDiv.innerHTML = "";
         q.options.forEach((o, i) => {
             oDiv.innerHTML += `<div class="quiz-opt ${q.isOX?'ox-mode':''}" id="opt-${i+1}"><div class="opt-num">${i+1}</div><div class="opt-text">${o}</div></div>`;
         });
+        document.getElementById('quizGuideArea').innerText = ""; 
     },
     action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
@@ -406,10 +412,6 @@ const quizMgr = {
         document.getElementById('resetChoiceModal').style.display = 'none'; alert("리셋 완료."); this.action('ready');
     },
     showFinalSummary: async function() {
-        const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
-        const all = snap.val() || {};
-        // Calc Logic omitted for brevity (same as before)
-        // Just triggering the summary step
         await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
     },
@@ -427,7 +429,30 @@ const quizMgr = {
             }
         });
     },
-    closeQuizMode: function() { ui.setMode('qa'); }
+    // [수정] 퀴즈 종료(X) 로직
+    closeQuizMode: function() {
+        document.getElementById('quizExitModal').style.display = 'flex';
+    },
+    confirmExitQuiz: function(type) {
+        document.getElementById('quizExitModal').style.display = 'none';
+        if(type === 'reset') {
+            // 완전 초기화
+            state.isTestMode = false;
+            state.currentQuizIdx = 0;
+            state.quizList = [];
+            document.getElementById('btnTest').style.display = 'flex';
+            document.getElementById('quizControls').style.display = 'none';
+            document.getElementById('d-options').style.display = 'flex';
+            document.getElementById('d-chart').style.display = 'none';
+            document.getElementById('d-options').innerHTML = "";
+            document.getElementById('d-qtext').innerText = "Ready?";
+            // DB Clean
+            firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
+            firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
+        }
+        // 공통: Q&A로 이동
+        ui.setMode('qa');
+    }
 };
 
 // --- 5. Print ---
