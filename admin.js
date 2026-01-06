@@ -1,4 +1,4 @@
-/* --- admin.js (Final Fix for Fullscreen & Quiz Buttons) --- */
+/* --- admin.js (Fixed Report Logic) --- */
 
 const state = {
     sessionId: (function() {
@@ -217,7 +217,6 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
-    // [신규] 커스텀 알림창 (전체화면 안 깨지게)
     showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
@@ -334,8 +333,6 @@ const quizMgr = {
                 else if (l.length === 4) state.quizList.push({ text: l[0], options: [l[1], l[2]], correct: parseInt(l[3].replace(/[^0-9]/g, '')), checked: true, isOX: true });
             });
             ui.showAlert(`${state.quizList.length} Loaded.`); this.renderMiniList();
-            
-            // 파일 로드 시 테스트 버튼 숨김 & 컨트롤 표시 준비
             document.getElementById('btnTest').style.display = 'none';
             state.isTestMode = false;
         };
@@ -358,14 +355,10 @@ const quizMgr = {
         const t = "KAC는?\nO\nX\n1\n1"; const b = new Blob([t], {type: "text/plain"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "sample.txt"; a.click();
     },
-    // [수정] 테스트 모드: 실제 리스트에 문제 추가 (Next 동작하게)
     startTestMode: function() {
         state.isTestMode = true;
-        // 기존 리스트 백업? 아니, 테스트모드 전용 1문제 리스트로 교체 혹은 추가
-        // 간편하게 리스트 초기화 후 1문제 추가
         state.quizList = [{ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2, isOX: false, checked: true }];
         state.currentQuizIdx = 0;
-        
         this.renderScreen(state.quizList[0]);
         document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
@@ -384,8 +377,6 @@ const quizMgr = {
         this.resetTimerUI(); this.renderScreen(q);
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
-        
-        // [중요] 퀴즈가 시작되면 무조건 컨트롤은 보이고 테스트버튼은 숨김
         document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
     },
@@ -393,7 +384,6 @@ const quizMgr = {
         document.getElementById('d-qtext').innerText = q.text;
         const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
         document.getElementById('quizNumberLabel').innerText = qNum;
-
         const oDiv = document.getElementById('d-options'); oDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none';
         oDiv.innerHTML = "";
         q.options.forEach((o, i) => {
@@ -434,8 +424,80 @@ const quizMgr = {
         else await firebase.database().ref(`courses/${state.room}/quizAnswers/${id}`).set(null);
         document.getElementById('resetChoiceModal').style.display = 'none'; ui.showAlert("리셋 완료."); this.action('ready');
     },
+    // [핵심 수정] 리포트 계산 및 출력 로직 복구
     showFinalSummary: async function() {
+        const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
+        const allAns = snap.val() || {};
+        const totalParticipants = new Set();
+        let totalQuestions = 0;
+        let totalCorrect = 0;
+        let totalAnswerCount = 0;
+        let questionStats = [];
+        const userScoreMap = {};
+
+        // 1. 계산
+        state.quizList.forEach((q, idx) => {
+            // 테스트 모드거나 체크 안된 문제는 스킵
+            if(state.isTestMode || !q.checked) return;
+            
+            const id = `Q${idx}`;
+            const answers = allAns[id] || {};
+            const keys = Object.keys(answers);
+            let correctCount = 0;
+            
+            keys.forEach(k => {
+                totalParticipants.add(k);
+                totalAnswerCount++;
+                if(!userScoreMap[k]) userScoreMap[k] = { score: 0 };
+                if(answers[k].choice === q.correct) {
+                    correctCount++;
+                    totalCorrect++;
+                    userScoreMap[k].score += 1;
+                }
+            });
+            if(keys.length > 0) {
+                totalQuestions++;
+                questionStats.push({ title: q.text, accuracy: (correctCount / keys.length) * 100 });
+            }
+        });
+
+        // 2. 등수 데이터 생성
+        const sortedUsers = Object.keys(userScoreMap).map(token => ({
+            token: token,
+            score: userScoreMap[token].score
+        })).sort((a, b) => b.score - a.score);
+
+        const finalRankingData = {};
+        sortedUsers.forEach((user, rankIdx) => {
+            finalRankingData[user.token] = {
+                score: user.score,
+                rank: rankIdx + 1,
+                total: sortedUsers.length
+            };
+        });
+
+        // 3. Firebase 업로드 (이게 되어야 학생 화면이 넘어감)
+        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
         await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+
+        // 4. UI 출력 (강사 화면)
+        const grid = document.getElementById('summaryStats');
+        const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
+        grid.innerHTML = `
+            <div class="summary-card"><span>총 참여 인원</span><b>${totalParticipants.size}명</b></div>
+            <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
+            <div class="summary-card"><span>푼 문항 수</span><b>${totalQuestions}문항</b></div>
+            <div class="summary-card"><span>총 제출 수</span><b>${totalAnswerCount}건</b></div>
+        `;
+
+        if(questionStats.length > 0) {
+            questionStats.sort((a,b) => a.accuracy - b.accuracy); // 오답률 높은 순 (정답률 낮은 순)
+            document.getElementById('mostMissedArea').style.display = 'block';
+            document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0,30)}..." (정답률 ${Math.round(questionStats[0].accuracy)}%)`;
+        } else {
+            document.getElementById('mostMissedArea').style.display = 'none';
+        }
+
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
     },
     renderChart: function(id, corr) {
@@ -460,13 +522,9 @@ const quizMgr = {
         if(type === 'reset') {
             state.isTestMode = false;
             state.currentQuizIdx = 0;
-            
-            // [수정] 파일이 로드된 상태면 Q1으로 복구, 아니면 테스트모드 버튼 표시
             if(state.quizList.length > 0 && state.quizList[0].text !== "1 + 1 = ?") {
-                // 파일 로드된 상태
                 this.showQuiz();
             } else {
-                // 파일 없음 (또는 테스트모드였음) -> 초기화
                 state.quizList = [];
                 document.getElementById('btnTest').style.display = 'flex';
                 document.getElementById('quizControls').style.display = 'none';
@@ -475,12 +533,9 @@ const quizMgr = {
                 document.getElementById('d-options').innerHTML = "";
                 document.getElementById('d-qtext').innerText = "Ready?";
             }
-            
-            // DB Clean
             firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
             firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
         }
-        // Resume인 경우 그냥 닫기만 함 (UI 유지)
         ui.setMode('qa');
     }
 };
