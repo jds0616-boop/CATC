@@ -1,4 +1,4 @@
-/* --- admin.css (Final Integrated Version) --- */
+/* --- admin.css (Updated Version) --- */
 
 :root {
     --header-bg: #0f172a;
@@ -31,7 +31,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .login-btn:hover { background: #2563eb; }
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
-/* Sidebar Layout (Fixed & Scrollable) */
+/* Sidebar Layout */
 .sidebar { 
     width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; 
     display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; 
@@ -39,69 +39,23 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     border-right: 1px solid rgba(255,255,255,0.05); 
     z-index: 50; overflow: hidden; 
 }
-
-.sidebar-top { 
-    flex: 1; 
-    display: flex; flex-direction: column; gap: 15px; 
-    overflow-y: auto; scrollbar-width: none; 
-    padding-bottom: 10px;
-}
+.sidebar-top { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; padding-bottom: 10px; }
 .sidebar-top::-webkit-scrollbar { display: none; }
-
-.sidebar-bottom {
-    flex-shrink: 0;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-
+.sidebar-bottom { flex-shrink: 0; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 5px; }
 .setting-container { display: flex; flex-direction: column; gap: 12px; } 
 .setting-group { display: flex; flex-direction: column; gap: 4px; }
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
-.setting-input, .setting-select { 
-    width: 100%; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; 
-    color: white; border-radius: 6px; font-size: 13px; outline: none; transition: 0.2s; 
-}
+.setting-input, .setting-select { width: 100%; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; font-size: 13px; outline: none; transition: 0.2s; }
 .setting-input:focus { border-color: var(--accent-color); }
-
-/* QR Box Layout (Horizontal) */
-.qr-box { 
-    background: #0f172a; 
-    border: 1px solid #334155; 
-    border-radius: 8px; 
-    padding: 8px; 
-    display: flex; 
-    flex-direction: row; 
-    align-items: center; 
-    gap: 10px; 
-}
-#qrcode { 
-    background: white; 
-    padding: 2px; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    width: 42px; 
-    height: 42px; 
-    flex-shrink: 0; 
-    display: flex; align-items: center; justify-content: center; 
-}
+.qr-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: row; align-items: center; gap: 10px; }
+#qrcode { background: white; padding: 2px; border-radius: 4px; cursor: pointer; width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 #qrcode img { display: block; width: 100%; height: 100%; }
-
-/* Copy Link Button inside QR Box */
-#btnCopyLink {
-    flex-grow: 1;
-    height: 42px;
-    margin: 0;
-    border: 1px solid #475569;
-}
-
-/* File Row Layout */
+#btnCopyLink { flex-grow: 1; height: 42px; margin: 0; border: 1px solid #475569; }
 .file-row { display: flex; gap: 8px; align-items: center; }
 .file-row label { flex-grow: 1; text-align: center; } 
 .file-row button { width: auto; min-width: 70px; } 
-
 .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0; }
-
 .btn-action { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-action:active { transform: translateY(0); }
@@ -119,7 +73,12 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 20; flex-shrink: 0; }
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
 .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 15px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; }
-.header-controls { display: flex; gap: 20px; align-items: center; }
+.header-controls { display: flex; gap: 15px; align-items: center; }
+
+/* Theme & Fullscreen Toggle */
+.icon-btn-group { display: flex; gap: 10px; }
+.control-icon-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer; transition: 0.2s; }
+.control-icon-btn:hover { background: rgba(255,255,255,0.2); color: white; }
 .theme-toggle { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; display: flex; gap: 5px; cursor: pointer; }
 .theme-toggle i { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #64748b; transition: 0.2s; }
 .theme-toggle i.active { background: white; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -131,101 +90,72 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3); }
 
 .content-area { flex-grow: 1; overflow: hidden; position: relative; padding: 30px; display: flex; justify-content: center; }
-
-/* Status Overlay */
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .lock-message i { font-size: 60px; margin-bottom: 25px; color: #94a3b8; }
 .lock-message h3 { font-size: 28px; font-weight: 800; margin: 0 0 15px 0; letter-spacing: -0.5px; }
 .lock-message p { font-size: 16px; color: #cbd5e1; line-height: 1.6; }
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-/* [수정] Q&A View Layout - 틀 고정 및 스크롤 처리 */
-#view-qa { 
-    width: 100%; 
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    max-width: 1000px; 
-    overflow: hidden; /* 전체 스크롤 방지 */
-    position: relative;
-}
-
-/* 필터 버튼 영역 (상단 고정) */
-.qa-filters { 
-    display: flex; 
-    gap: 10px; 
-    padding: 20px 5px; 
-    flex-shrink: 0; 
-    background: var(--bg-color); /* 카드가 뒤로 지나갈 때 가려주기 위해 배경색 지정 */
-    z-index: 10; 
-    position: relative;
-}
-
+/* Q&A View */
+#view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
+.qa-filters { display: flex; gap: 10px; padding: 20px 5px; flex-shrink: 0; background: var(--bg-color); z-index: 10; position: relative; }
 .filter-chip { padding: 6px 16px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.03); color: #64748b; transition: 0.2s; }
 .filter-chip.active { background: #eff6ff; color: var(--accent-color); border-color: var(--accent-color); font-weight: 800; }
-
-/* 리스트 영역 (여기만 스크롤) */
-.qa-list { 
-    flex-grow: 1; 
-    overflow-y: auto; /* 내부 스크롤 */
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-    padding: 5px 5px; 
-    
-    /* [핵심] 마지막 카드가 중간까지 올라오도록 하단 여백 추가 */
-    padding-bottom: 50vh; 
-}
+.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .qa-list::-webkit-scrollbar-track { background: transparent; }
-
-.q-card { 
-    background: var(--card-bg); padding: 20px 25px; border-radius: 12px; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; 
-    cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; 
-    display: flex; justify-content: space-between; align-items: flex-start; 
-
-    /* 👇 [여기 추가!] 마우스 클릭 시 커서 깜빡임/드래그 방지 👇 */
-    user-select: none;
-    -webkit-user-select: none; /* 크롬, 사파리용 */
-    outline: none; /* 클릭 시 포커스 테두리 제거 */
-}
+.q-card { background: var(--card-bg); padding: 20px 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; user-select: none; -webkit-user-select: none; outline: none; }
 .q-card.status-pin { border-left-color: #ef4444; background: #fff1f2; }
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
-
-/* Hover Effect: 테두리 파란색 강조 + 그림자 */
-.q-card:hover { 
-    transform: translateY(-3px); 
-    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); 
-    background-color: #f8fafc; 
-    outline: 2px solid var(--accent-color); /* 기존 border 보존 */
-}
-
+.q-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); background-color: #f8fafc; outline: 2px solid var(--accent-color); }
 .q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
 .q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
 .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
-/* QUIZ STYLES */
+/* QUIZ STYLES (Layout Modified) */
 #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; max-width: 1200px; }
 .quiz-card { width: 100%; height: 100%; background: var(--card-bg); border-radius: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding: 40px; position: relative; overflow: hidden; }
 #quizContent { width: 100%; height: 100%; display: flex; flex-direction: column; flex-grow: 1; }
-.quiz-header-part { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 30px; margin-bottom: 30px; }
+
+/* [변경] 퀴즈 헤더 레이아웃: 가로 배치 */
+.quiz-header-part { 
+    flex-shrink: 0; 
+    display: flex; 
+    flex-direction: row; /* 가로 배치 */
+    align-items: center; 
+    gap: 40px; 
+    margin-bottom: 30px; 
+    width: 100%;
+}
+.quiz-info-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    min-width: 200px;
+}
+.quiz-question-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+}
+
 .digital-timer { display: inline-block; font-family: 'Courier New', monospace; font-size: 48px; font-weight: 900; color: #333; background: #f8fafc; padding: 5px 25px; border-radius: 12px; border: 2px solid #cbd5e1; flex-shrink: 0; }
 .digital-timer.urgent { color: #dc2626; border-color: #dc2626; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
-.quiz-question { font-size: 42px; font-weight: 900; line-height: 1.2; color: var(--text-color); word-break: keep-all; margin: 0; text-align: left; }
+.quiz-question { font-size: 42px; font-weight: 900; line-height: 1.3; color: var(--text-color); word-break: keep-all; margin: 0; text-align: left; }
 .quiz-options { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex-grow: 1; justify-content: center; }
-
-/* 퀴즈 답안 글씨 크기 확대 */
 .quiz-opt { width: 100%; flex: 1; min-height: 70px; display: flex; align-items: center; padding: 0 30px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 34px; font-weight: 800; color: #475569; background: white; transition: all 0.3s; cursor: default; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 .quiz-opt .opt-num { width: 50px; height: 50px; background: #f1f5f9; border-radius: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; margin-right: 25px; flex-shrink: 0; }
 .quiz-opt .opt-text { flex-grow: 1; text-align: center; }
 .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); z-index: 10; font-weight: 800; }
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
-
+.quiz-opt.ox-mode { flex: 1; min-height: 150px; font-size: 60px; justify-content: center; }
+.quiz-opt.ox-mode .opt-num { display: none; }
 .chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 8%; padding-bottom: 40px; border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; }
 .bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 120px; height: 100%; position: relative; }
 .bar-value { font-size: 24px; font-weight: 800; color: #334155; margin-bottom: 8px; opacity: 0; animation: fadeIn 0.5s forwards 0.8s; }
@@ -247,6 +177,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .quiz-exit-btn:hover { background: #cbd5e1; color: #333; }
 .quiz-guide-text { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.05); color: #64748b; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 
+/* Modals & Overlays */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-box { background: var(--card-bg); width: 600px; padding: 30px; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); animation: popIn 0.3s; }
 .modal-header { margin-bottom: 20px; text-align: center; color: var(--text-color); }
@@ -294,57 +225,13 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     #official-document * { visibility: visible; }
 }
 
-/* [수정] 야간 모드에서 카드에 마우스 올렸을 때(Hover) 배경색 조정 */
-body.night-mode .q-card:hover {
-    background-color: #334155 !important; /* 밝은 회색 대신 '진한 회색'으로 변경 */
-    color: #ffffff !important; /* 글자는 계속 흰색 유지 */
-    outline-color: #3b82f6; /* 테두리 파란색은 유지 */
-}
+body.night-mode .q-card:hover { background-color: #334155 !important; color: #ffffff !important; outline-color: #3b82f6; }
+body.night-mode .q-card.status-pin { background-color: #3f0c0c !important; color: #e2e8f0 !important; border-left-color: #ef4444 !important; }
+body.night-mode .q-card.status-pin:hover { background-color: #5c1414 !important; color: #ffffff !important; }
 
-/* --- admin.css 맨 아래에 추가하세요 --- */
-
-/* 1. 야간 모드 + 핀 고정 카드 (평소 상태) */
-body.night-mode .q-card.status-pin {
-    background-color: #3f0c0c !important; /* 아주 어두운 붉은색 */
-    color: #e2e8f0 !important;             /* 글자는 밝은 회색 */
-    border-left-color: #ef4444 !important; /* 왼쪽 띠는 붉은색 유지 */
-}
-
-/* 2. 야간 모드 + 핀 고정 카드 (마우스 올렸을 때) */
-body.night-mode .q-card.status-pin:hover {
-    background-color: #5c1414 !important; /* 살짝 더 밝은 어두운 붉은색 */
-    color: #ffffff !important;             /* 글자는 흰색 */
-}
-
-/* --- [추가] 퀴즈 기능 보강 스타일 --- */
-
-/* O/X 퀴즈를 위한 스타일 보강 */
-.quiz-opt.ox-mode {
-    flex: 1;
-    min-height: 150px;
-    font-size: 60px; /* O, X를 크게 표시 */
-    justify-content: center;
-}
-
-.quiz-opt.ox-mode .opt-num { display: none; } /* OX일때는 숫자 숨김 */
-
-/* 통계 카드 스타일 */
-.summary-card {
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    border: 1px solid #e2e8f0;
-}
+/* Stats & Extra */
+.summary-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
 .summary-card span { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 700; }
 .summary-card b { font-size: 24px; color: #1e293b; }
-
-/* 참여자 카운트 애니메이션 */
-#quizParticipantCount {
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
+#quizParticipantCount { animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }

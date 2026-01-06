@@ -4,750 +4,277 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KAC Student Platform</title>
-    <!-- Firebase Libraries (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- Fonts & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-    
     <style>
-        :root { 
-            --header-bg: #0f172a; 
-            --bg-color: #0f172a; 
-            --accent-color: #3b82f6; 
-            --btn-yellow: #facc15;
-            --btn-text: #1e293b;
-            --card-bg: #ffffff; 
-            --text-color: #1e293b;
-            --input-bg: #f8fafc;
-            --safe-area-bottom: env(safe-area-inset-bottom);
-        }
-        
+        :root { --header-bg: #0f172a; --bg-color: #0f172a; --accent-color: #3b82f6; --btn-yellow: #facc15; --btn-text: #1e293b; --card-bg: #ffffff; --text-color: #1e293b; --input-bg: #f8fafc; --safe-area-bottom: env(safe-area-inset-bottom); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', sans-serif; }
-        
-        body { 
-            margin: 0; background: var(--bg-color);
-            color: var(--text-color); 
-            height: 100dvh; /* 모바일 대응 높이 */
-            overflow: hidden; 
-        }
-
-        /* --- 0. Landing Page (Entrance) --- */
-        .landing-page {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--header-bg); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: white; padding: 40px 20px; text-align: center;
-        }
-        .landing-course { font-size: 24px; font-weight: 800; margin-bottom: 10px; line-height: 1.3; word-break: keep-all; }
+        body { margin: 0; background: var(--bg-color); color: var(--text-color); height: 100dvh; overflow: hidden; }
+        .landing-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--header-bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 40px 20px; text-align: center; }
+        .landing-course { font-size: 24px; font-weight: 800; margin-bottom: 10px; line-height: 1.3; }
         .landing-room { font-size: 16px; opacity: 0.7; font-weight: 500; margin-bottom: 60px; padding: 5px 15px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; }
-        
-        .btn-enter {
-            background: var(--btn-yellow); color: var(--btn-text);
-            width: 200px; height: 56px; border-radius: 30px;
-            font-size: 18px; font-weight: 800; border: none; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            transition: transform 0.1s;
-        }
+        .btn-enter { background: var(--btn-yellow); color: var(--btn-text); width: 200px; height: 56px; border-radius: 30px; font-size: 18px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s; }
         .btn-enter:active { transform: scale(0.96); }
-        
-        .landing-logo { 
-            position: absolute; 
-            bottom: 40px; 
-            width: 120px; 
-            z-index: 9999; 
-            opacity: 1;      
-            filter: none; 
-        }
-
-        /* --- Main App Container --- */
-        .app-container {
-            width: 100%; height: 100%; display: none; /* 입장 전 숨김 */
-            flex-direction: column; position: relative;
-            background: var(--bg-color); max-width: 600px; margin: 0 auto;
-        }
-
-        /* 1. Header */
-        .header {
-            height: 56px; background: var(--header-bg); color: white; 
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; flex-shrink: 0; z-index: 100; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        
+        .landing-logo { position: absolute; bottom: 40px; width: 120px; z-index: 9999; }
+        .app-container { width: 100%; height: 100%; display: none; flex-direction: column; position: relative; background: var(--bg-color); max-width: 600px; margin: 0 auto; }
+        .header { height: 56px; background: var(--header-bg); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .header-btn { width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: white; }
         .header-center { flex-grow: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .header-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .header-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
         .live-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #22c55e; }
-
-        /* 2. Sort Tab */
-        .sort-bar {
-            padding: 10px 15px; background: var(--bg-color);
-            display: flex; gap: 10px; z-index: 80; flex-shrink: 0;
-        }
-        .sort-chip {
-            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-            background: rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer;
-            transition: 0.2s; border: 1px solid transparent;
-        }
+        .sort-bar { padding: 10px 15px; background: var(--bg-color); display: flex; gap: 10px; z-index: 80; flex-shrink: 0; }
+        .sort-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
         .sort-chip.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
-
-        /* 3. List Area */
-        .scroll-container { 
-            flex-grow: 1; overflow-y: auto; position: relative;
-            padding: 0 15px 120px 15px; /* 하단 입력창 높이 고려하여 여백 확보 */
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
-        }
+        .scroll-container { flex-grow: 1; overflow-y: auto; position: relative; padding: 0 15px 120px 15px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .scroll-container::-webkit-scrollbar { display: none; }
-
-        /* Question Card */
-        .q-card {
-            background: var(--card-bg); border-radius: 16px; padding: 16px; 
-            margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;
-        }
+        .q-card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
         .q-card.my-q { border: 2px solid var(--accent-color); background: #f0f9ff; }
-        
-        .q-avatar {
-            width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            font-size: 16px; color: #64748b;
-        }
+        .q-avatar { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; color: #64748b; }
         .my-q .q-avatar { background: var(--accent-color); color: white; }
-
         .q-content { flex-grow: 1; min-width: 0; }
         .q-text { font-size: 15px; line-height: 1.5; color: var(--text-color); margin-bottom: 8px; word-break: break-word; font-weight: 500; white-space: pre-wrap; }
         .q-meta { font-size: 11px; color: #94a3b8; display: flex; gap: 8px; align-items: center; }
         .btn-mini { cursor: pointer; padding: 4px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; }
-        
         .q-like-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 44px; flex-shrink: 0; gap: 4px; }
-        .like-btn {
-            width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9;
-            display: flex; align-items: center; justify-content: center;
-            color: #cbd5e1; font-size: 18px; cursor: pointer; transition: 0.2s;
-        }
+        .like-btn { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 18px; cursor: pointer; transition: 0.2s; }
         .like-btn.active { background: #fee2e2; color: #ef4444; transform: scale(1.05); }
         .like-count { font-size: 12px; font-weight: 700; color: #64748b; }
         .like-btn.active + .like-count { color: #ef4444; }
-
-        /* 4. Input Area (Fixed Bottom, Textarea) */
-        .input-dock {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--input-bg);
-            border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200;
-            display: flex; flex-direction: column; gap: 4px;
-        }
-
-        .input-box {
-            background: white; border-radius: 20px; 
-            padding: 10px 10px 10px 15px; 
-            display: flex; align-items: flex-end; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-            min-height: 48px;
-        }
-
-        .real-input {
-            flex-grow: 1; border: none; background: transparent; 
-            font-size: 16px; line-height: 1.4; color: var(--text-color);
-            outline: none; resize: none; 
-            height: 24px; max-height: 120px; 
-            padding: 0; margin-bottom: 2px;
-            overflow-y: hidden; font-family: 'Pretendard', sans-serif;
-        }
-        .real-input:disabled { background: transparent; color: #94a3b8; }
-
-        .send-btn {
-            width: 36px; height: 36px; border-radius: 50%; 
-            background: var(--accent-color); color: white; border: none; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; cursor: pointer; flex-shrink: 0; 
-            transition: 0.2s; margin-left: 8px; margin-bottom: 1px;
-        }
+        
+        /* Input Dock (Auto Height Fix) */
+        .input-dock { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--input-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200; display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 80px; }
+        .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
+        .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
+        .real-input:disabled { background: transparent; color: #94a3b8; opacity: 1; } /* Disabled opacity fix */
+        .send-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-color); color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; flex-shrink: 0; transition: 0.2s; margin-left: 8px; margin-bottom: 1px; }
         .send-btn:active { transform: scale(0.9); }
         .send-btn.editing { background: #10b981; }
-
-        /* Info Row (Timer & Counter) */
-        .input-info-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 5px; font-size: 11px; font-weight: 600;
-        }
-        .char-counter { color: #94a3b8; }
-        .char-counter.limit { color: #ef4444; font-weight: 800; }
-        
+        .input-info-row { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; font-size: 11px; font-weight: 600; }
+        .char-counter { color: #94a3b8; } .char-counter.limit { color: #ef4444; font-weight: 800; }
         .cooldown-text { color: #ef4444; font-weight: 800; }
-
-        /* Quiz Overlay */
-        .quiz-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(5px);
-            z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-        }
+        
+        .quiz-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(5px); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .quiz-box { width: 100%; background: white; border-radius: 24px; padding: 30px 20px; text-align: center; }
         .quiz-opt-btn { width: 100%; height: 70px; margin-bottom: 10px; border-radius: 12px; font-size: 20px; font-weight: 800; border: 2px solid #e2e8f0; background: #f8fafc; color: #333; transition: 0.2s; }
         .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.02); }
         .quiz-opt-btn.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-
         #quizResultBox { animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .quiz-king-stamp {
-            position: absolute; top: 5px; right: 5px;
-            width: 95px; height: 95px; border: 4px double #facc15;
-            border-radius: 50%; color: #facc15; display: flex;
-            flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 14px; transform: rotate(15deg);
-            background: rgba(250, 204, 21, 0.1); z-index: 10;
-            animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes stampIn {
-            from { transform: scale(3) rotate(45deg); opacity: 0; }
-            to { transform: scale(1) rotate(15deg); opacity: 1; }
-        }
-
-        /* Menu */
+        .quiz-king-stamp { position: absolute; top: 5px; right: 5px; width: 95px; height: 95px; border: 4px double #facc15; border-radius: 50%; color: #facc15; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; transform: rotate(15deg); background: rgba(250, 204, 21, 0.1); z-index: 10; animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes stampIn { from { transform: scale(3) rotate(45deg); opacity: 0; } to { transform: scale(1) rotate(15deg); opacity: 1; } }
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
         .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
     </style>
 </head>
 <body>
-
-    <!-- Landing Page (Entrance) -->
     <div id="landingPage" class="landing-page">
         <div class="landing-course" id="landingTitle">Loading...</div>
         <div class="landing-room" id="landingBadge">Room ...</div>
-        
-        <button class="btn-enter" onclick="enterApp()">
-            입장하기 <i class="fa-solid fa-arrow-right-to-bracket"></i>
-        </button>
-        
+        <button class="btn-enter" onclick="enterApp()">입장하기 <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
         <img src="logo.png" alt="KAC" class="landing-logo">
     </div>
-
-    <!-- Main App -->
     <div class="app-container" id="mainApp">
-        <!-- Header -->
         <div class="header">
-            <!-- Left: Exit -->
             <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
-            
-            <div class="header-center">
-                <div class="header-title" id="roomTitle">Course Name</div>
-                <div class="header-sub">
-                    <span class="live-dot"></span>
-                    <span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span>
-                </div>
-            </div>
-            
-            <!-- Right: Menu -->
+            <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
             <div class="header-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
         </div>
-
-        <!-- Sort Tab -->
         <div class="sort-bar">
             <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
             <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
         </div>
-
-        <!-- List -->
-        <div class="scroll-container" id="scrollContainer">
-            <div id="qList" class="q-list"></div>
-        </div>
-
-        <!-- Input (Fixed Bottom, Textarea) -->
+        <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
         <div class="input-dock" id="inputDock">
             <div class="input-box">
-                <textarea id="qInput" class="real-input" rows="1"
-                       placeholder="강의장 공개, 예의있는 질문" maxlength="100"
-                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-                
-                <button id="submitBtn" class="send-btn" onclick="submitQ()">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                <textarea id="qInput" class="real-input" rows="1" placeholder="강의장 공개, 예의있는 질문" maxlength="100" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                <button id="submitBtn" class="send-btn" onclick="submitQ()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-            <div class="input-info-row">
-                <span id="coolTimer" class="cooldown-text"></span>
-                <span id="charCount" class="char-counter">0 / 100</span>
-            </div>
+            <div class="input-info-row"><span id="coolTimer" class="cooldown-text"></span><span id="charCount" class="char-counter">0 / 100</span></div>
         </div>
     </div>
-
-    <!-- Quiz Overlay -->
     <div id="quizOverlay" class="quiz-overlay">
-        <!-- 퀴즈 진행 박스 -->
         <div id="quizActiveBox" class="quiz-box">
             <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
             <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">강사님이 퀴즈를 시작하기를 기다리고 있습니다...</div>
-
-            <!-- 4지선다형 버튼 컨테이너 -->
             <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;">
-                <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button>
-                <button class="quiz-opt-btn" onclick="sendAns(2)">2번</button>
-                <button class="quiz-opt-btn" onclick="sendAns(3)">3번</button>
-                <button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
+                <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button><button class="quiz-opt-btn" onclick="sendAns(2)">2번</button><button class="quiz-opt-btn" onclick="sendAns(3)">3번</button><button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
             </div>
-
-            <!-- O/X형 버튼 컨테이너 -->
             <div id="btnGroupOX" style="display:none; gap:15px;">
-                <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
-                <button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
+                <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button><button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
             </div>
-
             <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
         </div>
-
-        <!-- 최종 성적표 박스 -->
         <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); position:relative; overflow:hidden;">
-            <!-- 1등 전용 도장 -->
-            <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp">
-                <span style="font-size:30px;">👑</span>
-                <span>퀴즈왕</span>
-            </div>
-            
+            <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp"><span style="font-size:30px;">👑</span><span>퀴즈왕</span></div>
             <div style="font-size:50px; margin-bottom:10px;">🏆</div>
             <h2 style="margin:0; font-weight:900; color:#0f172a;">QUIZ RESULT</h2>
-            <div style="margin:25px 0;">
-                <div style="font-size:14px; color:#64748b; font-weight:bold;">당신의 최종 점수</div>
-                <div id="myFinalScore" style="font-size:48px; font-weight:900; color:#3b82f6;">0점</div>
-            </div>
-            <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">
-                현재 <span id="myFinalRank">0</span>등 (전체 참여자 중)
-            </div>
+            <div style="margin:25px 0;"><div style="font-size:14px; color:#64748b; font-weight:bold;">당신의 최종 점수</div><div id="myFinalScore" style="font-size:48px; font-weight:900; color:#3b82f6;">0점</div></div>
+            <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">현재 <span id="myFinalRank">0</span>등 (전체 참여자 중)</div>
             <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
         </div>
     </div>
-
-    <!-- Menu Modal -->
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
-        <div class="menu-box">
-            <h3>강의실 이동</h3>
-            <div id="roomList" style="max-height:300px; overflow-y:auto;"></div>
-            <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#e2e8f0;">닫기</button>
-        </div>
+        <div class="menu-box"><h3>강의실 이동</h3><div id="roomList" style="max-height:300px; overflow-y:auto;"></div><button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#e2e8f0;">닫기</button></div>
     </div>
-
     <script src="config.js"></script>
     <script>
-        let dbRef = {}; 
-        let currentRoom = null;
-        let myQs = {}; 
-        let myLikes = {};
-        let lastPostTime = 0;
-        let editingKey = null; 
-        let currentSort = 'new';
-        let currentQuizId = null;
-        let canAnswer = false;
-        let myLastChoice = null; 
-        let hasClosedSummary = false;
-        let rankingListener = null; 
+        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; 
         
-        // --- 1. Init & Landing Logic ---
         (async function init() {
             const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            const directRoom = params.get('room');
-
-            if (code) currentRoom = await resolveRoomFromCode(code);
-            else if (directRoom) currentRoom = directRoom;
-
-            if (!currentRoom) {
-                alert("유효하지 않은 주소입니다."); return;
-            }
-
-            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
-            document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-            
-            myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
-            myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
+            const code = params.get('code'); const directRoom = params.get('room');
+            if (code) currentRoom = await resolveRoomFromCode(code); else if (directRoom) currentRoom = directRoom;
+            if (!currentRoom) { alert("유효하지 않은 주소입니다."); return; }
+            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`; document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+            myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
             lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
+            const db = firebase.database(); const rPath = `courses/${currentRoom}`;
+            dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
+            setupListeners(); checkCooldown();
 
-            const db = firebase.database();
-            const rPath = `courses/${currentRoom}`;
-            dbRef = {
-                qa: db.ref(`${rPath}/questions`),
-                quiz: db.ref(`${rPath}/activeQuiz`),
-                ans: db.ref(`${rPath}/quizAnswers`),
-                settings: db.ref(`${rPath}/settings`),
-                status: db.ref(`${rPath}/status`),
-                connections: db.ref(`${rPath}/connections`)
-            };
-
-            setupListeners();
-            checkCooldown();
+            // [New] Init Cleanup: Remove stale quiz result if not currently in summary mode
+            dbRef.status.once('value', s => {
+                const st = s.val() || {};
+                if(st.quizStep !== 'summary') {
+                    document.getElementById('quizOverlay').style.display = 'none';
+                    document.getElementById('quizResultBox').style.display = 'none';
+                }
+            });
         })();
 
         function enterApp() {
             const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
-            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
-
-            document.getElementById('landingPage').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'flex';
-            startPresence();
+            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{}); else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
+            document.getElementById('landingPage').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; startPresence();
         }
-
-        function exitApp() {
-            if(confirm("대기화면으로 나가시겠습니까?")) {
-                location.reload();
-            }
-        }
-
-        // --- 2. Real-time Presence ---
+        function exitApp() { if(confirm("대기화면으로 나가시겠습니까?")) location.reload(); }
         function startPresence() {
             const connectedRef = firebase.database().ref(".info/connected");
-            connectedRef.on("value", (snap) => {
-                if (snap.val() === true) {
-                    const con = dbRef.connections.push();
-                    con.onDisconnect().remove();
-                    con.set(true);
-                }
-            });
-
-            dbRef.connections.on("value", (snap) => {
-                const count = snap.numChildren();
-                document.getElementById('realUserCount').innerText = `${count}명 접속`;
-            });
+            connectedRef.on("value", (snap) => { if (snap.val() === true) { const con = dbRef.connections.push(); con.onDisconnect().remove(); con.set(true); } });
+            dbRef.connections.on("value", (snap) => { const count = snap.numChildren(); document.getElementById('realUserCount').innerText = `${count}명 접속`; });
         }
-
-        // --- 3. Data Listeners ---
         function setupListeners() {
-            dbRef.settings.on('value', s => {
-                const val = s.val() || {};
-                const title = val.courseName || `Course ${currentRoom}`;
-                document.getElementById('roomTitle').innerText = title;
-                document.getElementById('landingTitle').innerText = title;
-            });
-
-            dbRef.qa.on('value', snap => {
-                const data = snap.val() || {};
-                renderList(data);
-            });
-
-            // [수정] 강사 상태 동기화 리스너
+            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
+            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
-                
-                // 강사가 Q&A 모드로 전환했거나 리포트를 닫은 경우 (강제 종료)
-                if (st.mode === 'qa' || st.quizStep === 'none') {
-                    forceCloseQuiz();
-                    return;
-                }
-
-                // 종료 리포트 단계 (summary 신호 오자마자 등수 집계 함수 호출)
-                if (st.quizStep === 'summary') {
-                    if(!hasClosedSummary) showFinalRanking(); 
-                }
+                if (st.mode === 'qa' || st.quizStep === 'none') { forceCloseQuiz(); return; }
+                if (st.quizStep === 'summary') { if(!hasClosedSummary) showFinalRanking(); }
             });
-
-            // [수정] 실시간 퀴즈 문항 리스너 (성적표 노출 시 간섭 방지 로직 보강)
             dbRef.quiz.on('value', s => {
-                const q = s.val();
-                if(!q) return;
-
+                const q = s.val(); if(!q) return;
                 dbRef.status.once('value', statusSnap => {
                     const st = statusSnap.val() || {};
-
-                    // [추가] 강사가 새로운 퀴즈를 'ready' 상태로 보냈다면 무조건 등수창 등을 닫음
-                    if (q.status === 'ready') {
-                        forceCloseQuiz();
-                    }
-                    
-                    // 성적표(summary)가 떠 있는 상태라면 문항 리스너가 오버레이를 닫지 못하게 막음 (단, 위에서 ready로 초기화 안 된 경우만)
+                    if (q.status === 'ready') forceCloseQuiz();
                     if (st.quizStep === 'summary' && !hasClosedSummary) return;
-
-                    if(st.mode !== 'quiz') {
-                        forceCloseQuiz();
-                        return;
-                    }
-
-                    // 강사가 차트 결과(result)를 보고 있을 땐 입력창 숨김
-                    if(q.status === 'result') {
-                        document.getElementById('quizOverlay').style.display = 'none';
-                        return;
-                    }
-
-                    document.getElementById('quizOverlay').style.display = 'flex';
-                    document.getElementById('quizActiveBox').style.display = 'block';
-                    document.getElementById('quizResultBox').style.display = 'none';
-
-                    if(q.status === 'ready') {
-                        canAnswer = false;
-                        myLastChoice = null;
-                        document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
-                        document.getElementById('btnGroupMultiple').style.display = 'none';
-                        document.getElementById('btnGroupOX').style.display = 'none';
-                        document.getElementById('quizFeedback').innerText = "";
-                        currentQuizId = q.id;
-                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected', 'locked'));
-                    } 
-                    else if(q.status === 'open') {
-                        canAnswer = true;
-                        document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!";
-                        
-                        if(q.type === 'OX') {
-                            document.getElementById('btnGroupMultiple').style.display = 'none';
-                            document.getElementById('btnGroupOX').style.display = 'flex';
-                        } else {
-                            document.getElementById('btnGroupMultiple').style.display = 'flex';
-                            document.getElementById('btnGroupOX').style.display = 'none';
-                        }
-                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked'));
-                    }
-                    else if(q.status === 'close') {
-                        canAnswer = false;
-                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
-                        
-                        if(myLastChoice) {
-                            document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다.";
-                            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
-                        } else {
-                            document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다.";
-                        }
-                    }
+                    if(st.mode !== 'quiz') { forceCloseQuiz(); return; }
+                    if(q.status === 'result') { document.getElementById('quizOverlay').style.display = 'none'; return; }
+                    document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
+                    if(q.status === 'ready') { canAnswer = false; myLastChoice = null; document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다..."; document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'none'; document.getElementById('quizFeedback').innerText = ""; currentQuizId = q.id; document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected', 'locked')); } 
+                    else if(q.status === 'open') { canAnswer = true; document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!"; if(q.type === 'OX') { document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'flex'; } else { document.getElementById('btnGroupMultiple').style.display = 'flex'; document.getElementById('btnGroupOX').style.display = 'none'; } document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked')); }
+                    else if(q.status === 'close') { canAnswer = false; document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked')); if(myLastChoice) { document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다."; document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`; } else { document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다."; } }
                 });
             });
-
             const qInputEl = document.getElementById('qInput');
-            const charCountEl = document.getElementById('charCount');
             qInputEl.addEventListener('input', function() {
-                const len = this.value.length;
-                charCountEl.innerText = `${len} / 100`;
-                if (len >= 90) charCountEl.classList.add('limit');
-                else charCountEl.classList.remove('limit');
-                this.style.height = '1px'; 
-                this.style.height = (this.scrollHeight) + 'px'; 
+                const len = this.value.length; document.getElementById('charCount').innerText = `${len} / 100`;
+                if (len >= 90) document.getElementById('charCount').classList.add('limit'); else document.getElementById('charCount').classList.remove('limit');
+                this.style.height = '1px'; this.style.height = (this.scrollHeight) + 'px';
             });
         }
-
-        function setSort(type) {
-            currentSort = type;
-            document.getElementById('sortNew').classList.toggle('active', type === 'new');
-            document.getElementById('sortLike').classList.toggle('active', type === 'like');
-            dbRef.qa.once('value', s => renderList(s.val()||{}));
-        }
-
+        function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
         function renderList(data) {
-            const list = document.getElementById('qList');
-            list.innerHTML = "";
-            let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            if(currentSort === 'like') {
-                items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
-            } else {
-                items.sort((a,b) => b.timestamp - a.timestamp);
-            }
+            const list = document.getElementById('qList'); list.innerHTML = ""; let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+            if(currentSort === 'like') items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); else items.sort((a,b) => b.timestamp - a.timestamp);
             items.forEach(item => {
                 if(item.status === 'delete') return;
-                const isMine = myQs[item.id] ? 'my-q' : '';
-                const likedClass = myLikes[item.id] ? 'active' : '';
+                const isMine = myQs[item.id] ? 'my-q' : ''; const likedClass = myLikes[item.id] ? 'active' : '';
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
-                if(isMine && (Date.now() - myQs[item.id] < 300000)) {
-                    metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span>
-                                 <span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
-                }
+                if(isMine && (Date.now() - myQs[item.id] < 300000)) metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
                 metaHtml += `</div>`;
-                list.innerHTML += `
-                    <div class="q-card ${isMine}">
-                        <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
-                        <div class="q-content">
-                            <div class="q-text">${escapeHtml(item.text)}</div>
-                            ${metaHtml}
-                        </div>
-                        <div class="q-like-area">
-                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')">
-                                <i class="fa-solid fa-thumbs-up"></i>
-                            </div>
-                            <span class="like-count">${item.likes||0}</span>
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${escapeHtml(item.text)}</div>${metaHtml}</div><div class="q-like-area"><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
             });
         }
-
         function submitQ() {
-            const txt = document.getElementById('qInput').value.trim();
-            if(!txt) return;
-            if(editingKey) {
-                dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); });
-                return;
-            }
+            const txt = document.getElementById('qInput').value.trim(); if(!txt) return;
+            // [New] Edit bypasses cooldown
+            if(editingKey) { dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); }); return; }
             const now = Date.now();
             if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
-            const ref = dbRef.qa.push();
-            ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
-            myQs[ref.key] = now; 
-            localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-            lastPostTime = now;
-            localStorage.setItem(`lastTime_${currentRoom}`, now);
+            const ref = dbRef.qa.push(); ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            myQs[ref.key] = now; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs)); lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
             resetInput(); checkCooldown();
         }
-
-        function toggleLike(key) {
-            if(myLikes[key]) {
-                dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; });
-                delete myLikes[key];
-            } else {
-                dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; });
-                myLikes[key] = true;
-            }
-            localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
-        }
-
+        function toggleLike(key) { if(myLikes[key]) { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; }); delete myLikes[key]; } else { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; }); myLikes[key] = true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
         function editQ(key) {
             dbRef.qa.child(key).once('value', s => {
-                const el = document.getElementById('qInput');
-                el.value = s.val().text;
-                el.style.height = '1px';
-                el.style.height = (el.scrollHeight) + 'px';
-                const cnt = document.getElementById('charCount');
-                cnt.innerText = `${el.value.length} / 100`;
-                document.getElementById('submitBtn').classList.add('editing');
-                document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
-                editingKey = key;
-                el.focus();
+                const el = document.getElementById('qInput'); el.value = s.val().text;
+                el.style.height = '1px'; el.style.height = (el.scrollHeight) + 'px';
+                document.getElementById('charCount').innerText = `${el.value.length} / 100`;
+                document.getElementById('submitBtn').classList.add('editing'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
+                editingKey = key; el.focus(); checkCooldown(); // Re-trigger check
             });
         }
-
         function deleteQ(key) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(key).remove(); }
-        
-        function resetInput() {
-            const el = document.getElementById('qInput');
-            el.value = "";
-            el.style.height = '24px';
-            el.focus();
-            const cnt = document.getElementById('charCount');
-            cnt.innerText = "0 / 100";
-            cnt.classList.remove('limit');
-            document.getElementById('submitBtn').classList.remove('editing');
-            document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
-            editingKey = null;
-        }
-
+        function resetInput() { const el = document.getElementById('qInput'); el.value = ""; el.style.height = '24px'; el.focus(); document.getElementById('charCount').innerText = "0 / 100"; document.getElementById('charCount').classList.remove('limit'); document.getElementById('submitBtn').classList.remove('editing'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>'; editingKey = null; checkCooldown(); }
         function checkCooldown() {
-            if(editingKey) return;
-            const diff = Date.now() - lastPostTime;
-            const timerEl = document.getElementById('coolTimer');
-            const btn = document.getElementById('submitBtn');
-            const input = document.getElementById('qInput');
+            // [New] If editing, skip cooldown lock
+            const btn = document.getElementById('submitBtn'); const input = document.getElementById('qInput');
+            if(editingKey) { document.getElementById('coolTimer').innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "내용을 수정하세요."; return; }
+            
+            const diff = Date.now() - lastPostTime; const timerEl = document.getElementById('coolTimer');
             if(diff < 120000) {
-                const remain = Math.ceil((120000 - diff) / 1000);
-                const mm = Math.floor(remain / 60);
-                const ss = remain % 60;
+                const remain = Math.ceil((120000 - diff) / 1000); const mm = Math.floor(remain / 60); const ss = remain % 60;
                 timerEl.innerText = `⏳ 질문 제한: ${mm}:${ss.toString().padStart(2, '0')} 남음`;
-                btn.disabled = true;
-                btn.style.opacity = 0.5;
-                input.disabled = true;
-                input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
+                btn.disabled = true; btn.style.opacity = 0.5; input.disabled = true; input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
                 setTimeout(checkCooldown, 1000);
-            } else {
-                timerEl.innerText = "";
-                btn.disabled = false;
-                btn.style.opacity = 1;
-                input.disabled = false;
-                input.placeholder = "강의장 공개, 예의있는 질문";
-            }
+            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "강의장 공개, 예의있는 질문"; }
         }
-
-        function formatTime(ts) {
-            const d = new Date(ts);
-            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-        }
+        function formatTime(ts) { const d = new Date(ts); return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
-        
         async function sendAns(c) {
             if(!canAnswer) return;
-            const qSnap = await dbRef.quiz.once('value');
-            const qData = qSnap.val() || {};
-            const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`;
-            myLastChoice = choiceLabel; 
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
-            event.target.classList.add('selected');
+            const qSnap = await dbRef.quiz.once('value'); const qData = qSnap.val() || {}; const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`; myLastChoice = choiceLabel; 
+            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected')); event.target.classList.add('selected');
             document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${choiceLabel} 선택 중...`;
-            let t = localStorage.getItem('uToken');
-            if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
+            let t = localStorage.getItem('uToken'); if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
             dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
-
         function showFinalRanking() {
-            const myToken = localStorage.getItem('uToken');
-            if(!myToken) return;
-
-            if(rankingListener) return;
-
-            document.getElementById('quizOverlay').style.display = 'flex';
-            document.getElementById('quizActiveBox').style.display = 'block';
-            document.getElementById('quizResultBox').style.display = 'none';
-            document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요...";
-            document.getElementById('btnGroupMultiple').style.display = 'none';
-            document.getElementById('btnGroupOX').style.display = 'none';
-            document.getElementById('quizFeedback').innerText = "";
-
+            const myToken = localStorage.getItem('uToken'); if(!myToken) return; if(rankingListener) return;
+            document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
+            document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요..."; document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'none'; document.getElementById('quizFeedback').innerText = "";
             const resultRef = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`);
             rankingListener = resultRef.on('value', snap => {
                 const myResult = snap.val();
                 if(myResult) {
-                    document.getElementById('quizActiveBox').style.display = 'none';
-                    document.getElementById('quizResultBox').style.display = 'block';
-                    document.getElementById('myFinalScore').innerText = `${myResult.score}점`;
-                    document.getElementById('myFinalRank').innerText = myResult.rank;
-
-                    if(myResult.rank === 1) {
-                        document.getElementById('quizKingStamp').style.display = 'flex';
-                    } else {
-                        document.getElementById('quizKingStamp').style.display = 'none';
-                    }
+                    document.getElementById('quizActiveBox').style.display = 'none'; document.getElementById('quizResultBox').style.display = 'block';
+                    document.getElementById('myFinalScore').innerText = `${myResult.score}점`; document.getElementById('myFinalRank').innerText = myResult.rank;
+                    if(myResult.rank === 1) document.getElementById('quizKingStamp').style.display = 'flex'; else document.getElementById('quizKingStamp').style.display = 'none';
                 }
             });
         }
-
         function forceCloseQuiz() {
-            hasClosedSummary = false; // [수정] 결과 확인 플래그 초기화
-            canAnswer = false;
-            if (rankingListener) {
-                const myToken = localStorage.getItem('uToken');
-                firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off();
-                rankingListener = null;
-            }
-            // [추가] 성적표 관련 내부 UI 요소들도 초기화
-            document.getElementById('quizResultBox').style.display = 'none';
-            document.getElementById('quizActiveBox').style.display = 'block';
-            document.getElementById('quizOverlay').style.display = 'none';
-            document.getElementById('quizKingStamp').style.display = 'none';
+            hasClosedSummary = false; canAnswer = false;
+            if (rankingListener) { const myToken = localStorage.getItem('uToken'); firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off(); rankingListener = null; }
+            document.getElementById('quizResultBox').style.display = 'none'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizOverlay').style.display = 'none'; document.getElementById('quizKingStamp').style.display = 'none';
         }
-
-        function closeResultOverlay() {
-            hasClosedSummary = true;
-            document.getElementById('quizOverlay').style.display = 'none';
-        }
-
+        function closeResultOverlay() { hasClosedSummary = true; document.getElementById('quizOverlay').style.display = 'none'; }
         function openMenu() {
             const box = document.getElementById('roomList'); box.innerHTML = "";
-            for(let i=65; i<=90; i++) {
-                let c = String.fromCharCode(i);
-                box.innerHTML += `<div class="menu-item" onclick="changeRoom('${c}')">Room ${c}</div>`;
-            }
+            for(let i=65; i<=90; i++) { let c = String.fromCharCode(i); box.innerHTML += `<div class="menu-item" onclick="changeRoom('${c}')">Room ${c}</div>`; }
             document.getElementById('menuModal').style.display = 'flex';
         }
-
         function changeRoom(r) {
-            const pw = prompt(`Room ${r} 입장 비밀번호를 입력하세요:`);
-            if (!pw) return;
+            const pw = prompt(`Room ${r} 입장 비밀번호를 입력하세요:`); if (!pw) return;
             firebase.database().ref(`courses/${r}/settings/password`).once('value', snap => {
                 const dbPw = snap.val();
-                if (!dbPw) {
-                    alert("⚠️ 해당 강의실은 아직 개설되지 않았거나,\n비밀번호가 설정되지 않았습니다.");
-                    return;
-                }
-                if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) {
-                    window.location.href = `?room=${r}`;
-                } else {
-                    alert("⛔ 비밀번호가 올바르지 않습니다.");
-                }
+                if (!dbPw) { alert("⚠️ 해당 강의실은 아직 개설되지 않았거나,\n비밀번호가 설정되지 않았습니다."); return; }
+                if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) { window.location.href = `?room=${r}`; } else { alert("⛔ 비밀번호가 올바르지 않습니다."); }
             });
         }
     </script>

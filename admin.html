@@ -4,23 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Admin - KAC Platform</title>
-    
-    <!-- Firebase Libraries (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
-    <!-- QRCode & Icons & Font -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-    
-    <!-- CSS 파일 연결 -->
     <link rel="stylesheet" href="admin.css">
 </head>
 <body class="day-mode">
-
-    <!-- 0. Login Overlay -->
+    <!-- Login Overlay -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
             <div class="login-logo"><i class="fa-solid fa-user-shield"></i></div>
@@ -32,24 +25,15 @@
         </div>
     </div>
 
-    <!-- 1. Change Password Modal -->
+    <!-- Modals -->
     <div id="changePwModal" class="modal-overlay">
         <div class="modal-box" style="width: 450px;">
             <div class="modal-header"><h3><i class="fa-solid fa-key"></i> 비밀번호 변경</h3></div>
             <div class="setting-container">
-                <div class="setting-group">
-                    <label class="setting-label">현재 비밀번호</label>
-                    <input type="password" id="cp-current" class="setting-input" placeholder="Current Password">
-                </div>
+                <div class="setting-group"><label class="setting-label">현재 비밀번호</label><input type="password" id="cp-current" class="setting-input"></div>
                 <div class="divider"></div>
-                <div class="setting-group">
-                    <label class="setting-label">새 비밀번호</label>
-                    <input type="password" id="cp-new" class="setting-input" placeholder="New Password">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">새 비밀번호 확인</label>
-                    <input type="password" id="cp-confirm" class="setting-input" placeholder="Confirm New Password">
-                </div>
+                <div class="setting-group"><label class="setting-label">새 비밀번호</label><input type="password" id="cp-new" class="setting-input"></div>
+                <div class="setting-group"><label class="setting-label">새 비밀번호 확인</label><input type="password" id="cp-confirm" class="setting-input"></div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:flex-end; gap:10px;">
                 <button class="m-btn m-btn-later" onclick="ui.closePwModal()" style="background:#64748b; color:white;">취소</button>
@@ -58,17 +42,12 @@
         </div>
     </div>
 
-    <!-- Takeover Auth Modal -->
     <div id="takeoverModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-header"><h3><i class="fa-solid fa-lock"></i> 강의실 제어권 인증</h3></div>
-            <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:20px;">
-                현재 사용 중인 강의실입니다.<br>비밀번호 또는 마스터키를 입력하세요.
-            </p>
+            <p style="text-align:center; color:#64748b; font-size:14px; margin-bottom:20px;">현재 사용 중인 강의실입니다.<br>비밀번호 또는 마스터키를 입력하세요.</p>
             <div class="setting-container">
-                <div class="setting-group">
-                    <input type="password" id="takeoverPwInput" class="setting-input" placeholder="Password or Master Key" style="text-align:center; font-size:18px; letter-spacing:4px;" onkeyup="if(event.key==='Enter') dataMgr.verifyTakeover()">
-                </div>
+                <div class="setting-group"><input type="password" id="takeoverPwInput" class="setting-input" style="text-align:center; font-size:18px; letter-spacing:4px;" onkeyup="if(event.key==='Enter') dataMgr.verifyTakeover()"></div>
             </div>
             <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
                 <button class="m-btn m-btn-later" onclick="dataMgr.cancelTakeover()" style="background:#64748b; color:white;">취소</button>
@@ -77,10 +56,8 @@
         </div>
     </div>
 
-    <!-- 2. QR Modal -->
     <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
 
-    <!-- 3. Print Modal -->
     <div id="printInputModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">📜 리포트 정보 입력</div>
@@ -96,7 +73,6 @@
         </div>
     </div>
 
-    <!-- Print Preview -->
     <div id="printPreviewModal" class="modal-overlay">
         <div class="print-preview-box">
             <div class="preview-header">
@@ -125,44 +101,22 @@
         </div>
     </div>
 
-    <!-- Sidebar Section -->
+    <!-- Sidebar -->
     <div class="sidebar">
-        <!-- Top Scrollable Area -->
         <div class="sidebar-top">
             <div class="sidebar-header">KAC Training Platform</div>
             <div class="setting-container">
-                <div class="setting-group">
-                    <label class="setting-label">Select Room</label>
-                    <select id="roomSelect" class="setting-select"></select>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">Room Status</label>
-                    <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
-                        <option value="active">🟢 사용중 (Occupied)</option>
-                        <option value="idle">⚪ 비어있음 (Available)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">Course Name</label>
-                    <input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name">
-                </div>
-                
-                <div class="setting-group">
-                    <label class="setting-label">Student Room PW</label>
-                    <input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭">
-                </div>
-
+                <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
+                <div class="setting-group"><label class="setting-label">Room Status</label><select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;"><option value="active">🟢 사용중 (Occupied)</option><option value="idle">⚪ 비어있음 (Available)</option></select></div>
+                <div class="setting-group"><label class="setting-label">Course Name</label><input type="text" id="courseNameInput" class="setting-input" placeholder="Course Name"></div>
+                <div class="setting-group"><label class="setting-label">Student Room PW</label><input type="password" id="roomPw" class="setting-input" maxlength="4" placeholder="비밀번호 설정 후 [Save] 클릭"></div>
                 <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings (설정 저장)</button>
-                
                 <div class="divider"></div>
-                
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box">
                         <div id="qrcode" onclick="ui.openQrModal()" title="Click to Expand"></div>
-                        <button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()">
-                            <i class="fa-solid fa-copy"></i> Copy Link
-                        </button>
+                        <button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()"><i class="fa-solid fa-copy"></i> Copy Link</button>
                         <input type="text" id="studentLink" style="opacity: 0; position: absolute; z-index: -1;">
                     </div>
                 </div>
@@ -170,16 +124,12 @@
                     <label class="setting-label">Quiz File (.txt)</label>
                     <div class="file-row">
                         <input type="file" id="quizFile" accept=".txt" style="display: none;" onchange="alert(this.files[0].name + ' 선택됨')">
-                        <label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor: pointer; justify-content: center; flex-grow: 1;">
-                            <i class="fa-solid fa-file-import"></i> Quiz File
-                        </label>
+                        <label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor: pointer; justify-content: center; flex-grow: 1;"><i class="fa-solid fa-file-import"></i> Quiz File</label>
                         <button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()" style="width: auto;">Sample</button>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Bottom Fixed Area -->
         <div class="sidebar-bottom">
             <div class="action-buttons">
                 <button class="btn-action btn-secondary" onclick="ui.openPwModal()"><i class="fa-solid fa-key"></i> Change Password</button>
@@ -192,20 +142,19 @@
         </div>
     </div>
 
-    <!-- Main Content Area -->
+    <!-- Main Content -->
     <div class="main-stage">
         <div id="statusOverlay" class="status-overlay">
-            <div class="lock-message">
-                <i class="fa-solid fa-lock"></i>
-                <h3>강의 대기 중 (Room Idle)</h3>
-                <p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p>
-            </div>
+            <div class="lock-message"><i class="fa-solid fa-lock"></i><h3>강의 대기 중 (Room Idle)</h3><p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p></div>
         </div>
-
         <header class="header">
             <div class="header-title"><span id="displayRoomName">Connecting...</span><span class="course-sub-name" id="displayCourseTitle"></span></div>
             <div class="header-controls">
-                <div class="theme-toggle" onclick="ui.toggleNightMode()"><i class="fa-solid fa-sun active" id="iconSun"></i><i class="fa-solid fa-moon" id="iconMoon"></i></div>
+                <!-- Theme & Fullscreen Buttons -->
+                <div class="icon-btn-group">
+                    <div class="theme-toggle" onclick="ui.toggleNightMode()"><i class="fa-solid fa-sun active" id="iconSun"></i><i class="fa-solid fa-moon" id="iconMoon"></i></div>
+                    <div class="control-icon-btn" onclick="ui.toggleFullScreen()" title="Full Screen"><i class="fa-solid fa-expand"></i></div>
+                </div>
                 <img src="logo.png" alt="Logo" class="kac-logo" onerror="this.style.display='none'"> 
             </div>
         </header>
@@ -229,14 +178,17 @@
                 <div class="quiz-card">
                     <div id="quizGuideArea" class="quiz-guide-text">Press 'Test Mode' or Select Quiz</div>
                     <div id="quizContent">
+                        <!-- 퀴즈 헤더 (타이머/인원수 좌측, 문제 우측) -->
                         <div class="quiz-header-part">
-                            <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                            <div class="quiz-info-left">
                                 <div class="digital-timer" id="quizTimer">00:30</div>
-                                <div id="quizParticipantCount" style="font-size:12px; font-weight:bold; color:#3b82f6; background:#eff6ff; padding:2px 8px; border-radius:10px; display:none;">
-                                    <i class="fa-solid fa-users"></i> 참여: <span id="currentJoinCount">0</span>명
+                                <div id="quizParticipantCount" style="font-size:14px; font-weight:bold; color:#3b82f6; background:#eff6ff; padding:5px 15px; border-radius:20px; display:none;">
+                                    <i class="fa-solid fa-users"></i> 접속자: <span id="currentJoinCount">0</span>명
                                 </div>
                             </div>
-                            <div class="quiz-question" id="d-qtext">Ready?</div>
+                            <div class="quiz-question-container">
+                                <div class="quiz-question" id="d-qtext">Ready?</div>
+                            </div>
                         </div>
                         <div class="quiz-options" id="d-options"></div>
                         <div class="chart-area" id="d-chart"></div>
@@ -249,7 +201,6 @@
                             <button class="q-btn btn-stop" onclick="quizMgr.action('close')"><i class="fa-solid fa-stop"></i> Stop</button>
                             <button class="q-btn btn-result" onclick="quizMgr.action('result')"><i class="fa-solid fa-chart-simple"></i> Result</button>
                             <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)">Next <i class="fa-solid fa-forward"></i></button>
-                            <!-- 리셋 및 종료 버튼 추가 -->
                             <button class="q-btn" style="background:#64748b;" onclick="quizMgr.openResetModal()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
                             <button class="q-btn" style="background:#0f172a;" onclick="quizMgr.showFinalSummary()"><i class="fa-solid fa-flag-checkered"></i> 종료</button>
                         </div>
@@ -258,35 +209,20 @@
                 </div>
             </div>
 
-            <!-- [수정] 대기실 화면 (화살표 위치 변경 버전) -->
             <div id="view-waiting" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; color:#64748b; position: relative;">
-                
-                <!-- 1. 화살표 위치를 여기(왼쪽 상단)로 이동 -->
                 <div style="position: absolute; top: 30px; left: 30px; font-size: 40px; color: var(--accent-color); animation: bounceLeft 1.5s infinite; display:flex; flex-direction:column; align-items:flex-start;">
                     <i class="fa-solid fa-arrow-left-long"></i> 
                     <span style="font-size:16px; font-weight:bold; margin-top:5px; margin-left:5px;">Select Room</span>
                 </div>
-
-                <!-- 2. 중앙 아이콘 및 텍스트 -->
-                <div style="font-size: 80px; margin-bottom: 20px; color: #cbd5e1;">
-                    <i class="fa-solid fa-chalkboard-user"></i>
-                </div>
+                <div style="font-size: 80px; margin-bottom: 20px; color: #cbd5e1;"><i class="fa-solid fa-chalkboard-user"></i></div>
                 <h1 style="font-size: 32px; font-weight: 800; color: var(--text-color); margin: 0 0 10px 0;">강사 대기실</h1>
                 <p style="font-size: 16px; margin-bottom: 40px;">현재 입장된 강의실이 없습니다.<br>수업을 진행하려면 좌측 상단에서 강의실을 선택하세요.</p>
-                
-                <!-- 3. 하단 설명 박스 -->
                 <div style="background: #eff6ff; padding: 20px 40px; border-radius: 12px; border: 1px solid #bfdbfe;">
                     <h3 style="margin:0 0 10px 0; color:#1e40af;">📌 사용중 (Occupied) 상태란?</h3>
-                    <p style="margin:0; font-size:14px; color:#1e3a8a;">
-                        이미 다른 강사님이 수업 중인 강의실입니다.<br>
-                        입장 시 <b>비밀번호(또는 마스터키)</b> 인증이 필요합니다.
-                    </p>
+                    <p style="margin:0; font-size:14px; color:#1e3a8a;">이미 다른 강사님이 수업 중인 강의실입니다.<br>입장 시 <b>비밀번호(또는 마스터키)</b> 인증이 필요합니다.</p>
                 </div>
             </div>
-            <style>
-                @keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
-            </style>
-
+            <style>@keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }</style>
         </div>
 
         <div class="overlay-panel" id="rightPanel">
@@ -316,7 +252,6 @@
         </div>
     </div>
 
-    <!-- [추가] 리셋 선택 모달 -->
     <div id="resetChoiceModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px; text-align: center;">
             <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
@@ -329,13 +264,10 @@
         </div>
     </div>
 
-    <!-- [추가] 최종 통계 오버레이 -->
     <div id="quizSummaryOverlay" class="status-overlay" style="background: rgba(255,255,255,0.98); color:#1e293b; backdrop-filter: none; z-index: 2000;">
         <div style="width: 90%; max-width: 600px; text-align: center;">
             <h2 style="font-size:32px; font-weight:800; color:var(--accent-color); margin-bottom:30px;">QUIZ REPORT</h2>
-            <div id="summaryStats" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;">
-                <!-- 통계 카드가 여기에 들어감 -->
-            </div>
+            <div id="summaryStats" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;"></div>
             <div id="mostMissedArea" style="background:#fff1f2; border:1px solid #fecaca; padding:15px; border-radius:12px; margin-bottom:30px; display:none;">
                 <h4 style="margin:0 0 10px 0; color:#e11d48;">🔥 오답률이 가장 높았던 문제</h4>
                 <p id="mostMissedText" style="margin:0; font-weight:bold;"></p>
