@@ -1,4 +1,4 @@
-/* --- admin.js (Fixes for Quiz Buttons, Results, and Chart) --- */
+/* --- admin.js (Final Version: Report & Quiz Logic Integrated) --- */
 
 const state = {
     sessionId: (function() {
@@ -22,7 +22,7 @@ const state = {
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
 
-// --- 1. Auth (No Change) ---
+// --- 1. Auth ---
 const authMgr = {
     ADMIN_EMAIL: "admin@kac.com", 
     tryLogin: async function() {
@@ -55,7 +55,7 @@ const authMgr = {
     }
 };
 
-// --- 2. Data & Room Logic (No Change) ---
+// --- 2. Data & Room Logic ---
 const dataMgr = {
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
@@ -215,7 +215,7 @@ const dataMgr = {
     }
 };
 
-// --- 3. UI (No Change) ---
+// --- 3. UI ---
 const ui = {
     showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
@@ -319,7 +319,7 @@ const ui = {
     }
 };
 
-// --- 4. Quiz Logic (Revised) ---
+// --- 4. Quiz Logic ---
 const quizMgr = {
     loadFile: function(e) {
         const f = e.target.files[0]; if (!f) return;
@@ -333,13 +333,11 @@ const quizMgr = {
                 else if (l.length === 4) state.quizList.push({ text: l[0], options: [l[1], l[2]], correct: parseInt(l[3].replace(/[^0-9]/g, '')), checked: true, isOX: true });
             });
             ui.showAlert(`${state.quizList.length} Loaded.`); this.renderMiniList();
-            
-            // [수정] 파일 로드되면 테스트 버튼 숨기고, 컨트롤 버튼 보이기
             document.getElementById('btnTest').style.display = 'none';
-            document.getElementById('quizControls').style.display = 'flex'; // << 추가됨
+            document.getElementById('quizControls').style.display = 'flex'; 
             state.isTestMode = false;
             state.currentQuizIdx = 0;
-            this.showQuiz(); // 바로 1번 문제 대기 화면으로
+            this.showQuiz();
         };
         r.readAsText(f);
     },
@@ -390,7 +388,6 @@ const quizMgr = {
         document.getElementById('d-qtext').innerText = q.text;
         const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
         document.getElementById('quizNumberLabel').innerText = qNum;
-
         const oDiv = document.getElementById('d-options'); oDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none';
         oDiv.innerHTML = "";
         q.options.forEach((o, i) => {
@@ -401,13 +398,11 @@ const quizMgr = {
     action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
-        
         if(act === 'open') { 
             this.startTimer(); 
         }
         else if(act === 'close') { 
             this.stopTimer(); 
-            // [수정] 정답 표시 복구
             const correct = state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct;
             const opt = document.getElementById(`opt-${correct}`);
             if(opt) opt.classList.add('reveal-answer');
@@ -444,13 +439,9 @@ const quizMgr = {
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
         const totalParticipants = new Set();
-        let totalQuestions = 0;
-        let totalCorrect = 0;
-        let totalAnswerCount = 0;
-        let questionStats = [];
-        const userScoreMap = {};
+        let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0;
+        let questionStats = []; const userScoreMap = {};
 
-        // 1. 계산
         state.quizList.forEach((q, idx) => {
             if(state.isTestMode || !q.checked) return;
             const id = `Q${idx}`;
@@ -462,9 +453,7 @@ const quizMgr = {
                 totalAnswerCount++;
                 if(!userScoreMap[k]) userScoreMap[k] = { score: 0 };
                 if(answers[k].choice === q.correct) {
-                    correctCount++;
-                    totalCorrect++;
-                    userScoreMap[k].score += 1;
+                    correctCount++; totalCorrect++; userScoreMap[k].score += 1;
                 }
             });
             if(keys.length > 0) {
@@ -473,22 +462,15 @@ const quizMgr = {
             }
         });
 
-        // 2. 등수 생성
-        const sortedUsers = Object.keys(userScoreMap).map(token => ({
-            token: token,
-            score: userScoreMap[token].score
-        })).sort((a, b) => b.score - a.score);
-
+        const sortedUsers = Object.keys(userScoreMap).map(token => ({ token: token, score: userScoreMap[token].score })).sort((a, b) => b.score - a.score);
         const finalRankingData = {};
         sortedUsers.forEach((user, rankIdx) => {
             finalRankingData[user.token] = { score: user.score, rank: rankIdx + 1, total: sortedUsers.length };
         });
 
-        // 3. 업로드
         await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
         await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
 
-        // 4. UI 출력
         const grid = document.getElementById('summaryStats');
         const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
         grid.innerHTML = `
@@ -505,10 +487,8 @@ const quizMgr = {
         } else {
             document.getElementById('mostMissedArea').style.display = 'none';
         }
-
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
     },
-    // [수정] 차트 및 왕관 복구
     renderChart: function(id, corr) {
         const div = document.getElementById('d-chart'); div.innerHTML = "";
         const isOX = state.isTestMode ? false : state.quizList[state.currentQuizIdx].isOX;
@@ -520,15 +500,8 @@ const quizMgr = {
             for(let i=0; i<loop; i++) {
                 const isCorrect = (i + 1) === corr;
                 const h = (cnt[i]/max)*80;
-                // [복구] 왕관 아이콘
                 const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
-                div.innerHTML += `
-                    <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
-                        ${crownHtml}
-                        <div class="bar-value">${cnt[i]}</div>
-                        <div class="bar-fill" style="height:${h}%"></div>
-                        <div class="bar-label">${lbl[i]}</div>
-                    </div>`;
+                div.innerHTML += `<div class="bar-wrapper ${isCorrect ? 'correct' : ''}">${crownHtml}<div class="bar-value">${cnt[i]}</div><div class="bar-fill" style="height:${h}%"></div><div class="bar-label">${lbl[i]}</div></div>`;
             }
         });
     },
@@ -540,7 +513,6 @@ const quizMgr = {
         if(type === 'reset') {
             state.isTestMode = false;
             state.currentQuizIdx = 0;
-            // [수정] 파일이 있으면 Start 버튼 보이기, 없으면 Test 버튼 보이기
             if(state.quizList.length > 0 && state.quizList[0].text !== "1 + 1 = ?") {
                 this.showQuiz();
             } else {
@@ -559,7 +531,7 @@ const quizMgr = {
     }
 };
 
-// --- 5. Print (No Change) ---
+// --- 5. Print (Updated Logic for Sophisticated Report) ---
 const printMgr = {
     openInputModal: function() { 
         const today = new Date();
@@ -582,9 +554,13 @@ const printMgr = {
         document.getElementById('doc-date').innerText = date; 
         document.getElementById('doc-prof').innerText = prof || "담당 교수";
         document.getElementById('doc-print-date').innerText = `출력일시: ${new Date().toLocaleString()}`;
+
         const listBody = document.getElementById('docListBody'); listBody.innerHTML = ""; 
         const items = Object.values(state.qaData || {}); 
-        let maxLikes = -1; let bestQuestion = "질문 내역이 없습니다.";
+        
+        let maxLikes = -1;
+        let bestQuestion = "질문 내역이 없습니다.";
+        
         if (items.length > 0) {
             items.sort((a,b) => a.timestamp - b.timestamp);
             items.forEach(item => {
@@ -593,14 +569,23 @@ const printMgr = {
             });
             if (maxLikes === 0) bestQuestion = "- (공감 받은 질문 없음)";
         }
+
         document.getElementById('doc-total-count').innerText = `${items.length} 건`;
         document.getElementById('doc-best-q').innerText = items.length > 0 ? bestQuestion : "-";
+
         if (items.length === 0) {
             listBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
         } else {
             items.forEach((item, idx) => {
                 const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                const st = (item.status==='pin'?'<span style="color:#2563eb; font-weight:bold;">📌 중요</span>':(item.status==='later'?'<span style="color:#f59e0b; font-weight:bold;">⚠️ 보류</span>':(item.status==='done'?'<span style="color:#10b981; font-weight:bold;">✅ 완료</span>':'대기')));
+                const statusMap = {
+                    'pin': '<span style="color:#2563eb; font-weight:bold;">📌 중요</span>',
+                    'later': '<span style="color:#f59e0b; font-weight:bold;">⚠️ 보류</span>',
+                    'done': '<span style="color:#10b981; font-weight:bold;">✅ 완료</span>',
+                    'pin-done': '<span style="color:#10b981;">완료됨</span>',
+                    'normal': '대기'
+                };
+                const st = statusMap[item.status] || '대기';
                 listBody.innerHTML += `<tr><td>${idx + 1}</td><td>${item.text}</td><td>${timeStr}</td><td>${item.likes || 0}</td><td>${st}</td></tr>`;
             });
         }
