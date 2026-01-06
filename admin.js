@@ -682,7 +682,7 @@ const quizMgr = {
         if(!state.isTestMode) this.showQuiz();
     },
 
-    // [수정] 최종 통계 및 실시간 점수/등수 집계 로직
+    // [수정] 최종 통계 및 실시간 점수/등수 집계 로직 최적화
     showFinalSummary: async function() {
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
@@ -691,10 +691,9 @@ const quizMgr = {
         let totalCorrect = 0;
         let totalAnswerCount = 0;
         let questionStats = [];
-
-        // 전체 학생 점수 계산을 위한 맵
         const userScoreMap = {};
 
+        // 1. 점수 및 통계 계산
         state.quizList.forEach((q, idx) => {
             if(!q.checked) return;
             const id = `Q${idx}`;
@@ -705,28 +704,22 @@ const quizMgr = {
             keys.forEach(k => {
                 totalParticipants.add(k);
                 totalAnswerCount++;
-                
                 if(!userScoreMap[k]) userScoreMap[k] = { score: 0 };
-                
                 if(answers[k].choice === q.correct) {
                     correctCount++;
                     totalCorrect++;
-                    userScoreMap[k].score += 1; // 정답 시 1점 가산
+                    userScoreMap[k].score += 1;
                 }
             });
-            
             if(keys.length > 0) {
                 totalQuestions++;
-                questionStats.push({ 
-                    title: q.text, 
-                    accuracy: (correctCount / keys.length) * 100 
-                });
+                questionStats.push({ title: q.text, accuracy: (correctCount / keys.length) * 100 });
             }
         });
 
         if(totalAnswerCount === 0) return alert("진행된 퀴즈 데이터가 없습니다.");
 
-        // 등수 계산 로직
+        // 2. 등수 데이터 생성
         const sortedUsers = Object.keys(userScoreMap).map(token => ({
             token: token,
             score: userScoreMap[token].score
@@ -734,18 +727,18 @@ const quizMgr = {
 
         const finalRankingData = {};
         sortedUsers.forEach((user, rankIdx) => {
-            // 공동 등수 처리 없이 단순 인덱스 기반 (필요 시 로직 고도화 가능)
             finalRankingData[user.token] = {
                 score: user.score,
                 rank: rankIdx + 1,
-                total: sortedUsers.size || totalParticipants.size
+                total: sortedUsers.length
             };
         });
 
-        // DB에 최종 결과 업로드 (교육생 조회용)
+        // 3. [중요] 데이터 업로드를 먼저 완료한 후, 종료 신호(quizStep)를 보냅니다.
         await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
+        await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
 
-        // UI 렌더링
+        // 4. 강사용 통계 UI 업데이트
         const grid = document.getElementById('summaryStats');
         grid.innerHTML = `
             <div class="summary-card"><span>총 참여 인원</span><b>${totalParticipants.size}명</b></div>
@@ -756,13 +749,11 @@ const quizMgr = {
 
         if(questionStats.length > 0) {
             questionStats.sort((a,b) => a.accuracy - b.accuracy);
-            const mostMissed = questionStats[0];
             document.getElementById('mostMissedArea').style.display = 'block';
-            document.getElementById('mostMissedText').innerText = `"${mostMissed.title.substring(0,30)}..." (정답률 ${Math.round(mostMissed.accuracy)}%)`;
+            document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0,30)}..." (정답률 ${Math.round(questionStats[0].accuracy)}%)`;
         }
 
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
-        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
     },
 
     // [추가] 통계창 닫기 및 동기화
