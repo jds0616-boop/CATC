@@ -682,7 +682,7 @@ const quizMgr = {
         if(!state.isTestMode) this.showQuiz();
     },
 
-    // [추가] 최종 통계 종료 화면 로직
+    // [수정] 최종 통계 및 실시간 점수/등수 집계 로직
     showFinalSummary: async function() {
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
@@ -691,6 +691,9 @@ const quizMgr = {
         let totalCorrect = 0;
         let totalAnswerCount = 0;
         let questionStats = [];
+
+        // 전체 학생 점수 계산을 위한 맵
+        const userScoreMap = {};
 
         state.quizList.forEach((q, idx) => {
             if(!q.checked) return;
@@ -702,9 +705,13 @@ const quizMgr = {
             keys.forEach(k => {
                 totalParticipants.add(k);
                 totalAnswerCount++;
+                
+                if(!userScoreMap[k]) userScoreMap[k] = { score: 0 };
+                
                 if(answers[k].choice === q.correct) {
                     correctCount++;
                     totalCorrect++;
+                    userScoreMap[k].score += 1; // 정답 시 1점 가산
                 }
             });
             
@@ -719,6 +726,25 @@ const quizMgr = {
 
         if(totalAnswerCount === 0) return alert("진행된 퀴즈 데이터가 없습니다.");
 
+        // 등수 계산 로직
+        const sortedUsers = Object.keys(userScoreMap).map(token => ({
+            token: token,
+            score: userScoreMap[token].score
+        })).sort((a, b) => b.score - a.score);
+
+        const finalRankingData = {};
+        sortedUsers.forEach((user, rankIdx) => {
+            // 공동 등수 처리 없이 단순 인덱스 기반 (필요 시 로직 고도화 가능)
+            finalRankingData[user.token] = {
+                score: user.score,
+                rank: rankIdx + 1,
+                total: sortedUsers.size || totalParticipants.size
+            };
+        });
+
+        // DB에 최종 결과 업로드 (교육생 조회용)
+        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
+
         // UI 렌더링
         const grid = document.getElementById('summaryStats');
         grid.innerHTML = `
@@ -728,7 +754,6 @@ const quizMgr = {
             <div class="summary-card"><span>총 제출 수</span><b>${totalAnswerCount}건</b></div>
         `;
 
-        // 최다 오답 문항 (정답률 가장 낮은 문제)
         if(questionStats.length > 0) {
             questionStats.sort((a,b) => a.accuracy - b.accuracy);
             const mostMissed = questionStats[0];
@@ -737,8 +762,13 @@ const quizMgr = {
         }
 
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
-        // 학생들에게도 종료 상태 전송
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+    },
+
+    // [추가] 통계창 닫기 및 동기화
+    closeSummary: function() {
+        document.getElementById('quizSummaryOverlay').style.display = 'none';
+        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
     },
 
     startTimer: function() {
@@ -758,18 +788,22 @@ const quizMgr = {
     stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:30"; document.getElementById('quizTimer').classList.remove('urgent'); },
     
+    // [수정] OX 차트 레이블 지원
     renderChart: function(id, correct) {
         const div = document.getElementById('d-chart'); div.innerHTML = "";
+        const currentQ = state.isTestMode ? {isOX: false} : state.quizList[state.currentQuizIdx];
+
         firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
             const data = s.val() || {};
             const counts = [0, 0, 0, 0];
             Object.values(data).forEach(v => { if(v.choice >= 1 && v.choice <= 4) counts[v.choice - 1]++; });
             const maxVal = Math.max(...counts);
             
-            counts.forEach((c, i) => {
-                if(i >= 2 && counts[2] === 0 && counts[3] === 0 && counts.slice(0,2).some(x=>x>0)) {
-                   // OX 모드일 때 3, 4번 막대 생략 로직 (선택사항)
-                }
+            const loopCount = (currentQ && currentQ.isOX) ? 2 : 4;
+            const labels = (currentQ && currentQ.isOX) ? ['O', 'X'] : ['1', '2', '3', '4'];
+
+            for (let i = 0; i < loopCount; i++) {
+                const c = counts[i];
                 const isCorrect = (i + 1) === correct;
                 const height = (c / Math.max(maxVal, 1)) * 80;
                 const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${height > 0 ? height + '%' : '40px'};">👑</div>` : '';
@@ -778,9 +812,9 @@ const quizMgr = {
                         ${crownHtml}
                         <div class="bar-value">${c}</div>
                         <div class="bar-fill" style="height:${height}%"></div>
-                        <div class="bar-label">${i+1}</div>
+                        <div class="bar-label">${labels[i]}</div>
                     </div>`;
-            });
+            }
         });
     },
     setGuide: function(txt) { document.getElementById('quizGuideArea').innerText = txt; },
