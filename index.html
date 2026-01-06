@@ -280,10 +280,12 @@
 
     <!-- Quiz Overlay -->
     <div id="quizOverlay" class="quiz-overlay">
+        <!-- 퀴즈 진행 박스 -->
         <div id="quizActiveBox" class="quiz-box">
             <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
             <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">강사님이 퀴즈를 시작하기를 기다리고 있습니다...</div>
 
+            <!-- 4지선다형 버튼 컨테이너 -->
             <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;">
                 <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button>
                 <button class="quiz-opt-btn" onclick="sendAns(2)">2번</button>
@@ -291,6 +293,7 @@
                 <button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
             </div>
 
+            <!-- O/X형 버튼 컨테이너 -->
             <div id="btnGroupOX" style="display:none; gap:15px;">
                 <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
                 <button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
@@ -299,7 +302,9 @@
             <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
         </div>
 
+        <!-- 최종 성적표 박스 -->
         <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); position:relative; overflow:hidden;">
+            <!-- 1등 전용 도장 -->
             <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp">
                 <span style="font-size:30px;">👑</span>
                 <span>퀴즈왕</span>
@@ -314,7 +319,6 @@
             <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">
                 현재 <span id="myFinalRank">0</span>등 (전체 참여자 중)
             </div>
-            <!-- [수정] 무한루프 방지: 새로고침 대신 닫기 함수 호출 -->
             <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
         </div>
     </div>
@@ -339,9 +343,11 @@
         let currentSort = 'new';
         let currentQuizId = null;
         let canAnswer = false;
-        let myLastChoice = null;
-        let hasClosedSummary = false; // [추가] 성적표 수동 닫기 상태
+        let myLastChoice = null; 
+        let hasClosedSummary = false;
+        let rankingListener = null; // [추가] 실시간 등수 리스너 보관용
         
+        // --- 1. Init & Landing Logic ---
         (async function init() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
@@ -392,6 +398,7 @@
             }
         }
 
+        // --- 2. Real-time Presence ---
         function startPresence() {
             const connectedRef = firebase.database().ref(".info/connected");
             connectedRef.on("value", (snap) => {
@@ -408,6 +415,7 @@
             });
         }
 
+        // --- 3. Data Listeners ---
         function setupListeners() {
             dbRef.settings.on('value', s => {
                 const val = s.val() || {};
@@ -421,30 +429,34 @@
                 renderList(data);
             });
 
+            // [수정] 강사 상태 동기화 리스너 보강
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
                 
-                // [수정] 성적표 표시 로직 개선 (수동 닫기 여부 체크)
-                if(st.quizStep === 'summary') {
-                    if(!hasClosedSummary) showFinalRanking(); 
-                } else {
-                    // 강사가 창을 닫으면 닫기 상태 초기화 및 오버레이 숨김
-                    hasClosedSummary = false;
-                    document.getElementById('quizOverlay').style.display = 'none';
+                // 강사가 Q&A 모드로 전환했거나 리포트를 닫은 경우 (강제 종료)
+                if (st.mode === 'qa' || st.quizStep === 'none') {
+                    forceCloseQuiz();
+                    return;
                 }
 
-                if(st.mode !== 'quiz' && st.quizStep !== 'summary') {
-                    document.getElementById('quizOverlay').style.display = 'none';
+                // 종료 리포트 단계
+                if (st.quizStep === 'summary') {
+                    if(!hasClosedSummary) showFinalRanking(); 
                 }
             });
 
+            // 실시간 퀴즈 문항 리스너
             dbRef.quiz.on('value', s => {
                 const q = s.val();
                 if(!q) return;
 
                 dbRef.status.child('mode').once('value', m => {
-                    if(m.val() !== 'quiz') return;
+                    if(m.val() !== 'quiz') {
+                        forceCloseQuiz();
+                        return;
+                    }
 
+                    // 강사가 차트 결과 보고 있을 땐 입력창 숨김
                     if(q.status === 'result') {
                         document.getElementById('quizOverlay').style.display = 'none';
                         return;
@@ -503,6 +515,7 @@
             });
         }
 
+        // --- 4. Rendering ---
         function setSort(type) {
             currentSort = type;
             document.getElementById('sortNew').classList.toggle('active', type === 'new');
@@ -651,32 +664,53 @@
             dbRef.ans.child(currentQuizId).child(t).set({choice:c});
         }
 
-        // [수정] 로직: 강사가 계산한 결과 수신
-        async function showFinalRanking() {
+        // [수정] 실시간 점수 대기 로직 적용
+        function showFinalRanking() {
             const myToken = localStorage.getItem('uToken');
             if(!myToken) return;
 
-            const resSnap = await firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).get();
-            const myResult = resSnap.val();
+            // 이미 감시 중이면 중복 방지
+            if(rankingListener) return;
 
-            if(myResult) {
-                document.getElementById('quizOverlay').style.display = 'flex';
-                document.getElementById('quizActiveBox').style.display = 'none';
-                document.getElementById('quizResultBox').style.display = 'block';
-                document.getElementById('myFinalScore').innerText = `${myResult.score}점`;
-                document.getElementById('myFinalRank').innerText = myResult.rank;
+            // 로딩 UI 표시
+            document.getElementById('quizOverlay').style.display = 'flex';
+            document.getElementById('quizActiveBox').style.display = 'block';
+            document.getElementById('quizResultBox').style.display = 'none';
+            document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요...";
+            document.getElementById('btnGroupMultiple').style.display = 'none';
+            document.getElementById('btnGroupOX').style.display = 'none';
+            document.getElementById('quizFeedback').innerText = "";
 
-                if(myResult.rank === 1) {
-                    document.getElementById('quizKingStamp').style.display = 'flex';
-                } else {
-                    document.getElementById('quizKingStamp').style.display = 'none';
+            const resultRef = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`);
+            rankingListener = resultRef.on('value', snap => {
+                const myResult = snap.val();
+                if(myResult) {
+                    document.getElementById('quizActiveBox').style.display = 'none';
+                    document.getElementById('quizResultBox').style.display = 'block';
+                    document.getElementById('myFinalScore').innerText = `${myResult.score}점`;
+                    document.getElementById('myFinalRank').innerText = myResult.rank;
+
+                    if(myResult.rank === 1) {
+                        document.getElementById('quizKingStamp').style.display = 'flex';
+                    } else {
+                        document.getElementById('quizKingStamp').style.display = 'none';
+                    }
                 }
-            } else {
-                document.getElementById('quizOverlay').style.display = 'none';
-            }
+            });
         }
 
-        // [추가] 닫기 전용 함수: 새로고침 없이 화면만 닫고 다시 뜨지 않게 제어
+        // [추가] 모든 퀴즈 UI 및 리스너 강제 종료 함수
+        function forceCloseQuiz() {
+            hasClosedSummary = false;
+            canAnswer = false;
+            if (rankingListener) {
+                const myToken = localStorage.getItem('uToken');
+                firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off();
+                rankingListener = null;
+            }
+            document.getElementById('quizOverlay').style.display = 'none';
+        }
+
         function closeResultOverlay() {
             hasClosedSummary = true;
             document.getElementById('quizOverlay').style.display = 'none';
