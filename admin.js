@@ -2,7 +2,6 @@
 
 // --- 전역 상태 ---
 const state = {
-    // 세션 스토리지를 확인해서 기존 ID가 있으면 쓰고, 없으면 새로 만듭니다.
     sessionId: (function() {
         let id = sessionStorage.getItem('kac_admin_sid');
         if (!id) {
@@ -18,7 +17,8 @@ const state = {
     activeQaKey: null,
     qaData: {},
     timerInterval: null,
-    pendingRoom: null
+    pendingRoom: null,
+    ansListener: null // [추가] 퀴즈 참여자 실시간 리스너 저장용
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null };
@@ -36,20 +36,15 @@ const authMgr = {
             document.getElementById('loginOverlay').style.display = 'none';
             dataMgr.loadInitialData();
         } catch (error) {
-            // [수정] 에러 내용을 그대로 띄우지 않고, 깔끔한 한글 메시지로 변경
-            console.error("Login Error:", error); // 개발자 확인용 로그는 남김
-            
-            // 사용자에게는 깔끔하게 안내
+            console.error("Login Error:", error);
             alert("⛔ 비밀번호가 올바르지 않습니다.\n다시 확인해주세요.");
-            
-            // 입력창 비우고 다시 커서 두기
             document.getElementById('loginPwInput').value = "";
             document.getElementById('loginPwInput').focus();
         }
     },
     logout: function() {
         if(confirm("로그아웃 하시겠습니까?")) {
-            sessionStorage.removeItem('kac_admin_sid'); // 세션 정보 삭제
+            sessionStorage.removeItem('kac_admin_sid');
             firebase.auth().signOut().then(() => {
                 location.reload();
             });
@@ -88,15 +83,13 @@ const dataMgr = {
         });
     },
 
-    // [수정] 초기 데이터 로드 (무조건 대기실로 시작)
     loadInitialData: function() {
-        // [변경] 대기실 UI 활성화
-        ui.initRoomSelect(); // 룸 리스트 불러오기
-        ui.showWaitingRoom(); // 대기실 화면 보여주기
+        ui.initRoomSelect();
+        ui.showWaitingRoom();
 
         try {
             document.getElementById('roomSelect').onchange = (e) => {
-                if(e.target.value === "") return; // 선택 안함이면 무시
+                if(e.target.value === "") return;
                 this.switchRoomAttempt(e.target.value);
             };
             document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
@@ -122,7 +115,6 @@ const dataMgr = {
         }
     },
 
-    // [수정] 제어권 인증 함수 (암호화 비교)
     verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         const input = document.getElementById('takeoverPwInput').value;
@@ -131,12 +123,9 @@ const dataMgr = {
         const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
         const settings = settingSnap.val() || {};
         
-        // DB에 저장된 비번 (암호화된 상태) vs 입력값 암호화 비교
-        // 기본값은 7777의 암호화 값
         const dbPw = settings.password || btoa("7777"); 
         const inputEncrypted = btoa(input);
-        
-        const masterKey = "13281"; // 마스터키는 평문 유지
+        const masterKey = "13281";
 
         if (inputEncrypted === dbPw || input === masterKey) {
             alert("인증 성공! 제어권을 가져옵니다.");
@@ -166,6 +155,7 @@ const dataMgr = {
             firebase.database().ref(`${oldPath}/activeQuiz`).off();
             firebase.database().ref(`${oldPath}/status`).off();
             firebase.database().ref(`${oldPath}/settings`).off();
+            if(state.ansListener) state.ansListener.off(); // 이전 방 리스너 해제
         }
 
         state.room = room;
@@ -175,7 +165,7 @@ const dataMgr = {
         if(selectBox) selectBox.value = room;
 
         ui.updateHeaderRoom(room);
-        ui.setMode('qa'); // 방 입장 시 QA 모드로 전환 (대기실 숨김)
+        ui.setMode('qa');
 
         document.getElementById('qaList').innerHTML = "";
         state.qaData = {};
@@ -234,24 +224,16 @@ const dataMgr = {
             });
     },
 
-    // [수정] 설정 저장 함수 (암호화 및 7777 기본값 적용)
     saveSettings: function() {
         let pw = document.getElementById('roomPw').value; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
-        // 1. 비밀번호가 비어있으면 기본값 7777
         if (!pw) pw = "7777";
-        
-        // 2. 암호화 (여기서는 Base64 인코딩 사용 - btoa)
         const encryptedPw = btoa(pw); 
-
         const updates = { courseName: newName, password: encryptedPw };
 
-        // 설정 저장
         firebase.database().ref(`courses/${state.room}/settings`).update(updates);
-        
-        // 화면 업데이트
         document.getElementById('displayCourseTitle').innerText = newName;
         document.getElementById('roomPw').value = pw; 
 
@@ -331,7 +313,6 @@ const dataMgr = {
 
 // --- 3. UI ---
 const ui = {
-    // [수정] 룸 선택 박스 초기화 (Select Room 옵션 추가)
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', snapshot => {
             const allData = snapshot.val() || {};
@@ -397,14 +378,11 @@ const ui = {
     
     renderSettings: function(data) {
         document.getElementById('courseNameInput').value = data.courseName || "";
-        // 암호화된 비밀번호는 디코딩해서 보여주지 않고, 그냥 평문 입력값을 유지하거나 비워둡니다.
-        // 여기서는 편의상 입력된 값을 그대로 두거나 기본값 처리만 합니다.
-        // 만약 저장된 값을 복호화해서 보여주려면: atob(data.password) 사용 (단, 형식이 맞을 때만)
         let savedPw = "7777";
         try {
             if(data.password) savedPw = atob(data.password);
         } catch(e) {
-            savedPw = data.password || "7777"; // 구버전 데이터 호환
+            savedPw = data.password || "7777"; 
         }
         document.getElementById('roomPw').value = savedPw;
         document.getElementById('displayCourseTitle').innerText = data.courseName || "";
@@ -461,9 +439,7 @@ const ui = {
     },
 
     setMode: function(mode) {
-        // [추가] 대기실 화면 숨김
         document.getElementById('view-waiting').style.display = 'none';
-        
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
@@ -527,23 +503,19 @@ const ui = {
         document.getElementById('panelIcon').className = p.classList.contains('open') ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
     },
 
-    // [추가] 대기실 화면 표시 함수
     showWaitingRoom: function() {
-        state.room = null; // 현재 방 상태 초기화
+        state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
         document.getElementById('displayCourseTitle').innerText = "강의실을 선택해주세요";
-        
-        // 모든 뷰 숨기고 대기실만 표시
         document.getElementById('view-qa').style.display = 'none';
         document.getElementById('view-quiz').style.display = 'none';
         document.getElementById('view-waiting').style.display = 'flex';
-        
         document.getElementById('courseNameInput').value = "";
         document.getElementById('roomPw').value = "";
     }
 };
 
-// --- 4. Quiz ---
+// --- 4. Quiz (로직 보강 섹션) ---
 const quizMgr = {
     loadFile: function(e) {
         const file = e.target.files[0]; if (!file) return;
@@ -554,7 +526,21 @@ const quizMgr = {
             blocks.forEach(block => {
                 const lines = block.split('\n').map(l => l.trim()).filter(l => l);
                 if (lines.length >= 6) {
-                    state.quizList.push({ text: lines[0], options: [lines[1], lines[2], lines[3], lines[4]], correct: parseInt(lines[5].replace(/[^0-9]/g, '')), checked: true });
+                    state.quizList.push({ 
+                        text: lines[0], 
+                        options: [lines[1], lines[2], lines[3], lines[4]], 
+                        correct: parseInt(lines[5].replace(/[^0-9]/g, '')), 
+                        checked: true 
+                    });
+                } else if (lines.length === 4) { 
+                    // [추가] O/X 감지 로직 (문제, O, X, 답 4줄인 경우)
+                    state.quizList.push({ 
+                        text: lines[0], 
+                        options: [lines[1], lines[2]], 
+                        correct: parseInt(lines[3].replace(/[^0-9]/g, '')), 
+                        checked: true,
+                        isOX: true 
+                    });
                 }
             });
             alert(`${state.quizList.length} Loaded.`); this.renderMiniList();
@@ -564,20 +550,27 @@ const quizMgr = {
     addManualQuiz: function() {
         const q = document.getElementById('manualQ').value;
         const a = document.getElementById('manualAns').value;
-        const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value);
+        const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
         if(!q || !a) return alert("Fill all fields.");
-        state.quizList.push({ text: q, options: opts, correct: parseInt(a), checked: true });
+        state.quizList.push({ 
+            text: q, 
+            options: opts, 
+            correct: parseInt(a), 
+            checked: true,
+            isOX: opts.length === 2 
+        });
         this.renderMiniList();
         document.querySelectorAll('.panel-body input, .panel-body textarea').forEach(i => i.value = "");
     },
     renderMiniList: function() {
         const d = document.getElementById('miniQuizList'); d.innerHTML = "";
         state.quizList.forEach((q, i) => {
-            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>Q${i+1}.</b> ${q.text.substring(0, 20)}...</div>`;
+            const typeTag = q.isOX ? '[OX]' : '[4지]';
+            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeTag} Q${i+1}.</b> ${q.text.substring(0, 20)}...</div>`;
         });
     },
     downloadSample: function() {
-        const txt = "KAC의 약자는 무엇인가?\nKorea Airports Corporation\nKorea Army Company\nKing And Cat\nKick And Cry\n1\n\n다음 중 수도는?\n부산\n서울\n대구\n광주\n2";
+        const txt = "KAC의 약자는 무엇인가?\nKorea Airports Corporation\nKorea Army Company\nKing And Cat\nKick And Cry\n1\n\nKAC는 공기업인가?\nO\nX\n1";
         const blob = new Blob([txt], {type: "text/plain"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "quiz_sample.txt"; a.click();
     },
@@ -614,24 +607,41 @@ const quizMgr = {
         this.resetTimerUI();
         this.renderScreen(q);
         this.setGuide(`Q${state.currentQuizIdx + 1}. Ready`);
-        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', ...q });
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ 
+            id: `Q${state.currentQuizIdx}`, 
+            status: 'ready', 
+            type: q.isOX ? 'OX' : 'MULTIPLE', // [추가] 타입 전송
+            ...q 
+        });
     },
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
         const optDiv = document.getElementById('d-options');
         optDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none';
         optDiv.innerHTML = "";
+        
+        // [추가] 참여자 카운트 초기화
+        document.getElementById('quizParticipantCount').style.display = 'none';
+        document.getElementById('currentJoinCount').innerText = "0";
+
         q.options.forEach((o, i) => {
-            optDiv.innerHTML += `<div class="quiz-opt" id="opt-${i+1}"><div class="opt-num">${i+1}</div><div class="opt-text">${o}</div></div>`;
+            const oxClass = q.isOX ? 'ox-mode' : ''; // [추가] OX 클래스 적용
+            optDiv.innerHTML += `<div class="quiz-opt ${oxClass}" id="opt-${i+1}"><div class="opt-num">${i+1}</div><div class="opt-text">${o}</div></div>`;
         });
     },
     action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         const correct = state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct;
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
-        if(act === 'open') { this.startTimer(); this.setGuide("RUNNING..."); }
+        
+        if(act === 'open') { 
+            this.startTimer(); 
+            this.setGuide("RUNNING..."); 
+            this.startJoinCounter(id); // [추가] 참여자 집계 시작
+        }
         else if(act === 'close') {
             this.stopTimer();
+            this.stopJoinCounter(); // 리스너 종료
             document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('reveal-answer'));
             document.getElementById(`opt-${correct}`).classList.add('reveal-answer');
             this.setGuide("STOPPED.");
@@ -643,6 +653,94 @@ const quizMgr = {
             this.setGuide("RESULT.");
         }
     },
+
+    // [추가] 실시간 참여자 집계 로직
+    startJoinCounter: function(id) {
+        document.getElementById('quizParticipantCount').style.display = 'block';
+        if(state.ansListener) state.ansListener.off();
+        state.ansListener = firebase.database().ref(`courses/${state.room}/quizAnswers/${id}`);
+        state.ansListener.on('value', s => {
+            const count = s.numChildren();
+            document.getElementById('currentJoinCount').innerText = count;
+        });
+    },
+    stopJoinCounter: function() { if(state.ansListener) state.ansListener.off(); },
+
+    // [추가] 리셋 모달 및 실행 로직
+    openResetModal: function() { document.getElementById('resetChoiceModal').style.display = 'flex'; },
+    executeReset: async function(type) {
+        const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
+        if(type === 'all') {
+            if(!confirm("모든 문항의 정답 기록을 초기화하시겠습니까?")) return;
+            await firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
+        } else {
+            await firebase.database().ref(`courses/${state.room}/quizAnswers/${id}`).set(null);
+        }
+        document.getElementById('resetChoiceModal').style.display = 'none';
+        alert("리셋 완료.");
+        this.action('ready');
+        if(!state.isTestMode) this.showQuiz();
+    },
+
+    // [추가] 최종 통계 종료 화면 로직
+    showFinalSummary: async function() {
+        const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
+        const allAns = snap.val() || {};
+        const totalParticipants = new Set();
+        let totalQuestions = 0;
+        let totalCorrect = 0;
+        let totalAnswerCount = 0;
+        let questionStats = [];
+
+        state.quizList.forEach((q, idx) => {
+            if(!q.checked) return;
+            const id = `Q${idx}`;
+            const answers = allAns[id] || {};
+            const keys = Object.keys(answers);
+            let correctCount = 0;
+            
+            keys.forEach(k => {
+                totalParticipants.add(k);
+                totalAnswerCount++;
+                if(answers[k].choice === q.correct) {
+                    correctCount++;
+                    totalCorrect++;
+                }
+            });
+            
+            if(keys.length > 0) {
+                totalQuestions++;
+                questionStats.push({ 
+                    title: q.text, 
+                    accuracy: (correctCount / keys.length) * 100 
+                });
+            }
+        });
+
+        if(totalAnswerCount === 0) return alert("진행된 퀴즈 데이터가 없습니다.");
+
+        // UI 렌더링
+        const grid = document.getElementById('summaryStats');
+        grid.innerHTML = `
+            <div class="summary-card"><span>총 참여 인원</span><b>${totalParticipants.size}명</b></div>
+            <div class="summary-card"><span>평균 정답률</span><b>${Math.round((totalCorrect / totalAnswerCount) * 100)}%</b></div>
+            <div class="summary-card"><span>푼 문항 수</span><b>${totalQuestions}문항</b></div>
+            <div class="summary-card"><span>총 제출 수</span><b>${totalAnswerCount}건</b></div>
+        `;
+
+        // 최다 오답 문항 (정답률 가장 낮은 문제)
+        if(questionStats.length > 0) {
+            questionStats.sort((a,b) => a.accuracy - b.accuracy);
+            const mostMissed = questionStats[0];
+            document.getElementById('mostMissedArea').style.display = 'block';
+            document.getElementById('mostMissedText').innerText = `"${mostMissed.title.substring(0,30)}..." (정답률 ${Math.round(mostMissed.accuracy)}%)`;
+        }
+
+        document.getElementById('quizSummaryOverlay').style.display = 'flex';
+        // 학생들에게도 종료 상태 전송
+        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+    },
+
     startTimer: function() {
         this.stopTimer();
         let timeLeft = 30;
@@ -669,6 +767,9 @@ const quizMgr = {
             const maxVal = Math.max(...counts);
             
             counts.forEach((c, i) => {
+                if(i >= 2 && counts[2] === 0 && counts[3] === 0 && counts.slice(0,2).some(x=>x>0)) {
+                   // OX 모드일 때 3, 4번 막대 생략 로직 (선택사항)
+                }
                 const isCorrect = (i + 1) === correct;
                 const height = (c / Math.max(maxVal, 1)) * 80;
                 const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${height > 0 ? height + '%' : '40px'};">👑</div>` : '';
