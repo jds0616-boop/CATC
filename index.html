@@ -452,9 +452,14 @@
 
                 dbRef.status.once('value', statusSnap => {
                     const st = statusSnap.val() || {};
+
+                    // [추가] 강사가 새로운 퀴즈를 'ready' 상태로 보냈다면 무조건 등수창 등을 닫음
+                    if (q.status === 'ready') {
+                        forceCloseQuiz();
+                    }
                     
-                    // 성적표(summary)가 떠 있는 상태라면 문항 리스너가 오버레이를 닫지 못하게 막음
-                    if (st.quizStep === 'summary') return;
+                    // 성적표(summary)가 떠 있는 상태라면 문항 리스너가 오버레이를 닫지 못하게 막음 (단, 위에서 ready로 초기화 안 된 경우만)
+                    if (st.quizStep === 'summary' && !hasClosedSummary) return;
 
                     if(st.mode !== 'quiz') {
                         forceCloseQuiz();
@@ -701,14 +706,18 @@
         }
 
         function forceCloseQuiz() {
-            hasClosedSummary = false;
+            hasClosedSummary = false; // [수정] 결과 확인 플래그 초기화
             canAnswer = false;
             if (rankingListener) {
                 const myToken = localStorage.getItem('uToken');
                 firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off();
                 rankingListener = null;
             }
+            // [추가] 성적표 관련 내부 UI 요소들도 초기화
+            document.getElementById('quizResultBox').style.display = 'none';
+            document.getElementById('quizActiveBox').style.display = 'block';
             document.getElementById('quizOverlay').style.display = 'none';
+            document.getElementById('quizKingStamp').style.display = 'none';
         }
 
         function closeResultOverlay() {
