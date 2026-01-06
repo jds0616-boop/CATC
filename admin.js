@@ -607,10 +607,14 @@ const quizMgr = {
         this.resetTimerUI();
         this.renderScreen(q);
         this.setGuide(`Q${state.currentQuizIdx + 1}. Ready`);
+
+        // [추가] 새로운 퀴즈 시작 시 교육생 화면의 종료 리포트 상태 초기화
+        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
+
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ 
             id: `Q${state.currentQuizIdx}`, 
             status: 'ready', 
-            type: q.isOX ? 'OX' : 'MULTIPLE', // [추가] 타입 전송
+            type: q.isOX ? 'OX' : 'MULTIPLE', 
             ...q 
         });
     },
