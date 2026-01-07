@@ -101,6 +101,19 @@ const dataMgr = {
         ui.closeSecretModal();
     },
 
+// [추가] 실제 모바일 기기인지 체크하는 함수
+    checkMobile: function() {
+        const ua = navigator.userAgent;
+        // 안드로이드, 아이폰, 아이패드 등 모바일 OS 정보가 있는지 확인
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        
+        if (isMobile) {
+            // 진짜 모바일 기기라면 차단 화면 표시
+            document.getElementById('mobileRestrictOverlay').style.display = 'flex';
+        }
+    },
+
+
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
             if (user) { document.getElementById('loginOverlay').style.display = 'none'; this.loadInitialData(); } 

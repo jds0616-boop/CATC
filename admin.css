@@ -176,13 +176,6 @@ body.night-mode .modal-q-text-wrapper { background: #1e293b; border-color: #3341
     text-align: center; padding: 20px;
 }
 
-/* 화면 가로가 1024px 이하(모바일, 태블릿)일 때만 강제로 보이게 함 */
-@media (max-width: 1024px) {
-    #mobileRestrictOverlay {
-        display: flex !important;
-    }
-}
-
 
 
 /* 퀴즈 리포트 전체 컨테이너 내부 스타일 */
