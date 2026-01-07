@@ -172,7 +172,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 
 /* 질문창(textarea)만 특별히 더 크게 */
 textarea.editor-input {
-    height: 150px;           /* 기본 높이 확대 */
+    height: 300px !important;  /* 이 숫자를 300으로 키우고 !important를 붙여주세요 */
     line-height: 1.5;
     font-family: inherit;
     resize: vertical;        /* 사용자가 아래로 당겨서 크기 조절 가능 */
