@@ -42,7 +42,8 @@ const state = {
     qaData: {},
     timerInterval: null,
     pendingRoom: null,
-    connListener: null 
+    connListener: null ,
+    adminCallback: null // <-- 이 줄을 추가하세요 (쉼표 주의)
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
@@ -82,6 +83,24 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
+
+    // 아래 두 함수를 dataMgr 블록 안에 추가하세요.
+    checkAdminSecret: async function(input) {
+        const snap = await firebase.database().ref('system/adminSecret').get();
+        const dbSecret = snap.val() || btoa("kac123!@#"); 
+        return btoa(input) === dbSecret;
+    },
+    updateAdminSecret: async function() {
+        const curr = document.getElementById('secret-current').value;
+        const next = document.getElementById('secret-new').value;
+        const isRight = await this.checkAdminSecret(curr);
+        if(!isRight) return ui.showAlert("현재 관리자 암호가 틀립니다.");
+        if(next.length < 4) return ui.showAlert("새 암호는 4자리 이상이어야 합니다.");
+        await firebase.database().ref('system/adminSecret').set(btoa(next));
+        ui.showAlert("시스템 관리자 암호가 변경되었습니다.");
+        ui.closeSecretModal();
+    },
+
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
             if (user) { document.getElementById('loginOverlay').style.display = 'none'; this.loadInitialData(); } 
@@ -255,6 +274,41 @@ const ui = {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
     },
+
+    requestAdminAuth: function(type) {
+        if(type === 'pw') state.adminCallback = () => ui.openPwModal();
+        else if(type === 'idle') state.adminCallback = () => dataMgr.deactivateAllRooms();
+        else if(type === 'reset') state.adminCallback = () => dataMgr.resetCourse();
+        
+        document.getElementById('adminAuthInput').value = "";
+        document.getElementById('adminAuthModal').style.display = 'flex';
+        document.getElementById('adminAuthInput').focus();
+    },
+    confirmAdminAuth: async function() {
+        const input = document.getElementById('adminAuthInput').value;
+        const isSuccess = await dataMgr.checkAdminSecret(input);
+        if(isSuccess) {
+            document.getElementById('adminAuthModal').style.display = 'none';
+            if(state.adminCallback) state.adminCallback();
+            state.adminCallback = null;
+        } else {
+            ui.showAlert("⛔ 관리자 인증 실패!");
+            document.getElementById('adminAuthInput').value = "";
+        }
+    },
+    closeAdminAuth: function() {
+        document.getElementById('adminAuthModal').style.display = 'none';
+        state.adminCallback = null;
+    },
+    openSecretModal: function() {
+        document.getElementById('secret-current').value = "";
+        document.getElementById('secret-new').value = "";
+        document.getElementById('changeAdminSecretModal').style.display = 'flex';
+    },
+    closeSecretModal: function() {
+        document.getElementById('changeAdminSecretModal').style.display = 'none';
+    },
+
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
