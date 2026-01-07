@@ -502,15 +502,20 @@ list.innerHTML += `
         else if (document.exitFullscreen) document.exitFullscreen();
     },
 
-// [추가] 구글 번역 팝업 열기
+// [수정] 스마트 번역 (한글은 영어로, 영어는 한글로)
     translateQa: function(id) {
         if (!state.qaData[id]) return;
         const text = state.qaData[id].text;
         
-        // 구글 번역기 URL 생성 (자동감지 -> 한국어)
-        const url = `https://translate.google.com/?sl=auto&tl=ko&text=${encodeURIComponent(text)}&op=translate`;
+        // 정규식으로 한글이 포함되어 있는지 검사
+        const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
         
-        // 새 창(팝업)으로 열기
+        // 한글이 있으면 -> 영어(en)로 번역
+        // 한글이 없으면 -> 한국어(ko)로 번역
+        const targetLang = hasKorean ? 'en' : 'ko';
+        
+        const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
+        
         window.open(url, 'googleTranslate', 'width=1000,height=600,scrollbars=yes');
     },
 
