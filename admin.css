@@ -219,3 +219,28 @@ body.night-mode .modal-q-text-wrapper { background: #1e293b; border-color: #3341
     margin-top: 30px;
 }
 
+
+.q-card.status-pin {
+    position: sticky;
+    top: -5px;           /* 스크롤 시 상단에 딱 붙음 (목록 padding에 맞춤) */
+    z-index: 100;        /* 일반 질문 카드들이 아래로 지나가도록 층을 높임 */
+    border: 2px solid #ef4444 !important; /* 테두리를 더 굵고 명확하게 */
+    background-color: #fff1f2 !important; /* 배경색을 연한 분홍색으로 고정 */
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.15); /* 강조를 위한 그림자 */
+    margin-bottom: 20px;  /* 고정된 카드와 아래 일반 리스트 사이의 간격 */
+}
+
+/* 다크 모드일 때 핀 고정 스타일 */
+body.night-mode .q-card.status-pin {
+    background-color: #450a0a !important;
+    border-color: #f87171 !important;
+}
+
+/* 핀 카드 내부의 아이콘(📌)을 더 크게 보이게 하려면 */
+.q-card.status-pin .q-content {
+    font-size: 19px;
+    color: #991b1b;
+}
+body.night-mode .q-card.status-pin .q-content {
+    color: #fecaca;
+}
