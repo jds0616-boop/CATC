@@ -675,7 +675,7 @@ const quizMgr = {
             d.innerText = `00:${r<10?'0'+r:r}`;
 
             // [핵심] 3, 2, 1초일 때 소리 재생
-            if (r <= 3 && r > 0 && r !== lastPlayedSec) {
+            if (r <= 5 && r > 0 && r !== lastPlayedSec) {
                 state.timerAudio.pause();          // 혹시 재생 중이면 일단 멈춤
                 state.timerAudio.currentTime = 0;  // 처음으로 되감기
                 state.timerAudio.play().catch(e=>{}); // 재생
