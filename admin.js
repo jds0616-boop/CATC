@@ -654,16 +654,36 @@ const quizMgr = {
             this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
         }
     },
+// [수정] 3초 카운트다운 효과음 추가된 타이머
     startTimer: function() {
         this.stopTimer(); 
         let t = 10; 
-        const d = document.getElementById('quizTimer'); d.classList.remove('urgent');
+        const d = document.getElementById('quizTimer'); 
+        d.classList.remove('urgent');
         const end = Date.now() + 10000;
+        
+        // [추가] 소리가 중복 재생되지 않게 막는 변수
+        let lastPlayedSec = -1;
+
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
-            if(r<=5) d.classList.add('urgent');
+            
+            // 5초 이하일 때 빨간색 깜빡임 (기존 기능)
+            if(r <= 5) d.classList.add('urgent');
+            
             d.innerText = `00:${r<10?'0'+r:r}`;
-            if(r<=0) this.action('close');
+
+            // [핵심] 3초, 2초, 1초일 때 'timer.mp3' 재생
+            if (r <= 3 && r > 0 && r !== lastPlayedSec) {
+                // 소리 파일 재생 (매번 새로 생성해서 즉시 재생)
+                const sound = new Audio('timer.mp3');
+                sound.volume = 0.5; // 소리 크기 조절 (0.0 ~ 1.0)
+                sound.play().catch(e => console.log("브라우저 정책상 소리 재생 실패:", e));
+                
+                lastPlayedSec = r; // 방금 이 초(sec)에 소리를 냈다고 기록
+            }
+
+            if(r <= 0) this.action('close');
         }, 200);
     },
     stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
