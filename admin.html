@@ -74,59 +74,12 @@
             </div>
         </div>
     </div>
-<!-- [수정] 인쇄 미리보기 모달 -->
-<div id="printPreviewModal" class="modal-overlay">
-    <div class="print-preview-box">
-        <div class="preview-header">
-            <h3><i class="fa-solid fa-file-invoice"></i> 리포트 미리보기</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-action btn-danger" onclick="printMgr.closePreview()" style="width:auto; padding: 5px 20px;">닫기</button>
-                <button class="btn-action btn-primary" onclick="printMgr.executePrint()" style="width:auto; padding: 5px 20px;">인쇄 / PDF 저장</button>
-            </div>
-        </div>
-        <div class="preview-content">
-            <div id="official-document">
-                <div class="doc-header">
-                    <h2>KAC Training Platform 교육 리포트</h2>
-                </div>
-                
-                <table class="doc-info-table">
-                    <tr>
-                        <th>과정명</th>
-                        <td id="doc-cname" colspan="3"></td>
-                    </tr>
-                    <tr>
-                        <th>교육기간</th>
-                        <td id="doc-date"></td>
-                        <th>담당 교수</th>
-                        <td id="doc-prof"></td>
-                    </tr>
-                </table>
-
-                <h4 style="margin: 20px 0 10px 5px;"><i class="fa-solid fa-list-check"></i> 질문 및 피드백 내역</h4>
-                <table class="doc-list-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No</th>
-                            <th style="width: 60%;">질문 내용</th>
-                            <th style="width: 15%;">등록 시간</th>
-                            <th style="width: 10%;">공감</th>
-                            <th style="width: 10%;">상태</th>
-                        </tr>
-                    </thead>
-                    <tbody id="docListBody">
-                        <!-- 데이터가 자바스크립트로 들어갑니다 -->
-                    </tbody>
-                </table>
-                
-                <div class="doc-footer">
-                    <p>본 리포트는 KAC Training Platform에서 자동 생성되었습니다.</p>
-                    <h3>KOREA AIRPORTS CORPORATION</h3>
-                </div>
-            </div>
+    <div id="printPreviewModal" class="modal-overlay">
+        <div class="print-preview-box">
+            <div class="preview-header"><h3>🖨️ Preview</h3><div style="display:flex; gap:10px;"><button class="btn-action btn-danger" onclick="printMgr.closePreview()" style="width:auto;">Close</button><button class="btn-action btn-primary" onclick="printMgr.executePrint()" style="width:auto;">Print</button></div></div>
+            <div class="preview-content"><div id="official-document"><div class="doc-header"><h2>KAC Training Platform</h2></div><table class="doc-info-table"><tr><th>과정명</th><td id="doc-cname"></td></tr><tr><th>교육기간</th><td id="doc-date"></td></tr><tr><th>담임교수</th><td id="doc-prof"></td></tr></table><div class="doc-summary" id="doc-summary-text"></div><table class="doc-list-table"><tbody id="docListBody"></tbody></table><div class="doc-footer">Korea Airports Corporation</div></div></div>
         </div>
     </div>
-</div>
 
     <!-- Sidebar -->
     <div class="sidebar">
@@ -164,7 +117,7 @@
         <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
         <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Report</button>
         <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('idle')" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Idle</button>
-        <button class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
+        <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('reset')"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
     </div>
     <div style="text-align: center; margin-top: 15px;">
         <span onclick="ui.openSecretModal()" style="font-size:10px; color:#475569; cursor:pointer; text-decoration:underline;">시스템 보안 설정 (Admin PW 변경)</span>
