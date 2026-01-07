@@ -171,32 +171,47 @@ function exitApp() {
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
         const ua = navigator.userAgent.toLowerCase();
         
-        // 1. 카카오톡 인앱 브라우저인 경우
+        // 1. 카카오톡 인앱 브라우저 강제 종료
         if (ua.indexOf('kakaotalk') !== -1) {
             location.href = 'kakaotalk://inappbrowser/close';
             return;
         }
 
-        // 2. 네이버 앱 인앱 브라우저인 경우
+        // 2. 네이버 앱 인앱 브라우저 강제 종료
         if (ua.indexOf('naver') !== -1) {
             location.href = 'naversearchapp://inappbrowser/close';
             return;
         }
 
-        // 3. 아이폰/안드로이드 기본 카메라 및 일반 브라우저인 경우
-        // 브라우저 보안 정책상 사용자가 직접 타이핑해서 들어온 창은 스크립트로 닫을 수 없습니다.
-        // 이 경우 '뒤로가기'를 시도하거나, 처음 화면(Landing Page)으로 돌려보냅니다.
-        if (window.history.length > 1) {
-            window.history.back(); // 이전 기록(카메라 앱 등)으로 돌아가기 시도
-        } else {
-            // 더 이상 뒤로 갈 곳이 없다면 메인 페이지로 이동시켜 퇴장 처리 느낌을 줌
-            window.location.href = window.location.pathname; 
-        }
+        // 3. [핵심 수정] 그 외 환경 (아이폰 카메라, 크롬 등)
+        // 리다이렉트(window.location.href) 코드를 완전히 제거했습니다.
+        // 대신 화면 전체를 즉시 '퇴장 완료' 레이아웃으로 교체합니다.
+        
+        // 브라우저의 뒤로가기 버튼을 눌러도 다시 입장창으로 못 가게 방어막 생성
+        window.history.pushState(null, null, window.location.href);
+        window.onpopstate = function() {
+            window.history.go(1);
+        };
 
-        // 4. 마지막 수단: 창 닫기 시도 (팝업으로 열렸을 경우 작동)
-        setTimeout(() => {
-            window.close();
-        }, 300);
+        // 화면 내용을 싹 지우고 퇴장 전용 UI로 변경 (입장하기 버튼 자체를 소멸시킴)
+        document.body.innerHTML = `
+            <div style="background:#0f172a; color:white; height:100dvh; width:100vw; position:fixed; top:0; left:0; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family: 'Pretendard', sans-serif; padding:20px;">
+                <div style="font-size: 80px; color: #3b82f6; margin-bottom: 20px;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </div>
+                <h2 style="font-size: 28px; font-weight: 800; margin: 0;">퇴장 완료</h2>
+                <p style="font-size: 18px; opacity: 0.7; margin-top: 15px; line-height: 1.6;">
+                    안전하게 퇴장되었습니다.<br>
+                    이 브라우저 창(탭)을 닫아주세요.
+                </p>
+                <button onclick="window.close();" style="margin-top: 30px; padding: 12px 40px; background: #334155; color: white; border: none; border-radius: 30px; font-weight: 700; cursor: pointer; font-size:16px;">
+                    닫기 시도
+                </button>
+            </div>
+        `;
+
+        // 일부 환경에서 창 닫기 시도
+        setTimeout(() => { window.close(); }, 500);
     }
 }
 
