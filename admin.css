@@ -287,45 +287,57 @@ body.night-mode .qr-label { color: #0f172a; }
     border-color: #3b82f6;
 }
 
-/* [최종] 왕관 아이콘 크기 확대 및 애니메이션 */
+/* 1. 왕관 아이콘 스타일 */
 .crown-icon {
-    position: absolute;       /* 위치 고정 */
+    position: absolute;
     
-    /* ★ 크기를 80px로 아주 크게 설정하고 강제 적용(!important) */
-    font-size: 80px !important;  
+    /* [핵심] 왕관이 숫자(참여인원)를 가리지 않도록 위치를 위로 띄움 */
+    bottom: 100%; 
+    margin-bottom: 5px; /* 숫자와의 간격 */
     
-    /* 왕관을 막대기 중앙에 정렬 */
     left: 50%;
-    transform: translateX(-50%); 
-    
-    /* 왕관에 그림자를 넣어 더 잘 보이게 함 */
-    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); 
-    
+    transform: translateX(-50%);
     z-index: 20;
     
-    /* 둥실둥실 움직이는 효과 */
+    /* 그림자 및 애니메이션 */
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
     animation: bounceCrown 1s infinite alternate;
+
+    /* ★ 화면이 클 때는 아주 크게 (기본) */
+    font-size: 80px !important; 
 }
 
-/* 둥실둥실 움직임 정의 */
-@keyframes bounceCrown {
-    from { margin-bottom: 0px; }
-    to { margin-bottom: 20px; }
-}
-
-
-/* [추가] 차트 아래 번호 동그라미(1,2,3,4) 크기 확대 */
+/* 2. 번호 동그라미 (1,2,3,4) 스타일 */
 .bar-label {
-    /* 1. 동그라미 크기를 40px -> 60px로 확대 */
+    /* ★ 화면이 클 때는 아주 크게 (기본) */
     width: 60px !important;
     height: 60px !important;
-    
-    /* 2. 숫자 글씨 크기를 18px -> 30px로 확대 */
     font-size: 30px !important;
     
-    /* 3. 막대기와의 간격을 조금 더 벌림 */
     margin-top: 15px !important;
-    
-    /* (옵션) 더 진하고 잘 보이게 그림자 추가 */
     box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+/* 3. 왕관 둥실둥실 움직임 */
+@keyframes bounceCrown {
+    from { transform: translateX(-50%) translateY(0); }
+    to { transform: translateX(-50%) translateY(-15px); }
+}
+
+/* ============================================== */
+/* ★ [반응형] 화면이 노트북/태블릿처럼 작아지면(1200px 이하) 크기를 줄임 */
+/* ============================================== */
+@media (max-width: 1200px) {
+    /* 왕관 크기 축소 */
+    .crown-icon {
+        font-size: 50px !important; /* 80px -> 50px */
+    }
+    
+    /* 번호 동그라미 축소 */
+    .bar-label {
+        width: 45px !important;     /* 60px -> 45px */
+        height: 45px !important;
+        font-size: 22px !important; /* 30px -> 22px */
+        margin-top: 10px !important;
+    }
 }
