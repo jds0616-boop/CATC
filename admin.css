@@ -244,3 +244,27 @@ body.night-mode .q-card.status-pin {
 body.night-mode .q-card.status-pin .q-content {
     color: #fecaca;
 }
+
+/* 퀴즈 상단바 전체 글자 크기 확대 */
+.quiz-top-bar {
+    height: 80px !important; /* 바 높이를 키움 */
+}
+
+#quizNumberLabel {
+    font-size: 28px !important; /* Q1 글자 크기 */
+}
+
+.quiz-top-info {
+    font-size: 24px !important; /* 접속자 수(명) 글자 크기 */
+    gap: 35px !important; /* 각 항목 사이 간격 */
+}
+
+.quiz-timer-box {
+    font-size: 34px !important; /* 00:10 숫자 크기 */
+    padding: 5px 20px !important; /* 타이머 박스 크기 */
+    font-weight: 900;
+}
+
+.quiz-info-item i {
+    font-size: 26px !important; /* 시계, 사람 모양 아이콘 크기 */
+}
