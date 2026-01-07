@@ -153,7 +153,30 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .overlay-toggle-tab { position: absolute; top: 50%; left: -32px; width: 32px; height: 70px; background: white; border-radius: 8px 0 0 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: -4px 0 10px rgba(0,0,0,0.05); color: #333; border: 1px solid #e2e8f0; border-right: none; }
 .panel-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
 .panel-body { padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-.editor-input { border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px; width: 100%; }
+/* 에디터 입력창 전체 스타일 수정 */
+.editor-input { 
+    border: 1px solid #cbd5e1; 
+    padding: 12px;           /* 안쪽 여백을 조금 더 넓힘 */
+    border-radius: 8px; 
+    width: 100%; 
+    margin-bottom: 10px;     /* 입력창끼리 간격 추가 */
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.editor-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 질문창(textarea)만 특별히 더 크게 */
+textarea.editor-input {
+    height: 150px;           /* 기본 높이 확대 */
+    line-height: 1.5;
+    font-family: inherit;
+    resize: vertical;        /* 사용자가 아래로 당겨서 크기 조절 가능 */
+}
 .qr-big-box { background: white; padding: 20px; border-radius: 20px; }
 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
