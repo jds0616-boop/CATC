@@ -278,6 +278,7 @@ const ui = {
     requestAdminAuth: function(type) {
         if(type === 'pw') state.adminCallback = () => ui.openPwModal();
         else if(type === 'idle') state.adminCallback = () => dataMgr.deactivateAllRooms();
+        else if(type === 'reset') state.adminCallback = () => dataMgr.resetCourse();
         
         document.getElementById('adminAuthInput').value = "";
         document.getElementById('adminAuthModal').style.display = 'flex';
