@@ -90,48 +90,42 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .q-card { background: var(--card-bg); padding: 20px 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; user-select: none; }
-/* [수정] 핀 고정 카드 스타일 */
 .q-card.status-pin {
     position: sticky;
     top: 10px;
     z-index: 100;
     
+    /* 빨간색 테두리와 배경 */
     border: 2px solid #ef4444 !important;
     background-color: #fff1f2 !important;
-    
-    /* 기존의 복잡한 가림막 그림자는 제거하고, 예쁜 붉은 그림자만 남김 */
-    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.25) !important;
-    
-    margin-bottom: 30px;
     border-radius: 12px;
     
-    /* 가림막이 카드 밖으로 나가는 것을 허용 */
-    overflow: visible; 
+    /* [핵심 1] 가림막을 ::after 대신 '딱딱한 그림자'로 처리하여 렌더링 오류 제거 */
+    /* 첫 번째 값: 붉은색 부드러운 그림자 (입체감) */
+    /* 두 번째 값: 배경색과 동일한 딱딱한 그림자를 아래로 15px 깔아서 뒷내용 가림 */
+    box-shadow: 
+        0 8px 20px rgba(239, 68, 68, 0.15),
+        0 15px 0 var(--bg-color) !important;
+    
+    /* 가림막 그림자(15px)가 들어갈 공간 확보 */
+    margin-bottom: 30px; 
+
+    /* [핵심 2] 마우스를 올려도 파란색 테두리가 생기거나 움직이지 않게 고정 */
+    outline: none !important;
+    transform: none !important;
 }
 
-/* [추가] 카드 뒤쪽에 '네모난 가림막' 생성 (완벽한 차단) */
-.q-card.status-pin::after {
-    content: "";
-    position: absolute;
-    
-    /* 가림막의 위치와 크기 설정 */
-    left: 0;
-    width: 100%;
-    top: 50%;       /* 카드 중간부터 시작해서 */
-    height: 100%;   /* 카드 높이만큼 더 아래로 길게 내림 */
-    
-    /* 배경색과 동일한 색으로 설정 (다크모드 자동 대응) */
-    background-color: var(--bg-color);
-    
-    /* 둥근 모서리 없이 네모낳게 만들어서 틈새를 메꿈 */
-    border-radius: 0; 
-    
-    /* 카드 본문보다는 뒤에, 하지만 스크롤되는 다른 카드들보다는 앞에 위치 */
-    z-index: -1; 
-    
-    /* 그림자가 가림막 위에 예쁘게 뜨도록 설정 */
-    box-shadow: none;
+/* 핀 고정 카드에는 마우스를 올려도(hover) 아무 변화가 없도록 강제 설정 */
+.q-card.status-pin:hover {
+    background-color: #fff1f2 !important;
+    border-color: #ef4444 !important;
+    transform: none !important;
+    outline: none !important;
+    box-shadow: 
+        0 8px 20px rgba(239, 68, 68, 0.15),
+        0 15px 0 var(--bg-color) !important;
 }
+
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
 .q-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); background-color: #f8fafc; outline: 2px solid var(--accent-color); }
