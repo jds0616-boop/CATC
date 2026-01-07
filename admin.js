@@ -742,24 +742,85 @@ const printMgr = {
         this.openPreview(date, prof); 
     },
     closeInputModal: function() { document.getElementById('printInputModal').style.display = 'none'; },
-    openPreview: function(date, prof) { 
-        document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value || "과정명 미설정"; 
-        document.getElementById('doc-date').innerText = date; 
-        document.getElementById('doc-prof').innerText = prof || "담당 교수";
-        const listBody = document.getElementById('docListBody'); listBody.innerHTML = ""; 
-        const items = Object.values(state.qaData || {}); 
-        if (items.length === 0) {
-            listBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
-        } else {
-            items.sort((a,b) => a.timestamp - b.timestamp);
-            items.forEach((item, idx) => {
-                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                listBody.innerHTML += `<tr><td>${idx + 1}</td><td>${item.text}</td><td>${timeStr}</td><td>${item.likes || 0}</td><td>${item.status}</td></tr>`;
-            });
-        }
-        document.getElementById('printPreviewModal').style.display = 'flex'; 
-    },
-    closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
+openPreview: function(date, prof) { 
+    // 기본 정보 채우기
+    document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value || "과정명 미설정"; 
+    document.getElementById('doc-date').innerText = date; 
+    document.getElementById('doc-prof').innerText = prof || "담당 교수";
+    
+    const listBody = document.getElementById('docListBody'); 
+    listBody.innerHTML = ""; 
+    
+    const items = Object.values(state.qaData || {}); 
+    
+    if (items.length === 0) {
+        listBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
+    } else {
+        // 시간순 정렬
+        items.sort((a,b) => a.timestamp - b.timestamp);
+        
+        items.forEach((item, idx) => {
+            const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            
+            // 상태 한글화
+            let statusLabel = "일반";
+            if(item.status === 'pin') statusLabel = "중요📌";
+            else if(item.status === 'later') statusLabel = "보류";
+            else if(item.status === 'done' || item.status === 'pin-done') statusLabel = "답변완료";
+
+            // 행 추가 (한 줄씩 정확하게 표 안에 넣음)
+            listBody.innerHTML += `
+                <tr>
+                    <td style="text-align:center;">${idx + 1}</td>
+                    <td>${item.text}</td>
+                    <td style="text-align:center;">${timeStr}</td>
+                    <td style="text-align:center;">${item.likes || 0}</td>
+                    <td style="text-align:center;">${statusLabel}</td>
+                </tr>
+            `;
+        });
+    }
+    document.getElementById('printPreviewModal').style.display = 'flex'; 
+},openPreview: function(date, prof) { 
+    // 기본 정보 채우기
+    document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value || "과정명 미설정"; 
+    document.getElementById('doc-date').innerText = date; 
+    document.getElementById('doc-prof').innerText = prof || "담당 교수";
+    
+    const listBody = document.getElementById('docListBody'); 
+    listBody.innerHTML = ""; 
+    
+    const items = Object.values(state.qaData || {}); 
+    
+    if (items.length === 0) {
+        listBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
+    } else {
+        // 시간순 정렬
+        items.sort((a,b) => a.timestamp - b.timestamp);
+        
+        items.forEach((item, idx) => {
+            const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            
+            // 상태 한글화
+            let statusLabel = "일반";
+            if(item.status === 'pin') statusLabel = "중요📌";
+            else if(item.status === 'later') statusLabel = "보류";
+            else if(item.status === 'done' || item.status === 'pin-done') statusLabel = "답변완료";
+
+            // 행 추가 (한 줄씩 정확하게 표 안에 넣음)
+            listBody.innerHTML += `
+                <tr>
+                    <td style="text-align:center;">${idx + 1}</td>
+                    <td>${item.text}</td>
+                    <td style="text-align:center;">${timeStr}</td>
+                    <td style="text-align:center;">${item.likes || 0}</td>
+                    <td style="text-align:center;">${statusLabel}</td>
+                </tr>
+            `;
+        });
+    }
+    document.getElementById('printPreviewModal').style.display = 'flex'; 
+},    closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
     executePrint: function() { window.print(); }
 };
 
