@@ -283,6 +283,34 @@ const ui = {
             }
         });
     },
+
+toggleMiniQR: function() {
+    const qrBox = document.getElementById('floatingQR');
+    const url = document.getElementById('studentLink').value;
+
+    if (!state.room) {
+        this.showAlert("강의실을 먼저 선택해 주세요.");
+        return;
+    }
+
+    if (qrBox.style.display === 'flex') {
+        qrBox.style.display = 'none';
+    } else {
+        qrBox.style.display = 'flex';
+        const target = document.getElementById('miniQRElement');
+        target.innerHTML = ""; // 기존 내용 초기화
+        
+        // QR 생성
+        new QRCode(target, {
+            text: url,
+            width: 140,
+            height: 140,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+},
+
+
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
         if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';

@@ -268,3 +268,63 @@ body.night-mode .q-card.status-pin .q-content {
 .quiz-info-item i {
     font-size: 26px !important; /* 시계, 사람 모양 아이콘 크기 */
 }
+
+
+/* --- Floating QR Style --- */
+.floating-qr-box {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    background: white;
+    padding: 15px;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    z-index: 1500; /* Q&A 카드보다 위에 보임 */
+    display: none; /* 초기값 숨김 */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border: 3px solid var(--accent-color);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#miniQRElement {
+    background: white;
+    padding: 5px;
+    border-radius: 10px;
+}
+
+#miniQRElement img {
+    display: block;
+    width: 140px;
+    height: 140px;
+}
+
+.qr-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+}
+
+.qr-close {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: #ef4444;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+/* 다크모드 대응: QR박스 자체는 하얀색을 유지하는게 스캔이 잘 됩니다. */
+body.night-mode .qr-label {
+    color: #0f172a; /* 글자색 고정 */
+}

@@ -126,16 +126,36 @@
         <div id="statusOverlay" class="status-overlay">
             <div class="lock-message"><i class="fa-solid fa-lock"></i><h3>강의 대기 중 (Room Idle)</h3><p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p></div>
         </div>
-        <header class="header">
-            <div class="header-title"><span id="displayRoomName">Connecting...</span><span class="course-sub-name" id="displayCourseTitle"></span></div>
-            <div class="header-controls">
-                <div class="icon-btn-group">
-                    <div class="theme-toggle" onclick="ui.toggleNightMode()"><i class="fa-solid fa-sun active" id="iconSun"></i><i class="fa-solid fa-moon" id="iconMoon"></i></div>
-                    <div class="control-icon-btn" onclick="ui.toggleFullScreen()" title="Full Screen"><i class="fa-solid fa-expand"></i></div>
-                </div>
-                <img src="logo.png" alt="Logo" class="kac-logo" onerror="this.style.display='none'"> 
+<header class="header">
+    <div class="header-title">
+        <span id="displayRoomName">Connecting...</span>
+        <span class="course-sub-name" id="displayCourseTitle"></span>
+    </div>
+    <div class="header-controls">
+        <div class="icon-btn-group">
+            <!-- 1. QR 토글 버튼 추가 -->
+            <div class="control-icon-btn" onclick="ui.toggleMiniQR()" title="Join QR">
+                <i class="fa-solid fa-qrcode"></i>
             </div>
-        </header>
+            <!-- 2. 기존 테마 및 전체화면 버튼 (중복 제거됨) -->
+            <div class="theme-toggle" onclick="ui.toggleNightMode()">
+                <i class="fa-solid fa-sun active" id="iconSun"></i>
+                <i class="fa-solid fa-moon" id="iconMoon"></i>
+            </div>
+            <div class="control-icon-btn" onclick="ui.toggleFullScreen()" title="Full Screen">
+                <i class="fa-solid fa-expand"></i>
+            </div>
+        </div>
+        <img src="logo.png" alt="Logo" class="kac-logo" onerror="this.style.display='none'"> 
+    </div>
+</header>
+
+<!-- 3. 플로팅 QR 레이어 (Header 바로 아래, Main Stage 안쪽에 위치) -->
+<div id="floatingQR" class="floating-qr-box">
+    <div class="qr-label">Student Join</div>
+    <div id="miniQRElement"></div>
+    <div class="qr-close" onclick="ui.toggleMiniQR()"><i class="fa-solid fa-xmark"></i></div>
+</div>
 
         <div class="mode-tabs">
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
