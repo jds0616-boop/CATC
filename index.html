@@ -167,12 +167,38 @@
         }
         
         // [수정] 완전히 나가기 (주소 초기화)
-        function exitApp() { 
-            if(confirm("현재 강의실에서 완전히 나가시겠습니까?")) {
-                // 쿼리 스트링(?room=...)을 제거하여 새로고침 -> init에서 '방 선택' 모드로 진입됨
-                window.location.href = window.location.pathname;
-            }
+function exitApp() {
+    if (confirm("현재 강의실에서 나가시겠습니까?")) {
+        const ua = navigator.userAgent.toLowerCase();
+        
+        // 1. 카카오톡 인앱 브라우저인 경우
+        if (ua.indexOf('kakaotalk') !== -1) {
+            location.href = 'kakaotalk://inappbrowser/close';
+            return;
         }
+
+        // 2. 네이버 앱 인앱 브라우저인 경우
+        if (ua.indexOf('naver') !== -1) {
+            location.href = 'naversearchapp://inappbrowser/close';
+            return;
+        }
+
+        // 3. 아이폰/안드로이드 기본 카메라 및 일반 브라우저인 경우
+        // 브라우저 보안 정책상 사용자가 직접 타이핑해서 들어온 창은 스크립트로 닫을 수 없습니다.
+        // 이 경우 '뒤로가기'를 시도하거나, 처음 화면(Landing Page)으로 돌려보냅니다.
+        if (window.history.length > 1) {
+            window.history.back(); // 이전 기록(카메라 앱 등)으로 돌아가기 시도
+        } else {
+            // 더 이상 뒤로 갈 곳이 없다면 메인 페이지로 이동시켜 퇴장 처리 느낌을 줌
+            window.location.href = window.location.pathname; 
+        }
+
+        // 4. 마지막 수단: 창 닫기 시도 (팝업으로 열렸을 경우 작동)
+        setTimeout(() => {
+            window.close();
+        }, 300);
+    }
+}
 
         function startPresence() {
             const connectedRef = firebase.database().ref(".info/connected");
