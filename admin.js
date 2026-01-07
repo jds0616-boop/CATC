@@ -479,76 +479,120 @@ const quizMgr = {
         else await firebase.database().ref(`courses/${state.room}/quizAnswers/${id}`).set(null);
         document.getElementById('resetChoiceModal').style.display = 'none'; ui.showAlert("리셋 완료."); this.action('ready');
     },
-    showFinalSummary: async function() {
-        const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
-        const allAns = snap.val() || {};
-        const totalParticipants = new Set();
-        let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0;
-        let questionStats = []; const userScoreMap = {};
 
-        state.quizList.forEach((q, idx) => {
-            if(state.isTestMode || !q.checked) return;
-            const id = `Q${idx}`;
-            const answers = allAns[id] || {};
-            const keys = Object.keys(answers);
-            let correctCount = 0;
-            keys.forEach(k => {
-                totalParticipants.add(k);
-                totalAnswerCount++;
-                if(!userScoreMap[k]) userScoreMap[k] = { score: 0 };
-                if(answers[k].choice === q.correct) {
-                    correctCount++; totalCorrect++; userScoreMap[k].score += 1;
-                }
-            });
-            if(keys.length > 0) {
-                totalQuestions++;
-                questionStats.push({ title: q.text, accuracy: (correctCount / keys.length) * 100 });
+showFinalSummary: async function() {
+    const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
+    const allAns = snap.val() || {};
+    const totalParticipants = new Set();
+    let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0;
+    let questionStats = []; 
+    const userScoreMap = {}; // 유저별 점수 및 참여 문항 수 저장
+
+    // 1. 현재 체크된(진행된) 실제 퀴즈 수 계산
+    state.quizList.forEach((q, idx) => {
+        if(state.isTestMode || !q.checked) return;
+        if(q.isSurvey) return; // 설문은 제외
+
+        const id = `Q${idx}`;
+        const answers = allAns[id] || {};
+        const keys = Object.keys(answers);
+        
+        if(keys.length > 0) totalQuestions++; // 한 명이라도 답한 문항만 카운트
+
+        keys.forEach(k => {
+            totalParticipants.add(k);
+            totalAnswerCount++;
+            if(!userScoreMap[k]) userScoreMap[k] = { score: 0, participatedCount: 0 };
+            
+            userScoreMap[k].participatedCount++; // 유저의 참여 횟수 증가
+            if(answers[k].choice === q.correct) {
+                totalCorrect++; 
+                userScoreMap[k].score += 1;
             }
         });
 
-        const sortedUsers = Object.keys(userScoreMap).map(token => ({ token: token, score: userScoreMap[token].score })).sort((a, b) => b.score - a.score);
-        const finalRankingData = {};
-        sortedUsers.forEach((user, rankIdx) => {
-            finalRankingData[user.token] = { score: user.score, rank: rankIdx + 1, total: sortedUsers.length };
-        });
-
-        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
-        await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
-
-        const grid = document.getElementById('summaryStats');
-        const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
-        grid.innerHTML = `
-            <div class="summary-card"><span>총 참여 인원</span><b>${totalParticipants.size}명</b></div>
-            <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
-            <div class="summary-card"><span>푼 문항 수</span><b>${totalQuestions}문항</b></div>
-            <div class="summary-card"><span>총 제출 수</span><b>${totalAnswerCount}건</b></div>
-        `;
-
-        if(questionStats.length > 0) {
-            questionStats.sort((a,b) => a.accuracy - b.accuracy);
-            document.getElementById('mostMissedArea').style.display = 'block';
-            document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0,30)}..." (정답률 ${Math.round(questionStats[0].accuracy)}%)`;
-        } else {
-            document.getElementById('mostMissedArea').style.display = 'none';
+        if(keys.length > 0) {
+            questionStats.push({ title: q.text, accuracy: (keys.length > 0 ? (keys.filter(k => answers[k].choice === q.correct).length / keys.length) * 100 : 0) });
         }
-        document.getElementById('quizSummaryOverlay').style.display = 'flex';
-    },
+    });
+
+    // 2. 순위 산정 (모든 문항에 참여한 사람만 순위에 포함)
+    // 중간에 들어온 사람은 참여 횟수가 totalQuestions보다 적음
+    const sortedUsers = Object.keys(userScoreMap)
+        .map(token => ({ 
+            token: token, 
+            score: userScoreMap[token].score,
+            pCount: userScoreMap[token].participatedCount 
+        }))
+        .filter(user => user.pCount === totalQuestions) // [핵심] 만점 참여자만 필터링
+        .sort((a, b) => b.score - a.score);
+
+    const finalRankingData = {};
+    sortedUsers.forEach((user, rankIdx) => {
+        finalRankingData[user.token] = { 
+            score: user.score, 
+            rank: rankIdx + 1, 
+            total: sortedUsers.length 
+        };
+    });
+
+    // 중간 참석자는 finalRankingData에 포함되지 않으므로 학생 화면에 순위가 안 뜸
+    await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
+    await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+
+    // 3. 관리자 리포트 화면 표시 (여기는 중도 참석자 포함 전체 통계)
+    const grid = document.getElementById('summaryStats');
+    const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
+    grid.innerHTML = `
+        <div class="summary-card"><span>총 참여 인원</span><b>${totalParticipants.size}명</b></div>
+        <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
+        <div class="summary-card"><span>푼 문항 수</span><b>${totalQuestions}문항</b></div>
+        <div class="summary-card"><span>전체 제출 수</span><b>${totalAnswerCount}건</b></div>
+    `;
+
+    if(questionStats.length > 0) {
+        questionStats.sort((a,b) => a.accuracy - b.accuracy);
+        document.getElementById('mostMissedArea').style.display = 'block';
+        document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0,30)}..." (정답률 ${Math.round(questionStats[0].accuracy)}%)`;
+    }
+    document.getElementById('quizSummaryOverlay').style.display = 'flex';
+},
+
+
+
+
+
     renderChart: function(id, corr) {
-        const div = document.getElementById('d-chart'); div.innerHTML = "";
-        const isOX = state.isTestMode ? false : state.quizList[state.currentQuizIdx].isOX;
-        firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
-            const d = s.val() || {};
-            const cnt = [0,0,0,0]; Object.values(d).forEach(v => { if(v.choice>=1&&v.choice<=4) cnt[v.choice-1]++; });
-            const max = Math.max(...cnt, 1);
-            const loop = isOX ? 2 : 4; const lbl = isOX ? ['O','X'] : ['1','2','3','4'];
-            for(let i=0; i<loop; i++) {
-                const isCorrect = (i + 1) === corr;
-                const h = (cnt[i]/max)*80;
-                const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
-                div.innerHTML += `<div class="bar-wrapper ${isCorrect ? 'correct' : ''}">${crownHtml}<div class="bar-value">${cnt[i]}</div><div class="bar-fill" style="height:${h}%"></div><div class="bar-label">${lbl[i]}</div></div>`;
-            }
-        });
-    },
+    const div = document.getElementById('d-chart'); div.innerHTML = "";
+    const q = state.quizList[state.currentQuizIdx];
+    const isOX = state.isTestMode ? false : q.isOX;
+    const isSurvey = q.isSurvey; // 설문조사 여부
+
+    firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
+        const d = s.val() || {};
+        const cnt = [0,0,0,0,0,0]; // 넉넉하게 배열 확보
+        Object.values(d).forEach(v => { if(v.choice >= 1) cnt[v.choice-1]++; });
+        
+        const max = Math.max(...cnt, 1);
+        const loop = q.options.length; // 옵션 개수만큼 반복
+        const lbl = isOX ? ['O','X'] : ['1','2','3','4','5','6'];
+
+        for(let i=0; i<loop; i++) {
+            // 설문조사가 아니고 정답일 때만 correct 클래스 및 왕관 추가
+            const isCorrect = !isSurvey && (i + 1) === corr;
+            const h = (cnt[i]/max)*80;
+            const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
+            
+            div.innerHTML += `
+                <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
+                    ${crownHtml}
+                    <div class="bar-value">${cnt[i]}</div>
+                    <div class="bar-fill" style="height:${h}%"></div>
+                    <div class="bar-label">${lbl[i]}</div>
+                </div>`;
+        }
+    });
+},
     closeQuizMode: function() {
         document.getElementById('quizExitModal').style.display = 'flex';
     },

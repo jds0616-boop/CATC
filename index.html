@@ -182,11 +182,20 @@
         function setupListeners() {
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
-            dbRef.status.on('value', snap => {
-                const st = snap.val() || {};
-                if (st.mode === 'qa' || st.quizStep === 'none') { forceCloseQuiz(); return; }
-                if (st.quizStep === 'summary') { if(!hasClosedSummary) showFinalRanking(); }
-            });
+dbRef.status.on('value', snap => {
+    const st = snap.val() || {};
+    // 모드가 확실히 'qa'일 때만 퀴즈를 강제 종료함
+    // quizStep === 'none'일 때 종료하는 로직을 제거하여 화면 깜빡임 방지
+    if (st.mode === 'qa') { 
+        forceCloseQuiz(); 
+        return; 
+    }
+    
+    // 리포트 요약 화면(summary) 처리
+    if (st.quizStep === 'summary') { 
+        if(!hasClosedSummary) showFinalRanking(); 
+    }
+});
             dbRef.quiz.on('value', s => {
                 const q = s.val(); if(!q) return;
                 dbRef.status.once('value', statusSnap => {
