@@ -138,6 +138,9 @@ const dataMgr = {
         state.pendingRoom = null;
     },
     forceEnterRoom: async function(room) {
+
+    // 강의실 이동 시 플로팅 QR이 열려 있다면 닫아줍니다.
+    document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
             firebase.database().ref(`${oldPath}/questions`).off();
@@ -301,30 +304,26 @@ toggleMiniQR: function() {
         const label = document.querySelector('.qr-label');
         target.innerHTML = ""; // 기존 QR 초기화
 
-        // 2. 현재 선택된 state.room을 기준으로 주소 생성 (가장 정확함)
-        // 만약 단축 코드가 있으면 그걸 쓰고, 없으면 기본 room 파라미터 주소 생성
-        let url = document.getElementById('studentLink').value;
+        // 2. [핵심수정] 사이드바 값이 업데이트될 때까지 기다리지 않고 
+        // 현재 선택된 state.room 정보를 사용하여 즉시 주소 생성
+        const pathArr = window.location.pathname.split('/'); pathArr.pop();
+        const baseUrl = window.location.origin + pathArr.join('/');
         
-        // 만약 링크가 비어있거나 현재 방과 다르다면 강제로 생성
-        if (!url || !url.includes(`room=${state.room}`)) {
-            const pathArr = window.location.pathname.split('/'); pathArr.pop();
-            const baseUrl = window.location.origin + pathArr.join('/');
-            url = `${baseUrl}/index.html?room=${state.room}`;
-        }
+        // 현재 방 번호(state.room)를 사용하여 강제로 URL 조합
+        const forcedUrl = `${baseUrl}/index.html?room=${state.room}`;
 
-        // 3. 라벨에 현재 강의실 표시 (예: Room B Join)
+        // 3. 라벨도 현재 방 번호로 강제 업데이트 (Room A Join 방지)
         label.innerText = `Room ${state.room} Join`;
 
-        // 4. QR 코드 생성
+        // 4. QR 코드 생성 (강제 생성된 URL 사용)
         new QRCode(target, {
-            text: url,
+            text: forcedUrl,
             width: 140,
             height: 140,
             correctLevel: QRCode.CorrectLevel.H
         });
     }
 },
-
 
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
