@@ -117,7 +117,7 @@
         <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
         <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Report</button>
         <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('idle')" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Idle</button>
-        <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('reset')"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
+        <button class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
     </div>
     <div style="text-align: center; margin-top: 15px;">
         <span onclick="ui.openSecretModal()" style="font-size:10px; color:#475569; cursor:pointer; text-decoration:underline;">시스템 보안 설정 (Admin PW 변경)</span>
