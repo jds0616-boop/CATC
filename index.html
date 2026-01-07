@@ -196,20 +196,73 @@ dbRef.status.on('value', snap => {
         if(!hasClosedSummary) showFinalRanking(); 
     }
 });
-            dbRef.quiz.on('value', s => {
-                const q = s.val(); if(!q) return;
-                dbRef.status.once('value', statusSnap => {
-                    const st = statusSnap.val() || {};
-                    if (q.status === 'ready') forceCloseQuiz();
-                    if (st.quizStep === 'summary' && !hasClosedSummary) return;
-                    if(st.mode !== 'quiz') { forceCloseQuiz(); return; }
-                    if(q.status === 'result') { document.getElementById('quizOverlay').style.display = 'none'; return; }
-                    document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
-                    if(q.status === 'ready') { canAnswer = false; myLastChoice = null; document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다..."; document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'none'; document.getElementById('quizFeedback').innerText = ""; currentQuizId = q.id; document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected', 'locked')); } 
-                    else if(q.status === 'open') { canAnswer = true; document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!"; if(q.type === 'OX') { document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'flex'; } else { document.getElementById('btnGroupMultiple').style.display = 'flex'; document.getElementById('btnGroupOX').style.display = 'none'; } document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked')); }
-                    else if(q.status === 'close') { canAnswer = false; document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked')); if(myLastChoice) { document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다."; document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`; } else { document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다."; } }
+dbRef.quiz.on('value', s => {
+    const q = s.val(); if(!q) return;
+    
+    dbRef.status.once('value', statusSnap => {
+        const st = statusSnap.val() || {};
+        
+        // 1. 퀴즈를 종료해야 하는 상황들 체크
+        if (q.status === 'ready' && st.quizStep !== 'summary') { /* 준비 중일 때 */ }
+        if (st.quizStep === 'summary' && !hasClosedSummary) return; // 결과 화면 중이면 중단
+        if (st.mode !== 'quiz') { forceCloseQuiz(); return; } // 퀴즈 모드가 아니면 닫기
+        if (q.status === 'result') { document.getElementById('quizOverlay').style.display = 'none'; return; }
+
+        // 2. 퀴즈 오버레이 표시 설정
+        document.getElementById('quizOverlay').style.display = 'flex';
+        document.getElementById('quizActiveBox').style.display = 'block';
+        document.getElementById('quizResultBox').style.display = 'none';
+
+        const multArea = document.getElementById('btnGroupMultiple');
+        const oxArea = document.getElementById('btnGroupOX');
+
+        // --- 여기서부터가 핵심 수정 로직입니다 ---
+        if(q.status === 'ready') {
+            canAnswer = false;
+            myLastChoice = null;
+            document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
+            multArea.style.display = 'none';
+            oxArea.style.display = 'none';
+            document.getElementById('quizFeedback').innerText = "";
+            currentQuizId = q.id;
+        } 
+        else if(q.status === 'open') {
+            canAnswer = true;
+            document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!";
+            
+            if(q.isOX) {
+                // OX 퀴즈인 경우: 기존 OX 버튼 그룹 표시
+                multArea.style.display = 'none';
+                oxArea.style.display = 'flex';
+            } else {
+                // 일반/설문 퀴즈인 경우: 선택지 개수만큼 버튼 자동 생성
+                oxArea.style.display = 'none';
+                multArea.style.display = 'flex';
+                multArea.innerHTML = ""; // 기존에 있던 버튼들 싹 비우기
+                
+                q.options.forEach((optText, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-opt-btn';
+                    // 버튼에 "1. 남성" 같이 번호와 내용을 함께 표시
+                    btn.innerText = `${i + 1}. ${optText}`; 
+                    btn.onclick = () => sendAns(i + 1);
+                    multArea.appendChild(btn); // 버튼 추가
                 });
-            });
+            }
+            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked', 'selected'));
+        }
+        else if(q.status === 'close') {
+            canAnswer = false;
+            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+            if(myLastChoice) {
+                document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다.";
+                document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
+            } else {
+                document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다.";
+            }
+        }
+    });
+});
             const qInputEl = document.getElementById('qInput');
             qInputEl.addEventListener('input', function() {
                 const len = this.value.length; document.getElementById('charCount').innerText = `${len} / 100`;

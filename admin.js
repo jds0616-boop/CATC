@@ -345,7 +345,7 @@ const ui = {
 
 // --- 4. Quiz Logic ---
 const quizMgr = {
-    loadFile: function(e) {
+loadFile: function(e) {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = (evt) => {
@@ -353,11 +353,13 @@ const quizMgr = {
         state.quizList = [];
         b.forEach(bl => {
             const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
-            if (l.length >= 2) { // 최소 질문 + 답 + 정답표기 줄 필요
+            if (l.length >= 2) {
                 const lastLine = l[l.length - 1].toUpperCase();
-                const isSurvey = (lastLine === 'X');
-                const correct = isSurvey ? 0 : parseInt(lastLine.replace(/[^0-9]/g, ''));
-                const options = l.slice(1, l.length - 1); // 질문과 정답표기 사이가 모두 옵션
+                
+                // [변경] 'X' 대신 'SURVEY' 키워드로 설문조사 판별
+                const isSurvey = (lastLine === 'SURVEY' || lastLine === 'S');
+                const correct = isSurvey ? 0 : parseInt(lastLine);
+                const options = l.slice(1, l.length - 1);
 
                 state.quizList.push({ 
                     text: l[0], 
@@ -365,15 +367,14 @@ const quizMgr = {
                     correct: correct, 
                     checked: true, 
                     isSurvey: isSurvey,
-                    isOX: options.length === 2 
+                    // 선택지가 2개고 내용이 O, X면 OX모드, 아니면 일반모드
+                    isOX: (options.length === 2 && options[0].toUpperCase() === 'O')
                 });
             }
         });
-        ui.showAlert(`${state.quizList.length}개 문항 로드 완료 (설문 포함).`); 
+        ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
         this.renderMiniList();
-        document.getElementById('btnTest').style.display = 'none';
-        document.getElementById('quizControls').style.display = 'flex'; 
-        state.isTestMode = false;
+        document.getElementById('quizControls').style.display = 'flex';
         state.currentQuizIdx = 0;
         this.showQuiz();
     };
@@ -562,33 +563,28 @@ showFinalSummary: async function() {
 
 
 
-    renderChart: function(id, corr) {
+renderChart: function(id, corr) {
     const div = document.getElementById('d-chart'); div.innerHTML = "";
     const q = state.quizList[state.currentQuizIdx];
-    const isOX = state.isTestMode ? false : q.isOX;
-    const isSurvey = q.isSurvey; // 설문조사 여부
-
+    
     firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
         const d = s.val() || {};
-        const cnt = [0,0,0,0,0,0]; // 넉넉하게 배열 확보
+        const cnt = new Array(q.options.length).fill(0);
         Object.values(d).forEach(v => { if(v.choice >= 1) cnt[v.choice-1]++; });
         
         const max = Math.max(...cnt, 1);
-        const loop = q.options.length; // 옵션 개수만큼 반복
-        const lbl = isOX ? ['O','X'] : ['1','2','3','4','5','6'];
-
-        for(let i=0; i<loop; i++) {
-            // 설문조사가 아니고 정답일 때만 correct 클래스 및 왕관 추가
-            const isCorrect = !isSurvey && (i + 1) === corr;
-            const h = (cnt[i]/max)*80;
+        for(let i=0; i < q.options.length; i++) {
+            const isCorrect = !q.isSurvey && (i + 1) === corr;
+            const h = (cnt[i]/max) * 80;
             const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
-            
+            const labelText = q.isOX ? (i === 0 ? 'O' : 'X') : (i + 1);
+
             div.innerHTML += `
                 <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
                     ${crownHtml}
                     <div class="bar-value">${cnt[i]}</div>
                     <div class="bar-fill" style="height:${h}%"></div>
-                    <div class="bar-label">${lbl[i]}</div>
+                    <div class="bar-label">${labelText}</div>
                 </div>`;
         }
     });
