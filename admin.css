@@ -312,3 +312,20 @@ body.night-mode .qr-label { color: #0f172a; }
     from { margin-bottom: 0px; }
     to { margin-bottom: 20px; }
 }
+
+
+/* [추가] 차트 아래 번호 동그라미(1,2,3,4) 크기 확대 */
+.bar-label {
+    /* 1. 동그라미 크기를 40px -> 60px로 확대 */
+    width: 60px !important;
+    height: 60px !important;
+    
+    /* 2. 숫자 글씨 크기를 18px -> 30px로 확대 */
+    font-size: 30px !important;
+    
+    /* 3. 막대기와의 간격을 조금 더 벌림 */
+    margin-top: 15px !important;
+    
+    /* (옵션) 더 진하고 잘 보이게 그림자 추가 */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
