@@ -99,25 +99,40 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
 .q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
-/* 핀 고정 카드 (최종 수정본 적용됨) */
+/* 1. 핀 고정 카드 스타일 (위/아래 가림막 포함) */
 .q-card.status-pin {
     position: sticky;
-    top: 10px;
+    top: 10px;            /* 상단 여백 10px 확보 */
     z-index: 100;
     
     border: 2px solid #ef4444 !important;
     background-color: #fff1f2 !important;
     border-radius: 12px;
     
-    /* 가림막 그림자 효과 */
+    /* 아래쪽 가림막 (배경색 그림자) */
     box-shadow: 
         0 8px 20px rgba(239, 68, 68, 0.15),
         0 15px 0 var(--bg-color) !important;
     
     margin-bottom: 30px; 
+    overflow: visible;      /* 위쪽 가림막이 튀어나갈 수 있게 허용 */
     outline: none !important;
     transform: none !important;
 }
+
+/* 2. 위쪽 가림막 (투명 뚜껑) 생성 */
+.q-card.status-pin::before {
+    content: "";
+    position: absolute;
+    top: -15px;           /* 카드보다 위로 올림 */
+    left: 0;
+    width: 100%;
+    height: 15px;         /* 10px 여백보다 조금 더 넉넉하게 막음 */
+    background-color: var(--bg-color); /* 배경색과 동일하게 */
+    z-index: -1;
+}
+
+/* 3. 호버(마우스 올림) 효과 제거 */
 .q-card.status-pin:hover {
     background-color: #fff1f2 !important;
     border-color: #ef4444 !important;
@@ -126,6 +141,22 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     box-shadow: 
         0 8px 20px rgba(239, 68, 68, 0.15),
         0 15px 0 var(--bg-color) !important;
+}
+
+/* 4. 야간 모드(Dark Mode) 대응 */
+body.night-mode .q-card.status-pin {
+    background-color: #450a0a !important;
+    border-color: #f87171 !important;
+}
+body.night-mode .q-card.status-pin:hover {
+    background-color: #450a0a !important;
+}
+.q-card.status-pin .q-content {
+    font-size: 19px;
+    color: #991b1b;
+}
+body.night-mode .q-card.status-pin .q-content {
+    color: #fecaca;
 }
 
 .q-card.status-later { border-left-color: #f59e0b; }
