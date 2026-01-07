@@ -654,7 +654,6 @@ const quizMgr = {
             this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
         }
     },
-// [수정] 3초 카운트다운 효과음 추가된 타이머
     startTimer: function() {
         this.stopTimer(); 
         let t = 10; 
@@ -662,31 +661,40 @@ const quizMgr = {
         d.classList.remove('urgent');
         const end = Date.now() + 10000;
         
-        // [추가] 소리가 중복 재생되지 않게 막는 변수
         let lastPlayedSec = -1;
+
+        // [중요] 소리 파일을 미리 준비 (없으면 생성)
+        if (!state.timerAudio) {
+            state.timerAudio = new Audio('timer.mp3');
+        }
 
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
             
-            // 5초 이하일 때 빨간색 깜빡임 (기존 기능)
             if(r <= 5) d.classList.add('urgent');
-            
             d.innerText = `00:${r<10?'0'+r:r}`;
 
-            // [핵심] 3초, 2초, 1초일 때 'timer.mp3' 재생
+            // [핵심] 3, 2, 1초일 때 소리 재생
             if (r <= 3 && r > 0 && r !== lastPlayedSec) {
-                // 소리 파일 재생 (매번 새로 생성해서 즉시 재생)
-                const sound = new Audio('timer.mp3');
-                sound.volume = 0.5; // 소리 크기 조절 (0.0 ~ 1.0)
-                sound.play().catch(e => console.log("브라우저 정책상 소리 재생 실패:", e));
-                
-                lastPlayedSec = r; // 방금 이 초(sec)에 소리를 냈다고 기록
+                state.timerAudio.pause();          // 혹시 재생 중이면 일단 멈춤
+                state.timerAudio.currentTime = 0;  // 처음으로 되감기
+                state.timerAudio.play().catch(e=>{}); // 재생
+                lastPlayedSec = r;
             }
 
             if(r <= 0) this.action('close');
         }, 200);
     },
-    stopTimer: function() { if(state.timerInterval) clearInterval(state.timerInterval); },
+// [수정] 타이머 멈출 때 소리도 같이 끄기
+    stopTimer: function() { 
+        if(state.timerInterval) clearInterval(state.timerInterval); 
+        
+        // [중요] 소리가 나고 있다면 강제로 멈추고 되감기
+        if (state.timerAudio) {
+            state.timerAudio.pause();
+            state.timerAudio.currentTime = 0;
+        }
+    },
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:10"; document.getElementById('quizTimer').classList.remove('urgent'); },
     openResetModal: function() { document.getElementById('resetChoiceModal').style.display = 'flex'; },
     executeReset: async function(type) {
