@@ -1,5 +1,29 @@
 /* --- admin.js (Final Version: Report & Quiz Logic Integrated) --- */
 
+// --- [추가] 기본 탑재 퀴즈 데이터 (20문항) ---
+const DEFAULT_QUIZ_DATA = [
+    { text: "한국공항공사(KAC)의 본사는 김포공항 내에 위치하고 있다.", options: ["O", "X"], correct: 1, isSurvey: false, isOX: true, checked: true },
+    { text: "[테스트] 비행기 기내에는 휴대용 라이터를 1개도 반입할 수 없다.", options: ["O (반입 가능)", "X (반입 불가)"], correct: 2, isSurvey: false, isOX: true, checked: true },
+    { text: "항공기 탑승 시 신분증 대신 생체정보(정맥)를 이용할 수 있는 서비스 이름은?", options: ["스마트패스", "원패스", "바이오패스", "하이패스"], correct: 3, isSurvey: false, isOX: false, checked: true },
+    { text: "현재 교육생 여러분의 소속 본부는 어디이신가요?", options: ["본사", "서울지역본부", "제주지역본부", "남부지역본부", "기타/기본"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "김포국제공항의 IATA 공항 코드는 GMP이다.", options: ["O", "X"], correct: 1, isSurvey: false, isOX: true, checked: true },
+    { text: "[테스트] 국내 모든 공항의 주차장은 교육생에게 항상 무료로 개방된다.", options: ["O", "X"], correct: 2, isSurvey: false, isOX: true, checked: true },
+    { text: "제주국제공항은 우리나라에서 이용객이 가장 많은 공항이다.", options: ["O", "X"], correct: 2, isSurvey: false, isOX: true, checked: true },
+    { text: "오늘 진행되는 교육 내용의 전반적인 난이도는 어떠한가요?", options: ["매우 쉬움", "보통", "매우 어려움"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "항공기 내 반입 금지 물품 중 '보조배터리'는 위탁수하물(부치는 짐)로 보낼 수 있다.", options: ["O", "X"], correct: 2, isSurvey: false, isOX: true, checked: true },
+    { text: "우리나라의 국적 항공사(LCC 포함)는 총 몇 개인가요? (2024년 기준)", options: ["7개", "8개", "10개", "11개"], correct: 3, isSurvey: false, isOX: false, checked: true },
+    { text: "오늘 교육 장소까지 이용하신 주된 교통수단은 무엇인가요?", options: ["자차", "지하철/버스", "택시", "도보/기타"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "공항 내 보안 검색대에서 노트북은 가방에서 꺼내지 않아도 된다.", options: ["O", "X"], correct: 2, isSurvey: false, isOX: true, checked: true },
+    { text: "KAC의 마스코트인 '포티(Porty)'는 무엇을 형상화한 것일까요?", options: ["비행기", "관제탑", "종이비행기", "구름"], correct: 2, isSurvey: false, isOX: false, checked: true },
+    { text: "현재 본인의 직무 분야를 선택해주세요.", options: ["운영/관리", "보안/안전", "기술/정비", "사무/행정"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "한국공항공사가 관리하는 공항 중 국제공항은 총 몇 개입니까?", options: ["5개", "7개", "8개", "14개"], correct: 2, isSurvey: false, isOX: false, checked: true },
+    { text: "항공기 이착륙 시 스마트폰은 반드시 '비행기 모드'로 설정해야 한다.", options: ["O", "X"], correct: 1, isSurvey: false, isOX: true, checked: true },
+    { text: "다음 중 이번 교육 과정에서 가장 유익했던 주제는 무엇인가요?", options: ["항공 산업 트렌드", "공항 운영 실무", "안전 관리 시스템", "고객 만족 전략", "디지털 전환 사례"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "항공기 비상구 좌석 승객은 비상시 승무원의 대피 안내를 도울 의무가 있다.", options: ["O", "X"], correct: 1, isSurvey: false, isOX: true, checked: true },
+    { text: "추후 이와 유사한 심화 교육 과정이 개설된다면 참여할 의사가 있으십니까?", options: ["예 (참여 희망)", "아니오 (검토 필요)"], correct: 0, isSurvey: true, isOX: false, checked: true },
+    { text: "마지막으로, 오늘 교육에 대한 전반적인 만족도를 점수로 표현해주세요.", options: ["5점 (매우 만족)", "4점 (만족)", "3점 (보통)", "2점 (불만족)", "1점 (매우 불만족)"], correct: 0, isSurvey: true, isOX: false, checked: true }
+];
+
 const state = {
     sessionId: (function() {
         let id = sessionStorage.getItem('kac_admin_sid');
@@ -66,6 +90,12 @@ const dataMgr = {
     loadInitialData: function() {
         ui.initRoomSelect();
         ui.showWaitingRoom();
+
+    // --- [여기에 추가] 기본 퀴즈 데이터 즉시 로드 ---
+    state.quizList = DEFAULT_QUIZ_DATA; 
+    quizMgr.renderMiniList(); // 우측 목록에 표시
+    // ------------------------------------------
+
         document.getElementById('roomSelect').onchange = (e) => { if(e.target.value) this.switchRoomAttempt(e.target.value); };
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
         const qrEl = document.getElementById('qrcode'); if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
