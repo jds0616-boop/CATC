@@ -1,4 +1,4 @@
-/* --- admin.js (Final Version: Logic Integrated & Cleaned) --- */
+/* --- admin.js (Final Version: Dynamic Sample Download Integrated) --- */
 
 // --- [기본 데이터] 파일 미업로드 시 탑재될 기본 퀴즈 20문항 ---
 const DEFAULT_QUIZ_DATA = [
@@ -36,7 +36,7 @@ const state = {
     room: null,
     isTestMode: false,
     quizList: [],
-    isExternalFileLoaded: false, // 파일 업로드 여부 플래그
+    isExternalFileLoaded: false, 
     currentQuizIdx: 0,
     activeQaKey: null,
     qaData: {},
@@ -92,7 +92,7 @@ const dataMgr = {
         ui.initRoomSelect();
         ui.showWaitingRoom();
 
-        // [최초 로드] 기본 퀴즈 데이터 탑재
+        // 기본 퀴즈 탑재
         state.quizList = DEFAULT_QUIZ_DATA; 
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
@@ -308,7 +308,6 @@ const ui = {
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
     
-    // [수정] 중복 제거 및 최신 복사 로직 적용
     copyLink: function() {
         const linkInput = document.getElementById('studentLink');
         const url = linkInput.value;
@@ -335,7 +334,6 @@ const ui = {
         if (state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
             
-            // [상태 유지 및 복구] 퀴즈 모드로 돌아올 때 이전 문항 자동 출력
             if (mode === 'quiz') {
                 if (state.isExternalFileLoaded) {
                     ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
@@ -351,7 +349,7 @@ const ui = {
     },
     filterQa: function(f) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
-        if(event) event.target.classList.add('active'); 
+        if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
     renderQaList: function(f) {
@@ -406,22 +404,15 @@ const quizMgr = {
                 const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
                 if (l.length >= 2) {
                     const lastLine = l[l.length - 1].toUpperCase();
-                    // [변경] SURVEY 또는 S 키워드로 설문조사 판별 (X는 OX퀴즈 정답용으로 보존)
                     const isSurvey = (lastLine === 'SURVEY' || lastLine === 'S');
                     const correct = isSurvey ? 0 : parseInt(lastLine);
                     const options = l.slice(1, l.length - 1);
-
                     state.quizList.push({ 
-                        text: l[0], 
-                        options: options, 
-                        correct: correct, 
-                        checked: true, 
-                        isSurvey: isSurvey,
+                        text: l[0], options: options, correct: correct, checked: true, isSurvey: isSurvey,
                         isOX: (options.length === 2 && options[0].toUpperCase() === 'O')
                     });
                 }
             });
-            
             state.isExternalFileLoaded = true;
             ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
             this.renderMiniList();
@@ -445,11 +436,26 @@ const quizMgr = {
             d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeLabel} Q${i+1}.</b> ${q.text.substring(0,20)}...</div>`;
         });
     },
+
+    // [수정] 현재 탑재된 20문항 리스트를 텍스트 파일 형식으로 다운로드
     downloadSample: function() {
-        const t = "한국공항공사의 약자는?\nKAC\nKAA\nKAI\nKAS\n1\n\n본 교육에 만족하시나요?\nO\nX\nSURVEY"; 
-        const b = new Blob([t], {type: "text/plain"});
-        const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "sample.txt"; a.click();
+        let content = "";
+        DEFAULT_QUIZ_DATA.forEach(q => {
+            content += q.text + "\n";
+            q.options.forEach(opt => {
+                content += opt + "\n";
+            });
+            content += (q.isSurvey ? "SURVEY" : q.correct) + "\n\n";
+        });
+
+        const blob = new Blob([content], {type: "text/plain"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "kac_quiz_sample.txt";
+        a.click();
+        ui.showAlert("기본 문항이 포함된 샘플 파일이 다운로드되었습니다.");
     },
+
     startTestMode: function() {
         state.isTestMode = true;
         state.quizList = [{ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2, isOX: false, checked: true, isSurvey: false }];
@@ -538,16 +544,13 @@ const quizMgr = {
         let questionStats = []; 
         const userScoreMap = {};
 
-        // 1. 진행된 퀴즈 문항 개수 파악 (설문 제외)
         state.quizList.forEach((q, idx) => {
             if(state.isTestMode || !q.checked) return;
             if(q.isSurvey) return; 
-
             const id = `Q${idx}`;
             const answers = allAns[id] || {};
             const keys = Object.keys(answers);
             if(keys.length > 0) totalQuestions++;
-
             keys.forEach(k => {
                 totalParticipants.add(k);
                 totalAnswerCount++;
@@ -557,14 +560,12 @@ const quizMgr = {
                     totalCorrect++; userScoreMap[k].score += 1;
                 }
             });
-
             if(keys.length > 0) {
                 const corrCnt = keys.filter(k => answers[k].choice === q.correct).length;
                 questionStats.push({ title: q.text, accuracy: (corrCnt / keys.length) * 100 });
             }
         });
 
-        // 2. [핵심] 중도 참석자 제외 로직: 참여 횟수가 전체 문항수와 같은 사람만 순위 매김
         const sortedUsers = Object.keys(userScoreMap)
             .map(token => ({ token: token, score: userScoreMap[token].score, pCount: userScoreMap[token].participatedCount }))
             .filter(user => user.pCount === totalQuestions) 
