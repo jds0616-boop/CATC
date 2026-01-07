@@ -336,15 +336,17 @@ const ui = {
         if (state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
             
-            // --- [추가] 퀴즈 모드로 진입할 때만 안내 팝업 및 상태 복구 ---
+            // [수정] 퀴즈 모드로 진입/복귀할 때 실행되는 로직
             if (mode === 'quiz') {
+                // 1. 파일 업로드 상태에 따른 알림 팝업
                 if (state.isExternalFileLoaded) {
-                    ui.showAlert(`현재 업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
+                    ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
                 } else {
-                    ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부에 저장된 [테스트 문항]으로 진행합니다.");
+                    ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부 [테스트 문항]으로 진행합니다.\n(새 문항을 쓰시려면 파일을 업로드해주세요)");
                 }
                 
-                // Q&A 갔다 돌아왔을 때 이전 문제를 다시 보여줌
+                // 2. [핵심] Q&A 갔다 돌아왔을 때 현재 진행 중이던 문항 화면을 복구
+                // 이 함수가 실행됨으로써 교육생들의 화면도 다시 퀴즈 화면으로 고정됩니다.
                 if (state.quizList.length > 0) {
                     quizMgr.showQuiz(); 
                 }
