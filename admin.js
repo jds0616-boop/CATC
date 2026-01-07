@@ -346,25 +346,39 @@ const ui = {
 // --- 4. Quiz Logic ---
 const quizMgr = {
     loadFile: function(e) {
-        const f = e.target.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = (evt) => {
-            const b = evt.target.result.trim().split(/\n\s*\n/);
-            state.quizList = [];
-            b.forEach(bl => {
-                const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
-                if (l.length >= 6) state.quizList.push({ text: l[0], options: [l[1], l[2], l[3], l[4]], correct: parseInt(l[5].replace(/[^0-9]/g, '')), checked: true });
-                else if (l.length === 4) state.quizList.push({ text: l[0], options: [l[1], l[2]], correct: parseInt(l[3].replace(/[^0-9]/g, '')), checked: true, isOX: true });
-            });
-            ui.showAlert(`${state.quizList.length} Loaded.`); this.renderMiniList();
-            document.getElementById('btnTest').style.display = 'none';
-            document.getElementById('quizControls').style.display = 'flex'; 
-            state.isTestMode = false;
-            state.currentQuizIdx = 0;
-            this.showQuiz();
-        };
-        r.readAsText(f);
-    },
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = (evt) => {
+        const b = evt.target.result.trim().split(/\n\s*\n/);
+        state.quizList = [];
+        b.forEach(bl => {
+            const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
+            if (l.length >= 2) { // 최소 질문 + 답 + 정답표기 줄 필요
+                const lastLine = l[l.length - 1].toUpperCase();
+                const isSurvey = (lastLine === 'X');
+                const correct = isSurvey ? 0 : parseInt(lastLine.replace(/[^0-9]/g, ''));
+                const options = l.slice(1, l.length - 1); // 질문과 정답표기 사이가 모두 옵션
+
+                state.quizList.push({ 
+                    text: l[0], 
+                    options: options, 
+                    correct: correct, 
+                    checked: true, 
+                    isSurvey: isSurvey,
+                    isOX: options.length === 2 
+                });
+            }
+        });
+        ui.showAlert(`${state.quizList.length}개 문항 로드 완료 (설문 포함).`); 
+        this.renderMiniList();
+        document.getElementById('btnTest').style.display = 'none';
+        document.getElementById('quizControls').style.display = 'flex'; 
+        state.isTestMode = false;
+        state.currentQuizIdx = 0;
+        this.showQuiz();
+    };
+    r.readAsText(f);
+},
     addManualQuiz: function() {
         const q = document.getElementById('manualQ').value, a = document.getElementById('manualAns').value;
         const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
@@ -426,11 +440,17 @@ const quizMgr = {
             this.startTimer(); 
         }
         else if(act === 'close') { 
-            this.stopTimer(); 
-            const correct = state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct;
-            const opt = document.getElementById(`opt-${correct}`);
-            if(opt) opt.classList.add('reveal-answer');
-        }
+    this.stopTimer(); 
+    const q = state.quizList[state.currentQuizIdx];
+    // 설문조사가 아닐 때만 정답 강조(reveal-answer)
+    if(!q.isSurvey) {
+        const correct = state.isTestMode ? 2 : q.correct;
+        const opt = document.getElementById(`opt-${correct}`);
+        if(opt) opt.classList.add('reveal-answer');
+    } else {
+        document.getElementById('quizGuideArea').innerText = "조사가 마감되었습니다.";
+    }
+}
         else if(act === 'result') { 
             this.stopTimer(); 
             document.getElementById('d-options').style.display='none'; 
