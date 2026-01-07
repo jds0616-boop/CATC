@@ -95,27 +95,21 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     top: 10px;
     z-index: 100;
     
-    /* 빨간색 테두리와 배경 */
     border: 2px solid #ef4444 !important;
     background-color: #fff1f2 !important;
     border-radius: 12px;
     
-    /* [핵심 1] 가림막을 ::after 대신 '딱딱한 그림자'로 처리하여 렌더링 오류 제거 */
-    /* 첫 번째 값: 붉은색 부드러운 그림자 (입체감) */
-    /* 두 번째 값: 배경색과 동일한 딱딱한 그림자를 아래로 15px 깔아서 뒷내용 가림 */
+    /* 가림막 효과 (배경색 그림자) */
     box-shadow: 
         0 8px 20px rgba(239, 68, 68, 0.15),
         0 15px 0 var(--bg-color) !important;
     
-    /* 가림막 그림자(15px)가 들어갈 공간 확보 */
     margin-bottom: 30px; 
-
-    /* [핵심 2] 마우스를 올려도 파란색 테두리가 생기거나 움직이지 않게 고정 */
     outline: none !important;
     transform: none !important;
 }
 
-/* 핀 고정 카드에는 마우스를 올려도(hover) 아무 변화가 없도록 강제 설정 */
+/* 핀 카드 호버 효과 제거 */
 .q-card.status-pin:hover {
     background-color: #fff1f2 !important;
     border-color: #ef4444 !important;
@@ -124,6 +118,25 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     box-shadow: 
         0 8px 20px rgba(239, 68, 68, 0.15),
         0 15px 0 var(--bg-color) !important;
+}
+
+/* [추가] 번역 버튼 스타일 */
+.btn-translate {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: 0.2s;
+    vertical-align: middle;
+}
+.btn-translate:hover {
+    background: #eff6ff;
+    color: #3b82f6;
+    border-color: #3b82f6;
 }
 
 .q-card.status-later { border-left-color: #f59e0b; }
