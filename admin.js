@@ -469,7 +469,20 @@ toggleMiniQR: function() {
         items.forEach(i => {
             const cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
             const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
-            list.innerHTML += `<div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')"><div class="q-content">${icon}${i.text}</div><div class="q-meta"><div class="q-like-badge">👍 ${i.likes||0}</div><div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div>`;
+list.innerHTML += `
+    <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
+        <div class="q-content">
+            ${icon}${i.text}
+            <!-- 번역 버튼 추가 (클릭 시 이벤트 전파 중단하고 번역창 띄움) -->
+            <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="구글 번역기로 보기">
+                <i class="fa-solid fa-language"></i> 번역
+            </button>
+        </div>
+        <div class="q-meta">
+            <div class="q-like-badge">👍 ${i.likes||0}</div>
+            <div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>
+    </div>`;
         });
     },
     openQaModal: function(k) { state.activeQaKey=k; document.getElementById('m-text').innerText=state.qaData[k].text; document.getElementById('qaModal').style.display='flex'; },
@@ -488,6 +501,20 @@ toggleMiniQR: function() {
         if (!document.fullscreenElement) elem.requestFullscreen().catch(err => console.log(err));
         else if (document.exitFullscreen) document.exitFullscreen();
     },
+
+// [추가] 구글 번역 팝업 열기
+    translateQa: function(id) {
+        if (!state.qaData[id]) return;
+        const text = state.qaData[id].text;
+        
+        // 구글 번역기 URL 생성 (자동감지 -> 한국어)
+        const url = `https://translate.google.com/?sl=auto&tl=ko&text=${encodeURIComponent(text)}&op=translate`;
+        
+        // 새 창(팝업)으로 열기
+        window.open(url, 'googleTranslate', 'width=1000,height=600,scrollbars=yes');
+    },
+
+
     showWaitingRoom: function() {
         state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
