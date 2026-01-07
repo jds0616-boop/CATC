@@ -286,10 +286,10 @@ const ui = {
 
 toggleMiniQR: function() {
     const qrBox = document.getElementById('floatingQR');
-    const url = document.getElementById('studentLink').value;
-
+    
+    // 1. 강의실 선택 여부 체크
     if (!state.room) {
-        this.showAlert("강의실을 먼저 선택해 주세요.");
+        this.showAlert("좌측 상단에서 강의실을 먼저 선택해 주세요.");
         return;
     }
 
@@ -298,9 +298,24 @@ toggleMiniQR: function() {
     } else {
         qrBox.style.display = 'flex';
         const target = document.getElementById('miniQRElement');
-        target.innerHTML = ""; // 기존 내용 초기화
+        const label = document.querySelector('.qr-label');
+        target.innerHTML = ""; // 기존 QR 초기화
+
+        // 2. 현재 선택된 state.room을 기준으로 주소 생성 (가장 정확함)
+        // 만약 단축 코드가 있으면 그걸 쓰고, 없으면 기본 room 파라미터 주소 생성
+        let url = document.getElementById('studentLink').value;
         
-        // QR 생성
+        // 만약 링크가 비어있거나 현재 방과 다르다면 강제로 생성
+        if (!url || !url.includes(`room=${state.room}`)) {
+            const pathArr = window.location.pathname.split('/'); pathArr.pop();
+            const baseUrl = window.location.origin + pathArr.join('/');
+            url = `${baseUrl}/index.html?room=${state.room}`;
+        }
+
+        // 3. 라벨에 현재 강의실 표시 (예: Room B Join)
+        label.innerText = `Room ${state.room} Join`;
+
+        // 4. QR 코드 생성
         new QRCode(target, {
             text: url,
             width: 140,

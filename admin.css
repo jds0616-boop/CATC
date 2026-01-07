@@ -301,10 +301,11 @@ body.night-mode .q-card.status-pin .q-content {
 }
 
 .qr-label {
-    font-size: 14px;
-    font-weight: 800;
-    color: #0f172a;
+    font-size: 15px; /* 조금 더 크게 */
+    font-weight: 900;
+    color: var(--accent-color); /* 파란색으로 강조 */
     letter-spacing: -0.5px;
+    margin-bottom: 5px;
 }
 
 .qr-close {
