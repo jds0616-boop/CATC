@@ -365,3 +365,14 @@ body.night-mode .qr-label {
     margin-bottom: 20px !important;
     resize: vertical !important;   /* 필요시 사용자가 마우스로 더 늘릴 수 있음 */
 }
+
+/* 플로팅 QR 클릭 효과 추가 */
+#miniQRElement {
+    cursor: pointer; /* 마우스 올리면 손가락 모양 */
+    transition: transform 0.2s ease; /* 부드러운 애니메이션 */
+}
+
+#miniQRElement:hover {
+    transform: scale(1.05); /* 마우스 올리면 살짝 커짐 */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* 그림자 추가 */
+}
