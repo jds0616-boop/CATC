@@ -36,6 +36,7 @@ const state = {
     room: null,
     isTestMode: false,
     quizList: [],
+    isExternalFileLoaded: false, // [추가] 외부 파일 업로드 여부
     currentQuizIdx: 0,
     activeQaKey: null,
     qaData: {},
@@ -324,13 +325,31 @@ const ui = {
         const u = document.getElementById('studentLink'); u.select();
         document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
     },
+
     setMode: function(mode) {
         document.getElementById('view-waiting').style.display = 'none';
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
-        if (state.room) firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+        
+        if (state.room) {
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            
+            // --- [추가] 퀴즈 모드로 진입할 때만 안내 팝업 및 상태 복구 ---
+            if (mode === 'quiz') {
+                if (state.isExternalFileLoaded) {
+                    ui.showAlert(`현재 업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
+                } else {
+                    ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부에 저장된 [테스트 문항]으로 진행합니다.");
+                }
+                
+                // Q&A 갔다 돌아왔을 때 이전 문제를 다시 보여줌
+                if (state.quizList.length > 0) {
+                    quizMgr.showQuiz(); 
+                }
+            }
+        }
     },
     filterQa: function(f) { document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); this.renderQaList(f); },
     renderQaList: function(f) {
@@ -375,41 +394,42 @@ const ui = {
 
 // --- 4. Quiz Logic ---
 const quizMgr = {
-loadFile: function(e) {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = (evt) => {
-        const b = evt.target.result.trim().split(/\n\s*\n/);
-        state.quizList = [];
-        b.forEach(bl => {
-            const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
-            if (l.length >= 2) {
-                const lastLine = l[l.length - 1].toUpperCase();
-                
-                // [변경] 'X' 대신 'SURVEY' 키워드로 설문조사 판별
-                const isSurvey = (lastLine === 'SURVEY' || lastLine === 'S');
-                const correct = isSurvey ? 0 : parseInt(lastLine);
-                const options = l.slice(1, l.length - 1);
+// admin.js 중간의 quizMgr 객체 내부입니다.
+    loadFile: function(e) {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = (evt) => {
+            const b = evt.target.result.trim().split(/\n\s*\n/);
+            state.quizList = [];
+            b.forEach(bl => {
+                const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
+                if (l.length >= 2) {
+                    const lastLine = l[l.length - 1].toUpperCase();
+                    const isSurvey = (lastLine === 'SURVEY' || lastLine === 'S');
+                    const correct = isSurvey ? 0 : parseInt(lastLine);
+                    const options = l.slice(1, l.length - 1);
 
-                state.quizList.push({ 
-                    text: l[0], 
-                    options: options, 
-                    correct: correct, 
-                    checked: true, 
-                    isSurvey: isSurvey,
-                    // 선택지가 2개고 내용이 O, X면 OX모드, 아니면 일반모드
-                    isOX: (options.length === 2 && options[0].toUpperCase() === 'O')
-                });
-            }
-        });
-        ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
-        this.renderMiniList();
-        document.getElementById('quizControls').style.display = 'flex';
-        state.currentQuizIdx = 0;
-        this.showQuiz();
-    };
-    r.readAsText(f);
-},
+                    state.quizList.push({ 
+                        text: l[0], 
+                        options: options, 
+                        correct: correct, 
+                        checked: true, 
+                        isSurvey: isSurvey,
+                        isOX: (options.length === 2 && options[0].toUpperCase() === 'O')
+                    });
+                }
+            });
+            
+            // --- 여기서부터 수정된 부분 ---
+            state.isExternalFileLoaded = true; // 파일이 업로드되었음을 표시
+            ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
+            this.renderMiniList();
+            document.getElementById('quizControls').style.display = 'flex';
+            state.currentQuizIdx = 0;
+            this.showQuiz();
+        };
+        r.readAsText(f);
+    },
     addManualQuiz: function() {
         const q = document.getElementById('manualQ').value, a = document.getElementById('manualAns').value;
         const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
