@@ -352,3 +352,15 @@ body.night-mode .q-card.status-pin .q-content {
 body.night-mode .qr-label {
     color: #0f172a; /* 글자색 고정 */
 }
+
+#manualQ {
+    display: block !important;
+    height: 350px !important;      /* 높이를 350px로 고정 */
+    min-height: 350px !important;  /* 어떤 상황에서도 350px 유지 */
+    flex-shrink: 0 !important;     /* ★이게 핵심: 아래 버튼들이 밀어도 절대 안 찌그러짐 */
+    padding: 15px !important;
+    font-size: 16px !important;
+    border: 2px solid #3b82f6 !important; /* 파란색 테두리로 강조 */
+    margin-bottom: 20px !important;
+    resize: vertical !important;   /* 필요하면 더 늘릴 수 있음 */
+}
