@@ -291,37 +291,66 @@ body.night-mode .qr-label { color: #0f172a; }
 
 /* 1. 막대 위 숫자(투표수) 크기 대폭 확대 */
 .bar-value {
-    font-size: 45px !important; /* 20px -> 45px로 아주 크게 */
+    font-size: 45px !important;
     font-weight: 900 !important;
-    color: #1e293b;             /* 진한 남색으로 잘 보이게 */
+    color: #1e293b;
     margin-bottom: 0px !important;
     z-index: 10;
 }
 
-/* 2. 왕관 아이콘: 공중에 띄우지 않고 숫자 위에 '탑'처럼 쌓기 */
+/* 2. 왕관 아이콘: 숫자 위에 '탑'처럼 쌓기 */
 .crown-icon {
-    /* [핵심] absolute(절대위치)를 해제하고 relative(상대위치)로 변경 */
     position: relative !important;
     bottom: auto !important;
     left: auto !important;
     transform: none !important;
     
-    /* 크기 설정 */
     font-size: 70px !important;
-    
-    /* 숫자와 너무 멀어지지 않도록 간격 당기기 */
     margin-bottom: -15px !important; 
     
-    /* 애니메이션 및 그림자 */
     animation: bounceCrown 1s infinite alternate;
     filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
-    
-    /* 가로 정렬 */
     align-self: center;
 }
 
-/* 3. 작은 화면(노트북)에서는 조금 줄여서 깨짐 방지 */
+/* 3. 번호 동그라미 (1,2,3,4): 찌그러짐 방지 완벽 적용 */
+.bar-label {
+    /* [핵심] 너비와 높이를 강제로 고정하여 타원형이 되는 것 방지 */
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;  /* ★ 절대 줄어들지 않게 함 */
+    min-height: 60px !important; /* ★ 절대 줄어들지 않게 함 */
+    
+    /* [핵심] 플렉스 박스 안에서 찌그러짐 차단 */
+    flex-shrink: 0 !important;
+    
+    font-size: 30px !important;
+    margin-top: 15px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    
+    /* 글자 정중앙 정렬 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 4. 왕관 둥실둥실 움직임 */
+@keyframes bounceCrown {
+    from { transform: translateY(0); }
+    to { transform: translateY(-15px); }
+}
+
+/* 5. 작은 화면(노트북) 대응 - 여기도 찌그러짐 방지 적용 */
 @media (max-width: 1200px) {
     .bar-value { font-size: 30px !important; }
     .crown-icon { font-size: 50px !important; }
+    
+    .bar-label {
+        width: 45px !important;
+        height: 45px !important;
+        min-width: 45px !important;  /* ★ 축소 방지 */
+        min-height: 45px !important; /* ★ 축소 방지 */
+        font-size: 22px !important;
+        margin-top: 10px !important;
+    }
 }
