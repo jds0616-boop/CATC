@@ -1,4 +1,5 @@
-/* --- admin.css (No major changes needed, just ensure main-stage has bg) --- */
+/* --- admin.css (Final Version) --- */
+
 :root {
     --header-bg: #0f172a;
     --accent-color: #3b82f6;
@@ -59,7 +60,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
 .dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; }
 
-/* Main Stage - Fullscreen target needs explicit background */
+/* Main Stage */
 .main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; height: 100vh; background: var(--bg-color); overflow: hidden; }
 .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 20; flex-shrink: 0; }
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
@@ -89,7 +90,16 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* Q&A 카드 공통 */
 .q-card { background: var(--card-bg); padding: 20px 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; user-select: none; }
+.q-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); background-color: #f8fafc; outline: 2px solid var(--accent-color); }
+.q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
+.q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
+.q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
+.q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
+
+/* 핀 고정 카드 (최종 수정본 적용됨) */
 .q-card.status-pin {
     position: sticky;
     top: 10px;
@@ -99,7 +109,7 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     background-color: #fff1f2 !important;
     border-radius: 12px;
     
-    /* 가림막 효과 (배경색 그림자) */
+    /* 가림막 그림자 효과 */
     box-shadow: 
         0 8px 20px rgba(239, 68, 68, 0.15),
         0 15px 0 var(--bg-color) !important;
@@ -108,8 +118,6 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
     outline: none !important;
     transform: none !important;
 }
-
-/* 핀 카드 호버 효과 제거 */
 .q-card.status-pin:hover {
     background-color: #fff1f2 !important;
     border-color: #ef4444 !important;
@@ -120,40 +128,18 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
         0 15px 0 var(--bg-color) !important;
 }
 
-/* [추가] 번역 버튼 스타일 */
-.btn-translate {
-    background: transparent;
-    border: 1px solid #cbd5e1;
-    color: #64748b;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 11px;
-    cursor: pointer;
-    margin-left: 8px;
-    transition: 0.2s;
-    vertical-align: middle;
-}
-.btn-translate:hover {
-    background: #eff6ff;
-    color: #3b82f6;
-    border-color: #3b82f6;
-}
-
 .q-card.status-later { border-left-color: #f59e0b; }
 .q-card.status-done { border-left-color: #cbd5e1; opacity: 0.6; filter: grayscale(1); }
-.q-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); background-color: #f8fafc; outline: 2px solid var(--accent-color); }
-.q-content { font-size: 17px; font-weight: 700; line-height: 1.5; color: var(--text-color); margin-right: 20px; }
-.q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 80px; }
-.q-like-badge { font-size: 14px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
-.q-time { font-size: 11px; color: #94a3b8; margin-top: auto; }
 
+/* Quiz Styles */
 #view-quiz { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; max-width: 1200px; }
 .quiz-card { width: 100%; height: 100%; background: var(--card-bg); border-radius: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; position: relative; padding: 0; }
-.quiz-top-bar { height: 60px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; flex-shrink: 0; color: #475569; font-weight: 700; }
-.quiz-top-info { display: flex; align-items: center; gap: 20px; font-size: 15px; }
+.quiz-top-bar { height: 80px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; flex-shrink: 0; color: #475569; font-weight: 700; }
+.quiz-top-info { display: flex; align-items: center; gap: 35px; font-size: 24px; }
+#quizNumberLabel { font-size: 28px; color: var(--accent-color); font-weight: 800; }
 .quiz-info-item { display: flex; align-items: center; gap: 6px; }
-.quiz-info-item i { color: #64748b; }
-.quiz-timer-box { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 900; color: #1e293b; background: white; padding: 2px 10px; border-radius: 6px; border: 1px solid #cbd5e1; }
+.quiz-info-item i { color: #64748b; font-size: 26px; }
+.quiz-timer-box { font-family: 'Courier New', monospace; font-size: 34px; font-weight: 900; color: #1e293b; background: white; padding: 5px 20px; border-radius: 6px; border: 1px solid #cbd5e1; }
 .quiz-timer-box.urgent { color: #dc2626; border-color: #dc2626; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
 .quiz-exit-icon { cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; color: #94a3b8; font-size: 18px; }
@@ -163,34 +149,17 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 .quiz-question { font-size: 38px; font-weight: 900; line-height: 1.3; color: var(--text-color); word-break: keep-all; }
 .quiz-options { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1; justify-content: center; }
 .quiz-opt { 
-    width: 100%; 
-    flex: 1; 
-    min-height: 80px; /* 높이도 조금 여유 있게 늘림 */
-    display: flex; 
-    align-items: center; 
-    padding: 0 30px; 
-    border: 2px solid #e2e8f0; 
-    border-radius: 16px; 
-    font-size: 35px; /* 글자 크기 대폭 확대 */
-    font-weight: 800; /* 글자 굵기 강조 */
-    color: #334155; 
-    background: white; 
-    transition: 0.2s; 
-    cursor: default; 
+    width: 100%; flex: 1; min-height: 80px; 
+    display: flex; align-items: center; padding: 0 30px; 
+    border: 2px solid #e2e8f0; border-radius: 16px; 
+    font-size: 35px; font-weight: 800; color: #334155; 
+    background: white; transition: 0.2s; cursor: default; 
 }
 .quiz-opt .opt-num { 
-    width: 60px;  /* 너비 확대 */
-    height: 60px; /* 높이 확대 */
-    background: #f1f5f9; 
-    border-radius: 12px; 
-    color: #64748b; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 28px; /* 번호 숫자 크기 확대 */
-    font-weight: 900; 
-    margin-right: 25px; /* 텍스트와의 간격 벌림 */
-    flex-shrink: 0; 
+    width: 60px; height: 60px; background: #f1f5f9; 
+    border-radius: 12px; color: #64748b; display: flex; 
+    align-items: center; justify-content: center; 
+    font-size: 28px; font-weight: 900; margin-right: 25px; flex-shrink: 0; 
 }
 .quiz-opt.reveal-answer { border-color: #10b981; background: #ecfdf5; color: #065f46; transform: scale(1.02); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15); font-weight: 800; }
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
@@ -236,12 +205,13 @@ body { margin: 0; background: var(--bg-color); color: var(--text-color); height:
 @media print { body * { visibility: hidden; } #printPreviewModal, #printPreviewModal * { visibility: visible; display: block !important; } }
 body.night-mode .q-card:hover { background-color: #334155 !important; color: #ffffff !important; outline-color: #3b82f6; }
 body.night-mode .q-card.status-pin { background-color: #3f0c0c !important; color: #e2e8f0 !important; border-left-color: #ef4444 !important; }
+body.night-mode .q-card.status-pin:hover { background-color: #450a0a !important; }
 body.night-mode .quiz-top-bar { background: #1e293b; border-color: #334155; color: #cbd5e1; }
 body.night-mode .quiz-timer-box { background: #0f172a; border-color: #334155; color: #e2e8f0; }
 body.night-mode .modal-q-text-wrapper { background: #1e293b; border-color: #334155; }
+body.night-mode .q-card.status-pin .q-content { color: #fecaca; }
 
-
-/* 기본적으로는 숨김 */
+/* 기본적으로는 숨김 (모바일 차단 로직 제거됨) */
 #mobileRestrictOverlay {
     display: none;
     position: fixed;
@@ -252,175 +222,58 @@ body.night-mode .modal-q-text-wrapper { background: #1e293b; border-color: #3341
     text-align: center; padding: 20px;
 }
 
+/* 퀴즈 리포트 관련 */
+#quizSummaryOverlay h2 { font-size: 42px !important; margin-bottom: 40px !important; }
+.summary-card { display: flex; flex-direction: column; gap: 10px; padding: 20px !important; background: #f8fafc; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.summary-card span { font-size: 20px !important; color: #64748b; }
+.summary-card b { font-size: 36px !important; color: #1e293b; }
+#quizSummaryOverlay .btn-action { font-size: 20px !important; padding: 15px 40px !important; margin-top: 30px; }
 
-
-/* 퀴즈 리포트 전체 컨테이너 내부 스타일 */
-#quizSummaryOverlay h2 {
-    font-size: 42px !important; /* QUIZ REPORT 제목 크기 */
-    margin-bottom: 40px !important;
-}
-
-/* 통계 카드 내부의 항목(총 참여 인원 등) 스타일 */
-.summary-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 20px !important;
-    background: #f8fafc;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.summary-card span {
-    font-size: 20px !important; /* '총 참여 인원' 같은 라벨 크기 */
-    color: #64748b;
-}
-
-.summary-card b {
-    font-size: 36px !important; /* '0명', '0%' 같은 숫자 데이터 크기 */
-    color: #1e293b;
-}
-
-/* 닫기 버튼 크기 조정 */
-#quizSummaryOverlay .btn-action {
-    font-size: 20px !important;
-    padding: 15px 40px !important;
-    margin-top: 30px;
-}
-
-
-.q-card.status-pin {
-    position: sticky;
-    top: -5px;           /* 스크롤 시 상단에 딱 붙음 (목록 padding에 맞춤) */
-    z-index: 100;        /* 일반 질문 카드들이 아래로 지나가도록 층을 높임 */
-    border: 2px solid #ef4444 !important; /* 테두리를 더 굵고 명확하게 */
-    background-color: #fff1f2 !important; /* 배경색을 연한 분홍색으로 고정 */
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.15); /* 강조를 위한 그림자 */
-    margin-bottom: 20px;  /* 고정된 카드와 아래 일반 리스트 사이의 간격 */
-}
-
-/* 다크 모드일 때 핀 고정 스타일 */
-body.night-mode .q-card.status-pin {
-    background-color: #450a0a !important;
-    border-color: #f87171 !important;
-}
-
-/* 핀 카드 내부의 아이콘(📌)을 더 크게 보이게 하려면 */
-.q-card.status-pin .q-content {
-    font-size: 19px;
-    color: #991b1b;
-}
-body.night-mode .q-card.status-pin .q-content {
-    color: #fecaca;
-}
-
-/* 퀴즈 상단바 전체 글자 크기 확대 */
-.quiz-top-bar {
-    height: 80px !important; /* 바 높이를 키움 */
-}
-
-#quizNumberLabel {
-    font-size: 28px !important; /* Q1 글자 크기 */
-}
-
-.quiz-top-info {
-    font-size: 24px !important; /* 접속자 수(명) 글자 크기 */
-    gap: 35px !important; /* 각 항목 사이 간격 */
-}
-
-.quiz-timer-box {
-    font-size: 34px !important; /* 00:10 숫자 크기 */
-    padding: 5px 20px !important; /* 타이머 박스 크기 */
-    font-weight: 900;
-}
-
-.quiz-info-item i {
-    font-size: 26px !important; /* 시계, 사람 모양 아이콘 크기 */
-}
-
-
-/* --- Floating QR Style --- */
+/* Floating QR Style */
 .floating-qr-box {
-    position: absolute;
-    bottom: 30px;
-    left: 30px;
-    background: white;
-    padding: 15px;
-    border-radius: 20px;
+    position: absolute; bottom: 30px; left: 30px;
+    background: white; padding: 15px; border-radius: 20px;
     box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-    z-index: 1500; /* Q&A 카드보다 위에 보임 */
-    display: none; /* 초기값 숨김 */
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    z-index: 1500; display: none;
+    flex-direction: column; align-items: center; gap: 10px;
     border: 3px solid var(--accent-color);
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
-#miniQRElement {
-    background: white;
-    padding: 5px;
-    border-radius: 10px;
-}
-
-#miniQRElement img {
-    display: block;
-    width: 140px;
-    height: 140px;
-}
-
-.qr-label {
-    font-size: 15px; /* 조금 더 크게 */
-    font-weight: 900;
-    color: var(--accent-color); /* 파란색으로 강조 */
-    letter-spacing: -0.5px;
-    margin-bottom: 5px;
-}
-
+#miniQRElement { background: white; padding: 5px; border-radius: 10px; cursor: pointer; transition: transform 0.2s ease; }
+#miniQRElement img { display: block; width: 140px; height: 140px; }
+#miniQRElement:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.qr-label { font-size: 15px; font-weight: 900; color: var(--accent-color); letter-spacing: -0.5px; margin-bottom: 5px; }
 .qr-close {
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    background: #ef4444;
-    color: white;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+    position: absolute; top: -12px; right: -12px;
+    background: #ef4444; color: white; width: 28px; height: 28px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
 }
+body.night-mode .qr-label { color: #0f172a; }
 
-/* 다크모드 대응: QR박스 자체는 하얀색을 유지하는게 스캔이 잘 됩니다. */
-body.night-mode .qr-label {
-    color: #0f172a; /* 글자색 고정 */
-}
-
-/* [최종 해결] 퀴즈 질문 입력창 강제 확대 */
+/* 퀴즈 질문 입력창 강제 확대 */
 #manualQ {
-    display: block !important;
-    height: 300px !important;      /* 기본 높이를 300px로 확대 */
-    min-height: 300px !important;  /* 어떤 상황에서도 300px 유지 */
-    flex-shrink: 0 !important;     /* ★핵심: 아래 버튼들이 밀어도 절대 찌그러지지 않음 */
-    padding: 15px !important;
-    font-size: 16px !important;
-    line-height: 1.5 !important;
-    border: 2px solid #3b82f6 !important; /* 파란색 테두리 추가 */
-    background-color: #f8fafc !important;
-    margin-bottom: 20px !important;
-    resize: vertical !important;   /* 필요시 사용자가 마우스로 더 늘릴 수 있음 */
+    display: block !important; height: 300px !important; min-height: 300px !important;
+    flex-shrink: 0 !important; padding: 15px !important; font-size: 16px !important;
+    line-height: 1.5 !important; border: 2px solid #3b82f6 !important;
+    background-color: #f8fafc !important; margin-bottom: 20px !important; resize: vertical !important;
 }
 
-/* 플로팅 QR 클릭 효과 추가 */
-#miniQRElement {
-    cursor: pointer; /* 마우스 올리면 손가락 모양 */
-    transition: transform 0.2s ease; /* 부드러운 애니메이션 */
+/* [추가] 번역 버튼 스타일 (최종) */
+.btn-translate {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: 0.2s;
+    vertical-align: middle;
 }
-
-#miniQRElement:hover {
-    transform: scale(1.05); /* 마우스 올리면 살짝 커짐 */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* 그림자 추가 */
+.btn-translate:hover {
+    background: #eff6ff;
+    color: #3b82f6;
+    border-color: #3b82f6;
 }
