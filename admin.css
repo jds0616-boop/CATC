@@ -388,21 +388,22 @@ cursor: pointer;
 .prof-item button:hover { background: #dc2626; }
 
 
-/* --- [리포트 디자인 수정 (최종)] --- */
+/* --- [리포트 디자인 수정 (완전 최종 수정본)] --- */
 
-/* 1. 프리뷰 모달 전체 박스: 화면을 넘어가지 않게 고정하고 회색 배경 처리 */
+/* 1. 프리뷰 모달 전체 박스 */
 .print-preview-box {
-    background-color: #525659; /* 어두운 회색 (PDF 리더 느낌) */
+    background-color: #525659;
     width: 90%;
-    height: 90vh; /* 화면 높이의 90%만 차지 */
+    height: 90vh;
     max-width: 1000px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* 박스 자체 스크롤 방지 */
+    overflow: hidden;
+    position: relative;
 }
 
-/* 2. 상단 헤더 (제목, 버튼) 고정 */
+/* 2. 상단 헤더 */
 .preview-header {
     background: #333;
     color: white;
@@ -412,92 +413,105 @@ cursor: pointer;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     z-index: 10;
+    flex-shrink: 0;
 }
 .preview-header h3 { margin: 0; font-size: 18px; color: white; }
 
-/* 3. 실제 문서 내용이 들어가는 영역 (여기에 스크롤 생성) */
+/* 3. 문서 내용 스크롤 영역 (하단 여백 추가로 잘림 방지) */
 .preview-content {
     flex-grow: 1;
-    overflow-y: auto; /* 세로 스크롤 생성 */
-    padding: 40px 20px;
+    overflow-y: auto;
+    padding: 40px 20px 80px 20px; /* 하단 패딩을 넉넉히 줌 */
     display: flex;
-    justify-content: center; /* 종이 가운데 정렬 */
+    justify-content: center;
+    align-items: flex-start; /* 상단 정렬 */
 }
 
-/* 4. A4 용지 스타일 (화면에서 볼 때) */
+/* 4. A4 용지 스타일 (화면용) */
 #official-document {
     background-color: #ffffff !important;
     color: #000000 !important;
     padding: 40px 50px;
-    width: 210mm; /* A4 너비 */
-    min-height: 297mm; /* A4 높이 */
-    box-shadow: 0 0 20px rgba(0,0,0,0.5); /* 그림자 효과 */
+    width: 210mm; 
+    min-height: 297mm;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
     margin-bottom: 20px;
+    box-sizing: border-box;
 }
 
-/* 5. 테이블 디자인 및 인쇄 시 잘림 방지 */
+/* 5. 정보 테이블 (과정명 등) */
+.doc-info-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+.doc-info-table th { text-align: left; width: 100px; padding: 8px 0; color: #333; vertical-align: top; }
+.doc-info-table td { padding: 8px 0; font-weight: bold; color: #000; }
+
+/* 6. 질문 목록 테이블 스타일 */
 .doc-list-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 10px;
+    table-layout: fixed; /* 테이블 칸 너비 고정 */
 }
 .doc-list-table tr {
     border-bottom: 1px solid #d1d5db;
-    page-break-inside: avoid; /* 인쇄 시 행 중간에서 페이지 안 끊기게 */
+    page-break-inside: avoid; /* 행 중간 끊김 방지 */
 }
 .doc-list-table td {
     padding: 12px 5px;
-    vertical-align: middle;
+    vertical-align: top; /* 내용이 길어지면 위쪽 정렬 */
     font-size: 14px;
+    word-break: break-all; /* 긴 단어 줄바꿈 */
+    white-space: normal;
 }
-.doc-list-table td:first-child { text-align: center; width: 50px; font-weight: bold; color: #64748b; }
-.doc-list-table td:last-child { text-align: center; width: 80px; font-weight: bold; color: #3b82f6; }
 
-/* 6. 인쇄 버튼 눌렀을 때의 설정 (실제 종이 출력 시) */
+/* [중요] 테이블 칸 너비 강제 지정 (인쇄 시 깨짐 방지) */
+.doc-list-table td:first-child { 
+    text-align: center; 
+    width: 50px; /* 번호 칸 */
+    font-weight: bold; 
+    color: #64748b; 
+}
+.doc-list-table td:nth-child(2) {
+    text-align: left;
+    width: auto; /* 내용 칸 (나머지 공간 다 씀) */
+}
+.doc-list-table td:last-child { 
+    text-align: center; 
+    width: 70px; /* 공감 칸 */
+    font-weight: bold; 
+    color: #3b82f6; 
+}
+
+/* 7. 인쇄 모드 설정 (가장 중요) */
 @media print {
-    /* 모달 외의 모든 것은 숨김 */
+    /* 기본 여백 설정 (브라우저 헤더/푸터 최소화) */
+    @page { margin: 15mm; size: A4; }
+    
     body * { visibility: hidden; }
     
-    /* 문서 내용만 보이게 설정 */
     #printPreviewModal {
-        position: absolute;
-        left: 0; top: 0;
-        width: 100%; height: auto;
-        background: white;
-        display: block !important;
-        visibility: visible;
-        overflow: visible;
+        position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+        background: white; display: block !important; visibility: visible; z-index: 9999;
     }
     
-    /* 프리뷰 박스 껍데기(회색 배경, 스크롤) 제거 */
+    /* 껍데기 제거 */
     .print-preview-box {
-        width: 100%; height: auto;
-        background: white;
-        position: static;
-        display: block;
-        border: none;
-        overflow: visible;
+        width: 100%; height: auto; background: none; position: static; display: block; border: none; overflow: visible;
     }
-    
-    /* 상단 헤더(버튼들) 숨김 */
     .preview-header { display: none; }
+    .preview-content { padding: 0; overflow: visible; display: block; }
     
-    /* 스크롤 영역 제거하고 전체 표시 */
-    .preview-content {
-        padding: 0;
-        overflow: visible;
-        display: block;
-    }
-    
-    /* A4 용지 그림자 제거 및 여백 조정 */
+    /* 실제 문서 부분 */
     #official-document {
-        width: 100%;
+        width: 100% !important; /* 종이 너비에 맞춤 */
+        min-height: auto;
         box-shadow: none;
         margin: 0;
         padding: 0;
         visibility: visible;
     }
-    
-    /* 모든 자식 요소도 보이게 */
     #official-document * { visibility: visible; }
+    
+    /* 인쇄 시 폰트 크기 조정 (종이 낭비 방지) */
+    .doc-list-table td { font-size: 11pt; padding: 8px 2px; }
+    h2 { font-size: 18pt; margin-bottom: 15px; }
 }
