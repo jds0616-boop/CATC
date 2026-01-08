@@ -42,7 +42,7 @@ const state = {
     qaData: {},
     timerInterval: null,
     pendingRoom: null,
-    timerAudio: null
+    timerAudio: null,
     newBadgeTimer: null // <-- 이거 하나 추가
 };
 
