@@ -43,6 +43,7 @@ const state = {
     timerInterval: null,
     pendingRoom: null,
     timerAudio: null
+    newBadgeTimer: null // <-- 이거 하나 추가
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
@@ -243,6 +244,29 @@ const dataMgr = {
 
         this.fetchCodeAndRenderQr(room);
         dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
+
+        // ▼▼▼ [여기부터 아래 코드를 추가하세요] ▼▼▼
+        
+        // [추가] 실시간 NEW 뱃지 자동 제거 타이머 (5초마다 검사)
+        if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
+        state.newBadgeTimer = setInterval(() => {
+            const cards = document.querySelectorAll('.q-card.is-new'); // NEW 떠있는 애들만 찾음
+            cards.forEach(card => {
+                const ts = parseInt(card.getAttribute('data-ts'));
+                // 2분이 지났다면?
+                if (Date.now() - ts >= 120000) {
+                    card.classList.remove('is-new'); // 초록 테두리 제거
+                    const badge = card.querySelector('.new-badge-icon');
+                    if(badge) badge.remove(); // NEW 뱃지 제거
+                }
+            });
+        }, 5000); 
+        // ▲▲▲ [여기까지 추가] ▲▲▲
+
+
+
+
+
     },
     fetchCodeAndRenderQr: function(room) {
         const pathArr = window.location.pathname.split('/'); pathArr.pop(); 
@@ -576,7 +600,7 @@ renderQaList: function(f) {
             }
 
             list.innerHTML += `
-            <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
+<div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
                     <!-- [수정 2] 여기에 ${newBadge}가 꼭 들어가야 화면에 보입니다 -->
                     ${newBadge}${icon}${i.text}
