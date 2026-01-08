@@ -899,10 +899,17 @@ confirmExitQuiz: function(type) {
 
 // --- 5. Print & Report ---
 const printMgr = {
-    openInputModal: function() { 
+openInputModal: function() { 
+        // 1. 교육 기간 안내 문구 (플레이스홀더) 설정
         const today = new Date();
         const dateStr = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
-        document.getElementById('printDateInput').placeholder = dateStr;
+        document.getElementById('printDateInput').value = ""; // 기존 입력값 초기화
+        document.getElementById('printDateInput').placeholder = `기간을 입력해주세요 (예: ${dateStr})`;
+
+        // 2. 사이드바에서 선택된 담임교수 이름 가져와서 자동 입력
+        const currentProf = document.getElementById('profSelect').value;
+        document.getElementById('printProfInput').value = currentProf || ""; // 선택된 교수가 없으면 빈칸
+
         document.getElementById('printInputModal').style.display = 'flex'; 
     },
     confirmPrint: function(isSkip) { 
