@@ -481,37 +481,82 @@ cursor: pointer;
     color: #3b82f6; 
 }
 
-/* 7. 인쇄 모드 설정 (가장 중요) */
+/* --- [인쇄 설정 (최종의 최종 수정본)] --- */
 @media print {
-    /* 기본 여백 설정 (브라우저 헤더/푸터 최소화) */
-    @page { margin: 15mm; size: A4; }
-    
-    body * { visibility: hidden; }
-    
+    /* 1. 머리글/바닥글(날짜, URL 등) 제거를 위한 핵심 설정 */
+    @page { 
+        margin: 0; /* 브라우저 강제 여백 제거 */
+        size: A4;  /* A4 사이즈 고정 */
+    }
+
+    /* 2. 모든 요소 숨김 (기본) */
+    body * { 
+        visibility: hidden; 
+    }
+
+    /* 3. 모달 전체 영역 잡기 */
     #printPreviewModal {
-        position: fixed; left: 0; top: 0; width: 100%; height: 100%;
-        background: white; display: block !important; visibility: visible; z-index: 9999;
+        position: absolute;
+        left: 0; top: 0;
+        width: 100%;
+        margin: 0; padding: 0;
+        visibility: visible; /* 모달은 보여줌 */
+        background: white;
+        z-index: 9999;
     }
-    
-    /* 껍데기 제거 */
+
+    /* 4. 불필요한 UI(프리뷰 헤더, 회색 배경 등) 완전 제거 */
     .print-preview-box {
-        width: 100%; height: auto; background: none; position: static; display: block; border: none; overflow: visible;
-    }
-    .preview-header { display: none; }
-    .preview-content { padding: 0; overflow: visible; display: block; }
-    
-    /* 실제 문서 부분 */
-    #official-document {
-        width: 100% !important; /* 종이 너비에 맞춤 */
-        min-height: auto;
-        box-shadow: none;
-        margin: 0;
-        padding: 0;
+        background: none !important;
+        border: none !important;
+        width: 100% !important;
+        height: auto !important;
+        position: static !important;
+        overflow: visible !important;
         visibility: visible;
     }
-    #official-document * { visibility: visible; }
     
-    /* 인쇄 시 폰트 크기 조정 (종이 낭비 방지) */
-    .doc-list-table td { font-size: 11pt; padding: 8px 2px; }
-    h2 { font-size: 18pt; margin-bottom: 15px; }
+    /* ★ 상단 'Preview', 'Close', 'Print' 버튼 영역 아예 삭제 ★ */
+    .preview-header {
+        display: none !important; 
+        height: 0 !important;
+    }
+
+    .preview-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+        visibility: visible;
+    }
+
+    /* 5. 실제 문서 내용 스타일링 (여백은 여기서 줌) */
+    #official-document {
+        visibility: visible;
+        width: 100% !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        
+        /* @page margin을 0으로 했으므로, 여기서 종이 안쪽 여백을 줘야 함 */
+        padding: 15mm 20mm !important; 
+        box-sizing: border-box;
+    }
+
+    /* 문서 내부 모든 요소 보이기 */
+    #official-document * { 
+        visibility: visible; 
+    }
+
+    /* 6. 인쇄 시 폰트 및 레이아웃 최적화 */
+    .doc-list-table td {
+        font-size: 11pt; /* 글자 크기 적당하게 */
+        padding: 10px 5px;
+        color: #000; /* 완전 검정 */
+    }
+    
+    /* 제목 등 굵게 처리 */
+    h2, h3, .doc-info-table th {
+        color: #000 !important;
+    }
 }
