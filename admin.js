@@ -521,9 +521,35 @@ const ui = {
     renderQaList: function(f) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
-        const score = i => (i.status==='pin'?1000:(i.status==='later'?500:(i.status==='done'?-1000:0)));
-        if(f==='pin') items=items.filter(x=>x.status==='pin'); else if(f==='later') items=items.filter(x=>x.status==='later');
-        items.sort((a,b) => (score(b)+(b.likes||0)) - (score(a)+(a.likes||0)));
+
+        // --- [여기서부터 수정된 정렬 로직입니다] ---
+        
+        // 1. 필터링 (기존 로직 유지)
+        if(f==='pin') items=items.filter(x=>x.status==='pin'); 
+        else if(f==='later') items=items.filter(x=>x.status==='later');
+
+        // 2. 정렬: 상태(핀>추후) > 공감수 > 최신순
+        items.sort((a,b) => {
+            // (1) 상태 우선순위 점수 매기기 (핀:3, 추후:2, 일반:1, 완료:0)
+            const getPrio = s => (s === 'pin' ? 3 : (s === 'later' ? 2 : (s === 'done' ? 0 : 1)));
+            const pA = getPrio(a.status);
+            const pB = getPrio(b.status);
+
+            // 상태가 다르면 상태 점수가 높은 순서로 정렬
+            if (pA !== pB) return pB - pA;
+
+            // (2) 상태가 같으면 '공감수' 비교 (내림차순)
+            const likeA = a.likes || 0;
+            const likeB = b.likes || 0;
+            if (likeA !== likeB) return likeB - likeA;
+
+            // (3) 공감수도 같으면 '최신순' 비교 (Timestamp 내림차순)
+            return b.timestamp - a.timestamp;
+        });
+
+        // --- [여기까지 수정] ---
+
+
         items.forEach(i => {
             const cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
             const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
