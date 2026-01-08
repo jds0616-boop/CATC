@@ -972,7 +972,10 @@ openInputModal: function() {
         document.getElementById('printPreviewModal').style.display = 'flex'; 
     },
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
-// [수정] 미리보기 화면 그대로 새 창 열어서 인쇄하는 방식
+
+
+
+// [최종 수정] 인쇄 전용 새 창 열기 (여백 및 너비 완벽 보정)
     executePrint: function() { 
         // 1. 리포트 내용 가져오기
         const content = document.getElementById('official-document').innerHTML;
@@ -980,28 +983,45 @@ openInputModal: function() {
         // 2. 새 창 열기
         const printWindow = window.open('', '', 'height=900,width=800');
         
-        // 3. 새 창에 HTML 문서를 새로 작성 (스타일 포함)
+        // 3. 새 창에 HTML 문서를 새로 작성
         printWindow.document.write('<html><head><title>KAC Report</title>');
         printWindow.document.write('<style>');
         printWindow.document.write(`
             @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-            body { font-family: 'Pretendard', sans-serif; padding: 40px; margin: 0; }
+            
+            /* [중요] 초기화 및 박스 모델 설정 */
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; width: 100%; }
+            
+            /* 폰트 설정 */
+            body { font-family: 'Pretendard', sans-serif; }
+            
+            /* [핵심] 인쇄 여백 설정 (여기서 주는 여백이 진짜 종이 여백입니다) */
+            @page { 
+                size: A4; 
+                margin: 25mm; /* 상하좌우 2.5cm 여백 */
+            }
+            
+            /* 제목 스타일 */
             h2 { margin: 0 0 30px 0; color: #000; font-size: 24px; }
-            .doc-info-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            .doc-info-table th { text-align: left; width: 100px; padding: 5px 0; color: #333; vertical-align: top; }
-            .doc-info-table td { padding: 5px 0; font-weight: bold; color: #000; }
             
-            .doc-list-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            .doc-list-table tr { border-bottom: 1px solid #d1d5db; page-break-inside: avoid; }
-            .doc-list-table td { padding: 12px 5px; vertical-align: top; font-size: 14px; word-break: break-all; }
+            /* 테이블 공통: 무조건 100% 너비 차지 */
+            table { width: 100% !important; border-collapse: collapse; }
             
-            /* 첫번째(번호), 마지막(공감) 컬럼 정렬 및 너비 */
-            .doc-list-table td:first-child { text-align: center; width: 50px; font-weight: bold; color: #64748b; }
-            .doc-list-table td:nth-child(2) { text-align: left; }
-            .doc-list-table td:last-child { text-align: center; width: 80px; font-weight: bold; color: #3b82f6; }
+            /* 상단 정보 테이블 */
+            .doc-info-table { margin-bottom: 30px; }
+            .doc-info-table th { text-align: left; width: 120px; padding: 6px 0; color: #333; vertical-align: top; font-weight: bold; }
+            .doc-info-table td { padding: 6px 0; font-weight: normal; color: #000; }
             
-            /* 인쇄 시 여백 설정 */
-            @page { size: A4; margin: 20mm; }
+            /* 하단 질문 목록 테이블 */
+            .doc-list-table { margin-top: 10px; table-layout: fixed; /* 레이아웃 고정 */ }
+            .doc-list-table tr { border-bottom: 1px solid #999; page-break-inside: avoid; }
+            .doc-list-table td { padding: 12px 5px; vertical-align: top; font-size: 13px; line-height: 1.5; word-break: break-all; }
+            
+            /* 컬럼 너비 조정 */
+            .doc-list-table td:first-child { text-align: center; width: 50px; font-weight: bold; color: #555; } /* 번호 */
+            .doc-list-table td:nth-child(2) { text-align: left; width: auto; } /* 내용 (나머지 공간 다 차지) */
+            .doc-list-table td:last-child { text-align: center; width: 70px; font-weight: bold; color: #3b82f6; } /* 공감 */
         `);
         printWindow.document.write('</style>');
         printWindow.document.write('</head><body>');
@@ -1010,11 +1030,10 @@ openInputModal: function() {
         printWindow.document.write(content);
         printWindow.document.write('</body></html>');
         
-        // 5. 인쇄 실행 및 창 닫기
+        // 5. 문서 닫기 및 인쇄 실행
         printWindow.document.close();
         printWindow.focus();
         
-        // 이미지나 폰트 로딩 대기 후 인쇄
         setTimeout(() => {
             printWindow.print();
             printWindow.close();
