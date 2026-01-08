@@ -857,7 +857,14 @@ stopTimer: function() {
             const d = s.val() || {};
             const cnt = new Array(q.options.length).fill(0);
             Object.values(d).forEach(v => { if(v.choice >= 1 && v.choice <= q.options.length) cnt[v.choice-1]++; });
-            const max = Math.max(...cnt, 1);
+const max = Math.max(...cnt, 1);
+            
+            // ✅ [추가] 설문조사일 경우, 학생들에게 보여줄 요약 결과 저장
+            if(q.isSurvey) {
+                let maxIdx = cnt.indexOf(Math.max(...cnt));
+                let surveySummary = `가장 많은 선택: '${q.options[maxIdx]}' (${Math.round((cnt[maxIdx]/Object.values(d).length)*100)}%)`;
+                firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ surveyResult: surveySummary });
+            }
             for(let i=0; i < q.options.length; i++) {
                 const isCorrect = !q.isSurvey && (i + 1) === corr;
                 const h = (cnt[i]/max)*80;

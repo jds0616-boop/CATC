@@ -253,7 +253,37 @@ dbRef.quiz.on('value', s => {
         if (q.status === 'ready' && st.quizStep !== 'summary') { /* 준비 중일 때 */ }
         if (st.quizStep === 'summary' && !hasClosedSummary) return; // 결과 화면 중이면 중단
         if (st.mode !== 'quiz') { forceCloseQuiz(); return; } // 퀴즈 모드가 아니면 닫기
-        if (q.status === 'result') { document.getElementById('quizOverlay').style.display = 'none'; return; }
+// ✅ [수정] 결과 발표 모드일 때 (닫지 않고 피드백 표시)
+        if (q.status === 'result') { 
+            document.getElementById('quizOverlay').style.display = 'flex';
+            document.getElementById('btnGroupMultiple').style.display = 'none';
+            document.getElementById('btnGroupOX').style.display = 'none';
+            
+            const msgBox = document.getElementById('quizStatusMsg');
+            const feedBox = document.getElementById('quizFeedback');
+            
+            if (q.isSurvey) {
+                // [설문] Admin이 보낸 요약 결과 표시
+                msgBox.innerText = "📋 설문 결과 요약";
+                feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계가 완료되었습니다."}</span>`;
+            } else {
+                // [퀴즈] 정답 여부 표시
+                // 강사가 테스트모드면 정답은 2번, 아니면 q.correct
+                const correctAns = (q.id === 'TEST') ? 2 : q.correct;
+                
+                if (myLastChoiceIdx === correctAns) {
+                     msgBox.innerText = "🎉 정답입니다!";
+                     msgBox.style.color = "#10b981"; // 녹색
+                     feedBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> 훌륭합니다!`;
+                } else {
+                     msgBox.innerText = "앗, 틀렸습니다...";
+                     msgBox.style.color = "#ef4444"; // 빨간색
+                     const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
+                     feedBox.innerHTML = `정답은 <b style="color:#1e293b; font-size:18px;">[ ${ansText} ]</b> 입니다.`;
+                }
+            }
+            return; 
+        }
 
         // 2. 퀴즈 오버레이 표시 설정
         document.getElementById('quizOverlay').style.display = 'flex';
@@ -366,7 +396,7 @@ dbRef.quiz.on('value', s => {
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
         async function sendAns(c) {
             if(!canAnswer) return;
-            const qSnap = await dbRef.quiz.once('value'); const qData = qSnap.val() || {}; const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`; myLastChoice = choiceLabel; 
+            const qSnap = await dbRef.quiz.once('value'); const qData = qSnap.val() || {}; myLastChoiceIdx = c; const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`; myLastChoice = choiceLabel; 
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected')); event.target.classList.add('selected');
             document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${choiceLabel} 선택 중...`;
             let t = localStorage.getItem('uToken'); if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
