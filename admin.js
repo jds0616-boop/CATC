@@ -305,20 +305,16 @@ const profMgr = {
         firebase.database().ref('system/professors').on('value', s => {
             const data = s.val() || {};
             
-            // 데이터가 없으면 기본값 세팅 (최초 1회)
-            if (!s.exists()) {
-                const defaults = ["장두석", "홍길동", "김철수", "이영희", "박민수", "최지훈", "정수민", "강하늘", "송지원"];
-                defaults.forEach(name => firebase.database().ref('system/professors').push(name));
-                return;
-            }
+            // [수정됨] 기존에 있던 "샘플 데이터(김철수 등) 자동 생성" 코드를 삭제했습니다.
+            // 이제 데이터가 없으면 그냥 빈 화면으로 뜹니다.
             
             // 데이터 변환
             this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
             
-            // [중요] 데이터가 바뀌면 드롭다운(Select)과 팝업 리스트를 모두 갱신!
+            // 드롭다운 및 리스트 갱신
             this.renderSelect();
             
-            // 만약 관리 모달이 열려있다면, 리스트도 즉시 새로고침
+            // 모달이 열려있다면 리스트 즉시 새로고침
             const modal = document.getElementById('profManageModal');
             if (modal && modal.style.display === 'flex') {
                 this.renderManageList();
@@ -329,9 +325,9 @@ const profMgr = {
     // 사이드바의 Select 박스 렌더링
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
-        if(!sel) return; // 요소가 없으면 패스
+        if(!sel) return;
         
-        const currentVal = sel.value; // 기존 선택값 유지
+        const currentVal = sel.value; 
         sel.innerHTML = '<option value="">(선택 안함)</option>';
         
         this.list.forEach(p => {
@@ -347,12 +343,11 @@ const profMgr = {
     openManageModal: function() {
         this.renderManageList();
         document.getElementById('profManageModal').style.display = 'flex';
-        // 입력창에 포커스 주고 엔터키 준비
         const input = document.getElementById('newProfInput');
         if(input) input.focus();
     },
     
-    // 모달 내 리스트 렌더링 (화면에 그리는 함수)
+    // 모달 내 리스트 렌더링
     renderManageList: function() {
         const div = document.getElementById('profListContainer');
         if(!div) return;
@@ -364,16 +359,10 @@ const profMgr = {
             return;
         }
         
-        // 최신순(혹은 등록순)으로 보여주기
         this.list.forEach(p => {
-            div.innerHTML += `
-                <div class="prof-item">
-                    <span>${p.name}</span>
-                    <button onclick="profMgr.deleteProf('${p.key}')">삭제</button>
-                </div>`;
+            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
         });
         
-        // 스크롤을 맨 아래로 (편의성)
         div.scrollTop = div.scrollHeight;
     },
     
@@ -387,11 +376,10 @@ const profMgr = {
             return;
         }
         
-        // DB에 저장 -> 저장이 완료되면 위의 .on('value')가 자동으로 실행되어 리스트를 갱신함
         firebase.database().ref('system/professors').push(name)
             .then(() => {
-                input.value = ""; // 입력창 비우기
-                input.focus();    // 연속 입력을 위해 포커스 유지
+                input.value = ""; 
+                input.focus();
             })
             .catch(err => {
                 alert("저장 실패: " + err.message);
@@ -405,7 +393,6 @@ const profMgr = {
         }
     }
 };
-
 
 // --- 3. UI ---
 const ui = {
