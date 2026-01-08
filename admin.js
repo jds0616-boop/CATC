@@ -669,37 +669,84 @@ const quizMgr = {
             this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
         }
     },
-    startTimer: function() {
-        this.stopTimer(); 
-        let t = 10; 
-        const d = document.getElementById('quizTimer'); 
-        d.classList.remove('urgent');
-        const end = Date.now() + 10000;
-        
-        let lastPlayedSec = -1;
+// [신규 기능] 스마트 넥스트: 다음 문제로 가면서 바로 시작
+smartNext: function() {
+    // 마지막 문제인지 확인
+    if (state.currentQuizIdx >= state.quizList.length - 1) {
+        ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
+        return;
+    }
+    
+    // 1. 다음 문제로 이동
+    this.prevNext(1);
+    
+    // 2. 1초 뒤 자동 시작 (화면 전환 효과 고려, 즉시 시작 원하면 setTimeout 제거)
+    setTimeout(() => {
+        this.action('open');
+    }, 500);
+},
 
-        // [중요] 소리 파일을 미리 준비 (없으면 생성)
-        if (!state.timerAudio) {
-            state.timerAudio = new Audio('timer.mp3');
+// [신규 기능] 일시정지 토글
+togglePause: function() {
+    if (state.timerInterval) {
+        // 타이머가 돌고 있으면 -> 멈춤
+        this.stopTimer();
+        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
+        document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; // 파란색으로 변경
+    } else {
+        // 멈춰 있으면 -> 남은 시간으로 다시 시작 (여기서는 단순하게 action open으로 재개)
+        // 정확한 재개를 위해선 남은 시간을 기억해야 하지만, 편의상 open 재호출
+        this.action('open'); 
+        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+        document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; // 노란색 복구
+    }
+},
+
+// [수정] startTimer: 타이머가 끝나면 '자동으로 결과(차트)'까지 보여줌
+startTimer: function() {
+    this.stopTimer(); 
+    
+    // 일시정지 버튼 보이기
+    document.getElementById('btnPause').style.display = 'flex';
+    document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+    document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
+    document.getElementById('btnSmartNext').style.display = 'none'; // 타이머 도는 동안 Next 숨김
+
+    let t = 10; // (필요하면 이 시간을 늘리세요)
+    const d = document.getElementById('quizTimer'); 
+    d.classList.remove('urgent');
+    const end = Date.now() + (t * 1000); // 10초
+    
+    let lastPlayedSec = -1;
+    if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+
+    state.timerInterval = setInterval(() => {
+        const r = Math.ceil((end - Date.now())/1000);
+        
+        if(r <= 5) d.classList.add('urgent');
+        d.innerText = `00:${r<10?'0'+r:r}`;
+
+        if (r <= 5 && r > 0 && r !== lastPlayedSec) {
+            state.timerAudio.pause(); state.timerAudio.currentTime = 0;
+            state.timerAudio.play().catch(e=>{});
+            lastPlayedSec = r;
         }
 
-        state.timerInterval = setInterval(() => {
-            const r = Math.ceil((end - Date.now())/1000);
+        if(r <= 0) {
+            // [변경점] 시간이 다 되면 -> 마감(close)하고 -> 1초 뒤 결과(result)까지 자동 실행
+            this.stopTimer();
+            this.action('close');
             
-            if(r <= 5) d.classList.add('urgent');
-            d.innerText = `00:${r<10?'0'+r:r}`;
-
-            // [핵심] 3, 2, 1초일 때 소리 재생
-            if (r <= 5 && r > 0 && r !== lastPlayedSec) {
-                state.timerAudio.pause();          // 혹시 재생 중이면 일단 멈춤
-                state.timerAudio.currentTime = 0;  // 처음으로 되감기
-                state.timerAudio.play().catch(e=>{}); // 재생
-                lastPlayedSec = r;
-            }
-
-            if(r <= 0) this.action('close');
-        }, 200);
-    },
+            setTimeout(() => {
+                this.action('result');
+                // 결과가 나오면 다시 Next 버튼 표시, Pause 버튼 숨김
+                document.getElementById('btnSmartNext').style.display = 'flex';
+                document.getElementById('btnPause').style.display = 'none';
+                document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
+            }, 1500); // 1.5초 딜레이 후 결과 공개 (긴장감 조성)
+        }
+    }, 200);
+},
 // [수정] 타이머 멈출 때 소리도 같이 끄기
     stopTimer: function() { 
         if(state.timerInterval) clearInterval(state.timerInterval); 
