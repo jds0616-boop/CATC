@@ -481,90 +481,118 @@ cursor: pointer;
     color: #3b82f6; 
 }
 
-/* --- [인쇄 설정 (완전 초기화 및 문서만 출력)] --- */
+/* --- [인쇄 설정 (최종: 버튼 숨김 및 A4 강제 맞춤)] --- */
 @media print {
-    /* 1. 종이 설정: 여백 0 (브라우저 머리글/바닥글 제거용) */
+    /* 1. 브라우저 강제 여백 제거 (날짜/제목 제거용) */
     @page { 
-        margin: 0; 
-        size: A4; 
+        margin: 0 !important; 
+        size: A4 portrait; /* 세로 방향 고정 */
     }
 
-    /* 2. 전체 페이지 배경 흰색으로 강제 */
-    body { 
-        background-color: white !important; 
+    /* 2. 전체 초기화: 흰색 배경 */
+    html, body { 
+        width: 100%;
+        height: 100%;
         margin: 0 !important;
         padding: 0 !important;
+        background: #ffffff !important;
     }
 
-    /* 3. 화면의 모든 요소 일단 숨김 (사이드바, 버튼 등) */
+    /* 3. 화면의 모든 요소 숨기기 (가장 강력하게) */
     body * { 
         visibility: hidden; 
+        height: 0; /* 공간 차지 방지 */
+        overflow: hidden; 
     }
 
-    /* 4. 모달 영역 살리기 (내용물 접근을 위해) */
+    /* 4. 모달 영역만 살려내기 */
     #printPreviewModal {
         visibility: visible;
+        display: block !important;
         position: absolute;
         left: 0; top: 0;
         width: 100%;
-        margin: 0; padding: 0;
-        background: transparent !important; /* 배경 투명하게 */
-        display: block !important;
+        height: auto !important;
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
         z-index: 99999;
     }
 
-    /* 5. 모달 내부 껍데기(회색 박스, 스크롤 등) 스타일 제거 */
+    /* 5. 모달 내부 껍데기(회색 배경, 스크롤) 제거 및 초기화 */
     .print-preview-box {
         visibility: visible;
-        background: none !important; /* 회색 배경 제거 */
+        display: block !important;
+        background: none !important;
         border: none !important;
-        box-shadow: none !important;
         width: 100% !important;
         height: auto !important;
         position: static !important;
-        overflow: visible !important;
-        display: block !important;
-    }
-
-    /* 6. ★핵심★ 상단 'Preview', 'Close', 'Print' 버튼 영역 완전 삭제 */
-    .preview-header {
-        display: none !important;
-    }
-
-    /* 7. 내용 영역 여백 제거 (문서 자체가 여백을 가짐) */
-    .preview-content {
-        visibility: visible;
         margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
-        display: block !important;
     }
 
-    /* 8. 실제 문서(A4) 스타일링: 여기서 20mm 여백을 줌 */
+    /* 6. ★ 상단 헤더, 버튼, 제목 등 UI 요소 아예 삭제 (공간도 없앰) ★ */
+    .preview-header, 
+    .preview-header *, 
+    button, 
+    .btn-action {
+        display: none !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        opacity: 0 !important;
+    }
+
+    /* 7. 내용 영역(껍데기) 스타일 초기화 */
+    .preview-content {
+        visibility: visible;
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* 8. 실제 문서(A4) 스타일링: 여기서 여백(Padding)을 줌 */
     #official-document {
         visibility: visible;
-        width: 100% !important; /* 종이 가로 꽉 채움 */
+        display: block !important;
+        
+        /* 가로폭 100%로 꽉 채우기 */
+        width: 100% !important;
+        max-width: 100% !important;
+        
+        /* 상하좌우 여백 설정 (종이 가장자리에서 띄움) */
+        padding: 15mm 20mm !important; 
+        
         margin: 0 !important;
-        padding: 15mm 20mm !important; /* 상하좌우 여백 */
         box-shadow: none !important; /* 그림자 제거 */
         background: white !important;
-        min-height: auto !important;
+        height: auto !important; /* 높이 자동 */
+        min-height: 0 !important;
         box-sizing: border-box;
     }
 
-    /* 문서 내부 텍스트 및 테이블 보이기 */
+    /* 9. 문서 내부 텍스트 및 테이블 보이기 */
     #official-document * {
         visibility: visible;
+        height: auto; /* 숨김 해제 */
+        overflow: visible;
+        color: #000000 !important; /* 무조건 검정색 */
     }
 
-    /* 9. 인쇄용 폰트 및 테이블 정리 */
+    /* 10. 테이블 스타일 정리 */
+    .doc-list-table {
+        width: 100% !important;
+        table-layout: fixed;
+    }
     .doc-list-table td {
         font-size: 11pt;
-        color: #000;
         padding: 10px 5px;
-    }
-    
-    h2, h3, th, td {
-        color: #000 !important; /* 무조건 검정 */
+        vertical-align: top;
+        word-wrap: break-word;
     }
 }
