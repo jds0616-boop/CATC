@@ -832,8 +832,10 @@ const printMgr = {
         }
         document.getElementById('printPreviewModal').style.display = 'flex'; 
     },
-    closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
-    executePrint: function() { window.print(); }
+closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
+executePrint: function() { window.print(); }
 };
-
-window.onload = function() { dataMgr.initSystem(); };
+window.onload = function() {
+dataMgr.checkMobile(); // [추가] 모바일 접속인지 먼저 확인
+dataMgr.initSystem();
+};
