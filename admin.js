@@ -972,9 +972,55 @@ openInputModal: function() {
         document.getElementById('printPreviewModal').style.display = 'flex'; 
     },
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
-    executePrint: function() { window.print(); }
+// [수정] 미리보기 화면 그대로 새 창 열어서 인쇄하는 방식
+    executePrint: function() { 
+        // 1. 리포트 내용 가져오기
+        const content = document.getElementById('official-document').innerHTML;
+        
+        // 2. 새 창 열기
+        const printWindow = window.open('', '', 'height=900,width=800');
+        
+        // 3. 새 창에 HTML 문서를 새로 작성 (스타일 포함)
+        printWindow.document.write('<html><head><title>KAC Report</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write(`
+            @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+            body { font-family: 'Pretendard', sans-serif; padding: 40px; margin: 0; }
+            h2 { margin: 0 0 30px 0; color: #000; font-size: 24px; }
+            .doc-info-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .doc-info-table th { text-align: left; width: 100px; padding: 5px 0; color: #333; vertical-align: top; }
+            .doc-info-table td { padding: 5px 0; font-weight: bold; color: #000; }
+            
+            .doc-list-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .doc-list-table tr { border-bottom: 1px solid #d1d5db; page-break-inside: avoid; }
+            .doc-list-table td { padding: 12px 5px; vertical-align: top; font-size: 14px; word-break: break-all; }
+            
+            /* 첫번째(번호), 마지막(공감) 컬럼 정렬 및 너비 */
+            .doc-list-table td:first-child { text-align: center; width: 50px; font-weight: bold; color: #64748b; }
+            .doc-list-table td:nth-child(2) { text-align: left; }
+            .doc-list-table td:last-child { text-align: center; width: 80px; font-weight: bold; color: #3b82f6; }
+            
+            /* 인쇄 시 여백 설정 */
+            @page { size: A4; margin: 20mm; }
+        `);
+        printWindow.document.write('</style>');
+        printWindow.document.write('</head><body>');
+        
+        // 4. 내용 주입
+        printWindow.document.write(content);
+        printWindow.document.write('</body></html>');
+        
+        // 5. 인쇄 실행 및 창 닫기
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // 이미지나 폰트 로딩 대기 후 인쇄
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
 };
-
 window.onload = function() {
     dataMgr.checkMobile();
     dataMgr.initSystem();
