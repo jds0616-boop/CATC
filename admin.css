@@ -512,3 +512,16 @@ cursor: pointer;
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
 }
+
+/* --- 퀴즈 결과 화면(차트) 전용 배경색 --- */
+.quiz-card.result-mode {
+    background-color: #ecfeff !important; /* 아주 연한 하늘색 */
+    border: 2px solid #06b6d4 !important; /* 테두리도 살짝 강조 */
+    transition: background-color 0.3s ease;
+}
+
+/* 다크모드일 때 결과 화면 색상 */
+body.night-mode .quiz-card.result-mode {
+    background-color: #164e63 !important; /* 짙은 청록색 */
+    border-color: #22d3ee !important;
+}

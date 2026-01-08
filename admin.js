@@ -738,6 +738,7 @@ const quizMgr = {
         if (d > 0) ui.showAlert("모든 문항이 종료되었습니다.");
     },
     showQuiz: function() {
+        document.querySelector('.quiz-card').classList.remove('result-mode');
         const q = state.quizList[state.currentQuizIdx];
         this.resetTimerUI(); 
         this.renderScreen(q);
@@ -760,13 +761,23 @@ const quizMgr = {
         });
         document.getElementById('quizGuideArea').innerText = ""; 
     },
-    action: function(act) {
+action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
+        
+        // Firebase에 상태 업데이트
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
-        if(act === 'open') { this.startTimer(); }
+        
+        // [추가] 배경색 변경을 위해 quiz-card 요소 가져오기
+        const card = document.querySelector('.quiz-card');
+
+        if(act === 'open') { 
+            this.startTimer(); 
+        }
         else if(act === 'close') { 
             this.stopTimer(); 
             const q = state.quizList[state.currentQuizIdx];
+            
+            // 설문이 아닐 경우 정답 공개 처리
             if(!q.isSurvey) {
                 const correct = state.isTestMode ? 2 : q.correct;
                 const opt = document.getElementById(`opt-${correct}`);
@@ -777,9 +788,16 @@ const quizMgr = {
         }
         else if(act === 'result') { 
             this.stopTimer(); 
+            
+            // [핵심 수정] 결과 화면일 때만 'result-mode' 클래스 추가 (배경색 변경)
+            if(card) card.classList.add('result-mode');
+
+            // 옵션 숨기고 차트 보여주기
             document.getElementById('d-options').style.display='none'; 
             document.getElementById('d-chart').style.display='flex'; 
-            this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
+            
+            // 차트 렌더링 함수 호출
+            this.renderChart(id, state.isTestMode ? 2 : state.quizList[state.currentQuizIdx].correct); 
         }
     },
     smartNext: function() {
