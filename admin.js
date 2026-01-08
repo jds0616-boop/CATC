@@ -196,15 +196,23 @@ const dataMgr = {
         dbRef.connections = firebase.database().ref(`${rPath}/connections`);
 
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
-        dbRef.status.on('value', s => {
-            if(state.room !== room) return;
-            const st = s.val() || {};
-            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                if (localStorage.getItem(`last_owned_room`) === room) { dbRef.status.update({ ownerSessionId: state.sessionId }); return; }
-            }
-            ui.renderRoomStatus(st.roomStatus || 'idle'); 
-            ui.checkLockStatus(st);
-        });
+ dbRef.status.on('value', s => {
+        if(state.room !== room) return;
+        const st = s.val() || {};
+        
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            if (localStorage.getItem(`last_owned_room`) === room) { dbRef.status.update({ ownerSessionId: state.sessionId }); return; }
+        }
+        ui.renderRoomStatus(st.roomStatus || 'idle'); 
+        ui.checkLockStatus(st);
+        
+        // [추가] 해당 방의 교수님이 설정되어 있으면 Select 박스값 변경
+        if(st.professorName) {
+            document.getElementById('profSelect').value = st.professorName;
+        } else {
+            document.getElementById('profSelect').value = "";
+        }
+    });
         
         dbRef.connections.on('value', s => {
             const count = s.numChildren();
@@ -223,28 +231,41 @@ const dataMgr = {
             ui.renderQr(url);
         });
     },
-    saveSettings: function() {
-        let rawPw = document.getElementById('roomPw').value;
-        let pw = rawPw ? rawPw.trim() : "7777"; 
+saveSettings: function() {
+    let rawPw = document.getElementById('roomPw').value;
+    let pw = rawPw ? rawPw.trim() : "7777"; 
 
-        const newName = document.getElementById('courseNameInput').value;
-        const statusVal = document.getElementById('roomStatusSelect').value;
-        
-        firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
-        
-        document.getElementById('displayCourseTitle').innerText = newName;
-        document.getElementById('roomPw').value = pw; 
-        
-        if (statusVal === 'active') {
-            localStorage.setItem(`last_owned_room`, state.room);
-            firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'active', ownerSessionId: state.sessionId });
-            ui.showAlert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
-        } else {
-            localStorage.removeItem(`last_owned_room`);
-            firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'idle', ownerSessionId: null });
-            ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
-        }
-    },
+    const newName = document.getElementById('courseNameInput').value;
+    const statusVal = document.getElementById('roomStatusSelect').value;
+    
+    // [추가] 선택된 교수님 이름 가져오기
+    const selectedProf = document.getElementById('profSelect').value;
+    
+    firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
+    
+    document.getElementById('displayCourseTitle').innerText = newName;
+    document.getElementById('roomPw').value = pw; 
+    
+    if (statusVal === 'active') {
+        localStorage.setItem(`last_owned_room`, state.room);
+        // [수정] professorName 필드 추가 저장
+        firebase.database().ref(`courses/${state.room}/status`).update({ 
+            roomStatus: 'active', 
+            ownerSessionId: state.sessionId,
+            professorName: selectedProf 
+        });
+        ui.showAlert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
+    } else {
+        localStorage.removeItem(`last_owned_room`);
+        // [수정] 비활성화 시 교수 이름도 초기화(제거)
+        firebase.database().ref(`courses/${state.room}/status`).update({ 
+            roomStatus: 'idle', 
+            ownerSessionId: null,
+            professorName: null 
+        });
+        ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
+    }
+},
     deactivateAllRooms: async function() {
         if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         const updates = {};
@@ -275,6 +296,72 @@ const dataMgr = {
         }
     }
 };
+
+// --- [신규] 교수님 명단 관리 로직 ---
+const profMgr = {
+list: [],
+init: function() {
+// DB에서 교수님 명단 실시간 동기화
+firebase.database().ref('system/professors').on('value', s => {
+const data = s.val() || {};
+// 데이터가 없으면 기본값 세팅 (최초 1회)
+if (!s.exists()) {
+const defaults = ["장두석", "홍길동", "김철수", "이영희", "박민수", "최지훈", "정수민", "강하늘", "송지원"];
+defaults.forEach(name => firebase.database().ref('system/professors').push(name));
+return;
+}
+this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+this.renderSelect();
+});
+},
+// 사이드바의 Select 박스 렌더링
+renderSelect: function() {
+const sel = document.getElementById('profSelect');
+const currentVal = sel.value; // 기존 선택값 유지
+sel.innerHTML = '<option value="">(선택 안함)</option>';
+this.list.forEach(p => {
+const opt = document.createElement('option');
+opt.value = p.name;
+opt.innerText = p.name + " 교수님";
+if (p.name === currentVal) opt.selected = true;
+sel.appendChild(opt);
+});
+},
+// 관리 모달 열기
+openManageModal: function() {
+this.renderManageList();
+document.getElementById('profManageModal').style.display = 'flex';
+document.getElementById('newProfInput').focus();
+},
+// 모달 내 리스트 렌더링
+renderManageList: function() {
+const div = document.getElementById('profListContainer');
+div.innerHTML = "";
+if (this.list.length === 0) {
+div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>";
+return;
+}
+this.list.forEach(p => {
+div.innerHTML += <div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>;
+});
+},
+addProf: function() {
+const input = document.getElementById('newProfInput');
+const name = input.value.trim();
+if (!name) return;
+firebase.database().ref('system/professors').push(name);
+input.value = "";
+this.renderManageList(); // 즉시 갱신
+},
+deleteProf: function(key) {
+if(confirm("이 이름을 명단에서 삭제하시겠습니까?")) {
+firebase.database().ref(system/professors/${key}).remove();
+this.renderManageList();
+}
+}
+};
+
+
 
 // --- 3. UI ---
 const ui = {
@@ -314,37 +401,47 @@ const ui = {
     closeSecretModal: function() {
         document.getElementById('changeAdminSecretModal').style.display = 'none';
     },
-    initRoomSelect: function() {
-        firebase.database().ref('courses').on('value', s => {
-            const d = s.val() || {};
-            const sel = document.getElementById('roomSelect');
-            const savedValue = sel.value || state.room; 
-            sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
-            for(let i=65; i<=90; i++) {
-                const c = String.fromCharCode(i);
-                const roomData = d[c] || {};
-                const st = roomData.status || {};
-                const connObj = roomData.connections || {};
-                const userCount = Object.keys(connObj).length;
-                const opt = document.createElement('option');
-                opt.value = c;
-                if(st.roomStatus === 'active') {
-                    if (st.ownerSessionId === state.sessionId) {
-                        opt.innerText = `Room ${c} (🔵 내 강의실, ${userCount}명)`;
-                        opt.style.color = '#3b82f6';
-                        opt.style.fontWeight = 'bold';
-                    } else {
-                        opt.innerText = `Room ${c} (🔴 사용중, ${userCount}명)`;
-                        opt.style.color = '#ef4444';
-                    }
+initRoomSelect: function() {
+    firebase.database().ref('courses').on('value', s => {
+        const d = s.val() || {};
+        const sel = document.getElementById('roomSelect');
+        const savedValue = sel.value || state.room; 
+        sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
+        
+        for(let i=65; i<=90; i++) {
+            const c = String.fromCharCode(i);
+            const roomData = d[c] || {};
+            const st = roomData.status || {};
+            const connObj = roomData.connections || {};
+            const userCount = Object.keys(connObj).length;
+            
+            // [수정] 교수님 이름 가져오기
+            const profName = st.professorName ? `, ${st.professorName}` : "";
+
+            const opt = document.createElement('option');
+            opt.value = c;
+            
+            if(st.roomStatus === 'active') {
+                if (st.ownerSessionId === state.sessionId) {
+                    // 내 강의실
+                    opt.innerText = `Room ${c} (🔵 내 강의실${profName}, ${userCount}명)`;
+                    opt.style.color = '#3b82f6';
+                    opt.style.fontWeight = 'bold';
                 } else {
-                    opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
+                    // 다른 사람 강의실
+                    opt.innerText = `Room ${c} (🔴 사용중${profName}, ${userCount}명)`;
+                    opt.style.color = '#ef4444';
                 }
-                if(c === savedValue) opt.selected = true;
-                sel.appendChild(opt);
+            } else {
+                // 대기중
+                opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
             }
-        });
-    },
+            
+            if(c === savedValue) opt.selected = true;
+            sel.appendChild(opt);
+        }
+    });
+},
     toggleMiniQR: function() {
         const qrBox = document.getElementById('floatingQR');
         if (!state.room) {
@@ -842,6 +939,7 @@ const printMgr = {
 };
 
 window.onload = function() {
-    dataMgr.checkMobile(); // [추가] 모바일 접속인지 먼저 확인
-    dataMgr.initSystem();
+dataMgr.checkMobile();
+dataMgr.initSystem();
+profMgr.init(); // [추가] 교수님 명단 초기화
 };

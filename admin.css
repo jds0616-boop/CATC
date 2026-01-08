@@ -354,3 +354,35 @@ body.night-mode .qr-label { color: #0f172a; }
         margin-top: 10px !important;
     }
 }
+
+
+/* [추가] 교수님 관리 모달 스타일 */
+.prof-list-container {
+max-height: 300px;
+overflow-y: auto;
+border: 1px solid #cbd5e1;
+border-radius: 8px;
+margin-bottom: 15px;
+background: #f8fafc;
+}
+.prof-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 10px 15px;
+border-bottom: 1px solid #e2e8f0;
+font-size: 14px;
+font-weight: 600;
+color: #334155;
+}
+.prof-item:last-child { border-bottom: none; }
+.prof-item button {
+padding: 4px 10px;
+font-size: 11px;
+background: #ef4444;
+color: white;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+}
+.prof-item button:hover { background: #dc2626; }
