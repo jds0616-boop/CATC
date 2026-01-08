@@ -927,7 +927,13 @@ const printMgr = {
             items.sort((a,b) => a.timestamp - b.timestamp);
             items.forEach((item, idx) => {
                 const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                listBody.innerHTML += `<tr><td>${idx + 1}</td><td>${item.text}</td><td>${timeStr}</td><td>${item.likes || 0}</td><td>${item.status}</td></tr>`;
+// 시간, 상태(undefined) 제거하고 깔끔하게 내용과 공감수만 표시
+                listBody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td style="text-align:left; line-height:1.4;">${item.text}</td>
+                        <td>❤️ ${item.likes || 0}</td>
+                    </tr>`;
             });
         }
         document.getElementById('printPreviewModal').style.display = 'flex'; 

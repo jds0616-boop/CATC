@@ -386,3 +386,38 @@ border-radius: 4px;
 cursor: pointer;
 }
 .prof-item button:hover { background: #dc2626; }
+
+
+/* --- [리포트 디자인 수정] --- */
+
+/* 1. 배경을 완전한 흰색으로 하고 글씨는 검정으로 */
+#official-document {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 40px;
+    border-radius: 4px;
+    min-height: 500px;
+}
+
+/* 2. 테이블 스타일 정리 (가로줄 추가) */
+.doc-list-table {
+    width: 100%;
+    border-collapse: collapse; /* 테두리가 겹치지 않게 */
+    margin-top: 20px;
+}
+
+/* 3. 각 행(tr) 밑에 회색 가로줄 긋기 */
+.doc-list-table tr {
+    border-bottom: 1px solid #d1d5db; /* 연한 회색 줄 */
+}
+
+/* 4. 셀(td) 간격 조정 및 정렬 */
+.doc-list-table td {
+    padding: 12px 5px; /* 위아래 여백을 줘서 시원하게 */
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+/* 5. 첫 번째 칸(번호)과 마지막 칸(공감) 가운데 정렬 */
+.doc-list-table td:first-child { text-align: center; width: 50px; font-weight: bold; color: #64748b; }
+.doc-list-table td:last-child { text-align: center; width: 80px; font-weight: bold; color: #3b82f6; }
