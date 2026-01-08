@@ -480,3 +480,35 @@ cursor: pointer;
     font-weight: bold; 
     color: #3b82f6; 
 }
+
+/* [신규] 최신 질문 강조 스타일 */
+@keyframes flashNew {
+    0% { background-color: #ecfdf5; transform: scale(1.02); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    50% { background-color: #d1fae5; }
+    100% { background-color: var(--card-bg); transform: scale(1); }
+}
+
+.q-card.is-new {
+    /* 5분간 초록색 테두리로 강조 */
+    border-left-color: #10b981 !important;
+    /* 등장 시 깜빡이는 애니메이션 */
+    animation: flashNew 2s ease-out;
+}
+
+.new-badge-icon {
+    display: inline-block;
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}

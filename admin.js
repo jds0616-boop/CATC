@@ -518,56 +518,63 @@ const ui = {
         if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
-    renderQaList: function(f) {
+
+
+renderQaList: function(f) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
 
-        // --- [여기서부터 수정된 정렬 로직입니다] ---
-        
-        // 1. 필터링 (기존 로직 유지)
+        // 1. 필터링
         if(f==='pin') items=items.filter(x=>x.status==='pin'); 
         else if(f==='later') items=items.filter(x=>x.status==='later');
 
-        // 2. 정렬: 상태(핀>추후) > 공감수 > 최신순
+        // 2. 정렬 로직 (1안 적용됨)
         items.sort((a,b) => {
-            // (1) 상태 우선순위 점수 매기기 (핀:3, 추후:2, 일반:1, 완료:0)
             const getPrio = s => (s === 'pin' ? 3 : (s === 'later' ? 2 : (s === 'done' ? 0 : 1)));
             const pA = getPrio(a.status);
             const pB = getPrio(b.status);
-
-            // 상태가 다르면 상태 점수가 높은 순서로 정렬
             if (pA !== pB) return pB - pA;
-
-            // (2) 상태가 같으면 '공감수' 비교 (내림차순)
             const likeA = a.likes || 0;
             const likeB = b.likes || 0;
             if (likeA !== likeB) return likeB - likeA;
-
-            // (3) 공감수도 같으면 '최신순' 비교 (Timestamp 내림차순)
             return b.timestamp - a.timestamp;
         });
 
-        // --- [여기까지 수정] ---
-
-
         items.forEach(i => {
-            const cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
+            // [수정 1] 여기서 const가 아니라 let을 써야 에러가 안 납니다!
+            let cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
             const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
-list.innerHTML += `
-    <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
-        <div class="q-content">
-            ${icon}${i.text}
-            <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="구글 번역기로 보기">
-                <i class="fa-solid fa-language"></i> 번역
-            </button>
-        </div>
-        <div class="q-meta">
-            <div class="q-like-badge">👍 ${i.likes||0}</div>
-            <div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-        </div>
-    </div>`;
+
+            // [추가된 로직] 2분 이내 신규 글 체크
+            const isRecent = (Date.now() - i.timestamp) < 120000; 
+            let newBadge = "";
+            
+            if (isRecent && i.status !== 'pin' && i.status !== 'done') {
+                cls += " is-new"; 
+                newBadge = `<span class="new-badge-icon">NEW</span>`; 
+            }
+
+            list.innerHTML += `
+            <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
+                <div class="q-content">
+                    <!-- [수정 2] 여기에 ${newBadge}가 꼭 들어가야 화면에 보입니다 -->
+                    ${newBadge}${icon}${i.text}
+                    <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="구글 번역기로 보기">
+                        <i class="fa-solid fa-language"></i> 번역
+                    </button>
+                </div>
+                <div class="q-meta">
+                    <div class="q-like-badge">👍 ${i.likes||0}</div>
+                    <div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                </div>
+            </div>`;
         });
     },
+
+
+
+
+
     openQaModal: function(k) { state.activeQaKey=k; document.getElementById('m-text').innerText=state.qaData[k].text; document.getElementById('qaModal').style.display='flex'; },
     closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     openPwModal: function() { document.getElementById('changePwModal').style.display='flex'; },
