@@ -50,25 +50,46 @@ let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, con
 // --- 1. Auth ---
 const authMgr = {
     ADMIN_EMAIL: "admin@kac.com", 
-    tryLogin: async function() {
+ 
+tryLogin: async function() {
         const inputPw = document.getElementById('loginPwInput').value;
-        if(!inputPw) return ui.showAlert("비밀번호를 입력해주세요.");
+        const msgDiv = document.getElementById('loginMsg'); // 아까 만든 글씨 칸 가져오기
+
+        if(!inputPw) { alert("비밀번호를 입력해주세요."); return; }
+
         try {
+            // 1. 로그인 시도
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
-            document.getElementById('loginOverlay').style.display = 'none';
-            dataMgr.loadInitialData();
+            
+            // 2. 성공 시 "로그인 되었습니다" 표시
+            if(msgDiv) {
+                msgDiv.innerText = "로그인 되었습니다.";
+                msgDiv.style.color = "#10b981"; // 초록색
+            }
+
+            // 3. 0.7초 뒤에 화면 전환 (그래야 글씨가 보임)
+            setTimeout(() => {
+                document.getElementById('loginOverlay').style.display = 'none';
+                dataMgr.loadInitialData();
+                if(msgDiv) msgDiv.innerText = ""; // 다음을 위해 비움
+            }, 700);
+
         } catch (error) {
-            ui.showAlert("⛔ 비밀번호가 올바르지 않습니다.\n다시 확인해주세요.");
+            // 실패 시
+            if(msgDiv) {
+                msgDiv.innerText = "비밀번호가 틀렸습니다.";
+                msgDiv.style.color = "#ef4444"; // 빨간색
+            } else {
+                alert("비밀번호가 올바르지 않습니다.");
+            }
             document.getElementById('loginPwInput').value = "";
             document.getElementById('loginPwInput').focus();
         }
     },
-    logout: function() {
-        if(confirm("로그아웃 하시겠습니까?")) {
-            sessionStorage.removeItem('kac_admin_sid');
-            firebase.auth().signOut().then(() => location.reload());
-        }
-    },
+
+
+
+
     executeChangePw: async function() {
         const user = firebase.auth().currentUser;
         const newPw = document.getElementById('cp-new').value;
