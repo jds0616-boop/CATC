@@ -536,26 +536,34 @@ initRoomSelect: function() {
             linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
         }
     },
-    setMode: function(mode) {
-        document.getElementById('view-waiting').style.display = 'none';
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`tab-${mode}`).classList.add('active');
-        document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
-        document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
-        if (state.room) {
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
-            if (mode === 'quiz') {
-                if (state.isExternalFileLoaded) {
-                    ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
-                } else {
-                    ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부 [테스트 문항]으로 진행합니다.");
-                }
-                if (state.quizList.length > 0) {
-                    quizMgr.showQuiz(); 
-                }
+setMode: function(mode) {
+    document.getElementById('view-waiting').style.display = 'none';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${mode}`).classList.add('active');
+    document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
+    document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
+    
+    if (state.room) {
+        firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+        
+        if (mode === 'quiz') {
+            // [추가] 퀴즈 모드로 들어올 때 버튼 상태 초기화 (일시정지 버튼 숨김)
+            document.getElementById('btnPause').style.display = 'none';
+            document.getElementById('btnSmartNext').style.display = 'flex';
+            document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
+
+            if (state.isExternalFileLoaded) {
+                ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
+            } else {
+                ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부 [테스트 문항]으로 진행합니다.");
+            }
+            
+            if (state.quizList.length > 0) {
+                quizMgr.showQuiz(); 
             }
         }
-    },
+    }
+},
     filterQa: function(f) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
@@ -715,14 +723,21 @@ const quizMgr = {
         }
         if (d > 0) ui.showAlert("모든 문항이 종료되었습니다.");
     },
-    showQuiz: function() {
-        const q = state.quizList[state.currentQuizIdx];
-        this.resetTimerUI(); this.renderScreen(q);
-        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
-        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
-        document.getElementById('btnTest').style.display = 'none'; 
-        document.getElementById('quizControls').style.display = 'flex';
-    },
+showQuiz: function() {
+    const q = state.quizList[state.currentQuizIdx];
+    this.resetTimerUI(); 
+    this.renderScreen(q);
+    
+    // [추가] 새 문제가 나올 때 버튼 상태를 무조건 'Next'로 초기화
+    document.getElementById('btnPause').style.display = 'none';
+    document.getElementById('btnSmartNext').style.display = 'flex';
+    document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
+
+    firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
+    firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
+    document.getElementById('btnTest').style.display = 'none'; 
+    document.getElementById('quizControls').style.display = 'flex';
+},
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
         const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
@@ -777,52 +792,73 @@ const quizMgr = {
             document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
         }
     },
+
+// [수정] 8초 고정 + 시작부터 소리 재생
     startTimer: function() {
         this.stopTimer(); 
+        
+        // UI 상태 변경
         document.getElementById('btnPause').style.display = 'flex';
         document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
         document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
         document.getElementById('btnSmartNext').style.display = 'none'; 
 
-        let t = 10; 
+        // [핵심 1] 시간을 8초로 고정
+        let t = 8; 
+        
+        // (혹시 아까 만든 시간 입력창이 화면에 남아있다면, 거기도 8로 맞춰줌)
+        const inputEl = document.getElementById('quizTimeInput');
+        if(inputEl) inputEl.value = 8;
+
         const d = document.getElementById('quizTimer'); 
         d.classList.remove('urgent');
+        d.innerText = "00:08"; // 시작 텍스트
+
         const end = Date.now() + (t * 1000); 
-        
         let lastPlayedSec = -1;
-        if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+
+        // 소리 준비
+        if (!state.timerAudio) {
+            state.timerAudio = new Audio('timer.mp3');
+        }
 
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
             
+            // 화면 표시 (음수 방지)
+            const displaySec = r < 0 ? 0 : r;
+            d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
+            
+            // 5초 이하일 때 빨간색 효과 (원하시면 숫자 조정 가능)
             if(r <= 5) d.classList.add('urgent');
-            d.innerText = `00:${r<10?'0'+r:r}`;
 
-            if (r <= 5 && r > 0 && r !== lastPlayedSec) {
-                state.timerAudio.pause(); state.timerAudio.currentTime = 0;
-                state.timerAudio.play().catch(e=>{});
+            // [핵심 2] 소리 재생 조건 변경 (5 -> 8)
+            // 8초 이하이고 0초보다 클 때 매초 소리 재생 (즉, 시작하자마자 소리 남)
+            if (r <= 8 && r > 0 && r !== lastPlayedSec) {
+                state.timerAudio.pause();          
+                state.timerAudio.currentTime = 0;  
+                state.timerAudio.play().catch(e=>{}); 
                 lastPlayedSec = r;
             }
 
+            // 시간이 다 됐을 때 (0초)
             if(r <= 0) {
                 this.stopTimer();
                 this.action('close');
+                
+                // 1.5초 뒤 결과 공개
                 setTimeout(() => {
                     this.action('result');
                     document.getElementById('btnSmartNext').style.display = 'flex';
                     document.getElementById('btnPause').style.display = 'none';
                     document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
-                }, 1500); 
+                }, 1500);
             }
         }, 200);
     },
-    stopTimer: function() { 
-        if(state.timerInterval) clearInterval(state.timerInterval); 
-        if (state.timerAudio) {
-            state.timerAudio.pause();
-            state.timerAudio.currentTime = 0;
-        }
-    },
+
+
+
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:10"; document.getElementById('quizTimer').classList.remove('urgent'); },
     openResetModal: function() { document.getElementById('resetChoiceModal').style.display = 'flex'; },
     executeReset: async function(type) {
