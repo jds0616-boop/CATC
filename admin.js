@@ -473,14 +473,31 @@ list.innerHTML += `
         if (!document.fullscreenElement) elem.requestFullscreen().catch(err => console.log(err));
         else if (document.exitFullscreen) document.exitFullscreen();
     },
-    translateQa: function(id) {
-        if (!state.qaData[id]) return;
-        const text = state.qaData[id].text;
-        const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
-        const targetLang = hasKorean ? 'en' : 'ko';
-        const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
-        window.open(url, 'googleTranslate', 'width=1000,height=600,scrollbars=yes');
-    },
+translateQa: function(id) {
+    if (!state.qaData[id]) return;
+    const text = state.qaData[id].text;
+    
+    // 한글 포함 여부 체크
+    const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+    const targetLang = hasKorean ? 'en' : 'ko';
+    
+    const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
+    
+    // 1. 팝업 창 크기 설정
+    const popupWidth = 1000;
+    const popupHeight = 600;
+
+    // 2. 현재 모니터의 정중앙 좌표 계산
+    const left = (window.screen.width / 2) - (popupWidth / 2);
+    const top = (window.screen.height / 2) - (popupHeight / 2);
+    
+    // 3. 창 옵션 설정 (주소창, 메뉴바 제거하여 깔끔하게 + 정중앙 위치)
+    // 'popup=yes' 옵션이 크롬에서 주소창을 최소화해줍니다.
+    const windowFeatures = `width=${popupWidth},height=${popupHeight},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no,popup=yes`;
+    
+    // 4. 새 창 열기 (이름을 지정하여 여러 개 뜨지 않고 하나만 갱신됨)
+    window.open(url, 'googleTranslatePopup', windowFeatures);
+},
     showWaitingRoom: function() {
         state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
