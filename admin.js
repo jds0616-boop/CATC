@@ -870,7 +870,7 @@ stopTimer: function() {
     closeQuizMode: function() {
         document.getElementById('quizExitModal').style.display = 'flex';
     },
-    confirmExitQuiz: function(type) {
+confirmExitQuiz: function(type) {
         document.getElementById('quizExitModal').style.display = 'none';
         if(type === 'reset') {
             state.isTestMode = false;
@@ -881,6 +881,10 @@ stopTimer: function() {
             }
             firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
             firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
+            
+            // ✅ [추가] 기존 답안지와 결과 데이터를 DB에서 싹 지우는 코드
+            firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
+            firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
         }
         ui.setMode('qa');
     }
