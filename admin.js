@@ -769,8 +769,11 @@ const quizMgr = {
             }
         }, 200);
     },
-    stopTimer: function() { 
-        if(state.timerInterval) clearInterval(state.timerInterval); 
+stopTimer: function() { 
+        if(state.timerInterval) {
+            clearInterval(state.timerInterval);
+            state.timerInterval = null; // ✅ 이 줄을 꼭 추가해야 합니다!
+        }
         if (state.timerAudio) {
             state.timerAudio.pause();
             state.timerAudio.currentTime = 0;
