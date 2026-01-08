@@ -297,28 +297,43 @@ saveSettings: function() {
     }
 };
 
-// --- [신규] 교수님 명단 관리 로직 ---
+// --- [신규] 교수님 명단 관리 로직 (리스트 갱신 오류 수정됨) ---
 const profMgr = {
     list: [],
     init: function() {
         // DB에서 교수님 명단 실시간 동기화
         firebase.database().ref('system/professors').on('value', s => {
             const data = s.val() || {};
+            
             // 데이터가 없으면 기본값 세팅 (최초 1회)
             if (!s.exists()) {
                 const defaults = ["장두석", "홍길동", "김철수", "이영희", "박민수", "최지훈", "정수민", "강하늘", "송지원"];
                 defaults.forEach(name => firebase.database().ref('system/professors').push(name));
                 return;
             }
+            
+            // 데이터 변환
             this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+            
+            // [중요] 데이터가 바뀌면 드롭다운(Select)과 팝업 리스트를 모두 갱신!
             this.renderSelect();
+            
+            // 만약 관리 모달이 열려있다면, 리스트도 즉시 새로고침
+            const modal = document.getElementById('profManageModal');
+            if (modal && modal.style.display === 'flex') {
+                this.renderManageList();
+            }
         });
     },
+    
     // 사이드바의 Select 박스 렌더링
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
+        if(!sel) return; // 요소가 없으면 패스
+        
         const currentVal = sel.value; // 기존 선택값 유지
         sel.innerHTML = '<option value="">(선택 안함)</option>';
+        
         this.list.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.name;
@@ -327,42 +342,69 @@ const profMgr = {
             sel.appendChild(opt);
         });
     },
+    
     // 관리 모달 열기
     openManageModal: function() {
         this.renderManageList();
         document.getElementById('profManageModal').style.display = 'flex';
-        document.getElementById('newProfInput').focus();
+        // 입력창에 포커스 주고 엔터키 준비
+        const input = document.getElementById('newProfInput');
+        if(input) input.focus();
     },
-    // 모달 내 리스트 렌더링
+    
+    // 모달 내 리스트 렌더링 (화면에 그리는 함수)
     renderManageList: function() {
         const div = document.getElementById('profListContainer');
+        if(!div) return;
+        
         div.innerHTML = "";
+        
         if (this.list.length === 0) {
             div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>";
             return;
         }
+        
+        // 최신순(혹은 등록순)으로 보여주기
         this.list.forEach(p => {
-            // [수정됨] 아래 줄에 백틱(`)이 빠져 있었습니다.
-            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
+            div.innerHTML += `
+                <div class="prof-item">
+                    <span>${p.name}</span>
+                    <button onclick="profMgr.deleteProf('${p.key}')">삭제</button>
+                </div>`;
         });
+        
+        // 스크롤을 맨 아래로 (편의성)
+        div.scrollTop = div.scrollHeight;
     },
+    
+    // 교수님 추가
     addProf: function() {
         const input = document.getElementById('newProfInput');
         const name = input.value.trim();
-        if (!name) return;
-        firebase.database().ref('system/professors').push(name);
-        input.value = "";
-        this.renderManageList(); // 즉시 갱신
+        
+        if (!name) {
+            alert("교수님 성함을 입력해주세요.");
+            return;
+        }
+        
+        // DB에 저장 -> 저장이 완료되면 위의 .on('value')가 자동으로 실행되어 리스트를 갱신함
+        firebase.database().ref('system/professors').push(name)
+            .then(() => {
+                input.value = ""; // 입력창 비우기
+                input.focus();    // 연속 입력을 위해 포커스 유지
+            })
+            .catch(err => {
+                alert("저장 실패: " + err.message);
+            });
     },
+    
+    // 교수님 삭제
     deleteProf: function(key) {
-        if(confirm("이 이름을 명단에서 삭제하시겠습니까?")) {
-            // [수정됨] 아래 줄에도 백틱(`)이 빠져 있었습니다.
+        if(confirm("정말 이 이름을 명단에서 삭제하시겠습니까?")) {
             firebase.database().ref(`system/professors/${key}`).remove();
-            this.renderManageList();
         }
     }
 };
-
 
 
 // --- 3. UI ---
