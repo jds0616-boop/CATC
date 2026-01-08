@@ -145,14 +145,21 @@ const dataMgr = {
             this.forceEnterRoom(newRoom);
         }
     },
-    verifyTakeover: async function() {
+verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
-        const input = document.getElementById('takeoverPwInput').value;
+        
+        // [수정] 입력값의 공백을 제거(.trim())하여 모바일 오류 방지
+        let input = document.getElementById('takeoverPwInput').value;
+        if(input) input = input.trim(); 
+
         if (!newRoom || !input) return;
+        
         const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
-        if (btoa(input) === dbPw || input === "13281") {
+        
+        // [수정] 마스터키 "13281"을 문자열로 확실하게 비교
+        if (btoa(input) === dbPw || String(input) === "13281") {
             ui.showAlert("인증 성공! 제어권을 가져옵니다.");
             localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({ ownerSessionId: state.sessionId });
@@ -233,13 +240,21 @@ const dataMgr = {
             ui.renderQr(url);
         });
     },
-    saveSettings: function() {
-        let pw = document.getElementById('roomPw').value || "7777"; 
+saveSettings: function() {
+        // [수정] .trim()을 붙여서 공백을 제거합니다. (모바일 오입력 방지)
+        // 값이 있으면 그 값을 쓰고, 아예 다 지우고 빈칸이면 "7777"로 저장됩니다.
+        let rawPw = document.getElementById('roomPw').value;
+        let pw = rawPw ? rawPw.trim() : "7777"; 
+
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
+        
+        // 비밀번호 업데이트 (여기서 pw가 "1234"라면 정확히 "1234"로 저장됨)
         firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
+        
         document.getElementById('displayCourseTitle').innerText = newName;
         document.getElementById('roomPw').value = pw; 
+        
         if (statusVal === 'active') {
             localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'active', ownerSessionId: state.sessionId });
