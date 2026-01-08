@@ -1,4 +1,4 @@
-/* --- admin.js (Final Version: Dynamic Sample Download Integrated) --- */
+/* --- admin.js (Final Version: Fixed Duplicate Code) --- */
 
 // --- [기본 데이터] 파일 미업로드 시 탑재될 기본 퀴즈 20문항 (상식/건강/설문) ---
 const DEFAULT_QUIZ_DATA = [
@@ -43,7 +43,7 @@ const state = {
     timerInterval: null,
     pendingRoom: null,
     connListener: null ,
-    adminCallback: null // <-- 이 줄을 추가하세요 (쉼표 주의)
+    adminCallback: null
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
@@ -83,8 +83,6 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
-
-    // 아래 두 함수를 dataMgr 블록 안에 추가하세요.
     checkAdminSecret: async function(input) {
         const snap = await firebase.database().ref('system/adminSecret').get();
         const dbSecret = snap.val() || btoa("kac123!@#"); 
@@ -100,20 +98,13 @@ const dataMgr = {
         ui.showAlert("시스템 관리자 암호가 변경되었습니다.");
         ui.closeSecretModal();
     },
-
-// [추가] 실제 모바일 기기인지 체크하는 함수
     checkMobile: function() {
         const ua = navigator.userAgent;
-        // 안드로이드, 아이폰, 아이패드 등 모바일 OS 정보가 있는지 확인
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-        
         if (isMobile) {
-            // 진짜 모바일 기기라면 차단 화면 표시
             document.getElementById('mobileRestrictOverlay').style.display = 'flex';
         }
     },
-
-
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
             if (user) { document.getElementById('loginOverlay').style.display = 'none'; this.loadInitialData(); } 
@@ -123,12 +114,9 @@ const dataMgr = {
     loadInitialData: function() {
         ui.initRoomSelect();
         ui.showWaitingRoom();
-
-        // 기본 퀴즈 탑재
         state.quizList = DEFAULT_QUIZ_DATA; 
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
-
         document.getElementById('roomSelect').onchange = (e) => { if(e.target.value) this.switchRoomAttempt(e.target.value); };
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
         const qrEl = document.getElementById('qrcode'); if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
@@ -145,10 +133,8 @@ const dataMgr = {
             this.forceEnterRoom(newRoom);
         }
     },
-verifyTakeover: async function() {
+    verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
-        
-        // [수정] 입력값의 공백을 제거(.trim())하여 모바일 오류 방지
         let input = document.getElementById('takeoverPwInput').value;
         if(input) input = input.trim(); 
 
@@ -158,7 +144,6 @@ verifyTakeover: async function() {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
         
-        // [수정] 마스터키 "13281"을 문자열로 확실하게 비교
         if (btoa(input) === dbPw || String(input) === "13281") {
             ui.showAlert("인증 성공! 제어권을 가져옵니다.");
             localStorage.setItem(`last_owned_room`, newRoom);
@@ -177,9 +162,7 @@ verifyTakeover: async function() {
         state.pendingRoom = null;
     },
     forceEnterRoom: async function(room) {
-
-    // 강의실 이동 시 플로팅 QR이 열려 있다면 닫아줍니다.
-    document.getElementById('floatingQR').style.display = 'none';
+        document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
             firebase.database().ref(`${oldPath}/questions`).off();
@@ -240,16 +223,13 @@ verifyTakeover: async function() {
             ui.renderQr(url);
         });
     },
-saveSettings: function() {
-        // [수정] .trim()을 붙여서 공백을 제거합니다. (모바일 오입력 방지)
-        // 값이 있으면 그 값을 쓰고, 아예 다 지우고 빈칸이면 "7777"로 저장됩니다.
+    saveSettings: function() {
         let rawPw = document.getElementById('roomPw').value;
         let pw = rawPw ? rawPw.trim() : "7777"; 
 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         
-        // 비밀번호 업데이트 (여기서 pw가 "1234"라면 정확히 "1234"로 저장됨)
         firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
         
         document.getElementById('displayCourseTitle').innerText = newName;
@@ -302,7 +282,6 @@ const ui = {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
     },
-
     requestAdminAuth: function(type) {
         if(type === 'pw') state.adminCallback = () => ui.openPwModal();
         else if(type === 'idle') state.adminCallback = () => dataMgr.deactivateAllRooms();
@@ -335,7 +314,6 @@ const ui = {
     closeSecretModal: function() {
         document.getElementById('changeAdminSecretModal').style.display = 'none';
     },
-
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
@@ -367,45 +345,31 @@ const ui = {
             }
         });
     },
-
-toggleMiniQR: function() {
-    const qrBox = document.getElementById('floatingQR');
-    
-    // 1. 강의실 선택 여부 체크
-    if (!state.room) {
-        this.showAlert("좌측 상단에서 강의실을 먼저 선택해 주세요.");
-        return;
-    }
-
-    if (qrBox.style.display === 'flex') {
-        qrBox.style.display = 'none';
-    } else {
-        qrBox.style.display = 'flex';
-        const target = document.getElementById('miniQRElement');
-        const label = document.querySelector('.qr-label');
-        target.innerHTML = ""; // 기존 QR 초기화
-
-        // 2. [핵심수정] 사이드바 값이 업데이트될 때까지 기다리지 않고 
-        // 현재 선택된 state.room 정보를 사용하여 즉시 주소 생성
-        const pathArr = window.location.pathname.split('/'); pathArr.pop();
-        const baseUrl = window.location.origin + pathArr.join('/');
-        
-        // 현재 방 번호(state.room)를 사용하여 강제로 URL 조합
-        const forcedUrl = `${baseUrl}/index.html?room=${state.room}`;
-
-        // 3. 라벨도 현재 방 번호로 강제 업데이트 (Room A Join 방지)
-        label.innerText = `Room ${state.room} Join`;
-
-        // 4. QR 코드 생성 (강제 생성된 URL 사용)
-        new QRCode(target, {
-            text: forcedUrl,
-            width: 140,
-            height: 140,
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    }
-},
-
+    toggleMiniQR: function() {
+        const qrBox = document.getElementById('floatingQR');
+        if (!state.room) {
+            this.showAlert("좌측 상단에서 강의실을 먼저 선택해 주세요.");
+            return;
+        }
+        if (qrBox.style.display === 'flex') {
+            qrBox.style.display = 'none';
+        } else {
+            qrBox.style.display = 'flex';
+            const target = document.getElementById('miniQRElement');
+            const label = document.querySelector('.qr-label');
+            target.innerHTML = ""; 
+            const pathArr = window.location.pathname.split('/'); pathArr.pop();
+            const baseUrl = window.location.origin + pathArr.join('/');
+            const forcedUrl = `${baseUrl}/index.html?room=${state.room}`;
+            label.innerText = `Room ${state.room} Join`;
+            new QRCode(target, {
+                text: forcedUrl,
+                width: 140,
+                height: 140,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+    },
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
         if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';
@@ -430,12 +394,10 @@ toggleMiniQR: function() {
         setTimeout(() => new QRCode(document.getElementById('qrBigTarget'), { text: url, width: 300, height: 300 }), 50);
     },
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
-    
     copyLink: function() {
         const linkInput = document.getElementById('studentLink');
         const url = linkInput.value;
         if (!url) { ui.showAlert("강의실을 먼저 선택하세요!"); return; }
-
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(() => {
                 ui.showAlert("클립보드에 링크가 복사되었습니다!");
@@ -446,24 +408,20 @@ toggleMiniQR: function() {
             linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
         }
     },
-
     setMode: function(mode) {
         document.getElementById('view-waiting').style.display = 'none';
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
         document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
         document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
-        
         if (state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
-            
             if (mode === 'quiz') {
                 if (state.isExternalFileLoaded) {
                     ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
                 } else {
                     ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부 [테스트 문항]으로 진행합니다.");
                 }
-                
                 if (state.quizList.length > 0) {
                     quizMgr.showQuiz(); 
                 }
@@ -488,7 +446,6 @@ list.innerHTML += `
     <div class="q-card ${cls}" onclick="ui.openQaModal('${i.id}')">
         <div class="q-content">
             ${icon}${i.text}
-            <!-- 번역 버튼 추가 (클릭 시 이벤트 전파 중단하고 번역창 띄움) -->
             <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="구글 번역기로 보기">
                 <i class="fa-solid fa-language"></i> 번역
             </button>
@@ -516,25 +473,14 @@ list.innerHTML += `
         if (!document.fullscreenElement) elem.requestFullscreen().catch(err => console.log(err));
         else if (document.exitFullscreen) document.exitFullscreen();
     },
-
-// [수정] 스마트 번역 (한글은 영어로, 영어는 한글로)
     translateQa: function(id) {
         if (!state.qaData[id]) return;
         const text = state.qaData[id].text;
-        
-        // 정규식으로 한글이 포함되어 있는지 검사
         const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
-        
-        // 한글이 있으면 -> 영어(en)로 번역
-        // 한글이 없으면 -> 한국어(ko)로 번역
         const targetLang = hasKorean ? 'en' : 'ko';
-        
         const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
-        
         window.open(url, 'googleTranslate', 'width=1000,height=600,scrollbars=yes');
     },
-
-
     showWaitingRoom: function() {
         state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
@@ -591,8 +537,6 @@ const quizMgr = {
             d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeLabel} Q${i+1}.</b> ${q.text.substring(0,20)}...</div>`;
         });
     },
-
-    // [수정] 현재 탑재된 20문항 리스트를 텍스트 파일 형식으로 다운로드
     downloadSample: function() {
         let content = "";
         DEFAULT_QUIZ_DATA.forEach(q => {
@@ -602,7 +546,6 @@ const quizMgr = {
             });
             content += (q.isSurvey ? "SURVEY" : q.correct) + "\n\n";
         });
-
         const blob = new Blob([content], {type: "text/plain"});
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -610,7 +553,6 @@ const quizMgr = {
         a.click();
         ui.showAlert("기본 문항이 포함된 샘플 파일이 다운로드되었습니다.");
     },
-
     startTestMode: function() {
         state.isTestMode = true;
         state.quizList = [{ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2, isOX: false, checked: true, isSurvey: false }];
@@ -669,89 +611,68 @@ const quizMgr = {
             this.renderChart(id, state.isTestMode?2:state.quizList[state.currentQuizIdx].correct); 
         }
     },
-// [신규 기능] 스마트 넥스트: 다음 문제로 가면서 바로 시작
-smartNext: function() {
-    // 마지막 문제인지 확인
-    if (state.currentQuizIdx >= state.quizList.length - 1) {
-        ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
-        return;
-    }
-    
-    // 1. 다음 문제로 이동
-    this.prevNext(1);
-    
-    // 2. 1초 뒤 자동 시작 (화면 전환 효과 고려, 즉시 시작 원하면 setTimeout 제거)
-    setTimeout(() => {
-        this.action('open');
-    }, 500);
-},
-
-// [신규 기능] 일시정지 토글
-togglePause: function() {
-    if (state.timerInterval) {
-        // 타이머가 돌고 있으면 -> 멈춤
-        this.stopTimer();
-        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
-        document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; // 파란색으로 변경
-    } else {
-        // 멈춰 있으면 -> 남은 시간으로 다시 시작 (여기서는 단순하게 action open으로 재개)
-        // 정확한 재개를 위해선 남은 시간을 기억해야 하지만, 편의상 open 재호출
-        this.action('open'); 
-        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-        document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; // 노란색 복구
-    }
-},
-
-// [수정] startTimer: 타이머가 끝나면 '자동으로 결과(차트)'까지 보여줌
-startTimer: function() {
-    this.stopTimer(); 
-    
-    // 일시정지 버튼 보이기
-    document.getElementById('btnPause').style.display = 'flex';
-    document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-    document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
-    document.getElementById('btnSmartNext').style.display = 'none'; // 타이머 도는 동안 Next 숨김
-
-    let t = 10; // (필요하면 이 시간을 늘리세요)
-    const d = document.getElementById('quizTimer'); 
-    d.classList.remove('urgent');
-    const end = Date.now() + (t * 1000); // 10초
-    
-    let lastPlayedSec = -1;
-    if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
-
-    state.timerInterval = setInterval(() => {
-        const r = Math.ceil((end - Date.now())/1000);
-        
-        if(r <= 5) d.classList.add('urgent');
-        d.innerText = `00:${r<10?'0'+r:r}`;
-
-        if (r <= 5 && r > 0 && r !== lastPlayedSec) {
-            state.timerAudio.pause(); state.timerAudio.currentTime = 0;
-            state.timerAudio.play().catch(e=>{});
-            lastPlayedSec = r;
+    smartNext: function() {
+        if (state.currentQuizIdx >= state.quizList.length - 1) {
+            ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
+            return;
         }
-
-        if(r <= 0) {
-            // [변경점] 시간이 다 되면 -> 마감(close)하고 -> 1초 뒤 결과(result)까지 자동 실행
+        this.prevNext(1);
+        setTimeout(() => {
+            this.action('open');
+        }, 500);
+    },
+    togglePause: function() {
+        if (state.timerInterval) {
             this.stopTimer();
-            this.action('close');
-            
-            setTimeout(() => {
-                this.action('result');
-                // 결과가 나오면 다시 Next 버튼 표시, Pause 버튼 숨김
-                document.getElementById('btnSmartNext').style.display = 'flex';
-                document.getElementById('btnPause').style.display = 'none';
-                document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
-            }, 1500); // 1.5초 딜레이 후 결과 공개 (긴장감 조성)
+            document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
+            document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; 
+        } else {
+            this.action('open'); 
+            document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+            document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
         }
-    }, 200);
-},
-// [수정] 타이머 멈출 때 소리도 같이 끄기
+    },
+    startTimer: function() {
+        this.stopTimer(); 
+        document.getElementById('btnPause').style.display = 'flex';
+        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+        document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
+        document.getElementById('btnSmartNext').style.display = 'none'; 
+
+        let t = 10; 
+        const d = document.getElementById('quizTimer'); 
+        d.classList.remove('urgent');
+        const end = Date.now() + (t * 1000); 
+        
+        let lastPlayedSec = -1;
+        if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+
+        state.timerInterval = setInterval(() => {
+            const r = Math.ceil((end - Date.now())/1000);
+            
+            if(r <= 5) d.classList.add('urgent');
+            d.innerText = `00:${r<10?'0'+r:r}`;
+
+            if (r <= 5 && r > 0 && r !== lastPlayedSec) {
+                state.timerAudio.pause(); state.timerAudio.currentTime = 0;
+                state.timerAudio.play().catch(e=>{});
+                lastPlayedSec = r;
+            }
+
+            if(r <= 0) {
+                this.stopTimer();
+                this.action('close');
+                setTimeout(() => {
+                    this.action('result');
+                    document.getElementById('btnSmartNext').style.display = 'flex';
+                    document.getElementById('btnPause').style.display = 'none';
+                    document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
+                }, 1500); 
+            }
+        }, 200);
+    },
     stopTimer: function() { 
         if(state.timerInterval) clearInterval(state.timerInterval); 
-        
-        // [중요] 소리가 나고 있다면 강제로 멈추고 되감기
         if (state.timerAudio) {
             state.timerAudio.pause();
             state.timerAudio.currentTime = 0;
@@ -802,8 +723,13 @@ startTimer: function() {
             .sort((a, b) => b.score - a.score);
 
         const finalRankingData = {};
-        sortedUsers.forEach((user, rankIdx) => {
-            finalRankingData[user.token] = { score: user.score, rank: rankIdx + 1, total: sortedUsers.length };
+        let currentRank = 1;
+        
+        sortedUsers.forEach((user, idx) => {
+            if (idx > 0 && user.score < sortedUsers[idx - 1].score) {
+                currentRank = idx + 1; 
+            }
+            finalRankingData[user.token] = { score: user.score, rank: currentRank, total: sortedUsers.length };
         });
 
         await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
@@ -894,10 +820,11 @@ const printMgr = {
         }
         document.getElementById('printPreviewModal').style.display = 'flex'; 
     },
-closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
-executePrint: function() { window.print(); }
+    closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
+    executePrint: function() { window.print(); }
 };
+
 window.onload = function() {
-dataMgr.checkMobile(); // [추가] 모바일 접속인지 먼저 확인
-dataMgr.initSystem();
+    dataMgr.checkMobile(); // [추가] 모바일 접속인지 먼저 확인
+    dataMgr.initSystem();
 };
