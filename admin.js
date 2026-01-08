@@ -299,66 +299,68 @@ saveSettings: function() {
 
 // --- [신규] 교수님 명단 관리 로직 ---
 const profMgr = {
-list: [],
-init: function() {
-// DB에서 교수님 명단 실시간 동기화
-firebase.database().ref('system/professors').on('value', s => {
-const data = s.val() || {};
-// 데이터가 없으면 기본값 세팅 (최초 1회)
-if (!s.exists()) {
-const defaults = ["장두석", "홍길동", "김철수", "이영희", "박민수", "최지훈", "정수민", "강하늘", "송지원"];
-defaults.forEach(name => firebase.database().ref('system/professors').push(name));
-return;
-}
-this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-this.renderSelect();
-});
-},
-// 사이드바의 Select 박스 렌더링
-renderSelect: function() {
-const sel = document.getElementById('profSelect');
-const currentVal = sel.value; // 기존 선택값 유지
-sel.innerHTML = '<option value="">(선택 안함)</option>';
-this.list.forEach(p => {
-const opt = document.createElement('option');
-opt.value = p.name;
-opt.innerText = p.name + " 교수님";
-if (p.name === currentVal) opt.selected = true;
-sel.appendChild(opt);
-});
-},
-// 관리 모달 열기
-openManageModal: function() {
-this.renderManageList();
-document.getElementById('profManageModal').style.display = 'flex';
-document.getElementById('newProfInput').focus();
-},
-// 모달 내 리스트 렌더링
-renderManageList: function() {
-const div = document.getElementById('profListContainer');
-div.innerHTML = "";
-if (this.list.length === 0) {
-div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>";
-return;
-}
-this.list.forEach(p => {
-div.innerHTML += <div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>;
-});
-},
-addProf: function() {
-const input = document.getElementById('newProfInput');
-const name = input.value.trim();
-if (!name) return;
-firebase.database().ref('system/professors').push(name);
-input.value = "";
-this.renderManageList(); // 즉시 갱신
-},
-deleteProf: function(key) {
-if(confirm("이 이름을 명단에서 삭제하시겠습니까?")) {
-firebase.database().ref(system/professors/${key}).remove();
-this.renderManageList();
-}
-}
+    list: [],
+    init: function() {
+        // DB에서 교수님 명단 실시간 동기화
+        firebase.database().ref('system/professors').on('value', s => {
+            const data = s.val() || {};
+            // 데이터가 없으면 기본값 세팅 (최초 1회)
+            if (!s.exists()) {
+                const defaults = ["장두석", "홍길동", "김철수", "이영희", "박민수", "최지훈", "정수민", "강하늘", "송지원"];
+                defaults.forEach(name => firebase.database().ref('system/professors').push(name));
+                return;
+            }
+            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+            this.renderSelect();
+        });
+    },
+    // 사이드바의 Select 박스 렌더링
+    renderSelect: function() {
+        const sel = document.getElementById('profSelect');
+        const currentVal = sel.value; // 기존 선택값 유지
+        sel.innerHTML = '<option value="">(선택 안함)</option>';
+        this.list.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.innerText = p.name + " 교수님";
+            if (p.name === currentVal) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    },
+    // 관리 모달 열기
+    openManageModal: function() {
+        this.renderManageList();
+        document.getElementById('profManageModal').style.display = 'flex';
+        document.getElementById('newProfInput').focus();
+    },
+    // 모달 내 리스트 렌더링
+    renderManageList: function() {
+        const div = document.getElementById('profListContainer');
+        div.innerHTML = "";
+        if (this.list.length === 0) {
+            div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>";
+            return;
+        }
+        this.list.forEach(p => {
+            // [수정됨] 아래 줄에 백틱(`)이 빠져 있었습니다.
+            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
+        });
+    },
+    addProf: function() {
+        const input = document.getElementById('newProfInput');
+        const name = input.value.trim();
+        if (!name) return;
+        firebase.database().ref('system/professors').push(name);
+        input.value = "";
+        this.renderManageList(); // 즉시 갱신
+    },
+    deleteProf: function(key) {
+        if(confirm("이 이름을 명단에서 삭제하시겠습니까?")) {
+            // [수정됨] 아래 줄에도 백틱(`)이 빠져 있었습니다.
+            firebase.database().ref(`system/professors/${key}`).remove();
+            this.renderManageList();
+        }
+    }
 };
 
 
