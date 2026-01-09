@@ -240,10 +240,15 @@ const dataMgr = {
             }
         });
         
-        dbRef.connections.on('value', s => {
-            const count = s.numChildren();
-            document.getElementById('currentJoinCount').innerText = count;
-        });
+dbRef.connections.on('value', s => {
+    const count = s.numChildren();
+    document.getElementById('currentJoinCount').innerText = count;
+    
+    // 접속자 수가 바뀔 때마다 퀴즈 답변 현황도 새로고침하도록 호출
+    if (typeof quizMgr !== 'undefined' && quizMgr.startAnswerMonitor) {
+        quizMgr.updateAnswerUI(); // 아래에서 만들 함수입니다.
+    }
+});
 
         this.fetchCodeAndRenderQr(room);
         dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
@@ -768,19 +773,29 @@ this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
         document.getElementById('quizGuideArea').innerText = ""; 
     },
 
-// 답변 완료/미완료 인원을 실시간으로 계산해서 화면에 보여주는 기능입니다.
-startAnswerMonitor: function() {
+// 답변 현황 계산을 분리하여 어디서든 호출 가능하게 만듭니다.
+updateAnswerUI: function() {
     const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
-    if (state.ansListener) dbRef.ans.child(id).off(); // 이전에 켜져있던 감시기는 끄기
-
-    state.ansListener = dbRef.ans.child(id).on('value', snap => {
+    dbRef.ans.child(id).once('value', snap => {
         const answers = snap.val() || {};
         const answeredCount = Object.keys(answers).length;
         const totalCount = parseInt(document.getElementById('currentJoinCount').innerText) || 0;
+        
+        // 대기 인원은 (전체 접속자 - 제출자)로 계산하되 0보다 작아지지 않게 함
         const pendingCount = Math.max(0, totalCount - answeredCount);
 
         document.getElementById('answeredCount').innerText = answeredCount;
         document.getElementById('pendingCount').innerText = pendingCount;
+    });
+},
+
+startAnswerMonitor: function() {
+    const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
+    if (state.ansListener) dbRef.ans.child(id).off();
+
+    // 답변이 올 때마다 UI 업데이트 호출
+    state.ansListener = dbRef.ans.child(id).on('value', snap => {
+        this.updateAnswerUI();
     });
 },
 
