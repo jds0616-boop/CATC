@@ -67,6 +67,33 @@
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
         .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
+
+/* 퀴즈 타이머 스타일 */
+.quiz-timer-mobile {
+    font-family: 'Courier New', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: #1e293b;
+    background: #f1f5f9;
+    padding: 5px 15px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    border: 2px solid #e2e8f0;
+}
+/* 5초 남았을 때 깜빡이는 효과 */
+.timer-urgent {
+    color: #ef4444;
+    border-color: #ef4444;
+    animation: blinker 1s linear infinite;
+}
+@keyframes blinker { 50% { opacity: 0; } }
+
+
+
+
     </style>
 </head>
 <body>
@@ -99,6 +126,17 @@
     <div id="quizOverlay" class="quiz-overlay">
         <div id="quizActiveBox" class="quiz-box">
             <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
+<div id="quizActiveBox" class="quiz-box">
+    <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
+    
+    <!-- [추가] 남은 시간 표시 장치 -->
+    <div id="mobileTimerArea" style="display:none;">
+        <div class="quiz-timer-mobile" id="mTimer">
+            <i class="fa-regular fa-clock"></i> <span id="mTimerSec">00:08</span>
+        </div>
+    </div>
+
+    <div id="quizStatusMsg" ...>
             <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">강사님이 퀴즈를 시작하기를 기다리고 있습니다...</div>
             <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;">
                 <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button><button class="quiz-opt-btn" onclick="sendAns(2)">2번</button><button class="quiz-opt-btn" onclick="sendAns(3)">3번</button><button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
@@ -245,6 +283,22 @@ dbRef.status.on('value', snap => {
 });
 dbRef.quiz.on('value', s => {
     const q = s.val(); if(!q) return;
+
+    // [추가] 남은 시간 실시간 업데이트 로직
+    const timerArea = document.getElementById('mobileTimerArea');
+    const timerSec = document.getElementById('mTimerSec');
+    const timerBox = document.getElementById('mTimer');
+
+    if (q.status === 'open' && q.timeLeft !== undefined) {
+        timerArea.style.display = 'block';
+        timerSec.innerText = `00:${q.timeLeft < 10 ? '0' + q.timeLeft : q.timeLeft}`;
+        
+        // 5초 이하일 때 빨간색으로 변경
+        if (q.timeLeft <= 5) timerBox.classList.add('timer-urgent');
+        else timerBox.classList.remove('timer-urgent');
+    } else {
+        timerArea.style.display = 'none'; // 퀴즈 대기 중이거나 결과 화면에선 숨김
+    }
     
     dbRef.status.once('value', statusSnap => {
         const st = statusSnap.val() || {};

@@ -883,6 +883,17 @@ action: function(act) {
             const r = Math.ceil((end - Date.now())/1000);
             const displaySec = r < 0 ? 0 : r;
 state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
+
+state.timerInterval = setInterval(() => {
+    const r = Math.ceil((end - Date.now())/1000);
+    const displaySec = r < 0 ? 0 : r;
+    state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
+
+    // [추가] 교육생들과 남은 시간 공유 (서버 업데이트)
+    firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ timeLeft: displaySec });
+
+    d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
+
             d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
             if(r <= 5) d.classList.add('urgent');
 
