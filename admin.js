@@ -550,44 +550,40 @@ const ui = {
             linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
         }
     },
-    setMode: function(mode) {
-        // 1. 대기실 화면 숨기기
-        document.getElementById('view-waiting').style.display = 'none';
 
-        // 2. 상단 탭 버튼(Q&A Mode / Quiz Mode)의 활성화 상태 변경
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        const targetTab = document.getElementById(`tab-${mode}`);
-        if(targetTab) targetTab.classList.add('active');
 
-        // 3. 화면 전환 (퀴즈 모드가 아닐 때만 즉시 화면을 바꿈)
-        if (mode !== 'quiz') {
-            document.getElementById('view-qa').style.display = (mode === 'qa' ? 'flex' : 'none');
-            document.getElementById('view-quiz').style.display = (mode === 'quiz' ? 'flex' : 'none');
-        }
+setMode: function(mode) {
+    document.getElementById('view-waiting').style.display = 'none';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    const targetTab = document.getElementById(`tab-${mode}`);
+    if(targetTab) targetTab.classList.add('active');
 
-        // 4. 강의실(Room)이 선택되어 있는 경우 실행
-        if (state.room) {
-            // 서버(Firebase)에 현재 모드(qa 또는 quiz)를 실시간 업데이트
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+    if (mode === 'qa') {
+        document.getElementById('view-qa').style.display = 'flex';
+        document.getElementById('view-quiz').style.display = 'none';
+    }
 
-            // [중요] 퀴즈 모드로 진입할 때의 로직
-            if (mode === 'quiz') {
-                // (1) 퀴즈 선택/관리 팝업창을 먼저 띄움
+    if (state.room) {
+        firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+        if (mode === 'quiz') {
+            // [수정] 이미 퀴즈가 로드되어 있는 경우(isExternalFileLoaded가 true이거나 문항이 있는 경우)
+            if (state.isExternalFileLoaded || (state.quizList && state.quizList.length > 0 && state.currentQuizIdx >= 0)) {
+                document.getElementById('view-qa').style.display = 'none';
+                document.getElementById('view-quiz').style.display = 'flex';
+                // 현재 진행 중이던 상태를 화면에 다시 그려줌
+                quizMgr.showQuiz();
+            } else {
+                // 한 번도 로드한 적이 없거나 초기화된 상태일 때만 팝업 표시
                 document.getElementById('quizSelectModal').style.display = 'flex';
-
-                // (2) 퀴즈 내부 버튼들의 초기 상태를 세팅
                 document.getElementById('btnPause').style.display = 'none';
                 document.getElementById('btnSmartNext').style.display = 'flex';
                 document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
-
-                // (3) 방금 우리가 만든 '저장된 퀴즈 목록'을 서버에서 가져와 팝업에 뿌려줌
                 quizMgr.loadSavedQuizList();
-
-                // (4) 여기서 종료! (팝업에서 버튼을 눌러야 실제 퀴즈 화면으로 넘어갑니다)
-                return;
             }
+            return;
         }
-    }, 
+    }
+},
 
 
 
@@ -1141,23 +1137,23 @@ const max = Math.max(...cnt, 1);
         document.getElementById('quizExitModal').style.display = 'flex';
     },
 confirmExitQuiz: function(type) {
-        document.getElementById('quizExitModal').style.display = 'none';
-        if(type === 'reset') {
-            state.isTestMode = false;
-            state.currentQuizIdx = 0;
-            if (!state.isExternalFileLoaded) {
-                state.quizList = DEFAULT_QUIZ_DATA; 
-                this.renderMiniList();
-            }
-            firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
-            firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
-            
-            // ✅ [추가] 기존 답안지와 결과 데이터를 DB에서 싹 지우는 코드
-            firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
-            firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
-        }
-        ui.setMode('qa');
+    document.getElementById('quizExitModal').style.display = 'none';
+    if(type === 'reset') {
+        state.isTestMode = false;
+        state.currentQuizIdx = 0;
+        state.isExternalFileLoaded = false; // [추가] 이 플래그를 꺼야 다음 진입 시 팝업이 뜹니다.
+        state.quizList = []; // [수정] 기존 문항 리스트를 비웁니다.
+        
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
+        firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
+        firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
+        firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
+        
+        // 초기화 후에는 UI를 갱신해줘야 합니다.
+        quizMgr.renderMiniList();
     }
+    ui.setMode('qa');
+}
 };
 
 // --- 5. Print & Report ---
