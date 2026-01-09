@@ -962,17 +962,25 @@ action: function(act) {
         // 이렇게 해야 문항이 1개만 있어도 정상적으로 시작됩니다.
         this.action('open');
     },
-    togglePause: function() {
-        if (state.timerInterval) {
-            this.stopTimer();
-            document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
-            document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; 
-        } else {
-            this.action('open'); 
-            document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-            document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
-        }
-    },
+togglePause: function() {
+    if (state.timerInterval) { // 현재 타이머가 돌고 있다면 -> 일시정지 실행
+        this.stopTimer();
+        
+        // [수정] DB에 '일시정지' 상태와 '남은 시간'을 즉시 업데이트하여 학생들에게 알림
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ 
+            status: 'pause',
+            remainingTime: state.remainingTime 
+        });
+
+        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
+        document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; 
+    } else { // 멈춰있다면 -> 다시 시작(Resume)
+        // action('open')을 호출하면 내부적으로 startTimer()가 실행되며 새로운 endTime을 생성함
+        this.action('open'); 
+        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+        document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
+    }
+},
     
 startTimer: function() {
     this.stopTimer(); 
