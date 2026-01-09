@@ -214,9 +214,12 @@
                     
 <div class="quiz-status-bar">
                     <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()"><i class="fa-solid fa-flask"></i> <span>Start Test Mode</span></button>
-                    <div id="quizControls" style="display:none; gap:10px;">
-                        <!-- 이전 문제 (비상용) -->
-                        <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:50px; padding:0;"><i class="fa-solid fa-backward"></i></button>
+<div id="quizControls" style="display:none; gap:10px;">
+    <!-- 이전 문제 -->
+    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:50px; padding:0;" title="이전 문제"><i class="fa-solid fa-backward"></i></button>
+    
+    <!-- [추가] 다음 문제 (단순 이동) -->
+    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)" style="width:50px; padding:0;" title="다음 문제"><i class="fa-solid fa-forward"></i></button>
                         
                         <!-- [핵심] 일시정지 버튼 (설명할 때 사용) -->
                         <button class="q-btn" id="btnPause" onclick="quizMgr.togglePause()" style="background:#f59e0b; display:none;"><i class="fa-solid fa-pause"></i> 일시정지</button>
