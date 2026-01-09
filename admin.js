@@ -807,7 +807,7 @@ completeQuizLoading: function() {
             container.innerHTML = "";
             const data = snap.val();
             if (!data) {
-                container.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8;">저장된 커스텀 퀴즈가 없습니다.</div>`;
+                container.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444; font-weight:bold;">⚠️ 아직 저장된 퀴즈가 없습니다.<br>좌측 [Quiz File] 버튼으로 파일을 먼저 업로드해주세요!</div>`;
                 return;
             }
 
