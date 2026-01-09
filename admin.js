@@ -91,7 +91,21 @@ tryLogin: async function() {
         }
     },
 
-
+    logout: async function() {
+        if (confirm("로그아웃 하시겠습니까?")) {
+            try {
+                await firebase.auth().signOut();
+                // 로컬에 저장된 강의실 제어권 정보도 삭제
+                localStorage.removeItem('last_owned_room');
+                
+                // 페이지 새로고침을 통해 모든 상태 초기화
+                location.reload(); 
+            } catch (error) {
+                console.error("Logout Error:", error);
+                alert("로그아웃 중 오류가 발생했습니다.");
+            }
+        }
+    },
 
 
     executeChangePw: async function() {
