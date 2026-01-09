@@ -252,7 +252,7 @@ dbRef.status.on('value', snap => {
 dbRef.quiz.on('value', s => {
     const q = s.val(); if(!q) return;
     
-    // 상태 변경 시 타이머 초기화
+    // 상태가 바뀔 때마다 타이머는 일단 정지
     if(studentTimerInterval) clearInterval(studentTimerInterval);
     const sTimerBox = document.getElementById('studentQuizTimerBox');
     const sTimerText = document.getElementById('studentTimer');
@@ -261,14 +261,16 @@ dbRef.quiz.on('value', s => {
     dbRef.status.once('value', statusSnap => {
         const st = statusSnap.val() || {};
         
-        if (q.status === 'ready' && st.quizStep !== 'summary') {
-            myLastChoiceIdx = null; // [중요] 새 문제가 준비될 때만 선택 기록 초기화
+        // [핵심 1] 'ready' 즉, 완전히 새로운 문제가 나올 때만 선택 기록을 지웁니다.
+        // 강사가 일시정지 후 다시 시작하는 것은 ready가 아니므로 기록이 유지됩니다.
+        if (q.status === 'ready') {
+            myLastChoiceIdx = null; 
             myLastChoice = null;
         }
+
         if (st.quizStep === 'summary' && !hasClosedSummary) return; 
         if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
 
-        // --- 공통 변수 설정 ---
         document.getElementById('quizOverlay').style.display = 'flex';
         document.getElementById('quizActiveBox').style.display = 'block';
         document.getElementById('quizResultBox').style.display = 'none';
@@ -277,17 +279,16 @@ dbRef.quiz.on('value', s => {
         const msgBox = document.getElementById('quizStatusMsg');
         const feedBox = document.getElementById('quizFeedback');
 
-        // [1] 일시정지(pause) 상태 처리
+        // [2] 일시정지 상태 (기존 선택 유지 및 클릭 차단)
         if(q.status === 'pause') {
-            canAnswer = false; // 일시정지 중엔 버튼 못 누르게 함
+            canAnswer = false; 
             msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
-            
             if(sTimerBox && sTimerText && q.remainingTime !== undefined) {
                 sTimerBox.style.display = 'flex';
                 sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
                 sTimerText.style.color = "#f59e0b";
             }
-            // 일시정지 중에도 버튼이 보여야 하며, 내가 누른 버튼에 'selected' 유지
+            // 기존 버튼들에 'locked'를 걸고 내가 눌렀던 버튼에 'selected' 유지
             document.querySelectorAll('.quiz-opt-btn').forEach((btn, idx) => {
                 btn.classList.add('locked');
                 if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
@@ -295,22 +296,19 @@ dbRef.quiz.on('value', s => {
             return; 
         }
 
-        // [2] 결과 발표 모드 (result)
+        // [3] 결과 발표 상태
         if (q.status === 'result') { 
-            multArea.style.display = 'none';
-            oxArea.style.display = 'none';
+            multArea.style.display = 'none'; oxArea.style.display = 'none';
+            const correctAns = (q.id === 'TEST') ? 2 : q.correct;
             if (q.isSurvey) {
                 msgBox.innerText = "📋 설문 결과 요약";
                 feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계가 완료되었습니다."}</span>`;
             } else {
-                const correctAns = (q.id === 'TEST') ? 2 : q.correct;
                 if (myLastChoiceIdx === correctAns) {
-                     msgBox.innerText = "🎉 정답입니다!";
-                     msgBox.style.color = "#10b981";
+                     msgBox.innerText = "🎉 정답입니다!"; msgBox.style.color = "#10b981";
                      feedBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> 훌륭합니다!`;
                 } else {
-                     msgBox.innerText = "앗, 틀렸습니다...";
-                     msgBox.style.color = "#ef4444";
+                     msgBox.innerText = "앗, 틀렸습니다..."; msgBox.style.color = "#ef4444";
                      const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
                      feedBox.innerHTML = `정답은 <b style="color:#1e293b; font-size:18px;">[ ${ansText} ]</b> 입니다.`;
                 }
@@ -318,21 +316,21 @@ dbRef.quiz.on('value', s => {
             return; 
         }
 
-        // [3] 대기(ready) 및 진행(open) 모드
+        // [4] 대기 상태
         if(q.status === 'ready') {
             canAnswer = false;
             msgBox.innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
-            multArea.style.display = 'none';
-            oxArea.style.display = 'none';
+            msgBox.style.color = "#1e293b";
+            multArea.style.display = 'none'; oxArea.style.display = 'none';
             feedBox.innerText = "";
             currentQuizId = q.id;
         } 
+        // [5] 퀴즈 진행 상태 (다시 시작했을 때 여기를 탑니다)
         else if(q.status === 'open') {
             canAnswer = true;
             msgBox.innerText = "정답을 선택하세요!";
             msgBox.style.color = "#1e293b";
             
-            // 타이머 작동
             if(q.endTime && sTimerBox && sTimerText) {
                 sTimerBox.style.display = 'flex';
                 studentTimerInterval = setInterval(() => {
@@ -344,24 +342,22 @@ dbRef.quiz.on('value', s => {
                 }, 200);
             }
 
-            // 버튼 생성 및 기존 선택 복구
             if(q.isOX) {
-                multArea.style.display = 'none';
-                oxArea.style.display = 'flex';
+                multArea.style.display = 'none'; oxArea.style.display = 'flex';
                 document.querySelectorAll('.ox-btn').forEach((btn, i) => {
                     btn.classList.remove('locked', 'selected');
+                    // [핵심 2] OX 버튼의 경우 상태를 다시 체크해서 selected 부여
                     if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                 });
             } else {
-                oxArea.style.display = 'none';
-                multArea.style.display = 'flex';
+                oxArea.style.display = 'none'; multArea.style.display = 'flex';
                 multArea.innerHTML = ""; 
                 q.options.forEach((optText, i) => {
                     const btn = document.createElement('button');
                     btn.className = 'quiz-opt-btn';
                     btn.innerText = `${i + 1}. ${optText}`; 
                     btn.onclick = () => sendAns(i + 1);
-                    // [핵심] 다시 그릴 때 내가 이전에 눌렀던 번호라면 selected 추가
+                    // [핵심 3] 다시 그릴 때 내가 이전에 눌렀던 번호라면 selected 클래스 강제 주입
                     if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                     multArea.appendChild(btn);
                 });
