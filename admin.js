@@ -33,6 +33,7 @@ ansListener: null      // 답변 감시용
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
 
 // --- 1. Auth ---
+// --- 1. Auth ---
 const authMgr = {
     ADMIN_EMAIL: "admin@kac.com",
 
@@ -40,32 +41,23 @@ const authMgr = {
     tryLogin: async function() {
         const inputPw = document.getElementById('loginPwInput').value;
         const msgDiv = document.getElementById('loginMsg');
-
         if(!inputPw) { alert("비밀번호를 입력해주세요."); return; }
-
         try {
-            // Firebase 로그인 실행
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
-            
             if(msgDiv) {
                 msgDiv.innerText = "로그인 되었습니다.";
-                msgDiv.style.color = "#10b981"; // 초록색
+                msgDiv.style.color = "#10b981";
             }
-
-            // 0.7초 뒤에 화면 전환 (성공 메시지를 보여주기 위함)
             setTimeout(() => {
                 document.getElementById('loginOverlay').style.display = 'none';
                 dataMgr.loadInitialData();
                 if(msgDiv) msgDiv.innerText = "";
             }, 700);
-
         } catch (error) {
             if(msgDiv) {
                 msgDiv.innerText = "비밀번호가 틀렸습니다.";
-                msgDiv.style.color = "#ef4444"; // 빨간색
-            } else {
-                alert("비밀번호가 올바르지 않습니다.");
-            }
+                msgDiv.style.color = "#ef4444";
+            } else { alert("비밀번호가 올바르지 않습니다."); }
             document.getElementById('loginPwInput').value = "";
             document.getElementById('loginPwInput').focus();
         }
@@ -76,32 +68,27 @@ const authMgr = {
         const user = firebase.auth().currentUser;
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
-        
         if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
         if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
         if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
-        
         try { 
             await user.updatePassword(newPw); 
             ui.showAlert("비밀번호가 변경되었습니다."); 
             ui.closePwModal(); 
-        } catch (e) { 
-            ui.showAlert("변경 실패: " + e.message); 
-        }
+        } catch (e) { ui.showAlert("변경 실패: " + e.message); }
     },
 
-    // 로그아웃 함수 (동작 안 하던 부분 수정 완료)
+    // 로그아웃 함수 (복구 완료)
     logout: function() {
         if(confirm("로그아웃 하시겠습니까?")) {
             firebase.auth().signOut().then(() => {
-                // 로그아웃 성공 시 페이지를 새로고침하여 로그인창으로 보냄
                 location.reload(); 
             }).catch(error => {
                 alert("로그아웃 중 오류가 발생했습니다: " + error.message);
             });
         }
     }
-};
+}; // 여기서 객체 닫기 끝!
 
 
 
