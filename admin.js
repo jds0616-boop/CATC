@@ -43,7 +43,10 @@ const state = {
     timerInterval: null,
     pendingRoom: null,
     timerAudio: null,
-    newBadgeTimer: null // <-- 이거 하나 추가
+    newBadgeTimer: null, // <-- 이거 하나 추가
+remainingTime: 8,      // 남은 시간 저장용
+ansListener: null      // 답변 감시용
+
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
@@ -749,6 +752,9 @@ const quizMgr = {
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
+state.remainingTime = 8;     // 문제를 새로 열 때마다 시간을 8초로 리셋
+this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
+
     },
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
@@ -761,6 +767,24 @@ const quizMgr = {
         });
         document.getElementById('quizGuideArea').innerText = ""; 
     },
+
+// 답변 완료/미완료 인원을 실시간으로 계산해서 화면에 보여주는 기능입니다.
+startAnswerMonitor: function() {
+    const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
+    if (state.ansListener) dbRef.ans.child(id).off(); // 이전에 켜져있던 감시기는 끄기
+
+    state.ansListener = dbRef.ans.child(id).on('value', snap => {
+        const answers = snap.val() || {};
+        const answeredCount = Object.keys(answers).length;
+        const totalCount = parseInt(document.getElementById('currentJoinCount').innerText) || 0;
+        const pendingCount = Math.max(0, totalCount - answeredCount);
+
+        document.getElementById('answeredCount').innerText = answeredCount;
+        document.getElementById('pendingCount').innerText = pendingCount;
+    });
+},
+
+
 action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         
@@ -805,7 +829,7 @@ action: function(act) {
             ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
             return;
         }
-        this.prevNext(1);
+        //this.prevNext(1);
         setTimeout(() => {
             this.action('open');
         }, 500);
@@ -828,7 +852,7 @@ action: function(act) {
         document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
         document.getElementById('btnSmartNext').style.display = 'none'; 
 
-        let t = 8; 
+        let t = state.remainingTime;
         const inputEl = document.getElementById('quizTimeInput');
         if(inputEl) inputEl.value = 8;
 
@@ -843,6 +867,7 @@ action: function(act) {
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
             const displaySec = r < 0 ? 0 : r;
+state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
             d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
             if(r <= 5) d.classList.add('urgent');
 
