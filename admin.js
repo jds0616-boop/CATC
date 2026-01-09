@@ -562,7 +562,7 @@ const ui = {
             if (mode === 'quiz') {
                 document.getElementById('btnPause').style.display = 'none';
                 document.getElementById('btnSmartNext').style.display = 'flex';
-                document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
+                document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
 
                 if (state.isExternalFileLoaded) {
                     ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
@@ -761,7 +761,7 @@ const quizMgr = {
         this.renderScreen(q);
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnSmartNext').style.display = 'flex';
-        document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
+        document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('btnTest').style.display = 'none'; 
@@ -899,7 +899,7 @@ state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장
                     this.action('result');
                     document.getElementById('btnSmartNext').style.display = 'flex';
                     document.getElementById('btnPause').style.display = 'none';
-                    document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
+                    document.getElementById('btnSmartNext').innerText = "현재 퀴즈 시작 ▶";
                 }, 1500);
             }
         }, 200);
