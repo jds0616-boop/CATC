@@ -43,41 +43,43 @@ const state = {
     timerInterval: null,
     pendingRoom: null,
     timerAudio: null,
-newBadgeTimer: null,
+    newBadgeTimer: null, // <-- 이거 하나 추가
 remainingTime: 8,      // 남은 시간 저장용
 ansListener: null      // 답변 감시용
+
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
 
 // --- 1. Auth ---
 const authMgr = {
-    ADMIN_EMAIL: "admin@kac.com",
-
-    // 로그인 시도 함수
-    tryLogin: async function() {
+    ADMIN_EMAIL: "admin@kac.com", 
+ 
+tryLogin: async function() {
         const inputPw = document.getElementById('loginPwInput').value;
-        const msgDiv = document.getElementById('loginMsg');
+        const msgDiv = document.getElementById('loginMsg'); // 아까 만든 글씨 칸 가져오기
 
         if(!inputPw) { alert("비밀번호를 입력해주세요."); return; }
 
         try {
-            // Firebase 로그인 실행
+            // 1. 로그인 시도
             await firebase.auth().signInWithEmailAndPassword(this.ADMIN_EMAIL, inputPw);
             
+            // 2. 성공 시 "로그인 되었습니다" 표시
             if(msgDiv) {
                 msgDiv.innerText = "로그인 되었습니다.";
                 msgDiv.style.color = "#10b981"; // 초록색
             }
 
-            // 0.7초 뒤에 화면 전환 (성공 메시지를 보여주기 위함)
+            // 3. 0.7초 뒤에 화면 전환 (그래야 글씨가 보임)
             setTimeout(() => {
                 document.getElementById('loginOverlay').style.display = 'none';
                 dataMgr.loadInitialData();
-                if(msgDiv) msgDiv.innerText = "";
+                if(msgDiv) msgDiv.innerText = ""; // 다음을 위해 비움
             }, 700);
 
         } catch (error) {
+            // 실패 시
             if(msgDiv) {
                 msgDiv.innerText = "비밀번호가 틀렸습니다.";
                 msgDiv.style.color = "#ef4444"; // 빨간색
@@ -89,36 +91,7 @@ const authMgr = {
         }
     },
 
-    // 관리자 비밀번호 변경 함수
-    executeChangePw: async function() {
-        const user = firebase.auth().currentUser;
-        const newPw = document.getElementById('cp-new').value;
-        const confirmPw = document.getElementById('cp-confirm').value;
-        
-        if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
-        if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
-        if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
-        
-        try { 
-            await user.updatePassword(newPw); 
-            ui.showAlert("비밀번호가 변경되었습니다."); 
-            ui.closePwModal(); 
-        } catch (e) { 
-            ui.showAlert("변경 실패: " + e.message); 
-        }
-    },
 
-    // 로그아웃 함수 (동작 안 하던 부분 수정 완료)
-    logout: function() {
-        if(confirm("로그아웃 하시겠습니까?")) {
-            firebase.auth().signOut().then(() => {
-                // 로그아웃 성공 시 페이지를 새로고침하여 로그인창으로 보냄
-                location.reload(); 
-            }).catch(error => {
-                alert("로그아웃 중 오류가 발생했습니다: " + error.message);
-            });
-        }
-    },
 
 
     executeChangePw: async function() {
@@ -267,15 +240,10 @@ const dataMgr = {
             }
         });
         
-dbRef.connections.on('value', s => {
-    const count = s.numChildren();
-    document.getElementById('currentJoinCount').innerText = count;
-    
-    // 접속자 수가 바뀔 때마다 퀴즈 답변 현황도 새로고침하도록 호출
-    if (typeof quizMgr !== 'undefined' && quizMgr.startAnswerMonitor) {
-        quizMgr.updateAnswerUI(); // 아래에서 만들 함수입니다.
-    }
-});
+        dbRef.connections.on('value', s => {
+            const count = s.numChildren();
+            document.getElementById('currentJoinCount').innerText = count;
+        });
 
         this.fetchCodeAndRenderQr(room);
         dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
@@ -580,7 +548,7 @@ const ui = {
             if (mode === 'quiz') {
                 document.getElementById('btnPause').style.display = 'none';
                 document.getElementById('btnSmartNext').style.display = 'flex';
-document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
+                document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
 
                 if (state.isExternalFileLoaded) {
                     ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
@@ -773,33 +741,42 @@ const quizMgr = {
         if (d > 0) ui.showAlert("모든 문항이 종료되었습니다.");
     },
     showQuiz: function() {
-
-state.remainingTime = 8;     // 문제를 새로 열 때마다 시간을 8초로 리셋
-this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
         document.querySelector('.quiz-card').classList.remove('result-mode');
         const q = state.quizList[state.currentQuizIdx];
         this.resetTimerUI(); 
         this.renderScreen(q);
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnSmartNext').style.display = 'flex';
-document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
+        document.getElementById('btnSmartNext').innerHTML = 'Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>';
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
-        document.getElementById('btnTest').style.display = 'none'; 
-        document.getElementById('quizControls').style.display = 'flex';
+state.remainingTime = 8;     // 문제를 새로 열 때마다 시간을 8초로 리셋
+this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
 
     },
+    renderScreen: function(q) {
+        document.getElementById('d-qtext').innerText = q.text;
+        const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
+        document.getElementById('quizNumberLabel').innerText = qNum;
+        const oDiv = document.getElementById('d-options'); oDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none';
+        oDiv.innerHTML = "";
+        q.options.forEach((o, i) => {
+            oDiv.innerHTML += `<div class="quiz-opt ${q.isOX?'ox-mode':''}" id="opt-${i+1}"><div class="opt-num">${i+1}</div><div class="opt-text">${o}</div></div>`;
+        });
+        document.getElementById('quizGuideArea').innerText = ""; 
+    },
+
 // 답변 완료/미완료 인원을 실시간으로 계산해서 화면에 보여주는 기능입니다.
-updateAnswerUI: function() {
+startAnswerMonitor: function() {
     const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
-    dbRef.ans.child(id).once('value', snap => {
+    if (state.ansListener) dbRef.ans.child(id).off(); // 이전에 켜져있던 감시기는 끄기
+
+    state.ansListener = dbRef.ans.child(id).on('value', snap => {
         const answers = snap.val() || {};
         const answeredCount = Object.keys(answers).length;
         const totalCount = parseInt(document.getElementById('currentJoinCount').innerText) || 0;
-        
-        // 대기 인원은 (전체 접속자 - 제출자)로 계산하되 0보다 작아지지 않게 함
         const pendingCount = Math.max(0, totalCount - answeredCount);
 
         document.getElementById('answeredCount').innerText = answeredCount;
@@ -807,15 +784,7 @@ updateAnswerUI: function() {
     });
 },
 
-startAnswerMonitor: function() {
-    const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
-    if (state.ansListener) dbRef.ans.child(id).off();
 
-    // 답변이 올 때마다 UI 업데이트 호출
-    state.ansListener = dbRef.ans.child(id).on('value', snap => {
-        this.updateAnswerUI();
-    });
-},
 action: function(act) {
         const id = state.isTestMode ? 'TEST' : `Q${state.currentQuizIdx}`;
         
@@ -884,7 +853,6 @@ action: function(act) {
         document.getElementById('btnSmartNext').style.display = 'none'; 
 
         let t = state.remainingTime;
-       //const displaySec = r < 0 ? 0 : r;
         const inputEl = document.getElementById('quizTimeInput');
         if(inputEl) inputEl.value = 8;
 
@@ -899,6 +867,7 @@ action: function(act) {
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
             const displaySec = r < 0 ? 0 : r;
+state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
             d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
             if(r <= 5) d.classList.add('urgent');
 
@@ -916,7 +885,7 @@ action: function(act) {
                     this.action('result');
                     document.getElementById('btnSmartNext').style.display = 'flex';
                     document.getElementById('btnPause').style.display = 'none';
-document.getElementById('btnSmartNext').innerText = "현재 퀴즈 시작 ▶";
+                    document.getElementById('btnSmartNext').innerText = "Next Quiz (Auto Start) ▶";
                 }, 1500);
             }
         }, 200);
