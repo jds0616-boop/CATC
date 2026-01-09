@@ -127,7 +127,7 @@
     </div>
     <script src="config.js"></script>
     <script>
-        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; 
+        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
         
         (async function init() {
             const params = new URLSearchParams(window.location.search);
@@ -252,7 +252,7 @@ dbRef.status.on('value', snap => {
 dbRef.quiz.on('value', s => {
     const q = s.val(); if(!q) return;
     
-    // [추가] 새로운 상태를 받을 때마다 기존 학생용 타이머는 초기화
+    // [보정] 상태가 바뀔 때마다 기존에 돌던 학생용 타이머는 일단 멈춤
     if(studentTimerInterval) clearInterval(studentTimerInterval);
     const sTimerBox = document.getElementById('studentQuizTimerBox');
     const sTimerText = document.getElementById('studentTimer');
@@ -261,7 +261,7 @@ dbRef.quiz.on('value', s => {
     dbRef.status.once('value', statusSnap => {
         const st = statusSnap.val() || {};
         
-        // 1. 퀴즈를 종료해야 하는 상황들 체크
+        // 1. 퀴즈를 종료해야 하는 상황들 체크 (기존 로직 유지)
         if (q.status === 'ready' && st.quizStep !== 'summary') { /* 준비 중 */ }
         if (st.quizStep === 'summary' && !hasClosedSummary) return; 
         if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
@@ -294,10 +294,11 @@ dbRef.quiz.on('value', s => {
             return; 
         }
 
-        // 3. 퀴즈 진행 화면 처리 (오버레이 및 UI 세팅)
+        // 3. 퀴즈 진행 화면 처리 (기존 로직 유지)
         document.getElementById('quizOverlay').style.display = 'flex';
         document.getElementById('quizActiveBox').style.display = 'block';
         document.getElementById('quizResultBox').style.display = 'none';
+
         const multArea = document.getElementById('btnGroupMultiple');
         const oxArea = document.getElementById('btnGroupOX');
 
@@ -314,25 +315,19 @@ dbRef.quiz.on('value', s => {
             canAnswer = true;
             document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!";
             
-            // [핵심 추가] 학생용 실시간 동기화 타이머 작동
+            // --- [핵심 추가] 강사와 동기화되는 실시간 타이머 작동 ---
             if(q.endTime && sTimerBox && sTimerText) {
                 sTimerBox.style.display = 'flex';
                 studentTimerInterval = setInterval(() => {
-                    const now = Date.now();
-                    const remain = Math.ceil((q.endTime - now) / 1000);
-                    const displaySec = remain < 0 ? 0 : remain;
-                    
-                    sTimerText.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
-                    
-                    // 5초 이하일 때 빨간색 강조
-                    if(remain <= 5) sTimerText.style.color = "#ef4444";
-                    else sTimerText.style.color = "#1e293b";
-
+                    const remain = Math.ceil((q.endTime - Date.now()) / 1000);
+                    const display = remain < 0 ? 0 : remain;
+                    sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
+                    sTimerText.style.color = (remain <= 5) ? "#ef4444" : "#1e293b";
                     if(remain <= 0) clearInterval(studentTimerInterval);
                 }, 200);
             }
+            // ---------------------------------------------------
 
-            // 문제 유형별 버튼 생성
             if(q.isOX) {
                 multArea.style.display = 'none';
                 oxArea.style.display = 'flex';
@@ -352,14 +347,13 @@ dbRef.quiz.on('value', s => {
         }
         else if(q.status === 'close') {
             canAnswer = false;
-            if(studentTimerInterval) clearInterval(studentTimerInterval); // 타이머 강제 종료
+            if(studentTimerInterval) clearInterval(studentTimerInterval); // 타이머 멈춤
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
             if(myLastChoice) {
                 document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다.";
                 document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
             } else {
                 document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다.";
-                document.getElementById('quizFeedback').innerText = "";
             }
         }
     });
