@@ -325,7 +325,7 @@ const dataMgr = {
         }
     },
     deactivateAllRooms: async function() {
-        if(!confirm(⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
+        if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         const updates = {};
         for(let i=65; i<=90; i++) {
             const char = String.fromCharCode(i);
