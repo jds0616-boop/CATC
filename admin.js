@@ -91,18 +91,6 @@ const authMgr = {
 }; // 여기서 객체 닫기 끝!
 
 
-
-    executeChangePw: async function() {
-        const user = firebase.auth().currentUser;
-        const newPw = document.getElementById('cp-new').value;
-        const confirmPw = document.getElementById('cp-confirm').value;
-        if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
-        if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
-        if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
-        try { await user.updatePassword(newPw); ui.showAlert("비밀번호가 변경되었습니다."); ui.closePwModal(); } catch (e) { ui.showAlert("변경 실패: " + e.message); }
-    }
-};
-
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     checkAdminSecret: async function(input) {
