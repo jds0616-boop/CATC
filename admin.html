@@ -219,7 +219,6 @@
                     </div>
                     
 <div class="quiz-status-bar">
-                    <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()"><i class="fa-solid fa-flask"></i> <span>Start Test Mode</span></button>
 <div id="quizControls" style="display:none; gap:10px;">
     <!-- 이전 문제 -->
     <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:50px; padding:0;" title="이전 문제"><i class="fa-solid fa-backward"></i></button>
@@ -267,6 +266,27 @@
                 <div id="miniQuizList"></div>
             </div>
         </div>
+
+
+<!-- [추가] 퀴즈 불러오기 선택 팝업 -->
+<div id="quizSelectModal" class="modal-overlay">
+    <div class="modal-box" style="width: 450px; text-align: center;">
+        <div class="modal-header"><h3><i class="fa-solid fa-list-check"></i> 퀴즈 불러오기</h3></div>
+        <p style="color:#64748b; margin-bottom:20px;">이 방에서 진행할 퀴즈 문항을 선택해주세요.</p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <!-- 샘플 문항 버튼 -->
+            <button class="btn-action btn-secondary" onclick="quizMgr.useDefaultQuiz()" style="height:60px; font-size:16px;">
+                <i class="fa-solid fa-file-lines"></i> 샘플 문항 이용 (TEST.TXT)
+            </button>
+            <!-- 저장된 문항 버튼 -->
+            <button id="btnUseSavedQuiz" class="btn-action btn-primary" onclick="quizMgr.useSavedQuiz()" style="height:60px; font-size:16px;">
+                <i class="fa-solid fa-cloud-arrow-down"></i> 저장된 문항 이용 (Custom)
+            </button>
+        </div>
+        <button class="m-btn" onclick="document.getElementById('quizSelectModal').style.display='none'" style="margin-top:20px; width:100%; justify-content:center; background:#e2e8f0; color:#475569;">취소</button>
+    </div>
+</div>
+
         
         <!-- [핵심 수정] Modals inside Main Stage (전체화면 시 보이도록 이동) -->
         <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">

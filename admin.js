@@ -554,27 +554,44 @@ const ui = {
         document.getElementById('view-waiting').style.display = 'none';
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${mode}`).classList.add('active');
-        document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
-        document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
+        if (mode !== 'quiz') {
+            document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
+            document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
+        }
         
-        if (state.room) {
+if (state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            
             if (mode === 'quiz') {
+                // 1. 즉시 퀴즈를 시작하지 않고 선택 팝업창을 띄웁니다.
+                document.getElementById('quizSelectModal').style.display = 'flex';
+                
+                // 2. 퀴즈 내부 버튼들의 초기 상태만 설정해둡니다.
                 document.getElementById('btnPause').style.display = 'none';
                 document.getElementById('btnSmartNext').style.display = 'flex';
                 document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
 
-                if (state.isExternalFileLoaded) {
-                    ui.showAlert(`업로드된 퀴즈 파일(${state.quizList.length}문항)로 진행합니다.`);
-                } else {
-                    ui.showAlert("업로드된 퀴즈 파일이 없습니다.\n내부 [테스트 문항]으로 진행합니다.");
-                }
-                if (state.quizList.length > 0) {
-                    quizMgr.showQuiz(); 
-                }
+                // 3. 서버(Firebase)에 이 방 전용으로 저장된 퀴즈가 있는지 확인합니다.
+                firebase.database().ref(`courses/${state.room}/quizBank`).once('value', snap => {
+                    const savedBtn = document.getElementById('btnUseSavedQuiz');
+                    if(!snap.exists()) {
+                        // 저장된 퀴즈가 없으면 버튼을 흐리게 만들고 클릭 못하게 막습니다.
+                        savedBtn.style.opacity = "0.5";
+                        savedBtn.innerHTML = "<i class='fa-solid fa-xmark'></i> 저장된 문항 없음";
+                        savedBtn.disabled = true;
+                    } else {
+                        // 저장된 퀴즈가 있으면 버튼을 활성화합니다.
+                        savedBtn.style.opacity = "1";
+                        savedBtn.innerHTML = "<i class='fa-solid fa-cloud-arrow-down'></i> 저장된 문항 이용 (Custom)";
+                        savedBtn.disabled = false;
+                    }
+                });
+
+                // [중요] 여기서 return을 해줘야 아래에 있는 기존 실행 코드들이 바로 작동하지 않습니다.
+                return; 
             }
         }
-    },
+    }, // <--- 이 '};' 가 반드시 있어야 합니다!
     filterQa: function(f) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
@@ -699,6 +716,9 @@ const quizMgr = {
                 }
             });
             state.isExternalFileLoaded = true;
+// [추가] 업로드한 파일을 서버(DB)에 방 번호별로 저장합니다.
+firebase.database().ref(`courses/${state.room}/quizBank`).set(state.quizList)
+    .then(() => ui.showAlert("서버에 퀴즈가 안전하게 저장되었습니다."));
             ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
             this.renderMiniList();
             document.getElementById('quizControls').style.display = 'flex';
@@ -738,6 +758,34 @@ const quizMgr = {
         ui.showAlert("기본 문항이 포함된 샘플 파일이 다운로드되었습니다.");
     },
 
+// [추가] 팝업에서 선택한 퀴즈를 실제로 세팅하는 함수들
+useDefaultQuiz: function() {
+    state.quizList = DEFAULT_QUIZ_DATA; // 기본 샘플(TEST.TXT 역할) 사용
+    state.isExternalFileLoaded = false;
+    this.renderMiniList();
+    this.completeQuizLoading();
+},
+
+useSavedQuiz: function() {
+    firebase.database().ref(`courses/${state.room}/quizBank`).once('value', snap => {
+        if(snap.exists()) {
+            state.quizList = snap.val(); // 서버에서 저장된 퀴즈 가져오기
+            state.isExternalFileLoaded = true;
+            this.renderMiniList();
+            this.completeQuizLoading();
+        }
+    });
+},
+
+completeQuizLoading: function() {
+    document.getElementById('quizSelectModal').style.display = 'none'; // 팝업 닫기
+    document.getElementById('view-qa').style.display = 'none'; // QA 숨기기
+    document.getElementById('view-quiz').style.display = 'flex'; // 퀴즈 보이기
+    state.currentQuizIdx = 0; // 1번 문제부터 시작
+    this.showQuiz(); // 퀴즈 화면 갱신
+},
+
+
     prevNext: function(d) {
     let n = state.currentQuizIdx + d;
     
@@ -772,7 +820,6 @@ const quizMgr = {
         document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
-        document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
 state.remainingTime = 8;     // 문제를 새로 열 때마다 시간을 8초로 리셋
 this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
