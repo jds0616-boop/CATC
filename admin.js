@@ -860,7 +860,7 @@ action: function(act) {
             document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
         }
     },
-    startTimer: function() {
+startTimer: function() {
         this.stopTimer(); 
         document.getElementById('btnPause').style.display = 'flex';
         document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
@@ -868,43 +868,34 @@ action: function(act) {
         document.getElementById('btnSmartNext').style.display = 'none'; 
 
         let t = state.remainingTime;
-        const inputEl = document.getElementById('quizTimeInput');
-        if(inputEl) inputEl.value = 8;
-
         const d = document.getElementById('quizTimer'); 
         d.classList.remove('urgent');
-        d.innerText = "00:08"; 
 
         const end = Date.now() + (t * 1000); 
         let lastPlayedSec = -1;
         if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
 
+        // [중요] 중복 실행 방지를 위해 interval은 하나만 생성
         state.timerInterval = setInterval(() => {
             const r = Math.ceil((end - Date.now())/1000);
             const displaySec = r < 0 ? 0 : r;
-state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
+            
+            state.remainingTime = displaySec; 
 
-state.timerInterval = setInterval(() => {
-    const r = Math.ceil((end - Date.now())/1000);
-    const displaySec = r < 0 ? 0 : r;
-    state.remainingTime = displaySec; // 돌아가고 있는 시간을 계속 저장함
+            // 교육생들과 실시간 시간 공유 (Firebase 업데이트)
+            firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ timeLeft: displaySec });
 
-    // [추가] 교육생들과 남은 시간 공유 (서버 업데이트)
-    firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ timeLeft: displaySec });
+            d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
+            if(displaySec <= 5) d.classList.add('urgent');
 
-    d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
-
-            d.innerText = `00:${displaySec<10?'0'+displaySec:displaySec}`;
-            if(r <= 5) d.classList.add('urgent');
-
-            if (r <= 8 && r > 0 && r !== lastPlayedSec) {
+            if (displaySec <= 8 && displaySec > 0 && displaySec !== lastPlayedSec) {
                 state.timerAudio.pause();          
                 state.timerAudio.currentTime = 0;  
                 state.timerAudio.play().catch(e=>{}); 
-                lastPlayedSec = r;
+                lastPlayedSec = displaySec;
             }
 
-            if(r <= 0) {
+            if(displaySec <= 0) {
                 this.stopTimer();
                 this.action('close');
                 setTimeout(() => {
@@ -916,6 +907,13 @@ state.timerInterval = setInterval(() => {
             }
         }, 200);
     },
+    
+
+
+
+
+
+
 stopTimer: function() { 
         if(state.timerInterval) {
             clearInterval(state.timerInterval);
