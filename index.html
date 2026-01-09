@@ -249,39 +249,35 @@ dbRef.quiz.on('value', s => {
     dbRef.status.once('value', statusSnap => {
         const st = statusSnap.val() || {};
         
-        // 1. 종료 조건 체크
-        if (st.quizStep === 'summary' && !hasClosedSummary) return; 
-        if (st.mode !== 'quiz') { forceCloseQuiz(); return; } 
-
-        // 퀴즈 ID가 바뀌었을 때만 내 선택 기록 초기화 (타이머 바뀔 땐 초기화 안 함)
-        if(currentQuizId !== q.id) {
-            currentQuizId = q.id;
-            myLastChoiceIdx = null; 
-        }
-
-        // 2. 화면 표시 설정
-        document.getElementById('quizOverlay').style.display = 'flex';
-        document.getElementById('quizActiveBox').style.display = 'block';
-        document.getElementById('quizResultBox').style.display = 'none';
-
-        const multArea = document.getElementById('btnGroupMultiple');
-        const oxArea = document.getElementById('btnGroupOX');
-        const msgBox = document.getElementById('quizStatusMsg');
-        const feedBox = document.getElementById('quizFeedback');
-
-        // 결과 발표 모드 (정답 공개)
+        // 1. 퀴즈를 종료해야 하는 상황들 체크
+        if (q.status === 'ready' && st.quizStep !== 'summary') { /* 준비 중일 때 */ }
+        if (st.quizStep === 'summary' && !hasClosedSummary) return; // 결과 화면 중이면 중단
+        if (st.mode !== 'quiz') { forceCloseQuiz(); return; } // 퀴즈 모드가 아니면 닫기
+// ✅ [수정] 결과 발표 모드일 때 (닫지 않고 피드백 표시)
         if (q.status === 'result') { 
-            multArea.style.display = 'none'; oxArea.style.display = 'none';
+            document.getElementById('quizOverlay').style.display = 'flex';
+            document.getElementById('btnGroupMultiple').style.display = 'none';
+            document.getElementById('btnGroupOX').style.display = 'none';
+            
+            const msgBox = document.getElementById('quizStatusMsg');
+            const feedBox = document.getElementById('quizFeedback');
+            
             if (q.isSurvey) {
+                // [설문] Admin이 보낸 요약 결과 표시
                 msgBox.innerText = "📋 설문 결과 요약";
                 feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계가 완료되었습니다."}</span>`;
             } else {
+                // [퀴즈] 정답 여부 표시
+                // 강사가 테스트모드면 정답은 2번, 아니면 q.correct
                 const correctAns = (q.id === 'TEST') ? 2 : q.correct;
+                
                 if (myLastChoiceIdx === correctAns) {
-                     msgBox.innerText = "🎉 정답입니다!"; msgBox.style.color = "#10b981";
+                     msgBox.innerText = "🎉 정답입니다!";
+                     msgBox.style.color = "#10b981"; // 녹색
                      feedBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> 훌륭합니다!`;
                 } else {
-                     msgBox.innerText = "앗, 틀렸습니다..."; msgBox.style.color = "#ef4444";
+                     msgBox.innerText = "앗, 틀렸습니다...";
+                     msgBox.style.color = "#ef4444"; // 빨간색
                      const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
                      feedBox.innerHTML = `정답은 <b style="color:#1e293b; font-size:18px;">[ ${ansText} ]</b> 입니다.`;
                 }
@@ -289,48 +285,58 @@ dbRef.quiz.on('value', s => {
             return; 
         }
 
+        // 2. 퀴즈 오버레이 표시 설정
+        document.getElementById('quizOverlay').style.display = 'flex';
+        document.getElementById('quizActiveBox').style.display = 'block';
+        document.getElementById('quizResultBox').style.display = 'none';
+
+        const multArea = document.getElementById('btnGroupMultiple');
+        const oxArea = document.getElementById('btnGroupOX');
+
+        // --- 여기서부터가 핵심 수정 로직입니다 ---
         if(q.status === 'ready') {
-            canAnswer = false; myLastChoice = null;
-            msgBox.innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
-            msgBox.style.color = "#1e293b";
-            multArea.style.display = 'none'; oxArea.style.display = 'none';
-            feedBox.innerText = "";
+            canAnswer = false;
+            myLastChoice = null;
+            document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
+            multArea.style.display = 'none';
+            oxArea.style.display = 'none';
+            document.getElementById('quizFeedback').innerText = "";
+            currentQuizId = q.id;
         } 
         else if(q.status === 'open') {
             canAnswer = true;
-            
-            // ★ [핵심] 타이머(timeLeft) 연동 부분 ★
-            const timerText = q.timeLeft !== undefined ? ` [남은 시간: ${q.timeLeft}초]` : "";
-            msgBox.innerText = "정답을 선택하세요!" + timerText;
-            msgBox.style.color = q.timeLeft <= 3 ? "#ef4444" : "#1e293b"; // 3초 남으면 빨간색
+            document.getElementById('quizStatusMsg').innerText = "정답을 선택하세요!";
             
             if(q.isOX) {
-                multArea.style.display = 'none'; oxArea.style.display = 'flex';
+                // OX 퀴즈인 경우: 기존 OX 버튼 그룹 표시
+                multArea.style.display = 'none';
+                oxArea.style.display = 'flex';
             } else {
-                oxArea.style.display = 'none'; multArea.style.display = 'flex';
-                // 버튼이 이미 있으면 새로 그리지 않음 (타이머 때문에 버튼이 깜빡이는 것 방지)
-                if (multArea.children.length !== q.options.length) {
-                    multArea.innerHTML = ""; 
-                    q.options.forEach((optText, i) => {
-                        const btn = document.createElement('button');
-                        btn.className = 'quiz-opt-btn';
-                        btn.innerText = `${i + 1}. ${optText}`; 
-                        btn.onclick = () => sendAns(i + 1);
-                        multArea.appendChild(btn);
-                    });
-                }
+                // 일반/설문 퀴즈인 경우: 선택지 개수만큼 버튼 자동 생성
+                oxArea.style.display = 'none';
+                multArea.style.display = 'flex';
+                multArea.innerHTML = ""; // 기존에 있던 버튼들 싹 비우기
+                
+                q.options.forEach((optText, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-opt-btn';
+                    // 버튼에 "1. 남성" 같이 번호와 내용을 함께 표시
+                    btn.innerText = `${i + 1}. ${optText}`; 
+                    btn.onclick = () => sendAns(i + 1);
+                    multArea.appendChild(btn); // 버튼 추가
+                });
             }
-            // 내가 선택한 버튼 강조 유지
-            document.querySelectorAll('.quiz-opt-btn').forEach((b, idx) => {
-                if (myLastChoiceIdx === (idx + 1)) b.classList.add('selected');
-                else b.classList.remove('selected', 'locked');
-            });
+            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('locked', 'selected'));
         }
         else if(q.status === 'close') {
             canAnswer = false;
             document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
-            msgBox.innerText = "제출이 마감되었습니다.";
-            msgBox.style.color = "#ef4444";
+            if(myLastChoice) {
+                document.getElementById('quizStatusMsg').innerText = "제출이 마감되었습니다.";
+                document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
+            } else {
+                document.getElementById('quizStatusMsg').innerText = "미제출 상태로 마감되었습니다.";
+            }
         }
     });
 });

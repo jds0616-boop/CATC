@@ -198,13 +198,7 @@
                         <div class="quiz-top-info">
                             <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
                             <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:08</div></div>
-<div class="quiz-info-item">
-    <i class="fa-solid fa-users"></i> 
-    <span id="currentJoinCount" style="font-weight:800;">0</span>명
-    <span id="answerStatus" style="font-size: 24px; font-weight: 800; margin-left: 10px; color: #64748b;">
-        (제출: <b id="answeredCount" style="color:#10b981;">0</b> / 대기: <b id="pendingCount" style="color:#ef4444;">0</b>)
-    </span>
-</div>
+                            <div class="quiz-info-item"><i class="fa-solid fa-users"></i> <span id="currentJoinCount" style="font-weight:800;">0</span>명</div>
                         </div>
                         <div class="quiz-exit-icon" onclick="quizMgr.closeQuizMode()" title="Exit"><i class="fa-solid fa-xmark"></i></div>
                     </div>
@@ -222,17 +216,17 @@
                     <button class="q-btn btn-test" id="btnTest" onclick="quizMgr.startTestMode()"><i class="fa-solid fa-flask"></i> <span>Start Test Mode</span></button>
 <div id="quizControls" style="display:none; gap:10px;">
     <!-- 이전 문제 -->
-    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:80px; padding:0;" title="이전 문제"><i class="fa-solid fa-backward"></i></button>
+    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:50px; padding:0;" title="이전 문제"><i class="fa-solid fa-backward"></i></button>
     
     <!-- [추가] 다음 문제 (단순 이동) -->
-    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)" style="width:80px; padding:0;" title="다음 문제"><i class="fa-solid fa-forward"></i></button>
+    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)" style="width:50px; padding:0;" title="다음 문제"><i class="fa-solid fa-forward"></i></button>
                         
                         <!-- [핵심] 일시정지 버튼 (설명할 때 사용) -->
                         <button class="q-btn" id="btnPause" onclick="quizMgr.togglePause()" style="background:#f59e0b; display:none;"><i class="fa-solid fa-pause"></i> 일시정지</button>
                         
                         <!-- [핵심] 스마트 Next 버튼 (이동+시작) -->
                         <button class="q-btn btn-start" id="btnSmartNext" onclick="quizMgr.smartNext()" style="flex-grow:1; font-size:18px;">
-                            현재 퀴즈 시작 <i class="fa-solid fa-play"></i>
+                            Next Quiz (Auto Start) <i class="fa-solid fa-play"></i>
                         </button>
                         
                         <!-- 기존 버튼들은 비상용으로 숨겨두거나 작게 처리 (여기선 일단 숨김 처리하지 않고 기능 유지만 함, 필요시 사용) -->
