@@ -218,30 +218,37 @@
                         <div class="chart-area" id="d-chart"></div>
                     </div>
                     
-<div class="quiz-status-bar">
-<div id="quizControls" style="display:none; gap:10px;">
-    <!-- 이전 문제 -->
-    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(-1)" style="width:50px; padding:0;" title="이전 문제"><i class="fa-solid fa-backward"></i></button>
-    
-    <!-- [추가] 다음 문제 (단순 이동) -->
-    <button class="q-btn btn-nav" onclick="quizMgr.prevNext(1)" style="width:50px; padding:0;" title="다음 문제"><i class="fa-solid fa-forward"></i></button>
-                        
-                        <!-- [핵심] 일시정지 버튼 (설명할 때 사용) -->
-                        <button class="q-btn" id="btnPause" onclick="quizMgr.togglePause()" style="background:#f59e0b; display:none;"><i class="fa-solid fa-pause"></i> 일시정지</button>
-                        
-                        <!-- [핵심] 스마트 Next 버튼 (이동+시작) -->
-                        <button class="q-btn btn-start" id="btnSmartNext" onclick="quizMgr.smartNext()" style="flex-grow:1; font-size:18px;">
-                            현재 퀴즈 시작 <i class="fa-solid fa-play"></i>
-                        </button>
-                        
-                        <!-- 기존 버튼들은 비상용으로 숨겨두거나 작게 처리 (여기선 일단 숨김 처리하지 않고 기능 유지만 함, 필요시 사용) -->
-                        <button class="q-btn btn-result" onclick="quizMgr.action('result')" title="수동 결과 보기"><i class="fa-solid fa-chart-simple"></i></button>
-                        
-                        <button class="q-btn" style="background:#0f172a;" onclick="quizMgr.showFinalSummary()"><i class="fa-solid fa-flag-checkered"></i> 종료</button>
-                    </div>
-                </div>
-                </div>
-            </div>
+<!-- [개편] 퀴즈 하단 컨트롤바: 더 크고 단순하게 -->
+<div class="quiz-status-bar" style="padding: 30px 20px; background: #f8fafc; border-top: 2px solid #e2e8f0;">
+    <div id="quizControls" style="display:none; gap:15px; width: 100%; max-width: 1000px; margin: 0 auto; justify-content: center; align-items: center;">
+        
+        <!-- 1. 이전 문제 (<<) -->
+        <button class="q-btn btn-nav btn-giant" onclick="quizMgr.prevNext(-1)" title="이전 문제" style="height: 75px; min-width: 90px; font-size: 25px; border-radius: 15px; background: #475569;">
+            <i class="fa-solid fa-angles-left"></i>
+        </button>
+
+        <!-- 2. 메인 시작 버튼 (현재 퀴즈 시작) -->
+        <button class="q-btn btn-start btn-giant-main" id="btnSmartNext" onclick="quizMgr.smartNext()" style="height: 75px; flex-grow: 1; font-size: 26px; font-weight: 900; border-radius: 15px; box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3); display: flex; justify-content: center; align-items: center;">
+            현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>
+        </button>
+
+        <!-- [전환용] 일시정지 버튼 (시작하면 위 버튼 대신 나타남) -->
+        <button class="q-btn btn-giant-main" id="btnPause" onclick="quizMgr.togglePause()" style="display:none; height: 75px; flex-grow: 1; font-size: 26px; font-weight: 900; border-radius: 15px; background: #f59e0b; color: white; justify-content: center; align-items: center; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(245, 158, 11, 0.3);">
+            일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>
+        </button>
+
+        <!-- 3. 다음 문제 (>>) -->
+        <button class="q-btn btn-nav btn-giant" onclick="quizMgr.prevNext(1)" title="다음 문제" style="height: 75px; min-width: 90px; font-size: 25px; border-radius: 15px; background: #475569;">
+            <i class="fa-solid fa-angles-right"></i>
+        </button>
+
+        <!-- 4. 종료 버튼 -->
+        <button class="q-btn btn-giant" onclick="quizMgr.showFinalSummary()" style="height: 75px; min-width: 140px; font-size: 22px; font-weight: 800; border-radius: 15px; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center;">
+            종료 <i class="fa-solid fa-flag-checkered" style="margin-left:12px;"></i>
+        </button>
+
+    </div>
+</div>
 
             <div id="view-waiting" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; color:#64748b; position: relative;">
                 <div style="position: absolute; top: 30px; left: 30px; font-size: 40px; color: var(--accent-color); animation: bounceLeft 1.5s infinite; display:flex; flex-direction:column; align-items:flex-start;">

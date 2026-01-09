@@ -562,3 +562,47 @@ body.night-mode .quiz-card.result-mode {
 .btn-del-mini:hover {
     color: #ef4444;
 }
+
+/* --- 퀴즈 컨트롤러 UI 거대화 --- */
+.quiz-status-bar {
+    padding: 30px 20px; /* 상하 여백 확대 */
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+}
+
+.q-btn.btn-giant {
+    height: 70px;      /* 높이 대폭 확대 */
+    min-width: 100px;
+    font-size: 22px;   /* 아이콘/글자 크기 확대 */
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.q-btn.btn-giant-main {
+    height: 70px;
+    flex-grow: 2;      /* 메인 버튼은 가로로 더 길게 */
+    font-size: 26px;   /* 메인 텍스트 크게 */
+    font-weight: 900;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    transition: all 0.2s ease;
+}
+
+.q-btn.btn-giant-main:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+}
+
+.q-btn.btn-giant:active {
+    transform: translateY(2px);
+}
+
+/* 네비게이션 버튼 색상 (회색톤) */
+.btn-nav {
+    background: #475569 !important;
+}
+
+/* 종료 버튼 전용 */
+.btn-exit {
+    min-width: 150px;
+}

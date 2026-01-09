@@ -874,21 +874,32 @@ completeQuizLoading: function() {
     this.showQuiz();
 },
 
-    showQuiz: function() {
-        document.querySelector('.quiz-card').classList.remove('result-mode');
-        const q = state.quizList[state.currentQuizIdx];
-        this.resetTimerUI(); 
-        this.renderScreen(q);
-        document.getElementById('btnPause').style.display = 'none';
-        document.getElementById('btnSmartNext').style.display = 'flex';
-        document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
-        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
-        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
-        document.getElementById('quizControls').style.display = 'flex';
-state.remainingTime = 8;     // 문제를 새로 열 때마다 시간을 8초로 리셋
-this.startAnswerMonitor();   // 누가 답변하는지 감시 시작
+ showQuiz: function() {
+    document.querySelector('.quiz-card').classList.remove('result-mode');
+    const q = state.quizList[state.currentQuizIdx];
+    this.resetTimerUI(); 
+    this.renderScreen(q);
 
-    },
+    // 버튼 초기화
+    document.getElementById('btnPause').style.display = 'none';
+    const smartBtn = document.getElementById('btnSmartNext');
+    smartBtn.style.display = 'flex';
+    smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
+
+    firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
+    firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ 
+        id: `Q${state.currentQuizIdx}`, 
+        status: 'ready', 
+        type: q.isOX?'OX':'MULTIPLE', 
+        ...q 
+    });
+    
+    document.getElementById('quizControls').style.display = 'flex';
+    state.remainingTime = 8;
+    this.startAnswerMonitor();
+},
+
+
     renderScreen: function(q) {
         document.getElementById('d-qtext').innerText = q.text;
         const qNum = state.isTestMode ? "TEST" : `Q${state.currentQuizIdx + 1}`;
@@ -963,77 +974,94 @@ action: function(act) {
         this.action('open');
     },
 togglePause: function() {
-    if (state.timerInterval) { // 현재 타이머가 돌고 있다면 -> 일시정지 실행
+    const pauseBtn = document.getElementById('btnPause');
+    if (state.timerInterval) { 
         this.stopTimer();
-        
-        // [수정] DB에 '일시정지' 상태와 '남은 시간'을 즉시 업데이트하여 학생들에게 알림
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ 
             status: 'pause',
             remainingTime: state.remainingTime 
         });
-
-        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-play"></i> 다시 시작';
-        document.getElementById('btnPause').style.backgroundColor = '#3b82f6'; 
-    } else { // 멈춰있다면 -> 다시 시작(Resume)
-        // action('open')을 호출하면 내부적으로 startTimer()가 실행되며 새로운 endTime을 생성함
+        pauseBtn.innerHTML = '다시 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
+        pauseBtn.style.backgroundColor = '#3b82f6'; 
+    } else { 
         this.action('open'); 
-        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-        document.getElementById('btnPause').style.backgroundColor = '#f59e0b'; 
+        pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:10px;"></i>';
+        pauseBtn.style.backgroundColor = '#f59e0b'; 
     }
 },
     
 startTimer: function() {
-    this.stopTimer(); 
-    
-    document.getElementById('btnPause').style.display = 'flex';
-    document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-    document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
-    document.getElementById('btnSmartNext').style.display = 'none'; 
+        this.stopTimer(); // 1. 기존에 돌던 타이머가 있다면 확실히 제거
 
-    let t = state.remainingTime;
-    const d = document.getElementById('quizTimer'); 
-    d.classList.remove('urgent');
+        // 2. UI 변경: [현재 퀴즈 시작] 버튼은 숨기고, 그 자리에 [일시정지] 버튼을 크게 보여줌
+        const smartBtn = document.getElementById('btnSmartNext');
+        const pauseBtn = document.getElementById('btnPause');
 
-    const initSec = t < 0 ? 0 : t;
-    d.innerText = `00:${initSec < 10 ? '0' + initSec : initSec}`;
-    
-    // [추가] 학생들과 동기화하기 위해 종료 시간(타임스탬프)을 계산해서 DB에 저장
-    const endTime = Date.now() + (t * 1000);
-    dbRef.quiz.update({ endTime: endTime }); // 학생 화면에서 이 시간을 기준으로 카운트다운함
-
-    if(t <= 5) d.classList.add('urgent');
-
-    let lastPlayedSec = -1;
-    if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
-
-    state.timerInterval = setInterval(() => {
-        const r = Math.ceil((endTime - Date.now()) / 1000); // end 변수 대신 계산된 endTime 사용
-        const displaySec = r < 0 ? 0 : r;
-        state.remainingTime = displaySec; 
-
-        d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
-        if(r <= 5) d.classList.add('urgent');
-
-        if (r <= 8 && r > 0 && r !== lastPlayedSec) {
-            state.timerAudio.pause();          
-            state.timerAudio.currentTime = 0;  
-            state.timerAudio.play().catch(e => {}); 
-            lastPlayedSec = r;
+        if (smartBtn) smartBtn.style.display = 'none';
+        if (pauseBtn) {
+            pauseBtn.style.display = 'flex'; // 중앙 정렬을 위해 flex 사용
+            pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>';
+            pauseBtn.style.background = '#f59e0b'; // 일시정지 상태 색상 (주황색)
         }
 
-        if(r <= 0) {
-            this.stopTimer();
-            this.action('close'); 
-            setTimeout(() => {
-                this.action('result');
-                const btnNext = document.getElementById('btnSmartNext');
-                btnNext.style.display = 'flex';
-                document.getElementById('btnPause').style.display = 'none';
-                btnNext.innerText = "현재 퀴즈 시작 ▶";
-            }, 1500);
-        }
-    }, 200);
-},
+        // 3. 남은 시간 및 타이머 UI 초기 설정
+        let t = state.remainingTime;
+        const d = document.getElementById('quizTimer'); 
+        if (d) d.classList.remove('urgent');
+
+        const initSec = t < 0 ? 0 : t;
+        if (d) d.innerText = `00:${initSec < 10 ? '0' + initSec : initSec}`;
+        
+        // 4. [중요] 학생들과의 실시간 동기화를 위해 종료 시각(타임스탬프)을 계산해서 DB에 전송
+        const endTime = Date.now() + (t * 1000);
+        dbRef.quiz.update({ endTime: endTime }); 
+
+        if(t <= 5 && d) d.classList.add('urgent');
+
+        let lastPlayedSec = -1;
+        if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+
+        // 5. 0.2초마다 시간을 체크하는 인터벌 실행
+        state.timerInterval = setInterval(() => {
+            const r = Math.ceil((endTime - Date.now()) / 1000); // 실제 종료 시각과의 차이 계산
+            const displaySec = r < 0 ? 0 : r;
+            
+            // 현재 남은 시간을 state에 실시간 저장 (일시정지 시 필요)
+            state.remainingTime = displaySec; 
+
+            // 관리자 화면 시간 업데이트
+            if (d) {
+                d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
+                // 5초 이하면 빨간색 강조
+                if(r <= 5) d.classList.add('urgent');
+            }
+
+            // 1초마다 째깍 소리 재생 (8초부터 1초까지)
+            if (r <= 8 && r > 0 && r !== lastPlayedSec) {
+                state.timerAudio.pause();          
+                state.timerAudio.currentTime = 0;  
+                state.timerAudio.play().catch(e => {}); 
+                lastPlayedSec = r;
+            }
+
+            // 0초가 되면 타이머 종료 및 결과 화면 자동 전환
+            if(r <= 0) {
+                this.stopTimer();
+                this.action('close'); // 1. 학생들의 응답 제출을 막음
+                
+                setTimeout(() => {
+                    this.action('result'); // 2. 1.5초 뒤에 결과(차트)를 공개함
+                    
+                    // 3. 결과 화면이 나오면 버튼을 다시 "현재 퀴즈 시작" 상태로 복구
+                    if (pauseBtn) pauseBtn.style.display = 'none';
+                    if (smartBtn) {
+                        smartBtn.style.display = 'flex';
+                        smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    }
+                }, 1500);
+            }
+        }, 200);
+    },
 
 
 stopTimer: function() { 
