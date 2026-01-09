@@ -737,23 +737,31 @@ const quizMgr = {
         a.click();
         ui.showAlert("기본 문항이 포함된 샘플 파일이 다운로드되었습니다.");
     },
-    startTestMode: function() {
-        state.isTestMode = true;
-        state.quizList = [{ text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2, isOX: false, checked: true, isSurvey: false }];
-        state.currentQuizIdx = 0;
-        this.renderScreen(state.quizList[0]);
-        document.getElementById('btnTest').style.display = 'none'; 
-        document.getElementById('quizControls').style.display = 'flex';
-        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: 'TEST', status: 'ready', text: "1 + 1 = ?", options: ["1","2","3","4"], correct: 2 });
-    },
+
     prevNext: function(d) {
-        let n = state.currentQuizIdx + d;
-        while(n >= 0 && n < state.quizList.length) { 
-            if(state.quizList[n].checked) { state.currentQuizIdx = n; this.showQuiz(); return; } 
-            n += d; 
-        }
-        if (d > 0) ui.showAlert("모든 문항이 종료되었습니다.");
-    },
+    let n = state.currentQuizIdx + d;
+    
+    // 범위를 벗어나는지 체크
+    if (n < 0) {
+        ui.showAlert("첫 번째 문항입니다.");
+        return;
+    }
+    if (n >= state.quizList.length) {
+        ui.showAlert("마지막 문항입니다. '종료' 버튼을 눌러주세요.");
+        return;
+    }
+
+    // 선택된 문항인지 체크 (체크박스 해제된 건 건너뜀)
+    if(!state.quizList[n].checked) {
+        state.currentQuizIdx = n;
+        this.prevNext(d); // 다음 체크된 걸 찾을 때까지 재귀 호출
+        return;
+    }
+
+    state.currentQuizIdx = n;
+    this.showQuiz();
+},
+
     showQuiz: function() {
         document.querySelector('.quiz-card').classList.remove('result-mode');
         const q = state.quizList[state.currentQuizIdx];
@@ -839,14 +847,9 @@ action: function(act) {
         }
     },
     smartNext: function() {
-        if (state.currentQuizIdx >= state.quizList.length - 1) {
-            ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
-            return;
-        }
-        //this.prevNext(1);
-        setTimeout(() => {
-            this.action('open');
-        }, 500);
+        // [수정] 복잡한 조건문 다 버리고, 누르면 바로 현재 퀴즈를 시작(open)하도록 변경
+        // 이렇게 해야 문항이 1개만 있어도 정상적으로 시작됩니다.
+        this.action('open');
     },
     togglePause: function() {
         if (state.timerInterval) {
