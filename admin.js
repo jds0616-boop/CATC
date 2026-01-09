@@ -787,6 +787,9 @@ document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i cla
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('btnTest').style.display = 'none'; 
         document.getElementById('quizControls').style.display = 'flex';
+        document.getElementById('btnTest').style.display = 'none'; 
+        document.getElementById('quizControls').style.display = 'flex';
+
     },
 // 답변 완료/미완료 인원을 실시간으로 계산해서 화면에 보여주는 기능입니다.
 updateAnswerUI: function() {
@@ -881,7 +884,7 @@ action: function(act) {
         document.getElementById('btnSmartNext').style.display = 'none'; 
 
         let t = state.remainingTime;
-       const displaySec = r < 0 ? 0 : r;
+       //const displaySec = r < 0 ? 0 : r;
         const inputEl = document.getElementById('quizTimeInput');
         if(inputEl) inputEl.value = 8;
 
