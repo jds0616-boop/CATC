@@ -565,26 +565,31 @@ setMode: function(mode) {
 
     if (state.room) {
         firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+        
         if (mode === 'quiz') {
-            // [수정] 이미 퀴즈가 로드되어 있는 경우(isExternalFileLoaded가 true이거나 문항이 있는 경우)
-            if (state.isExternalFileLoaded || (state.quizList && state.quizList.length > 0 && state.currentQuizIdx >= 0)) {
+            // [수정된 조건] 퀴즈 목록이 비어있거나, 로드 플래그가 꺼져있으면 무조건 팝업을 띄움
+            if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) {
                 document.getElementById('view-qa').style.display = 'none';
                 document.getElementById('view-quiz').style.display = 'flex';
-                // 현재 진행 중이던 상태를 화면에 다시 그려줌
                 quizMgr.showQuiz();
             } else {
-                // 한 번도 로드한 적이 없거나 초기화된 상태일 때만 팝업 표시
+                // 저장된 퀴즈가 없으므로 보관함 팝업 표시
+                document.getElementById('view-qa').style.display = 'none';
+                document.getElementById('view-quiz').style.display = 'flex';
                 document.getElementById('quizSelectModal').style.display = 'flex';
+                
+                // 버튼 초기 상태 설정
                 document.getElementById('btnPause').style.display = 'none';
-                document.getElementById('btnSmartNext').style.display = 'flex';
-                document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
+                const smartBtn = document.getElementById('btnSmartNext');
+                smartBtn.style.display = 'flex';
+                smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                
                 quizMgr.loadSavedQuizList();
             }
             return;
         }
     }
 },
-
 
 
     filterQa: function(f) { 
@@ -1174,23 +1179,31 @@ const max = Math.max(...cnt, 1);
     },
 confirmExitQuiz: function(type) {
     document.getElementById('quizExitModal').style.display = 'none';
+    
     if(type === 'reset') {
+        // [핵심] 모든 상태 변수를 초기화하여 다음 진입 시 팝업이 뜨게 함
         state.isTestMode = false;
         state.currentQuizIdx = 0;
-        state.isExternalFileLoaded = false; // [추가] 이 플래그를 꺼야 다음 진입 시 팝업이 뜹니다.
-        state.quizList = []; // [수정] 기존 문항 리스트를 비웁니다.
+        state.isExternalFileLoaded = false; // 플래그 초기화
+        state.quizList = [];               // 퀴즈 목록 비우기
         
+        // Firebase 서버 데이터 삭제
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
         firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
         firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
         firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
         
-        // 초기화 후에는 UI를 갱신해줘야 합니다.
+        // 좌측 사이드바의 미니 리스트도 비움
         quizMgr.renderMiniList();
+        
+        // 퀴즈 화면의 질문 텍스트 등도 초기화
+        document.getElementById('d-qtext').innerText = "Ready?";
+        document.getElementById('d-options').innerHTML = "";
     }
+    
+    // QA 모드로 이동
     ui.setMode('qa');
 }
-};
 
 // --- 5. Print & Report ---
 const printMgr = {
