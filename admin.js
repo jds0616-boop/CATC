@@ -821,14 +821,25 @@ action: function(act) {
         }
     },
     smartNext: function() {
-        if (state.currentQuizIdx >= state.quizList.length - 1) {
-            ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
-            return;
-        }
-        //this.prevNext(1);
-        setTimeout(() => {
+        const btn = document.getElementById('btnSmartNext');
+        // 버튼 텍스트에 '시작'이 포함되어 있다면 현재 문항을 시작(Open)합니다.
+        const isStartingNow = btn.innerText.includes("시작");
+
+        if (isStartingNow) {
+            // 현재 문항이 마지막 문항이더라도, 시작 버튼 상태라면 문제없이 시작시킵니다.
             this.action('open');
-        }, 500);
+        } else {
+            // 이미 문제를 풀었거나 결과 화면인 상태에서 '다음'으로 넘어가려고 할 때만 체크합니다.
+            if (state.currentQuizIdx >= state.quizList.length - 1) {
+                ui.showAlert("마지막 문제입니다. '종료' 버튼을 눌러주세요.");
+                return;
+            }
+            // 다음 문항으로 이동 후 0.5초 뒤 자동 시작
+            this.prevNext(1);
+            setTimeout(() => {
+                this.action('open');
+            }, 500);
+        }
     },
     togglePause: function() {
         if (state.timerInterval) {
