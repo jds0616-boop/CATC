@@ -268,22 +268,34 @@
         </div>
 
 
-<!-- [추가] 퀴즈 불러오기 선택 팝업 -->
+<!-- [수정] 퀴즈 관리 및 불러오기 통합 팝업 -->
 <div id="quizSelectModal" class="modal-overlay">
-    <div class="modal-box" style="width: 450px; text-align: center;">
-        <div class="modal-header"><h3><i class="fa-solid fa-list-check"></i> 퀴즈 불러오기</h3></div>
-        <p style="color:#64748b; margin-bottom:20px;">이 방에서 진행할 퀴즈 문항을 선택해주세요.</p>
-        <div style="display:flex; flex-direction:column; gap:12px;">
+    <div class="modal-box" style="width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-folder-tree"></i> 퀴즈 보관함 관리</h3>
+        </div>
+        
+        <div style="padding: 15px; background: #f8fafc; border-radius: 10px; margin-bottom: 15px;">
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">
+                <i class="fa-solid fa-circle-info"></i> 새로운 퀴즈를 업로드하면 목록에 추가됩니다.
+            </p>
             <!-- 샘플 문항 버튼 -->
-            <button class="btn-action btn-secondary" onclick="quizMgr.useDefaultQuiz()" style="height:60px; font-size:16px;">
-                <i class="fa-solid fa-file-lines"></i> 샘플 문항 이용 (TEST.TXT)
-            </button>
-            <!-- 저장된 문항 버튼 -->
-            <button id="btnUseSavedQuiz" class="btn-action btn-primary" onclick="quizMgr.useSavedQuiz()" style="height:60px; font-size:16px;">
-                <i class="fa-solid fa-cloud-arrow-down"></i> 저장된 문항 이용 (Custom)
+            <button class="btn-action btn-secondary" onclick="quizMgr.useDefaultQuiz()" style="width: 100%; height: 45px;">
+                <i class="fa-solid fa-file-lines"></i> 기본 샘플 문항 사용 (TEST.TXT)
             </button>
         </div>
-        <button class="m-btn" onclick="document.getElementById('quizSelectModal').style.display='none'" style="margin-top:20px; width:100%; justify-content:center; background:#e2e8f0; color:#475569;">취소</button>
+
+        <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 20px;">
+            <label class="setting-label" style="display: block; margin-bottom: 10px;">저장된 퀴즈 목록</label>
+            <div id="savedQuizListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- 여기에 저장된 퀴즈 리스트가 자바스크립트로 생성됨 -->
+                <div style="text-align: center; padding: 20px; color: #94a3b8;">불러오는 중...</div>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="gap: 10px;">
+            <button class="m-btn" onclick="document.getElementById('quizSelectModal').style.display='none'" style="flex: 1; justify-content: center; background: #e2e8f0; color: #475569;">닫기</button>
+        </div>
     </div>
 </div>
 

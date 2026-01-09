@@ -551,47 +551,46 @@ const ui = {
         }
     },
     setMode: function(mode) {
+        // 1. 대기실 화면 숨기기
         document.getElementById('view-waiting').style.display = 'none';
+
+        // 2. 상단 탭 버튼(Q&A Mode / Quiz Mode)의 활성화 상태 변경
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`tab-${mode}`).classList.add('active');
+        const targetTab = document.getElementById(`tab-${mode}`);
+        if(targetTab) targetTab.classList.add('active');
+
+        // 3. 화면 전환 (퀴즈 모드가 아닐 때만 즉시 화면을 바꿈)
         if (mode !== 'quiz') {
-            document.getElementById('view-qa').style.display = (mode==='qa'?'flex':'none');
-            document.getElementById('view-quiz').style.display = (mode==='quiz'?'flex':'none');
+            document.getElementById('view-qa').style.display = (mode === 'qa' ? 'flex' : 'none');
+            document.getElementById('view-quiz').style.display = (mode === 'quiz' ? 'flex' : 'none');
         }
-        
-if (state.room) {
+
+        // 4. 강의실(Room)이 선택되어 있는 경우 실행
+        if (state.room) {
+            // 서버(Firebase)에 현재 모드(qa 또는 quiz)를 실시간 업데이트
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
-            
+
+            // [중요] 퀴즈 모드로 진입할 때의 로직
             if (mode === 'quiz') {
-                // 1. 즉시 퀴즈를 시작하지 않고 선택 팝업창을 띄웁니다.
+                // (1) 퀴즈 선택/관리 팝업창을 먼저 띄움
                 document.getElementById('quizSelectModal').style.display = 'flex';
-                
-                // 2. 퀴즈 내부 버튼들의 초기 상태만 설정해둡니다.
+
+                // (2) 퀴즈 내부 버튼들의 초기 상태를 세팅
                 document.getElementById('btnPause').style.display = 'none';
                 document.getElementById('btnSmartNext').style.display = 'flex';
                 document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play"></i>';
 
-                // 3. 서버(Firebase)에 이 방 전용으로 저장된 퀴즈가 있는지 확인합니다.
-                firebase.database().ref(`courses/${state.room}/quizBank`).once('value', snap => {
-                    const savedBtn = document.getElementById('btnUseSavedQuiz');
-                    if(!snap.exists()) {
-                        // 저장된 퀴즈가 없으면 버튼을 흐리게 만들고 클릭 못하게 막습니다.
-                        savedBtn.style.opacity = "0.5";
-                        savedBtn.innerHTML = "<i class='fa-solid fa-xmark'></i> 저장된 문항 없음";
-                        savedBtn.disabled = true;
-                    } else {
-                        // 저장된 퀴즈가 있으면 버튼을 활성화합니다.
-                        savedBtn.style.opacity = "1";
-                        savedBtn.innerHTML = "<i class='fa-solid fa-cloud-arrow-down'></i> 저장된 문항 이용 (Custom)";
-                        savedBtn.disabled = false;
-                    }
-                });
+                // (3) 방금 우리가 만든 '저장된 퀴즈 목록'을 서버에서 가져와 팝업에 뿌려줌
+                quizMgr.loadSavedQuizList();
 
-                // [중요] 여기서 return을 해줘야 아래에 있는 기존 실행 코드들이 바로 작동하지 않습니다.
-                return; 
+                // (4) 여기서 종료! (팝업에서 버튼을 눌러야 실제 퀴즈 화면으로 넘어갑니다)
+                return;
             }
         }
-    }, // <--- 이 '};' 가 반드시 있어야 합니다!
+    }, 
+
+
+
     filterQa: function(f) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
@@ -716,9 +715,20 @@ const quizMgr = {
                 }
             });
             state.isExternalFileLoaded = true;
-// [추가] 업로드한 파일을 서버(DB)에 방 번호별로 저장합니다.
-firebase.database().ref(`courses/${state.room}/quizBank`).set(state.quizList)
-    .then(() => ui.showAlert("서버에 퀴즈가 안전하게 저장되었습니다."));
+// [수정] 업로드 시 퀴즈 세트의 이름을 물어봅니다.
+            const quizTitle = prompt("이 퀴즈 세트의 이름을 입력해주세요:", `${new Date().toLocaleDateString()} 퀴즈`);
+            if (!quizTitle) { alert("업로드가 취소되었습니다."); return; }
+
+            const newQuizRef = firebase.database().ref(`courses/${state.room}/quizBank`).push();
+            newQuizRef.set({
+                title: quizTitle,
+                data: state.quizList,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                ui.showAlert(`'${quizTitle}' 세트가 저장되었습니다.`);
+                quizMgr.loadSavedQuizList(); // 목록 새로고침
+            });
+
             ui.showAlert(`${state.quizList.length}개 문항 로드 완료.`);
             this.renderMiniList();
             document.getElementById('quizControls').style.display = 'flex';
@@ -784,6 +794,64 @@ completeQuizLoading: function() {
     state.currentQuizIdx = 0; // 1번 문제부터 시작
     this.showQuiz(); // 퀴즈 화면 갱신
 },
+
+
+// --- 여기부터 복사해서 붙여넣으세요 ---
+    
+    // 1. 서버에서 저장된 퀴즈 목록을 불러와서 화면에 그리기
+    loadSavedQuizList: function() {
+        const container = document.getElementById('savedQuizListContainer');
+        if(!container) return; // 혹시 몰라 에러 방지
+        
+        firebase.database().ref(`courses/${state.room}/quizBank`).on('value', snap => {
+            container.innerHTML = "";
+            const data = snap.val();
+            if (!data) {
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8;">저장된 커스텀 퀴즈가 없습니다.</div>`;
+                return;
+            }
+
+            Object.keys(data).reverse().forEach(key => {
+                const quizSet = data[key];
+                const item = document.createElement('div');
+                item.className = 'saved-quiz-item';
+                item.innerHTML = `
+                    <div style="flex-grow:1; cursor:pointer;" onclick="quizMgr.useSavedQuizSet('${key}')">
+                        <div class="q-title">${quizSet.title}</div>
+                        <div class="q-info">${quizSet.data.length}문항 | ${new Date(quizSet.timestamp).toLocaleString()}</div>
+                    </div>
+                    <button class="btn-del-mini" onclick="quizMgr.deleteQuizSet('${key}', '${quizSet.title}')">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        });
+    },
+
+    // 2. 특정 퀴즈 세트를 선택해서 적용하기
+    useSavedQuizSet: function(key) {
+        firebase.database().ref(`courses/${state.room}/quizBank/${key}`).once('value', snap => {
+            const val = snap.val();
+            if (val) {
+                state.quizList = val.data;
+                state.isExternalFileLoaded = true;
+                this.renderMiniList();
+                this.completeQuizLoading();
+                ui.showAlert(`'${val.title}' 문항을 불러왔습니다.`);
+            }
+        });
+    },
+
+    // 3. 저장된 퀴즈 세트 삭제하기
+    deleteQuizSet: function(key, title) {
+        if (confirm(`'${title}' 퀴즈 세트를 정말 삭제하시겠습니까?`)) {
+            firebase.database().ref(`courses/${state.room}/quizBank/${key}`).remove()
+                .then(() => ui.showAlert("삭제되었습니다."));
+        }
+    },
+    
+    // --- 여기까지 붙여넣으세요 ---
 
 
     prevNext: function(d) {
