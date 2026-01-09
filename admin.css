@@ -183,7 +183,22 @@ body.night-mode .q-card.status-pin {
 .bar-wrapper.correct .bar-label { background: #059669; }
 .bar-wrapper.correct .bar-value { color: #059669; }
 .quiz-status-bar { padding: 20px; background: white; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; justify-content: center; width: 100%; }
-.q-btn { padding: 8px 20px; border-radius: 8px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; color: white; display: flex; align-items: center; gap: 8px; min-width: 90px; justify-content: center; transition: 0.2s; }
+/* 퀴즈 하단 버튼 공통 스타일 수정 */
+.q-btn { 
+    padding: 15px 30px;    /* 위아래 15px, 좌우 30px로 대폭 확대 */
+    border-radius: 12px;   /* 모서리를 조금 더 둥글게 */
+    font-size: 20px;       /* 글자 크기를 15px -> 20px로 확대 */
+    font-weight: 800; 
+    cursor: pointer; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    min-width: 120px;      /* 최소 너비 확보 */
+    justify-content: center; 
+    transition: 0.2s; 
+    height: 60px;          /* 높이를 60px로 고정 */
+}
 .q-btn:hover { filter: brightness(1.1); }
 .q-btn:active { transform: translateY(2px); }
 .btn-test { background: #f59e0b; width: 100%; }
@@ -524,4 +539,9 @@ cursor: pointer;
 body.night-mode .quiz-card.result-mode {
     background-color: #164e63 !important; /* 짙은 청록색 */
     border-color: #22d3ee !important;
+}
+
+/* 버튼 안의 아이콘 크기만 별도로 더 키우기 */
+.q-btn i {
+    font-size: 24px;
 }
