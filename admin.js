@@ -325,7 +325,7 @@ const dataMgr = {
         }
     },
     deactivateAllRooms: async function() {
-        if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
+        if(!confirm(⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         const updates = {};
         for(let i=65; i<=90; i++) {
             const char = String.fromCharCode(i);
@@ -978,69 +978,58 @@ action: function(act) {
         }
     },
     
-    startTimer: function() {
-        this.stopTimer(); // 중복 실행 방지
-        
-        // 1. 버튼 상태 변경
-        document.getElementById('btnPause').style.display = 'flex';
-        document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
-        document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
-        document.getElementById('btnSmartNext').style.display = 'none'; 
+startTimer: function() {
+    this.stopTimer(); 
+    
+    document.getElementById('btnPause').style.display = 'flex';
+    document.getElementById('btnPause').innerHTML = '<i class="fa-solid fa-pause"></i> 일시정지';
+    document.getElementById('btnPause').style.backgroundColor = '#f59e0b';
+    document.getElementById('btnSmartNext').style.display = 'none'; 
 
-        // 2. 현재 남은 시간을 가져와서 UI에 즉시 반영 (깜빡임 방지 핵심)
-        let t = state.remainingTime;
-        const d = document.getElementById('quizTimer'); 
-        d.classList.remove('urgent');
+    let t = state.remainingTime;
+    const d = document.getElementById('quizTimer'); 
+    d.classList.remove('urgent');
 
-        // [수정] 무조건 "00:08"을 쓰는 게 아니라 현재 남은 시간을 먼저 화면에 그립니다.
-        const initSec = t < 0 ? 0 : t;
-        d.innerText = `00:${initSec < 10 ? '0' + initSec : initSec}`;
-        
-        // 5초 이하라면 즉시 빨간색 효과 적용
-        if(t <= 5) d.classList.add('urgent');
+    const initSec = t < 0 ? 0 : t;
+    d.innerText = `00:${initSec < 10 ? '0' + initSec : initSec}`;
+    
+    // [추가] 학생들과 동기화하기 위해 종료 시간(타임스탬프)을 계산해서 DB에 저장
+    const endTime = Date.now() + (t * 1000);
+    dbRef.quiz.update({ endTime: endTime }); // 학생 화면에서 이 시간을 기준으로 카운트다운함
 
-        // 3. 타이머 종료 시점 계산
-        const end = Date.now() + (t * 1000); 
-        let lastPlayedSec = -1;
-        if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+    if(t <= 5) d.classList.add('urgent');
 
-        // 4. 타이머 인터벌 시작 (0.2초마다 체크)
-        state.timerInterval = setInterval(() => {
-            const r = Math.ceil((end - Date.now()) / 1000);
-            const displaySec = r < 0 ? 0 : r;
+    let lastPlayedSec = -1;
+    if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
 
-            // 실시간 남은 시간을 state에 계속 저장 (일시정지 대비)
-            state.remainingTime = displaySec; 
+    state.timerInterval = setInterval(() => {
+        const r = Math.ceil((endTime - Date.now()) / 1000); // end 변수 대신 계산된 endTime 사용
+        const displaySec = r < 0 ? 0 : r;
+        state.remainingTime = displaySec; 
 
-            // 화면 숫자 업데이트
-            d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
-            
-            // 5초 이하 위급 상황 처리
-            if(r <= 5) d.classList.add('urgent');
+        d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`;
+        if(r <= 5) d.classList.add('urgent');
 
-            // 초 단위가 바뀔 때마다 효과음 재생 (8, 7, 6... 1초)
-            if (r <= 8 && r > 0 && r !== lastPlayedSec) {
-                state.timerAudio.pause();          
-                state.timerAudio.currentTime = 0;  
-                state.timerAudio.play().catch(e => {}); 
-                lastPlayedSec = r;
-            }
+        if (r <= 8 && r > 0 && r !== lastPlayedSec) {
+            state.timerAudio.pause();          
+            state.timerAudio.currentTime = 0;  
+            state.timerAudio.play().catch(e => {}); 
+            lastPlayedSec = r;
+        }
 
-            // 시간이 0이 되면 종료
-            if(r <= 0) {
-                this.stopTimer();
-                this.action('close'); // 제출 마감
-                
-                setTimeout(() => {
-                    this.action('result'); // 차트 결과 공개
-                    const btnNext = document.getElementById('btnSmartNext');
-                    btnNext.style.display = 'flex';
-                    document.getElementById('btnPause').style.display = 'none';
-                    btnNext.innerText = "현재 퀴즈 시작 ▶";
-                }, 1500);
-            }
-        }, 200);
-    },
+        if(r <= 0) {
+            this.stopTimer();
+            this.action('close'); 
+            setTimeout(() => {
+                this.action('result');
+                const btnNext = document.getElementById('btnSmartNext');
+                btnNext.style.display = 'flex';
+                document.getElementById('btnPause').style.display = 'none';
+                btnNext.innerText = "현재 퀴즈 시작 ▶";
+            }, 1500);
+        }
+    }, 200);
+},
 
 
 stopTimer: function() { 
