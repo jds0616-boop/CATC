@@ -662,3 +662,13 @@ body.night-mode .quiz-card.result-mode {
 /* 스크롤바 (오른쪽 끝 파란색 바 디자인) */
 .full-dashboard::-webkit-scrollbar { width: 10px; }
 .full-dashboard::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+
+/* [최종 해결] 모든 팝업창(모달)을 현황판보다 무조건 위로 올림 */
+.modal-overlay {
+    z-index: 10000 !important; /* 현황판이 500~1000이므로 만(10000)으로 설정 */
+}
+
+/* 알림창(customAlertModal) 전용 설정 */
+#customAlertModal {
+    z-index: 11000 !important; /* 일반 팝업보다 더 위로 */
+}

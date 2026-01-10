@@ -260,7 +260,7 @@ const dataMgr = {
 
 saveSettings: function() {
         if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 선택해 주세요.");
+            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요.");
             return;
         }
 
@@ -268,27 +268,26 @@ saveSettings: function() {
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         const selectedProf = document.getElementById('profSelect').value;
+        
 
-        // 1. 비밀번호 처리: 입력값이 없으면 "7777"의 암호화 값(Nzc3Nw==)을 기본값으로 사용
-        // 소스 코드 어디에도 실제 숫자가 노출되지 않습니다.
         const encryptedPw = rawPw ? btoa(rawPw) : "Nzc3Nw==";
 
-        // 2. 데이터 저장 시도 (settings와 status를 각각 업데이트)
+        // 1. 데이터 업데이트
         firebase.database().ref(`courses/${state.room}/settings`).update({ 
             courseName: newName, 
             password: encryptedPw 
         });
 
+        // 2. 상태 업데이트 후 성공하면 즉시 팝업!
         firebase.database().ref(`courses/${state.room}/status`).update({ 
             roomStatus: statusVal, 
             ownerSessionId: (statusVal === 'active' ? state.sessionId : null),
             professorName: (statusVal === 'active' ? selectedProf : null) 
         }).then(() => {
-            // 저장 성공 시 무조건 팝업 띄움 (z-index 수정한 CSS 덕분에 이제 현황판 위로 보입니다)
+            // 이제 CSS 수정 덕분에 현황판을 덮고 맨 위에 뜹니다!
             ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
         });
 
-        // 상단 제목 즉시 반영
         document.getElementById('displayCourseTitle').innerText = newName;
     },
 
