@@ -510,6 +510,11 @@ const ui = {
         }
     },
     setMode: function(mode) {
+
+        if (!state.room) {
+            this.showWaitingRoom();
+            return;
+        }
         document.getElementById('view-waiting').style.display = 'none';
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
