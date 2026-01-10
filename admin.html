@@ -182,6 +182,19 @@
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
         </div>
 
+
+        
+        <!-- [핵심 수정] Modals inside Main Stage (전체화면 시 보이도록 이동) -->
+        <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
+            <div class="modal-box">
+                <div class="modal-q-text-wrapper"><div class="modal-q-text" id="m-text"></div></div>
+                <div class="modal-actions">
+                    <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
+                    <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
+                </div>
+            </div>
+        </div>
+
         <div class="content-area">
             <div id="view-qa">
                 <div class="qa-filters">
@@ -306,17 +319,7 @@
     </div>
 </div>
 
-        
-        <!-- [핵심 수정] Modals inside Main Stage (전체화면 시 보이도록 이동) -->
-        <div id="qaModal" class="modal-overlay" onclick="ui.closeQaModal(event)">
-            <div class="modal-box">
-                <div class="modal-q-text-wrapper"><div class="modal-q-text" id="m-text"></div></div>
-                <div class="modal-actions">
-                    <div class="modal-left-btns"><button class="m-btn m-btn-icon m-btn-pin" onclick="dataMgr.updateQa('pin')"><i class="fa-solid fa-thumbtack"></i></button><button class="m-btn m-btn-icon m-btn-del" onclick="dataMgr.updateQa('delete')"><i class="fa-solid fa-trash"></i></button></div>
-                    <div class="modal-right-btns"><button class="m-btn m-btn-later" onclick="dataMgr.updateQa('later')"><i class="fa-solid fa-triangle-exclamation"></i> Answer Later</button><button class="m-btn m-btn-done" onclick="dataMgr.updateQa('done')"><i class="fa-solid fa-check"></i> Done (Close)</button></div>
-                </div>
-            </div>
-        </div>
+
         <div id="resetChoiceModal" class="modal-overlay">
             <div class="modal-box" style="width: 400px; text-align: center;">
                 <div class="modal-header"><h3><i class="fa-solid fa-rotate-left"></i> 퀴즈 리셋 설정</h3></div>
