@@ -208,40 +208,41 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-   <div id="view-waiting" style="display:none;">
-            
-            <!-- (1) 제목 부분 -->
-            <div style="margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
-                <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
-                <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 한눈에 확인하고 바로 입장할 수 있습니다.</p>
-            </div>
+ 
+<!-- 강사 대기실 (현황판) 섹션 -->
+<div id="view-waiting" class="full-dashboard" style="display:none;">
+    
+    <!-- 상단 제목 영역: 여백 최소화 -->
+    <div class="dashboard-title-area">
+        <h1 style="font-size: 24px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
+        <p style="font-size: 13px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 확인하고 입장하세요.</p>
+    </div>
 
-            <!-- (2) ★매우 중요★ 카드가 담길 실제 그릇 (이게 빠져있었습니다) -->
-            <!-- [수정] 리스트형 현황판 테이블 -->
-    <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #e2e8f0;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+    <!-- 표를 감싸는 하얀 박스 -->
+    <div class="dashboard-table-container">
+        <table class="status-table">
             <thead>
-                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 14px;">
-                    <th style="padding: 15px;">연번</th>
-                    <th style="padding: 15px;">Room</th>
-                    <th style="padding: 15px; text-align: left;">과정명</th>
-                    <th style="padding: 15px;">교수명</th>
-                    <th style="padding: 15px;">상태</th>
-                    <th style="padding: 15px;">접속</th>
-                    <th style="padding: 15px;">마지막 활동</th>
-                    <th style="padding: 15px;">관리</th>
+                <tr>
+                    <th>연번</th>
+                    <th>Room</th>
+                    <th style="text-align: left;">과정명</th>
+                    <th>교수명</th>
+                    <th>상태</th>
+                    <th>접속</th>
+                    <th>마지막 활동</th>
+                    <th>관리</th>
                 </tr>
             </thead>
             <tbody id="statusTableBody">
-                <!-- 자바스크립트가 여기에 <tr> 행을 한 줄씩 채워줄 것입니다 -->
-                <tr>
-                    <td colspan="8" style="padding: 50px; color: #94a3b8;">데이터를 불러오는 중입니다...</td>
-                </tr>
+                <tr><td colspan="8" style="padding: 40px;">데이터를 불러오는 중...</td></tr>
             </tbody>
         </table>
     </div>
 
-        </div> <!-- 현황판 섹션 끝 (</div>를 여기서 꼭 닫아줘야 합니다) -->
+</div> <!-- view-waiting 끝 -->
+
+
+
 
         <!-- 여기서부터는 기존에 있던 퀴즈 섹션입니다 -->
         <div id="view-quiz">                <div class="quiz-card">

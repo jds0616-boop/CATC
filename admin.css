@@ -699,44 +699,56 @@ body.night-mode .quiz-card.result-mode {
     min-width: 800px; /* 화면이 작아져도 표가 찌그러지지 않게 */
 }
 
-/* [현황판 스크롤 문제 최종 해결책] */
-
-/* 1. 현황판 전체 바구니를 화면에 꽉 채우고 스크롤을 직접 가집니다 */
-#view-waiting {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
+/* 현황판 전체 배경 및 스크롤 설정 */
+.full-dashboard {
     width: 100% !important;
     height: 100% !important;
-    padding: 40px !important;
-    overflow-y: scroll !important; /* 항상 스크롤 바를 준비함 */
-    z-index: 100 !important;
-    background: var(--bg-color); /* 배경색 유지 */
-    display: none; /* JS에서 제어함 */
+    padding: 20px 30px !important; /* 상하 여백 확 줄임 */
+    overflow-y: auto !important;   /* 스크롤 활성화 */
+    display: none;                /* JS 제어 */
     flex-direction: column;
+    align-self: flex-start !important; /* 위쪽부터 차곡차곡 쌓임 */
 }
 
-/* 2. 현황판 내부의 테이블 컨테이너에 하단 여백을 강제로 줍니다 */
-#view-waiting > div {
-    margin-bottom: 100px !important; /* 마지막 줄이 보이도록 넉넉한 여백 */
-    display: block !important;
+/* 제목 영역 여백 줄임 */
+.dashboard-title-area {
+    margin-bottom: 20px !important;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
 }
 
-/* 3. 테이블이 찌그러지지 않게 최소 너비 고정 */
-#view-waiting table {
-    min-width: 900px !important;
-    margin-bottom: 50px !important;
+/* 테이블 컨테이너: 화면을 꽉 채우도록 함 */
+.dashboard-table-container {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 50px !important; /* 맨 밑줄 스크롤 여유 */
+    width: 100%;
 }
 
-/* 4. 스크롤바를 눈에 띄게 만듭니다 (오른쪽 끝 확인용) */
-#view-waiting::-webkit-scrollbar {
-    width: 12px !important;
-    display: block !important;
+/* 테이블 디자인 정밀 조정 */
+.status-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
 }
-#view-waiting::-webkit-scrollbar-thumb {
-    background-color: #3b82f6 !important; /* 파란색 스크롤바 */
-    border-radius: 10px !important;
-    border: 3px solid #f1f5f9 !important;
+
+.status-table th {
+    background: #f8fafc;
+    padding: 12px 10px;
+    font-size: 13px;
+    color: #64748b;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.status-table td {
+    padding: 10px; /* 칸 높이 줄여서 더 많이 보이게 함 */
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* 스크롤바 예쁘게 */
+.full-dashboard::-webkit-scrollbar { width: 8px; }
+.full-dashboard::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 }
