@@ -607,37 +607,51 @@ body.night-mode .quiz-card.result-mode {
     min-width: 150px;
 }
 
-/* --- [강의 현황판] 제목 위치/정렬/스크롤 최종 해결 --- */
+/* --- [진짜 최종] 현황판 제목/표 수직 정렬 및 스크롤 해결 --- */
 
-/* 1. 전체 바구니: 제목과 표가 위에서 아래로 흐르게 함 (block) */
+/* 1. 현황판 전체 바구니: 절대 위치로 부모의 flex 영향을 차단 */
 .full-dashboard {
-    display: none;                /* JS에서 block으로 변경됨 */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    padding: 30px 40px 150px 40px !important; /* 아래 여유공간 150px */
-    overflow-y: auto !important;  /* 스크롤은 여기서만 발생 */
-    box-sizing: border-box !important;
     background: var(--bg-color);
+    z-index: 500;
+    overflow-y: auto !important; /* 전체 박스에서 스크롤 발생 */
+    display: none; /* JS에서 flex로 변경 */
 }
 
-/* 2. 제목 박스: 표 위에 넓게 배치 */
+/* 2. 내부 래퍼: 여기서 제목과 표를 위아래로 정렬 */
+.dashboard-inner-wrapper {
+    display: flex !important;
+    flex-direction: column !important; /* 위에서 아래로 쌓기 */
+    width: 100%;
+    max-width: 1200px; /* 너무 넓어지지 않게 조절 */
+    margin: 0 auto;    /* 가운데 배치 */
+    padding: 40px 20px 150px 20px !important; /* 아래 여백 150px */
+}
+
+/* 3. 제목 박스 디자인 */
 .dashboard-header-box {
     width: 100%;
     margin-bottom: 25px;
-    text-align: left; /* 제목은 왼쪽 정렬이 예쁩니다 */
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 20px;
 }
 
-/* 3. 테이블 하얀 배경 박스: 표 길이에 따라 무한정 늘어나게 설정 */
+/* 4. 테이블 하얀 배경 박스 */
 .dashboard-table-container {
     background: white !important;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    width: 100%;
-    display: block; /* 표가 길어지면 박스도 같이 길어짐 */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 100% !important;
+    overflow: hidden;
 }
 
-/* 4. 테이블 디자인 (가운데 정렬 핵심) */
+/* 5. 테이블 상세 디자인 */
 .status-table {
     width: 100%;
     border-collapse: collapse;
@@ -649,27 +663,16 @@ body.night-mode .quiz-card.result-mode {
     font-size: 15px;
     color: #64748b;
     border-bottom: 2px solid #e2e8f0;
-    text-align: center !important;
 }
 
 .status-table td {
-    padding: 18px 10px;
+    padding: 15px 10px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 16px; 
-    text-align: center !important; /* 모든 내용 강제 가운데 정렬 */
-    color: #1e293b;
+    text-align: center !important;
     vertical-align: middle;
 }
 
-/* 과정명 칸: 글자가 길어도 가운데 유지 */
-.td-course-name {
-    word-break: keep-all;
-    line-height: 1.4;
-    max-width: 500px;
-    margin: 0 auto; 
-    text-align: center;
-}
-
-/* 5. 스크롤바를 눈에 띄게 (파란색) */
+/* 스크롤바 예쁘게 */
 .full-dashboard::-webkit-scrollbar { width: 10px; }
-.full-dashboard::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+.full-dashboard::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }

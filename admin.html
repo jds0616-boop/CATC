@@ -212,35 +212,39 @@
 <!-- 강사 대기실 (현황판) 섹션 -->
 <div id="view-waiting" class="full-dashboard" style="display:none;">
     
-    <!-- (1) 제목 영역: 이제 표 위로 올라갑니다 -->
-    <div class="dashboard-header-box">
-        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
-        <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 확인하고 입장하세요.</p>
-    </div>
+    <!-- 바구니 시작: 제목과 표를 한 줄로 세울 영역 -->
+    <div class="dashboard-inner-wrapper">
+        
+        <!-- (1) 제목 영역: 표 바로 위에 위치 -->
+        <div class="dashboard-header-box">
+            <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
+            <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 확인하고 입장하세요.</p>
+        </div>
 
-    <!-- (2) 표 영역 -->
-    <div class="dashboard-table-container">
-        <table class="status-table">
-            <thead>
-                <tr>
-                    <th>연번</th>
-                    <th>Room</th>
-                    <th>과정명</th>
-                    <th>교수명</th>
-                    <th>상태</th>
-                    <th>접속</th>
-                    <th>마지막 활동</th>
-                    <th>관리</th>
-                </tr>
-            </thead>
-            <tbody id="statusTableBody">
-                <!-- JS가 행을 채웁니다 -->
-            </tbody>
-        </table>
-    </div>
+        <!-- (2) 표 영역 -->
+        <div class="dashboard-table-container">
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>연번</th>
+                        <th>Room</th>
+                        <th>과정명</th>
+                        <th>교수명</th>
+                        <th>상태</th>
+                        <th>접속</th>
+                        <th>마지막 활동</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="statusTableBody">
+                    <!-- JS가 채움 -->
+                </tbody>
+            </table>
+        </div>
+
+    </div> <!-- dashboard-inner-wrapper 끝 -->
 
 </div> <!-- view-waiting 끝 -->
-
 
 
 
