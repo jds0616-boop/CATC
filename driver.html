@@ -2,70 +2,155 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAC 셔틀 탑승 현황 (기사용)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KAC 셔틀 통합 관리 - 기사용</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
-        body { font-family: 'Pretendard', sans-serif; background: #f1f5f9; padding: 15px; margin: 0; color: #1e293b; }
-        .header { background: #0f172a; color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
-        .summary-card { background: white; border-radius: 12px; padding: 20px; display: flex; justify-content: space-around; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .sum-item { text-align: center; }
-        .sum-item span { font-size: 13px; color: #64748b; display: block; }
-        .sum-item b { font-size: 24px; color: #3b82f6; }
-        .list-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .list-card h3 { margin: 0 0 10px 0; font-size: 16px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
-        .applicant { font-size: 14px; padding: 6px 0; border-bottom: 1px solid #f8fafc; }
-        .room-badge { background: #e2e8f0; font-size: 11px; padding: 2px 5px; border-radius: 4px; margin-right: 5px; font-weight: bold; }
+        :root { --blue: #3b82f6; --red: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1e293b; }
+        
+        /* 상단 헤더 */
+        .header { background: var(--dark); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+        .header p { margin: 5px 0 0 0; font-size: 12px; opacity: 0.6; }
+
+        /* 요약 카드 영역 */
+        .summary-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 15px; }
+        .sum-card { background: white; padding: 15px 10px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .sum-card i { font-size: 20px; color: var(--blue); margin-bottom: 8px; }
+        .sum-card span { display: block; font-size: 12px; color: #64748b; font-weight: 600; }
+        .sum-card b { font-size: 22px; color: var(--dark); font-weight: 900; }
+        .sum-card.active { border-color: var(--blue); background: #eff6ff; }
+
+        /* 목적지별 상세 리스트 */
+        .section-title { padding: 10px 20px; font-size: 14px; font-weight: 800; color: #64748b; display: flex; align-items: center; gap: 8px; }
+        .section-title span { background: var(--blue); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+        .list-container { padding: 0 15px 30px 15px; }
+        .room-group { background: white; border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+        .room-header { background: #f8fafc; padding: 10px 15px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .room-header b { font-size: 14px; color: var(--blue); }
+        .room-header span { font-size: 12px; color: #94a3b8; }
+        
+        .applicant-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 15px; }
+        .name-tag { background: #f1f5f9; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #334155; }
+        
+        .empty-msg { text-align: center; padding: 40px 0; color: #cbd5e1; font-size: 14px; }
+        
+        /* 기사용 하단 알림 */
+        .footer-info { position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #eee; }
     </style>
 </head>
 <body>
-    <div class="header"><h2>🚍 셔틀 탑승 통합 현황</h2></div>
-    
-    <div class="summary-card">
-        <div class="sum-item"><span>오송역</span><b id="total-osong">0</b></div>
-        <div class="sum-item"><span>터미널</span><b id="total-terminal">0</b></div>
-        <div class="sum-item"><span>공항</span><b id="total-airport">0</b></div>
+
+    <div class="header">
+        <h1>🚍 KAC 셔틀 탑승 통합 현황</h1>
+        <p id="lastUpdate">실시간 업데이트 중...</p>
     </div>
 
-    <div id="listArea"></div>
+    <!-- 1. 한눈에 보는 숫자 요약 -->
+    <div class="summary-container">
+        <div class="sum-card">
+            <i class="fa-solid fa-train"></i>
+            <span>오송역</span>
+            <b id="total-osong">0</b>
+        </div>
+        <div class="sum-card">
+            <i class="fa-solid fa-bus-simple"></i>
+            <span>터미널</span>
+            <b id="total-terminal">0</b>
+        </div>
+        <div class="sum-card">
+            <i class="fa-solid fa-plane-up"></i>
+            <span>청주공항</span>
+            <b id="total-airport">0</b>
+        </div>
+    </div>
+
+    <!-- 2. 오송역 명단 -->
+    <div class="section-title"><i class="fa-solid fa-train"></i> 오송역 탑승 명단 <span id="badge-osong">0</span></div>
+    <div id="list-osong" class="list-container"></div>
+
+    <!-- 3. 터미널 명단 -->
+    <div class="section-title"><i class="fa-solid fa-bus-simple"></i> 청주터미널 명단 <span id="badge-terminal">0</span></div>
+    <div id="list-terminal" class="list-container"></div>
+
+    <!-- 4. 청주공항 명단 -->
+    <div class="section-title"><i class="fa-solid fa-plane-up"></i> 청주공항 명단 <span id="badge-airport">0</span></div>
+    <div id="list-airport" class="list-container"></div>
+
+    <div class="footer-info">© Korea Airports Corporation - Shuttle Survey System</div>
 
     <script src="config.js"></script>
     <script>
+        // 데이터 실시간 감시 시작
         firebase.database().ref('courses').on('value', snap => {
-            const courses = snap.val() || {};
-            let totals = { osong: 0, terminal: 0, airport: 0 };
-            let lists = { osong: [], terminal: [], airport: [] };
-            const locNames = { osong: "오송역", terminal: "청주터미널", airport: "청주공항" };
+            const allRooms = snap.val() || {};
+            const totals = { osong: 0, terminal: 0, airport: 0 };
+            const detailData = { osong: {}, terminal: {}, airport: {} };
 
-            Object.keys(courses).forEach(room => {
-                const shuttle = courses[room].shuttle || {};
+            // 1. 모든 강의실(A~Z) 데이터 전수조사
+            Object.keys(allRooms).forEach(roomId => {
+                const shuttle = allRooms[roomId].shuttle;
+                if(!shuttle) return;
+
                 ['osong', 'terminal', 'airport'].forEach(loc => {
                     if(shuttle[loc]) {
-                        const names = Object.values(shuttle[loc]);
-                        totals[loc] += names.length;
-                        names.forEach(n => lists[loc].push({ room: room, name: n }));
+                        const names = Object.values(shuttle[loc]); // 신청자 이름들
+                        if(names.length > 0) {
+                            totals[loc] += names.length;
+                            detailData[loc][roomId] = names;
+                        }
                     }
                 });
             });
 
+            // 2. 상단 숫자 업데이트
             document.getElementById('total-osong').innerText = totals.osong;
             document.getElementById('total-terminal').innerText = totals.terminal;
             document.getElementById('total-airport').innerText = totals.airport;
+            document.getElementById('badge-osong').innerText = totals.osong;
+            document.getElementById('badge-terminal').innerText = totals.terminal;
+            document.getElementById('badge-airport').innerText = totals.airport;
 
-            const listArea = document.getElementById('listArea');
-            listArea.innerHTML = "";
-            ['osong', 'terminal', 'airport'].forEach(loc => {
-                let html = `<div class="list-card"><h3>📍 ${locNames[loc]} 명단 (${lists[loc].length}명)</h3>`;
-                if(lists[loc].length === 0) html += `<p style="color:#ccc; font-size:13px;">신청자 없음</p>`;
-                lists[loc].forEach(item => {
-                    html += `<div class="applicant"><span class="room-badge">Room ${item.room}</span> ${item.name}</div>`;
-                });
-                html += `</div>`;
-                listArea.innerHTML += html;
-            });
+            // 3. 리스트 생성 함수
+            renderDetailList('osong', detailData.osong);
+            renderDetailList('terminal', detailData.terminal);
+            renderDetailList('airport', detailData.airport);
+            
+            document.getElementById('lastUpdate').innerText = "최근 업데이트: " + new Date().toLocaleTimeString();
         });
+
+        function renderDetailList(locId, data) {
+            const container = document.getElementById(`list-${locId}`);
+            container.innerHTML = "";
+
+            const roomIds = Object.keys(data);
+            if(roomIds.length === 0) {
+                container.innerHTML = `<div class="empty-msg">신청자가 없습니다.</div>`;
+                return;
+            }
+
+            // 강의실별로 카드 생성
+            roomIds.sort().forEach(roomId => {
+                const names = data[roomId];
+                let html = `
+                    <div class="room-group">
+                        <div class="room-header">
+                            <b>Room ${roomId}</b>
+                            <span>${names.length}명 신청</span>
+                        </div>
+                        <div class="applicant-grid">
+                            ${names.map(n => `<div class="name-tag">${n}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
     </script>
 </body>
 </html>
