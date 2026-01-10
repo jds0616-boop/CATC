@@ -606,3 +606,63 @@ body.night-mode .quiz-card.result-mode {
 .btn-exit {
     min-width: 150px;
 }
+
+/* 실시간 현황판 스타일 */
+.dashboard-container {
+    width: 95%;
+    max-width: 1000px;
+    margin-top: 30px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.dashboard-header {
+    background: #1e293b;
+    color: white;
+    padding: 12px 20px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.dashboard-table th {
+    background: #f8fafc;
+    color: #64748b;
+    padding: 12px;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: center;
+}
+.dashboard-table td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: center;
+    color: var(--text-color);
+}
+.dashboard-table tbody tr:hover {
+    background: #f1f5ff;
+}
+
+/* 상태별 색상 */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+}
+.status-badge.waiting { background: #e2e8f0; color: #64748b; } /* 대기중 */
+.status-badge.active { background: #dcfce7; color: #15803d; }  /* 사용중 */
+.status-badge.ingame { background: #fef9c3; color: #a16207; animation: pulse 1.5s infinite; } /* 강의중(퀴즈) */
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.popup-style td { padding: 15px 12px; }

@@ -270,11 +270,13 @@ const dataMgr = {
         document.getElementById('displayCourseTitle').innerText = newName;
         document.getElementById('roomPw').value = pw; 
         if (statusVal === 'active') {
+            const now = Date.now(); 
             localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({ 
                 roomStatus: 'active', 
                 ownerSessionId: state.sessionId,
-                professorName: selectedProf 
+                professorName: selectedProf ,
+                lastUsed: now  
             });
             console.log("Settings updated for Room " + state.room);
         } else {
@@ -282,7 +284,7 @@ const dataMgr = {
             firebase.database().ref(`courses/${state.room}/status`).update({ 
                 roomStatus: 'idle', 
                 ownerSessionId: null,
-                professorName: null 
+                professorName: null,
             });
             ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
         }
@@ -955,4 +957,80 @@ const printMgr = {
     }
 };
 
-window.onload = function() { dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); };
+window.onload = function() { 
+    dataMgr.checkMobile(); 
+    dataMgr.initSystem(); 
+    profMgr.init(); 
+    dashboardMgr.init(); // <--- 여기에 딱 넣어주세요!
+};
+
+// --- [추가] 전체 현황판 관리 로직 ---
+const dashboardMgr = {
+    init: function() {
+        // 모든 강의실 데이터 감시
+        firebase.database().ref('courses').on('value', snap => {
+            const allData = snap.val() || {};
+            this.render(allData, 'mainDashboardBody');
+            this.render(allData, 'popupDashboardBody');
+            
+            const timeStr = new Date().toLocaleTimeString();
+            const ticket = document.getElementById('lastUpdateTicket');
+            if(ticket) ticket.innerText = `Last Update: ${timeStr}`;
+        });
+    },
+
+    render: function(allData, targetId) {
+        const tbody = document.getElementById(targetId);
+        if(!tbody) return;
+        
+        let html = "";
+        for(let i=65; i<=90; i++) { // A to Z
+            const code = String.fromCharCode(i);
+            const data = allData[code] || {};
+            
+            const settings = data.settings || {};
+            const status = data.status || {};
+            const activeQuiz = data.activeQuiz || null;
+            
+            const courseName = settings.courseName || "-";
+            const professor = status.professorName || "-";
+            const roomStatus = status.roomStatus || "idle";
+            
+            // 상태 로직 결정
+            let statusText = "대기중";
+            let statusClass = "waiting";
+            
+            if(roomStatus === 'active') {
+                statusText = "사용중";
+                statusClass = "active";
+                // 만약 퀴즈가 진행 중(open/result 등)이라면 '강의중'으로 표시
+                if(activeQuiz && activeQuiz.status && activeQuiz.status !== 'ready') {
+                    statusText = "강의중(퀴즈)";
+                    statusClass = "ingame";
+                }
+            }
+
+            // 마지막 사용 시간 (settings나 status 업데이트 시 기록된 시간 기준)
+            let lastTime = "-";
+            if(status.lastUsed) { // 만약 데이터에 없다면 SaveSettings 시점에 넣어야 함
+                lastTime = new Date(status.lastUsed).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+            }
+
+            html += `
+                <tr>
+                    <td>${i - 64}</td>
+                    <td style="font-weight:bold;">${code}</td>
+                    <td style="text-align:left; font-weight:600;">${courseName}</td>
+                    <td>${professor}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td style="font-size:12px; color:#94a3b8;">${lastTime}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    },
+
+    openPopup: function() {
+        document.getElementById('globalDashboardModal').style.display = 'flex';
+    }
+};
