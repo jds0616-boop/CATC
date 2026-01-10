@@ -604,15 +604,20 @@ const ui = {
         window.open(url, 'googleTranslatePopup', 'width=1000,height=600');
     },
     showWaitingRoom: function() {
-        state.room = null;
-        document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
-        document.getElementById('view-qa').style.display = 'none';
-        document.getElementById('view-quiz').style.display = 'none';
-        document.getElementById('view-waiting').style.display = 'flex';
-        const statusSel = document.getElementById('roomStatusSelect');
-        statusSel.value = 'waiting';
-        statusSel.disabled = true;
-    }
+    state.room = null;
+    document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
+    
+    // 1. 잠금 오버레이를 숨겨서 대기실 문구가 보이게 함 (추가된 줄)
+    document.getElementById('statusOverlay').style.display = 'none'; 
+    
+    document.getElementById('view-qa').style.display = 'none';
+    document.getElementById('view-quiz').style.display = 'none';
+    document.getElementById('view-waiting').style.display = 'flex';
+    
+    const statusSel = document.getElementById('roomStatusSelect');
+    statusSel.value = 'waiting';
+    statusSel.disabled = true;
+}
 };
 
 // --- 4. Quiz Logic ---
