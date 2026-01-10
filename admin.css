@@ -677,3 +677,24 @@ body.night-mode .quiz-card.result-mode {
     text-overflow: ellipsis;
     font-weight: 600;
 }
+
+/* 현황판 테이블 하단 여백 및 스크롤바 디자인 */
+#view-waiting::-webkit-scrollbar {
+    width: 8px;
+}
+
+#view-waiting::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* 테이블이 들어있는 흰색 카드의 아래쪽 여백 강제 부여 */
+#view-waiting > div {
+    margin-bottom: 50px !important;
+    display: block !important;
+}
+
+/* 테이블의 높이가 줄어들지 않도록 설정 */
+#view-waiting table {
+    min-width: 800px; /* 화면이 작아져도 표가 찌그러지지 않게 */
+}
