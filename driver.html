@@ -3,152 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KAC 셔틀 통합 관리 - 기사용</title>
+    <title>SHUTTLE DASHBOARD</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
-        :root { --blue: #3b82f6; --red: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1e293b; }
-        
-        /* 상단 헤더 */
-        .header { background: var(--dark); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header h1 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-        .header p { margin: 5px 0 0 0; font-size: 12px; opacity: 0.6; }
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #eef2ff;
+            --dark: #1e293b;
+            --bg: #f8fafc;
+            --osong: #0ea5e9;
+            --terminal: #f59e0b;
+            --airport: #10b981;
+        }
 
-        /* 요약 카드 영역 */
-        .summary-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 15px; }
-        .sum-card { background: white; padding: 15px 10px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .sum-card i { font-size: 20px; color: var(--blue); margin-bottom: 8px; }
-        .sum-card span { display: block; font-size: 12px; color: #64748b; font-weight: 600; }
-        .sum-card b { font-size: 22px; color: var(--dark); font-weight: 900; }
-        .sum-card.active { border-color: var(--blue); background: #eff6ff; }
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            color: var(--dark);
+            word-break: keep-all;
+        }
 
-        /* 목적지별 상세 리스트 */
-        .section-title { padding: 10px 20px; font-size: 14px; font-weight: 800; color: #64748b; display: flex; align-items: center; gap: 8px; }
-        .section-title span { background: var(--blue); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        /* 고급스러운 상단 헤더 */
+        .app-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .app-header h1 { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 800; 
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .app-header p { margin: 8px 0 0 0; font-size: 13px; opacity: 0.6; font-weight: 500; }
 
-        .list-container { padding: 0 15px 30px 15px; }
-        .room-group { background: white; border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
-        .room-header { background: #f8fafc; padding: 10px 15px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .room-header b { font-size: 14px; color: var(--blue); }
-        .room-header span { font-size: 12px; color: #94a3b8; }
-        
-        .applicant-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 15px; }
-        .name-tag { background: #f1f5f9; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #334155; }
-        
-        .empty-msg { text-align: center; padding: 40px 0; color: #cbd5e1; font-size: 14px; }
-        
-        /* 기사용 하단 알림 */
-        .footer-info { position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #eee; }
+        /* 대시보드 요약 정보 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            padding: 20px;
+            margin-top: -20px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: transform 0.2s;
+        }
+        .stat-card i { font-size: 20px; margin-bottom: 8px; display: block; }
+        .stat-card span { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block; }
+        .stat-card b { font-size: 24px; font-weight: 900; }
+
+        .osong-color { color: var(--osong); }
+        .terminal-color { color: var(--terminal); }
+        .airport-color { color: var(--airport); }
+
+        /* 섹션 타이틀 */
+        .section-header {
+            padding: 10px 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .section-header h2 { font-size: 16px; font-weight: 800; margin: 0; color: #475569; }
+        .count-badge {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* 명단 리스트 카드 */
+        .list-wrapper { padding: 0 20px 20px 20px; }
+        .room-card {
+            background: white;
+            border-radius: 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+        }
+        .room-info {
+            background: #f8fafc;
+            padding: 12px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .room-info .room-id {
+            background: var(--dark);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .room-info .room-count { font-size: 13px; font-weight: 700; color: #64748b; }
+
+        .names-grid {
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .name-tag {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 20px;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 14px;
+            border: 2px dashed #f1f5f9;
+        }
+
+        /* 하단 업데이트 알림 */
+        .refresh-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 11px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse-ani 2s infinite;
+        }
+        @keyframes pulse-ani {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>🚍 KAC 셔틀 탑승 통합 현황</h1>
-        <p id="lastUpdate">실시간 업데이트 중...</p>
-    </div>
+    <header class="app-header">
+        <h1><i class="fa-solid fa-bus-stack"></i> 셔틀 통합 관리</h1>
+        <p>실시간 탑승객 수요조사 대시보드</p>
+    </header>
 
-    <!-- 1. 한눈에 보는 숫자 요약 -->
-    <div class="summary-container">
-        <div class="sum-card">
-            <i class="fa-solid fa-train"></i>
+    <!-- 요약 대시보드 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fa-solid fa-train osong-color"></i>
             <span>오송역</span>
-            <b id="total-osong">0</b>
+            <b id="total-osong" class="osong-color">0</b>
         </div>
-        <div class="sum-card">
-            <i class="fa-solid fa-bus-simple"></i>
+        <div class="stat-card">
+            <i class="fa-solid fa-bus-simple terminal-color"></i>
             <span>터미널</span>
-            <b id="total-terminal">0</b>
+            <b id="total-terminal" class="terminal-color">0</b>
         </div>
-        <div class="sum-card">
-            <i class="fa-solid fa-plane-up"></i>
-            <span>청주공항</span>
-            <b id="total-airport">0</b>
+        <div class="stat-card">
+            <i class="fa-solid fa-plane-up airport-color"></i>
+            <span>공항</span>
+            <b id="total-airport" class="airport-color">0</b>
         </div>
     </div>
 
-    <!-- 2. 오송역 명단 -->
-    <div class="section-title"><i class="fa-solid fa-train"></i> 오송역 탑승 명단 <span id="badge-osong">0</span></div>
-    <div id="list-osong" class="list-container"></div>
+    <!-- 리스트 영역 -->
+    <div class="section-header">
+        <i class="fa-solid fa-circle osong-color" style="font-size:8px;"></i>
+        <h2>오송역 명단</h2>
+        <span class="count-badge" id="badge-osong">0명</span>
+    </div>
+    <div id="list-osong" class="list-wrapper"></div>
 
-    <!-- 3. 터미널 명단 -->
-    <div class="section-title"><i class="fa-solid fa-bus-simple"></i> 청주터미널 명단 <span id="badge-terminal">0</span></div>
-    <div id="list-terminal" class="list-container"></div>
+    <div class="section-header">
+        <i class="fa-solid fa-circle terminal-color" style="font-size:8px;"></i>
+        <h2>청주터미널 명단</h2>
+        <span class="count-badge" id="badge-terminal">0명</span>
+    </div>
+    <div id="list-terminal" class="list-wrapper"></div>
 
-    <!-- 4. 청주공항 명단 -->
-    <div class="section-title"><i class="fa-solid fa-plane-up"></i> 청주공항 명단 <span id="badge-airport">0</span></div>
-    <div id="list-airport" class="list-container"></div>
+    <div class="section-header">
+        <i class="fa-solid fa-circle airport-color" style="font-size:8px;"></i>
+        <h2>청주공항 명단</h2>
+        <span class="count-badge" id="badge-airport">0명</span>
+    </div>
+    <div id="list-airport" class="list-wrapper"></div>
 
-    <div class="footer-info">© Korea Airports Corporation - Shuttle Survey System</div>
+    <!-- 실시간 상태바 -->
+    <div class="refresh-indicator">
+        <div class="pulse"></div>
+        실시간 데이터 동기화 활성화됨
+    </div>
 
     <script src="config.js"></script>
     <script>
-        // 데이터 실시간 감시 시작
+        // 데이터 실시간 수집 및 렌더링
         firebase.database().ref('courses').on('value', snap => {
             const allRooms = snap.val() || {};
             const totals = { osong: 0, terminal: 0, airport: 0 };
-            const detailData = { osong: {}, terminal: {}, airport: {} };
+            const details = { osong: {}, terminal: {}, airport: {} };
 
-            // 1. 모든 강의실(A~Z) 데이터 전수조사
+            // 데이터 집계
             Object.keys(allRooms).forEach(roomId => {
                 const shuttle = allRooms[roomId].shuttle;
                 if(!shuttle) return;
 
                 ['osong', 'terminal', 'airport'].forEach(loc => {
                     if(shuttle[loc]) {
-                        const names = Object.values(shuttle[loc]); // 신청자 이름들
+                        const names = Object.values(shuttle[loc]);
                         if(names.length > 0) {
                             totals[loc] += names.length;
-                            detailData[loc][roomId] = names;
+                            details[loc][roomId] = names;
                         }
                     }
                 });
             });
 
-            // 2. 상단 숫자 업데이트
-            document.getElementById('total-osong').innerText = totals.osong;
-            document.getElementById('total-terminal').innerText = totals.terminal;
-            document.getElementById('total-airport').innerText = totals.airport;
-            document.getElementById('badge-osong').innerText = totals.osong;
-            document.getElementById('badge-terminal').innerText = totals.terminal;
-            document.getElementById('badge-airport').innerText = totals.airport;
+            // 숫자 업데이트
+            updateText('total-osong', totals.osong);
+            updateText('total-terminal', totals.terminal);
+            updateText('total-airport', totals.airport);
+            updateText('badge-osong', totals.osong + '명');
+            updateText('badge-terminal', totals.terminal + '명');
+            updateText('badge-airport', totals.airport + '명');
 
-            // 3. 리스트 생성 함수
-            renderDetailList('osong', detailData.osong);
-            renderDetailList('terminal', detailData.terminal);
-            renderDetailList('airport', detailData.airport);
-            
-            document.getElementById('lastUpdate').innerText = "최근 업데이트: " + new Date().toLocaleTimeString();
+            // 리스트 렌더링
+            renderSection('osong', details.osong);
+            renderSection('terminal', details.terminal);
+            renderSection('airport', details.airport);
         });
 
-        function renderDetailList(locId, data) {
+        function updateText(id, text) {
+            document.getElementById(id).innerText = text;
+        }
+
+        function renderSection(locId, data) {
             const container = document.getElementById(`list-${locId}`);
             container.innerHTML = "";
 
-            const roomIds = Object.keys(data);
+            const roomIds = Object.keys(data).sort();
+
             if(roomIds.length === 0) {
-                container.innerHTML = `<div class="empty-msg">신청자가 없습니다.</div>`;
+                container.innerHTML = `<div class="empty-state">아직 신청자가 없습니다.</div>`;
                 return;
             }
 
-            // 강의실별로 카드 생성
-            roomIds.sort().forEach(roomId => {
+            roomIds.forEach(roomId => {
                 const names = data[roomId];
-                let html = `
-                    <div class="room-group">
-                        <div class="room-header">
-                            <b>Room ${roomId}</b>
-                            <span>${names.length}명 신청</span>
-                        </div>
-                        <div class="applicant-grid">
-                            ${names.map(n => `<div class="name-tag">${n}</div>`).join('')}
-                        </div>
+                const card = document.createElement('div');
+                card.className = 'room-card';
+                card.innerHTML = `
+                    <div class="room-info">
+                        <span class="room-id">ROOM ${roomId}</span>
+                        <span class="room-count">${names.length}명 탑승</span>
+                    </div>
+                    <div class="names-grid">
+                        ${names.map(name => `<div class="name-tag">${name}</div>`).join('')}
                     </div>
                 `;
-                container.innerHTML += html;
+                container.appendChild(card);
             });
         }
     </script>
