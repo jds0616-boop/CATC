@@ -645,9 +645,9 @@ if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
                     <tr>
                         <td>${index + 1}</td>
                         <td style="font-weight:bold;">${loc.name}</td>
-                        <td style="font-weight:800; color:#3b82f6;">${count} / 50</td>
-                        <td style="text-align:left; padding: 10px 15px;">${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}</td>
-                        <td>${count >= 50 ? '<span style="color:red;">만차</span>' : '-'}</td>
+                        <td style="font-weight:800; color:#3b82f6;">${count}명</td>
+<td style="text-align:left; padding: 10px 15px;">${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}</td>
+<td>${count >= 100 ? '<span style="color:red;">만차</span>' : '-'}</td>
                     </tr>
                 `;
             });

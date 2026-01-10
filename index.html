@@ -644,10 +644,10 @@ async function submitShuttleRequest() {
             return;
         }
 
-        // 인원 제한 체크 (50명)
+        // 인원 제한 체크 (100명)
         const locSnap = await shuttleRef.child(tempSelectedLoc.id).once('value');
-        if (locSnap.numChildren() >= 50) {
-            alert("죄송합니다. 해당 차량은 이미 정원(50명)이 찼습니다.");
+        if (locSnap.numChildren() >= 100) {
+            alert("죄송합니다. 해당 차량은 이미 정원(100명)이 찼습니다.");
             return;
         }
 
