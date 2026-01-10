@@ -576,7 +576,7 @@ initRoomSelect: function() {
         // 현황판(waiting), Q&A(qa), 퀴즈(quiz) 중 선택된 것만 'flex'로 보여줌
         document.getElementById('view-qa').style.display = (mode === 'qa') ? 'flex' : 'none';
         document.getElementById('view-quiz').style.display = (mode === 'quiz') ? 'flex' : 'none';
-        document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'flex' : 'none';
+        document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'block' : 'none';
         
         // 2. 탭 버튼 활성화 상태 표시 (로컬)
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
