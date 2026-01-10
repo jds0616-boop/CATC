@@ -607,41 +607,41 @@ body.night-mode .quiz-card.result-mode {
     min-width: 150px;
 }
 
-/* --- [강의 현황판] 스크롤 문제 최종 해결 코드 --- */
+/* --- [강의 현황판] 스크롤 및 여백 최종 해결 --- */
 
-/* 1. 현황판 바구니: 부모 박스(content-area) 안에 딱 가둡니다. */
-#view-waiting.full-dashboard {
+/* 1. 현황판 전체 바구니 */
+.full-dashboard {
+    display: none;                /* JS에서 flex로 변경함 */
+    flex-direction: column;
     width: 100% !important;
-    height: 100% !important;      /* 부모 높이에 딱 맞춤 */
-    overflow-y: auto !important;  /* 내용이 넘치면 무조건 내부 스크롤 생성 */
-    padding: 20px 30px !important;
+    height: 100% !important;      /* 부모 높이 꽉 채우기 */
+    padding: 0 20px 100px 20px !important; /* 위쪽 0, 아래쪽 100px 여백으로 넉넉하게 */
+    overflow-y: auto !important;  /* 내부 스크롤 활성화 */
     box-sizing: border-box !important;
-    background: var(--bg-color);
-    /* JS에서 block으로 변경하므로 여기서는 기본 숨김 */
-    display: none; 
 }
 
-/* 2. 제목 영역: 스크롤을 내려도 상단에 붙어있게 함 (고정) */
+/* 2. 제목 영역 여백 최적화 */
 .dashboard-title-area {
+    padding: 30px 10px 20px 10px; /* 제목 위아래 적당한 여백 */
     background: var(--bg-color);
-    margin-bottom: 20px;
-    padding: 10px 0;
-    position: sticky;
-    top: -20px; /* 패딩값 보정 */
-    z-index: 20;
+    position: sticky;             /* 스크롤 내려도 제목은 고정 */
+    top: 0;
+    z-index: 10;
 }
 
-/* 3. 테이블 컨테이너: 배경 흰색 카드 */
+/* 3. 테이블 컨테이너 (여백 삭제하여 꽉 채움) */
 .dashboard-table-container {
     background: white;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    margin-bottom: 100px !important; /* 마지막 줄을 위한 넉넉한 하단 여백 */
-    width: 100%;
+    width: 100% !important;
+    margin-top: 10px;
+    margin-bottom: 50px !important; /* 테이블 하단 여유 */
+    overflow: hidden;
 }
 
-/* 4. 테이블 디자인 (글자 크기 17px 반영) */
+/* 4. 테이블 디자인 */
 .status-table {
     width: 100%;
     border-collapse: collapse;
@@ -649,26 +649,24 @@ body.night-mode .quiz-card.result-mode {
 
 .status-table th {
     background: #f8fafc;
-    padding: 18px 10px;
-    font-size: 16px;
+    padding: 15px 10px;
+    font-size: 14px;
     color: #64748b;
     border-bottom: 2px solid #e2e8f0;
-    font-weight: 800;
 }
 
 .status-table td {
-    padding: 18px 10px;
+    padding: 15px 10px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 17px; /* 큼직한 글자 크기 */
-    text-align: center;
-    color: #1e293b;
+    font-size: 14px;
+    text-align: center; /* 기본 가운데 정렬 */
 }
 
-/* 5. 스크롤바 디자인 (작동 확인용 파란색) */
-#view-waiting::-webkit-scrollbar {
+/* 5. 스크롤바 디자인 */
+.full-dashboard::-webkit-scrollbar {
     width: 10px;
 }
-#view-waiting::-webkit-scrollbar-thumb {
-    background: #3b82f6; 
+.full-dashboard::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
     border-radius: 10px;
 }
