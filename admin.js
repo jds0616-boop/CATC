@@ -957,13 +957,6 @@ const printMgr = {
     }
 };
 
-window.onload = function() { 
-    dataMgr.checkMobile(); 
-    dataMgr.initSystem(); 
-    profMgr.init(); 
-    dashboardMgr.init(); // <--- 여기에 딱 넣어주세요!
-};
-
 // --- [추가] 전체 현황판 관리 로직 ---
 const dashboardMgr = {
     init: function() {
@@ -1033,4 +1026,11 @@ const dashboardMgr = {
     openPopup: function() {
         document.getElementById('globalDashboardModal').style.display = 'flex';
     }
+};
+
+window.onload = function() { 
+    dataMgr.checkMobile(); 
+    dataMgr.initSystem(); 
+    profMgr.init(); 
+    dashboardMgr.init(); // <--- 여기에 딱 넣어주세요!
 };
