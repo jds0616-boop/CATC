@@ -698,3 +698,30 @@ body.night-mode .quiz-card.result-mode {
 #view-waiting table {
     min-width: 800px; /* 화면이 작아져도 표가 찌그러지지 않게 */
 }
+
+/* [현황판 스크롤 완벽 해결] */
+#view-waiting {
+    position: absolute !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 30px 40px !important;
+    overflow-y: auto !important; /* 세로 스크롤 강제 활성화 */
+    display: none; /* 기본은 숨김 (JS가 flex로 바꿈) */
+    flex-direction: column;
+}
+
+/* 테이블이 짤리지 않도록 내부 바구니에 여백 추가 */
+#view-waiting > div {
+    min-width: 1000px; /* 가로로 너무 줄어들지 않게 */
+    margin-bottom: 50px !important; /* 맨 밑줄이 보일 수 있게 여백 */
+}
+
+/* 표의 흰색 배경 박스 */
+#view-waiting .list-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
