@@ -413,47 +413,43 @@ const ui = {
     closeSecretModal: function() {
         document.getElementById('changeAdminSecretModal').style.display = 'none';
     },
+
+
 initRoomSelect: function() {
-        console.log("현황판 그리기 시작..."); // 브라우저 검사창(F12)에서 확인용
+        console.log("현황판 그리기 시작..."); 
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
-            const dashboard = document.getElementById('statusDashboard'); // 우리가 만든 현황판 바구니
+            const dashboard = document.getElementById('statusDashboard'); 
             const savedValue = sel.value || state.room; 
             
-            // 1. 사이드바 셀렉트 박스 초기화
             if(sel) sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
-            
-            // 2. 메인 현황판 초기화 (비우기)
-            if(dashboard) {
-                dashboard.innerHTML = "";
-                console.log("데이터 수신됨, 카드를 생성합니다.");
-            }
+            if(dashboard) dashboard.innerHTML = "";
 
-            // A부터 Z까지 반복하며 카드 만들기
+            console.log("데이터 수신됨, 루프를 시작합니다.");
+
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
                 const connObj = roomData.connections || {};
                 const userCount = Object.keys(connObj).length;
-                const isRoomActive = st.roomStatus === 'active';
-                const profName = st.professorName || "미지정";
-                const courseName = roomData.settings?.courseName || "설정된 과정명 없음";
+                const isRoomActive = (st.roomStatus === 'active');
+                
+                // 안전한 데이터 추출 ( ?. 대신 전통적인 방식 사용 )
+                const profName = st.professorName ? st.professorName : "미지정";
+                let courseName = "설정된 과정명 없음";
+                if (roomData.settings && roomData.settings.courseName) {
+                    courseName = roomData.settings.courseName;
+                }
 
-                // --- (A) 사이드바 드롭다운 생성 ---
+                // --- (A) 사이드바 드롭다운 ---
                 if(sel) {
                     const opt = document.createElement('option');
                     opt.value = c;
                     if(isRoomActive) {
-                        if (st.ownerSessionId === state.sessionId) {
-                            opt.innerText = `Room ${c} (🔵 내 강의실, ${userCount}명)`;
-                            opt.style.color = '#3b82f6';
-                            opt.style.fontWeight = 'bold';
-                        } else {
-                            opt.innerText = `Room ${c} (🔴 사용중 - ${st.professorName || '교수'}, ${userCount}명)`;
-                            opt.style.color = '#ef4444';
-                        }
+                        opt.innerText = `Room ${c} (🔴 사용중, ${userCount}명)`;
+                        opt.style.color = '#ef4444';
                     } else {
                         opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
                     }
@@ -461,22 +457,22 @@ initRoomSelect: function() {
                     sel.appendChild(opt);
                 }
 
-                // --- (B) 메인 현황판 카드 생성 (핵심!) ---
+                // --- (B) 메인 현황판 카드 ---
                 if(dashboard) {
                     const statusClass = isRoomActive ? 'active' : 'idle';
                     const statusText = isRoomActive ? '🟢 사용 중' : '⚪ 비어 있음';
                     
                     const card = document.createElement('div');
-                    card.className = `room-status-card ${statusClass}`;
-                    // 클릭하면 해당 방으로 입장하는 기능
+                    card.className = "room-status-card " + statusClass; // 문자열 합치기로 변경
+                    card.style.display = "flex"; // 강제 표시
                     card.onclick = () => dataMgr.switchRoomAttempt(c); 
 
                     card.innerHTML = `
                         <div class="card-header">
-                            <span class="card-room-name">Room ${c}</span>
+                            <span class="card-room-name" style="color:#1e293b; font-weight:900;">Room ${c}</span>
                             <span class="status-badge">${statusText}</span>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="color:#475569;">
                             <div class="info-item">
                                 <i class="fa-solid fa-graduation-cap"></i>
                                 <span><b>과정:</b> ${courseName}</span>
@@ -495,6 +491,7 @@ initRoomSelect: function() {
                     dashboard.appendChild(card);
                 }
             }
+            console.log("현황판 카드 26개 생성 완료!");
         });
     },
 
