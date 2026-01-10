@@ -168,7 +168,7 @@ const dataMgr = {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            ui.showAlert("인증 성공! 제어권을 가져옵니다.");
+            alert("인증 성공! 제어권을 가져옵니다."); 
             localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({ ownerSessionId: state.sessionId });
             this.forceEnterRoom(newRoom);
