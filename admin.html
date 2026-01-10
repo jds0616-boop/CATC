@@ -85,7 +85,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-top">
-            <div class="sidebar-header" onclick="ui.handleHomeClick()" style="cursor:pointer;">KAC Training Platform</div>
+            <div class="sidebar-header">KAC Training Platform</div>
             <div class="setting-container">
                 <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
                 <div class="setting-group">
@@ -147,10 +147,10 @@
             <div class="lock-message"><i class="fa-solid fa-lock"></i><h3>강의 대기 중 (Room Idle)</h3><p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p></div>
         </div>
 <header class="header">
-    <div class="header-title" onclick="ui.handleHomeClick()" style="cursor:pointer;">
-    <span id="displayRoomName">Connecting...</span>
-    <span class="course-sub-name" id="displayCourseTitle"></span>
-</div>
+    <div class="header-title">
+        <span id="displayRoomName">Connecting...</span>
+        <span class="course-sub-name" id="displayCourseTitle"></span>
+    </div>
     <div class="header-controls">
         <div class="icon-btn-group">
             <!-- 1. QR 토글 버튼 추가 -->
@@ -271,27 +271,6 @@
                 <div style="font-size: 80px; margin-bottom: 20px; color: #cbd5e1;"><i class="fa-solid fa-chalkboard-user"></i></div>
                 <h1 style="font-size: 32px; font-weight: 800; color: var(--text-color); margin: 0 0 10px 0;">강사 대기실</h1>
                 <p style="font-size: 16px; margin-bottom: 40px;">현재 입장된 강의실이 없습니다.<br>수업을 진행하려면 좌측 상단에서 강의실을 선택하세요.</p>
-                <!-- [추가] 실시간 강의 현황판 -->
-<div style="width:95%; max-width:850px; background:white; border-radius:15px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); margin: 20px auto 0 auto;">
-    <h4 style="margin:0 0 15px 0; color:#3b82f6; text-align:left; font-size:18px;"><i class="fa-solid fa-list-check"></i> 실시간 강의 운영 현황</h4>
-    <div style="max-height: 250px; overflow-y: auto;">
-        <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:center;">
-            <thead>
-                <tr style="border-bottom:2px solid #f1f5f9; color:#64748b; background:#f8fafc;">
-                    <th style="padding:12px 5px;">순번</th>
-                    <th>Room</th>
-                    <th style="text-align:left;">과정명</th>
-                    <th>담임교수</th>
-                    <th>상태</th>
-                </tr>
-            </thead>
-            <tbody id="lobbyStatusBody">
-                <!-- 자바스크립트가 내용을 채움 -->
-            </tbody>
-        </table>
-    </div>
-</div>
- 
                 <style>@keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }</style>
             </div>
         </div>
@@ -435,43 +414,7 @@
     </div>
 </div>
 
-<!-- [팝업 1] 로고 클릭 시 선택 창 -->
-    <div id="homeChoiceModal" class="modal-overlay" style="z-index: 5001;">
-        <div class="modal-box" style="width: 400px; text-align: center;">
-            <div style="font-size:40px; color:#f59e0b; margin-bottom:15px;"><i class="fa-solid fa-circle-question"></i></div>
-            <h3 style="margin-bottom:10px; color:#1e293b;">어디로 이동할까요?</h3>
-            <p style="font-size:14px; color:#64748b; margin-bottom:25px;">현재 강의실을 유지하시겠습니까?</p>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-action btn-primary" onclick="ui.showGlobalStatusPopup()" style="height:50px;"><i class="fa-solid fa-magnifying-glass"></i> 전체 강의 현황만 보기</button>
-                <button class="btn-action btn-secondary" onclick="ui.confirmExitToLobby()" style="height:50px; background:#475569;"><i class="fa-solid fa-door-open"></i> 강의실 나가기 (대기실로)</button>
-                <button class="btn-action btn-print" style="color:#333; height:50px; border:1px solid #ddd;" onclick="document.getElementById('homeChoiceModal').style.display='none'">취소</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- [팝업 2] 강의 현황 확인 전용 창 -->
-    <div id="globalStatusModal" class="modal-overlay" style="z-index: 5002;">
-        <div class="modal-box" style="width: 750px; max-width:95%;">
-            <div class="modal-header"><h3><i class="fa-solid fa-list-check"></i> 실시간 강의 운영 현황</h3></div>
-            <div style="max-height:450px; overflow-y:auto; margin:15px 0; border:1px solid #eee; border-radius:10px;">
-                <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:center;">
-                    <thead>
-                        <tr style="background:#f8fafc; color:#64748b; border-bottom:1px solid #ddd;">
-                            <th style="padding:12px 5px;">순번</th>
-                            <th>Room</th>
-                            <th style="text-align:left;">과정명</th>
-                            <th>담임교수</th>
-                            <th>상태</th>
-                        </tr>
-                    </thead>
-                    <tbody id="popupStatusBody"></tbody>
-                </table>
-            </div>
-            <div class="modal-actions" style="justify-content:center;">
-                <button class="m-btn m-btn-done" onclick="document.getElementById('globalStatusModal').style.display='none'" style="width:150px; justify-content:center;">닫기</button>
-            </div>
-        </div>
-    </div>
 
 </body>
 </html>

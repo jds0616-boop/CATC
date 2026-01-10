@@ -412,78 +412,6 @@ const ui = {
     closeSecretModal: function() {
         document.getElementById('changeAdminSecretModal').style.display = 'none';
     },
-
-// --- [로비/현황판 관련 추가 기능] ---
-    handleHomeClick: function() {
-        if (state.room) {
-            // 강의실 안에 있으면 팝업 띄움
-            document.getElementById('homeChoiceModal').style.display = 'flex';
-        } else {
-            // 이미 로비(대기실)면 목록만 새로고침
-            this.renderLobbyList('lobby');
-        }
-    },
-
-    confirmExitToLobby: function() {
-        document.getElementById('homeChoiceModal').style.display = 'none';
-        if(confirm("현재 강의실 제어권을 내려놓고 대기실로 이동하시겠습니까?")) {
-            state.room = null;
-            this.showWaitingRoom();
-        }
-    },
-
-    showGlobalStatusPopup: function() {
-        document.getElementById('homeChoiceModal').style.display = 'none';
-        document.getElementById('globalStatusModal').style.display = 'flex';
-        this.renderLobbyList('popup');
-    },
-
-    renderLobbyList: function(target = 'lobby') {
-        const targetBody = (target === 'lobby') ? 
-            document.getElementById('lobbyStatusBody') : 
-            document.getElementById('popupStatusBody');
-        
-        if(!targetBody) return;
-
-        firebase.database().ref('courses').once('value', snap => {
-            const data = snap.val() || {};
-            targetBody.innerHTML = "";
-            let activeCount = 0;
-
-            for(let i=65; i<=90; i++) { // A부터 Z까지 확인
-                const roomCode = String.fromCharCode(i);
-                const roomData = data[roomCode] || {};
-                const st = roomData.status || {};
-                const settings = roomData.settings || {};
-
-                // 사용 중인 강의실만 목록에 추가
-                if(st.roomStatus === 'active') {
-                    activeCount++;
-                    const row = document.createElement('tr');
-                    row.style.borderBottom = "1px solid #f1f5f9";
-                    row.style.color = "#1e293b"; // 다크모드 대비 기본색
-                    row.innerHTML = `
-                        <td style="padding:15px 5px; color:#94a3b8; font-weight:bold;">${activeCount}</td>
-                        <td style="font-weight:bold; color:#3b82f6;">Room ${roomCode}</td>
-                        <td style="text-align:left; font-weight:700;">${settings.courseName || '과정명 미설정'}</td>
-                        <td style="font-weight:600;">${st.professorName || '-'}</td>
-                        <td><span style="background:#ecfdf5; color:#10b981; padding:3px 10px; border-radius:50px; font-size:11px; font-weight:800; border:1px solid #10b981;">LIVE</span></td>
-                    `;
-                    targetBody.appendChild(row);
-                }
-            }
-
-            if(activeCount === 0) {
-                targetBody.innerHTML = `<tr><td colspan="5" style="padding:50px; color:#94a3b8; font-weight:bold;">현재 운영 중인 강의가 없습니다.</td></tr>`;
-            }
-        });
-    },
-
-
-
-
-
-
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
@@ -683,7 +611,6 @@ const ui = {
         const statusSel = document.getElementById('roomStatusSelect');
         statusSel.value = 'waiting';
         statusSel.disabled = true;
-        this.renderLobbyList('lobby');
     }
 };
 
