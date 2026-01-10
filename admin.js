@@ -487,11 +487,11 @@ initRoomSelect: function() {
                     row.innerHTML = `
                         <td>${count++}</td>
                         <td style="font-weight:900; color:#3b82f6;">Room ${c}</td>
-                        <td style="text-align:left;"><div class="td-course-name" title="${courseName}">${courseName}</div></td>
+                        <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
                         <td style="font-weight:700;">${userCount}명</td>
-                        <td style="color:#94a3b8; font-size:12px;">${lastTime}</td>
+                        <td style="color:#94a3b8; font-size:14px;">${lastTime}</td>
                         <td>
                             <button class="btn-table-action" onclick="dataMgr.switchRoomAttempt('${c}')">입장하기</button>
                         </td>

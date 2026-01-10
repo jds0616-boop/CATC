@@ -647,19 +647,22 @@ body.night-mode .quiz-card.result-mode {
     border-collapse: collapse;
 }
 
+/* 테이블 제목 (보여주신 이미지 부분) */
 .status-table th {
     background: #f8fafc;
-    padding: 15px 10px;
-    font-size: 14px;
+    padding: 18px 10px;    /* 15px -> 18px (더 넓게) */
+    font-size: 16px;       /* 14px -> 16px (크게) */
     color: #64748b;
     border-bottom: 2px solid #e2e8f0;
+    font-weight: 800;      /* 더 굵게 */
 }
 
+/* 테이블 내용 (이 부분도 꼭 같이 고쳐야 합니다) */
 .status-table td {
-    padding: 15px 10px;
+    padding: 18px 10px;    /* 15px -> 18px (더 넓게) */
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
-    text-align: center; /* 기본 가운데 정렬 */
+    font-size: 17px;       /* 14px -> 17px (핵심: 아주 잘 보임) */
+    text-align: center;
 }
 
 /* 5. 스크롤바 디자인 */
@@ -669,4 +672,9 @@ body.night-mode .quiz-card.result-mode {
 .full-dashboard::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
+}
+
+.td-course-name {
+    margin: 0 auto; /* 박스 자체를 가운데로 보냄 */
+    text-align: center; /* 박스 안의 글자도 가운데 정렬 */
 }
