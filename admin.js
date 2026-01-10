@@ -957,10 +957,11 @@ const printMgr = {
     }
 };
 
-// --- [추가] 전체 현황판 관리 로직 ---
+// --- [현황판 관리 도구 정의] ---
 const dashboardMgr = {
     init: function() {
-        // 모든 강의실 데이터 감시
+        console.log("현황판 감시 시작...");
+        // 모든 강의실 데이터 실시간 감시
         firebase.database().ref('courses').on('value', snap => {
             const allData = snap.val() || {};
             this.render(allData, 'mainDashboardBody');
@@ -968,7 +969,7 @@ const dashboardMgr = {
             
             const timeStr = new Date().toLocaleTimeString();
             const ticket = document.getElementById('lastUpdateTicket');
-            if(ticket) ticket.innerText = `Last Update: ${timeStr}`;
+            if(ticket) ticket.innerText = `마지막 업데이트: ${timeStr}`;
         });
     },
 
@@ -977,7 +978,8 @@ const dashboardMgr = {
         if(!tbody) return;
         
         let html = "";
-        for(let i=65; i<=90; i++) { // A to Z
+        // A부터 Z까지 26개 방 생성
+        for(let i=65; i<=90; i++) { 
             const code = String.fromCharCode(i);
             const data = allData[code] || {};
             
@@ -989,30 +991,29 @@ const dashboardMgr = {
             const professor = status.professorName || "-";
             const roomStatus = status.roomStatus || "idle";
             
-            // 상태 로직 결정
+            // 상태 표시 로직
             let statusText = "대기중";
             let statusClass = "waiting";
             
             if(roomStatus === 'active') {
                 statusText = "사용중";
                 statusClass = "active";
-                // 만약 퀴즈가 진행 중(open/result 등)이라면 '강의중'으로 표시
+                // 퀴즈 진행 중 확인
                 if(activeQuiz && activeQuiz.status && activeQuiz.status !== 'ready') {
                     statusText = "강의중(퀴즈)";
                     statusClass = "ingame";
                 }
             }
 
-            // 마지막 사용 시간 (settings나 status 업데이트 시 기록된 시간 기준)
             let lastTime = "-";
-            if(status.lastUsed) { // 만약 데이터에 없다면 SaveSettings 시점에 넣어야 함
+            if(status.lastUsed) {
                 lastTime = new Date(status.lastUsed).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
             }
 
             html += `
                 <tr>
                     <td>${i - 64}</td>
-                    <td style="font-weight:bold;">${code}</td>
+                    <td style="font-weight:bold; color:#3b82f6;">${code}</td>
                     <td style="text-align:left; font-weight:600;">${courseName}</td>
                     <td>${professor}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
@@ -1024,13 +1025,17 @@ const dashboardMgr = {
     },
 
     openPopup: function() {
-        document.getElementById('globalDashboardModal').style.display = 'flex';
+        const modal = document.getElementById('globalDashboardModal');
+        if(modal) modal.style.display = 'flex';
     }
 };
 
+// --- [모든 준비가 끝나면 실행] ---
 window.onload = function() { 
-    dataMgr.checkMobile(); 
-    dataMgr.initSystem(); 
-    profMgr.init(); 
-    dashboardMgr.init(); // <--- 여기에 딱 넣어주세요!
+    if (typeof dataMgr !== 'undefined') dataMgr.checkMobile(); 
+    if (typeof dataMgr !== 'undefined') dataMgr.initSystem(); 
+    if (typeof profMgr !== 'undefined') profMgr.init(); 
+    
+    // 현황판 실행
+    dashboardMgr.init(); 
 };
