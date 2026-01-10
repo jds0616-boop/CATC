@@ -569,41 +569,49 @@ initRoomSelect: function() {
             linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
         }
     },
-    setMode: function(mode) {
 
-        if (!state.room) {
-            this.showWaitingRoom();
-            return;
-        }
-        document.getElementById('view-waiting').style.display = 'none';
+
+    setMode: function(mode) {
+        // 1. [로컬 UI 전환] 강사 화면에서 어떤 박스를 보여줄지만 결정 (파이어베이스와 상관없음)
+        // 현황판(waiting), Q&A(qa), 퀴즈(quiz) 중 선택된 것만 'flex'로 보여줌
+        document.getElementById('view-qa').style.display = (mode === 'qa') ? 'flex' : 'none';
+        document.getElementById('view-quiz').style.display = (mode === 'quiz') ? 'flex' : 'none';
+        document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'flex' : 'none';
+        
+        // 2. 탭 버튼 활성화 상태 표시 (로컬)
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
-        if (mode === 'qa') {
-            document.getElementById('view-qa').style.display = 'flex';
-            document.getElementById('view-quiz').style.display = 'none';
-        }
+
+        // 3. [중요] 파이어베이스 동기화 제어 (경우의 수 판단)
         if (state.room) {
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            // 현황판('waiting')은 강사만 보는 화면이므로 파이어베이스에 저장하지 않음!
+            // 이렇게 하면 강사가 현황판을 보는 동안에도 학생들은 원래 보던 화면(Q&A나 퀴즈)에 그대로 머물게 됩니다.
+            if (mode !== 'waiting') {
+                firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            }
+
+            // 4. 각 모드별 특수 로직 처리
             if (mode === 'quiz') {
+                // 퀴즈 파일이 로드되어 있다면 퀴즈 화면 구성
                 if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) {
-                    document.getElementById('view-qa').style.display = 'none';
-                    document.getElementById('view-quiz').style.display = 'flex';
                     quizMgr.showQuiz();
                 } else {
-                    document.getElementById('view-qa').style.display = 'none';
-                    document.getElementById('view-quiz').style.display = 'flex';
+                    // 파일이 없으면 선택 창 띄우기
                     document.getElementById('quizSelectModal').style.display = 'flex';
                     document.getElementById('btnPause').style.display = 'none';
                     const smartBtn = document.getElementById('btnSmartNext');
-                    smartBtn.style.display = 'flex';
-                    smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    if(smartBtn) {
+                        smartBtn.style.display = 'flex';
+                        smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    }
                     quizMgr.loadSavedQuizList();
                 }
-                return;
             }
         }
-    }, 
+    },
+
+
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
