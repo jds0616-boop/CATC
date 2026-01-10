@@ -523,39 +523,56 @@ const ui = {
             linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!");
         }
     },
-    setMode: function(mode) {
+   setMode: function(mode) {
         if (!state.room) {
             this.showWaitingRoom();
             return;
         }
+
+        // 1. [추가] 퀴즈나 Q&A로 들어갈 때, 혹시 떠 있을지 모르는 통합 현황 팝업을 강제로 닫습니다.
+        const dashboardModal = document.getElementById('globalDashboardModal');
+        if(dashboardModal) dashboardModal.style.display = 'none';
+
+        // 2. 대기실(현황판) 메인 화면 숨기기
         document.getElementById('view-waiting').style.display = 'none';
+
+        // 3. 버튼 활성화 표시
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
+
+        // 4. 모드별 화면 전환
         if (mode === 'qa') {
             document.getElementById('view-qa').style.display = 'flex';
             document.getElementById('view-quiz').style.display = 'none';
         }
+
+        // 5. 퀴즈 모드 로직 (사용자님의 원본 로직을 그대로 보호하며 에러만 방지)
         if (state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            
             if (mode === 'quiz') {
+                // [수정] 퀴즈 화면은 보여주되, 통합 현황 팝업과 헷갈리지 않게 처리
+                document.getElementById('view-qa').style.display = 'none';
+                document.getElementById('view-quiz').style.display = 'flex';
+
                 if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) {
-                    document.getElementById('view-qa').style.display = 'none';
-                    document.getElementById('view-quiz').style.display = 'flex';
                     quizMgr.showQuiz();
                 } else {
-                    document.getElementById('view-qa').style.display = 'none';
-                    document.getElementById('view-quiz').style.display = 'flex';
+                    // 퀴즈 파일이 없으면 '퀴즈 선택창(quizSelectModal)'을 띄웁니다. 
+                    // ※ 여기서 '통합현황표'가 뜬다면 admin.html에서 ID가 겹치는지 확인해야 합니다.
                     document.getElementById('quizSelectModal').style.display = 'flex';
                     document.getElementById('btnPause').style.display = 'none';
                     const smartBtn = document.getElementById('btnSmartNext');
-                    smartBtn.style.display = 'flex';
-                    smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    if(smartBtn) {
+                        smartBtn.style.display = 'flex';
+                        smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    }
                     quizMgr.loadSavedQuizList();
                 }
             }
         }
-    }, 
+    },
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
@@ -625,27 +642,42 @@ const ui = {
     },
 showWaitingRoom: function() {
         state.room = null;
-        document.getElementById('displayRoomName').innerText = "KAC 강사 대기실";
-        
+        console.log("대기실 화면 진입 시도...");
+
+        // 에러 방지를 위해 요소가 있는지 확인하며 실행합니다.
+        const trySetText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        };
+        const trySetStyle = (id, prop, val) => {
+            const el = document.getElementById(id);
+            if (el) el.style[prop] = val;
+        };
+
+        trySetText('displayRoomName', "KAC 강사 대기실");
+        trySetText('displayCourseTitle', "");
+
+        // 1. 다른 화면 다 숨기기
         const tabs = document.querySelector('.mode-tabs');
         if(tabs) tabs.style.display = 'none'; 
         
-        document.getElementById('view-qa').style.display = 'none';
-        document.getElementById('view-quiz').style.display = 'none';
-        document.getElementById('statusOverlay').style.display = 'none'; 
+        trySetStyle('view-qa', 'display', 'none');
+        trySetStyle('view-quiz', 'display', 'none');
+        trySetStyle('statusOverlay', 'display', 'none');
 
-        // 현황판(대기실) 화면을 보여줍니다.
-        const waitingView = document.getElementById('view-waiting');
-        if(waitingView) {
-            waitingView.style.display = 'flex';
-        }
-        
+        // 2. [가장 중요] 대기실 화면(현황판 표가 있는 곳) 강제로 보여주기
+        // 사용자님 스크린샷 16번 줄에 해당하는 핵심 코드입니다.
+        trySetStyle('view-waiting', 'display', 'flex');
+
+        // 3. 상태창 초기화
         const statusSel = document.getElementById('roomStatusSelect');
         if(statusSel) {
             statusSel.value = 'waiting';
             statusSel.disabled = true;
         }
-    } // 함수 끝 (사용자님 스크린샷 22번 줄)
+        
+        console.log("대기실 화면 표시 완료");
+    },
 }; // ui 객체 끝 (사용자님 스크린샷 24번 줄)
 
 
@@ -1043,10 +1075,17 @@ const printMgr = {
 
 
 window.onload = function() { 
-    dataMgr.checkMobile(); 
-    dataMgr.initSystem(); 
-    profMgr.init(); 
+    // 1. 기초 도구들 먼저 준비
+    if (typeof dataMgr !== 'undefined') dataMgr.initSystem(); 
+    if (typeof profMgr !== 'undefined') profMgr.init(); 
+
+    // 2. 현황판 감시 장치 켜기
+    if (typeof dashboardMgr !== 'undefined') {
+        dashboardMgr.init(); 
+    }
     
-    // 현황판 실시간 감시 시작
-    dashboardMgr.init(); 
+    // 3. 마지막으로 대기실 화면 호출
+    setTimeout(() => {
+        ui.showWaitingRoom();
+    }, 200); 
 };
