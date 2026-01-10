@@ -1,4 +1,4 @@
-/* --- admin.js (최종 통합본: 원본 모든 기능 유지 + 현황판/교수관리 추가) --- */
+/* --- admin.js (최종본: 현황판 실시간 렌더링 및 퀴즈 모든 기능 복구) --- */
 
 // --- [기본 데이터] ---
 const DEFAULT_QUIZ_DATA = [
@@ -34,7 +34,6 @@ const state = {
         return id;
     })(),
     room: null,
-    isTestMode: false,
     quizList: [],
     isExternalFileLoaded: false, 
     currentQuizIdx: 0,
@@ -85,7 +84,6 @@ const authMgr = {
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
         if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
-        if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
         if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
         try { await user.updatePassword(newPw); ui.showAlert("비밀번호가 변경되었습니다."); ui.closePwModal(); } catch (e) { ui.showAlert("변경 실패: " + e.message); }
     }
@@ -103,7 +101,6 @@ const dataMgr = {
         const next = document.getElementById('secret-new').value;
         const isRight = await this.checkAdminSecret(curr);
         if(!isRight) return ui.showAlert("현재 관리자 암호가 틀립니다.");
-        if(next.length < 4) return ui.showAlert("새 암호는 4자리 이상이어야 합니다.");
         await firebase.database().ref('system/adminSecret').set(btoa(next));
         ui.showAlert("시스템 관리자 암호가 변경되었습니다.");
         ui.closeSecretModal();
@@ -118,15 +115,18 @@ const dataMgr = {
     },
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
-            if (user) { document.getElementById('loginOverlay').style.display = 'none'; this.loadInitialData(); } 
-            else { document.getElementById('loginOverlay').style.display = 'flex'; }
+            if (user) { 
+                document.getElementById('loginOverlay').style.display = 'none'; 
+                this.loadInitialData(); 
+            } else { 
+                document.getElementById('loginOverlay').style.display = 'flex'; 
+            }
         });
     },
     loadInitialData: function() {
         ui.initRoomSelect();
         ui.showWaitingRoom(); 
         state.quizList = DEFAULT_QUIZ_DATA; 
-        state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { if(e.target.value) this.switchRoomAttempt(e.target.value); };
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
@@ -164,14 +164,8 @@ const dataMgr = {
             document.getElementById('takeoverPwInput').focus();
         }
     },
-    cancelTakeover: function() {
-        document.getElementById('takeoverModal').style.display = 'none';
-        document.getElementById('roomSelect').value = state.room || ""; 
-        state.pendingRoom = null;
-    },
     forceEnterRoom: async function(room) {
-        const tabs = document.querySelector('.mode-tabs');
-        if(tabs) tabs.style.display = 'flex'; 
+        document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
@@ -219,18 +213,6 @@ const dataMgr = {
         });
         this.fetchCodeAndRenderQr(room);
         dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
-        if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
-        state.newBadgeTimer = setInterval(() => {
-            const cards = document.querySelectorAll('.q-card.is-new');
-            cards.forEach(card => {
-                const ts = parseInt(card.getAttribute('data-ts'));
-                if (Date.now() - ts >= 120000) {
-                    card.classList.remove('is-new');
-                    const badge = card.querySelector('.new-badge-icon');
-                    if(badge) badge.remove();
-                }
-            });
-        }, 5000); 
     },
     fetchCodeAndRenderQr: function(room) {
         const pathArr = window.location.pathname.split('/'); pathArr.pop(); 
@@ -395,8 +377,7 @@ const ui = {
                 const c = String.fromCharCode(i);
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
-                const connObj = roomData.connections || {};
-                const userCount = Object.keys(connObj).length;
+                const userCount = roomData.connections ? Object.keys(roomData.connections).length : 0;
                 const profName = st.professorName ? `, ${st.professorName}` : "";
                 const opt = document.createElement('option');
                 opt.value = c;
@@ -463,10 +444,8 @@ const ui = {
         const linkInput = document.getElementById('studentLink');
         const url = linkInput.value;
         if (!url) { ui.showAlert("강의실을 먼저 선택하세요!"); return; }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => { ui.showAlert("클립보드에 링크가 복사되었습니다!"); })
-            .catch(() => { linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!"); });
-        } else { linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!"); }
+        navigator.clipboard.writeText(url).then(() => { ui.showAlert("클립보드에 링크가 복사되었습니다!"); })
+        .catch(() => { linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!"); });
     },
     setMode: function(mode) {
         if (!state.room) { this.showWaitingRoom(); return; }
@@ -604,7 +583,7 @@ const dashboardMgr = {
     openPopup: function() { const modal = document.getElementById('globalDashboardModal'); if(modal) modal.style.display = 'flex'; }
 };
 
-// --- 4. Quiz Logic (핵심 상세 로직 모두 복구) ---
+// --- 4. Quiz Logic ---
 const quizMgr = {
     loadFile: function(e) {
         const f = e.target.files[0]; if (!f) return;
@@ -622,9 +601,10 @@ const quizMgr = {
                 }
             });
             state.isExternalFileLoaded = true;
-            const quizTitle = prompt("퀴즈 세트 이름을 입력하세요:", `${new Date().toLocaleDateString()} 퀴즈`);
-            if (!quizTitle) return;
-            firebase.database().ref(`courses/${state.room}/quizBank`).push().set({ title: quizTitle, data: state.quizList, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            const quizTitle = prompt("이 퀴즈 세트의 이름을 입력해주세요:", `${new Date().toLocaleDateString()} 퀴즈`);
+            if (!quizTitle) { alert("업로드가 취소되었습니다."); return; }
+            firebase.database().ref(`courses/${state.room}/quizBank`).push().set({ title: quizTitle, data: state.quizList, timestamp: firebase.database.ServerValue.TIMESTAMP })
+            .then(() => { ui.showAlert("저장되었습니다."); quizMgr.loadSavedQuizList(); });
             this.renderMiniList(); this.showQuiz();
         };
         r.readAsText(f);
@@ -632,7 +612,7 @@ const quizMgr = {
     addManualQuiz: function() {
         const q = document.getElementById('manualQ').value, a = document.getElementById('manualAns').value;
         const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
-        if(!q || !a) return ui.showAlert("내용을 입력하세요.");
+        if(!q || !a) return ui.showAlert("Fill fields");
         state.quizList.push({ text: q, options: opts, correct: parseInt(a), checked: true, isOX: opts.length === 2, isSurvey: false });
         this.renderMiniList();
     },
@@ -655,10 +635,10 @@ const quizMgr = {
         const container = document.getElementById('savedQuizListContainer'); if(!container) return;
         firebase.database().ref(`courses/${state.room}/quizBank`).on('value', snap => {
             container.innerHTML = ""; const data = snap.val();
-            if (!data) { container.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444; font-weight:bold;">⚠️ 저장된 퀴즈가 없음.</div>`; return; }
+            if (!data) { container.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444; font-weight:bold;">⚠️ 저장된 퀴즈가 없습니다.</div>`; return; }
             Object.keys(data).reverse().forEach(key => {
                 const quizSet = data[key]; const item = document.createElement('div'); item.className = 'saved-quiz-item';
-                item.innerHTML = `<div style="flex-grow:1; cursor:pointer;" onclick="quizMgr.useSavedQuizSet('${key}')"><div class="q-title">${quizSet.title}</div><div class="q-info">${quizSet.data.length}문항</div></div><button class="btn-del-mini" onclick="quizMgr.deleteQuizSet('${key}', '${quizSet.title}')"><i class="fa-solid fa-trash-can"></i></button>`;
+                item.innerHTML = `<div style="flex-grow:1; cursor:pointer;" onclick="quizMgr.useSavedQuizSet('${key}')"><div class="q-title">${quizSet.title}</div><div class="q-info">${quizSet.data.length}문항 | ${new Date(quizSet.timestamp).toLocaleString()}</div></div><button class="btn-del-mini" onclick="quizMgr.deleteQuizSet('${key}', '${quizSet.title}')"><i class="fa-solid fa-trash-can"></i></button>`;
                 container.appendChild(item);
             });
         });
@@ -668,16 +648,17 @@ const quizMgr = {
             const val = snap.val(); if (val) { state.quizList = val.data; state.isExternalFileLoaded = true; this.renderMiniList(); this.completeQuizLoading(); }
         });
     },
-    deleteQuizSet: function(key, title) { if (confirm(`'${title}' 삭제할까요?`)) firebase.database().ref(`courses/${state.room}/quizBank/${key}`).remove(); },
+    deleteQuizSet: function(key, title) { if (confirm(`'${title}' 퀴즈를 삭제할까요?`)) firebase.database().ref(`courses/${state.room}/quizBank/${key}`).remove(); },
     prevNext: function(d) {
-        let n = state.currentQuizIdx + d; if (n < 0 || n >= state.quizList.length) return ui.showAlert("문항 범위를 벗어났습니다.");
+        let n = state.currentQuizIdx + d; if (n < 0 || n >= state.quizList.length) return ui.showAlert(n < 0 ? "첫 번째 문항입니다." : "마지막 문항입니다.");
         if(!state.quizList[n].checked) { state.currentQuizIdx = n; this.prevNext(d); return; }
         state.currentQuizIdx = n; this.showQuiz();
     },
     showQuiz: function() {
         document.querySelector('.quiz-card').classList.remove('result-mode');
         const q = state.quizList[state.currentQuizIdx]; this.resetTimerUI(); this.renderScreen(q);
-        document.getElementById('btnPause').style.display = 'none'; document.getElementById('btnSmartNext').style.display = 'flex';
+        document.getElementById('btnPause').style.display = 'none';
+        const smartBtn = document.getElementById('btnSmartNext'); smartBtn.style.display = 'flex'; smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
         document.getElementById('quizControls').style.display = 'flex'; state.remainingTime = 8; this.startAnswerMonitor();
@@ -702,6 +683,7 @@ const quizMgr = {
         else if(act === 'close') { 
             this.stopTimer(); const q = state.quizList[state.currentQuizIdx];
             if(!q.isSurvey) { const opt = document.getElementById(`opt-${q.correct}`); if(opt) opt.classList.add('reveal-answer'); }
+            else { document.getElementById('quizGuideArea').innerText = "마감되었습니다."; }
         }
         else if(act === 'result') { 
             this.stopTimer(); document.querySelector('.quiz-card').classList.add('result-mode');
@@ -711,40 +693,52 @@ const quizMgr = {
     },
     smartNext: function() { this.action('open'); },
     togglePause: function() {
-        if (state.timerInterval) { this.stopTimer(); firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: 'pause', remainingTime: state.remainingTime });
-            document.getElementById('btnPause').innerHTML = '다시 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
-        } else { this.action('open'); document.getElementById('btnPause').innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:10px;"></i>'; }
+        const pauseBtn = document.getElementById('btnPause');
+        if (state.timerInterval) { 
+            this.stopTimer(); firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: 'pause', remainingTime: state.remainingTime });
+            pauseBtn.innerHTML = '다시 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>'; pauseBtn.style.backgroundColor = '#3b82f6'; 
+        } else { 
+            this.action('open'); pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:10px;"></i>'; pauseBtn.style.backgroundColor = '#f59e0b'; 
+        }
     },
     startTimer: function() {
         this.stopTimer(); document.getElementById('btnSmartNext').style.display = 'none';
-        const pauseBtn = document.getElementById('btnPause'); pauseBtn.style.display = 'flex'; pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>';
+        const pauseBtn = document.getElementById('btnPause'); pauseBtn.style.display = 'flex'; pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>'; pauseBtn.style.background = '#f59e0b';
         let t = state.remainingTime; const d = document.getElementById('quizTimer'); 
+        if (d) d.classList.remove('urgent'); if (d) d.innerText = `00:${t < 10 ? '0' + t : t}`;
         const endTime = Date.now() + (t * 1000); dbRef.quiz.update({ status: 'open', endTime: endTime });
-        if(!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+        if(t <= 5 && d) d.classList.add('urgent');
+        if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
         state.timerInterval = setInterval(() => {
-            const r = Math.ceil((endTime - Date.now()) / 1000); state.remainingTime = r < 0 ? 0 : r;
-            if (d) { d.innerText = `00:${state.remainingTime < 10 ? '0' + state.remainingTime : state.remainingTime}`; if(r <= 5) d.classList.add('urgent'); }
+            const r = Math.ceil((endTime - Date.now()) / 1000); const displaySec = r < 0 ? 0 : r; state.remainingTime = displaySec; 
+            if (d) { d.innerText = `00:${displaySec < 10 ? '0' + displaySec : displaySec}`; if(r <= 5) d.classList.add('urgent'); }
             if (r <= 8 && r > 0) { state.timerAudio.currentTime = 0; state.timerAudio.play().catch(e => {}); }
-            if(r <= 0) { this.stopTimer(); this.action('close'); setTimeout(() => { this.action('result'); pauseBtn.style.display = 'none'; document.getElementById('btnSmartNext').style.display = 'flex'; }, 1500); }
+            if(r <= 0) {
+                this.stopTimer(); this.action('close'); 
+                setTimeout(() => { this.action('result'); pauseBtn.style.display = 'none'; document.getElementById('btnSmartNext').style.display = 'flex'; }, 1500);
+            }
         }, 200);
     },
     stopTimer: function() { if(state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; } if (state.timerAudio) { state.timerAudio.pause(); } },
     resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:08"; document.getElementById('quizTimer').classList.remove('urgent'); },
     showFinalSummary: async function() {
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
-        const allAns = snap.val() || {}; const totalParticipants = new Set(); let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0;
-        const userScoreMap = {};
+        const allAns = snap.val() || {}; const totalParticipants = new Set(); let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0; const userScoreMap = {};
         state.quizList.forEach((q, idx) => {
             if(!q.checked || q.isSurvey) return; const id = `Q${idx}`; const answers = allAns[id] || {}; const keys = Object.keys(answers);
             if(keys.length > 0) totalQuestions++;
-            keys.forEach(k => { totalParticipants.add(k); totalAnswerCount++; if(!userScoreMap[k]) userScoreMap[k] = { score: 0, pCount: 0 };
-                userScoreMap[k].pCount++; if(answers[k].choice === q.correct) { totalCorrect++; userScoreMap[k].score++; } });
+            keys.forEach(k => {
+                totalParticipants.add(k); totalAnswerCount++; if(!userScoreMap[k]) userScoreMap[k] = { score: 0, pCount: 0 };
+                userScoreMap[k].pCount++; if(answers[k].choice === q.correct) { totalCorrect++; userScoreMap[k].score++; }
+            });
         });
         const sortedUsers = Object.keys(userScoreMap).map(t => ({ token: t, ...userScoreMap[t] })).sort((a, b) => b.score - a.score);
-        const finalRankingData = {}; sortedUsers.forEach((u, i) => { finalRankingData[u.token] = { score: u.score, rank: i+1 }; });
+        const finalRankingData = {}; let rank = 1;
+        sortedUsers.forEach((u, i) => { if (i > 0 && u.score < sortedUsers[i - 1].score) rank = i + 1; finalRankingData[u.token] = { score: u.score, rank: rank, total: sortedUsers.length }; });
         await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
         await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
-        document.getElementById('summaryStats').innerHTML = `<div class="summary-card">총 인원<b>${totalParticipants.size}명</b></div><div class="summary-card">평균 정답률<b>${totalAnswerCount?Math.round((totalCorrect/totalAnswerCount)*100):0}%</b></div>`;
+        const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
+        document.getElementById('summaryStats').innerHTML = `<div class="summary-card"><span>총 인원</span><b>${totalParticipants.size}명</b></div><div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div><div class="summary-card"><span>문항 수</span><b>${totalQuestions}개</b></div><div class="summary-card"><span>전체 제출</span><b>${totalAnswerCount}건</b></div>`;
         document.getElementById('quizSummaryOverlay').style.display = 'flex';
     },
     renderChart: function(id, corr) {
@@ -777,7 +771,8 @@ const printMgr = {
         document.getElementById('doc-date').innerText = date || "-"; document.getElementById('doc-prof').innerText = prof || "-";
         const listBody = document.getElementById('docListBody'); listBody.innerHTML = ""; 
         const items = Object.values(state.qaData || {}); 
-        items.sort((a,b) => b.likes - a.likes).forEach((item, idx) => { listBody.innerHTML += `<tr><td>${idx + 1}</td><td style="text-align:left;">${item.text}</td><td>❤️ ${item.likes || 0}</td></tr>`; });
+        if (items.length === 0) listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
+        else { items.sort((a,b) => b.likes - a.likes).forEach((item, idx) => { listBody.innerHTML += `<tr><td>${idx + 1}</td><td style="text-align:left;">${item.text}</td><td>❤️ ${item.likes || 0}</td></tr>`; }); }
         document.getElementById('printPreviewModal').style.display = 'flex'; 
     },
     closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
@@ -786,6 +781,9 @@ const printMgr = {
 
 // --- 초기 실행 ---
 window.onload = function() { 
-    dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); dashboardMgr.init(); 
+    dataMgr.checkMobile(); 
+    dataMgr.initSystem(); 
+    profMgr.init(); 
+    dashboardMgr.init(); 
     setTimeout(() => { if(!state.room) ui.showWaitingRoom(); }, 200); 
 };
