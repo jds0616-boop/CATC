@@ -624,7 +624,7 @@ body.night-mode .quiz-card.result-mode {
 .dashboard-title-area {
     padding: 30px 10px 20px 10px; /* 제목 위아래 적당한 여백 */
     background: var(--bg-color);
-    position: sticky;             /* 스크롤 내려도 제목은 고정 */
+    position: sticky;             /* 스크롤 내려도 제목은 고정 (선택사항) */
     top: 0;
     z-index: 10;
 }
@@ -645,6 +645,7 @@ body.night-mode .quiz-card.result-mode {
 .status-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* 칸 너비 고정으로 안정감 부여 */
 }
 
 .status-table th {
@@ -659,14 +660,17 @@ body.night-mode .quiz-card.result-mode {
     padding: 15px 10px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
-    text-align: center; /* 기본 가운데 정렬 */
+    word-break: keep-all; /* 텍스트 줄바꿈 방지 */
 }
 
-/* 5. 스크롤바 디자인 */
+/* 5. 스크롤바를 눈에 띄게 (작동 확인용) */
 .full-dashboard::-webkit-scrollbar {
     width: 10px;
 }
 .full-dashboard::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #3b82f6; /* 파란색으로 표시하여 스크롤 위치 확인 가능하게 함 */
     border-radius: 10px;
+}
+.full-dashboard::-webkit-scrollbar-track {
+    background: #f1f5f9;
 }
