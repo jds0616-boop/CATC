@@ -212,20 +212,20 @@
 <!-- 강사 대기실 (현황판) 섹션 -->
 <div id="view-waiting" class="full-dashboard" style="display:none;">
     
-    <!-- 상단 제목 영역: 여백 최소화 -->
-    <div class="dashboard-title-area">
-        <h1 style="font-size: 24px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
-        <p style="font-size: 13px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 확인하고 입장하세요.</p>
+    <!-- (1) 제목 영역: 이제 표 위로 올라갑니다 -->
+    <div class="dashboard-header-box">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
+        <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0;">현재 각 강의실의 상태를 확인하고 입장하세요.</p>
     </div>
 
-    <!-- 표를 감싸는 하얀 박스 -->
+    <!-- (2) 표 영역 -->
     <div class="dashboard-table-container">
         <table class="status-table">
             <thead>
                 <tr>
                     <th>연번</th>
                     <th>Room</th>
-                    <th style="text-align: left;">과정명</th>
+                    <th>과정명</th>
                     <th>교수명</th>
                     <th>상태</th>
                     <th>접속</th>
@@ -234,7 +234,7 @@
                 </tr>
             </thead>
             <tbody id="statusTableBody">
-                <tr><td colspan="8" style="padding: 40px;">데이터를 불러오는 중...</td></tr>
+                <!-- JS가 행을 채웁니다 -->
             </tbody>
         </table>
     </div>
