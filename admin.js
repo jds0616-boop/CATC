@@ -265,14 +265,15 @@ const dataMgr = {
         firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
         document.getElementById('displayCourseTitle').innerText = newName;
         document.getElementById('roomPw').value = pw; 
-        if (statusVal === 'active') {
-            localStorage.setItem(`last_owned_room`, state.room);
-            firebase.database().ref(`courses/${state.room}/status`).update({ 
-                roomStatus: 'active', 
-                ownerSessionId: state.sessionId,
-                professorName: selectedProf 
-            });
-            ui.showAlert(`✅ [Room ${state.room}] 설정 저장 및 제어권 획득!`); 
+if (statusVal === 'active') {
+    localStorage.setItem(`last_owned_room`, state.room);
+    firebase.database().ref(`courses/${state.room}/status`).update({ 
+        roomStatus: 'active', 
+        ownerSessionId: state.sessionId,
+        professorName: selectedProf 
+    });
+    // ui.showAlert를 삭제하거나, 아래처럼 콘솔 기록으로 대체하여 팝업이 뜨지 않게 합니다.
+    console.log("Settings updated for Room " + state.room);
         } else {
             localStorage.removeItem(`last_owned_room`);
             firebase.database().ref(`courses/${state.room}/status`).update({ 
