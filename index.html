@@ -153,19 +153,35 @@
     </div>
 </div>
 
-<!-- 차량 신청용 팝업 추가 -->
+<!-- 차량 신청용 팝업 (버튼 색상 변경 + 이름 입력창 포함) -->
 <div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
-    <div class="menu-box" style="width:90%;">
+    <div class="menu-box" style="width:90%; padding: 25px 20px;">
         <h3>목적지 선택</h3>
-        <p style="font-size:13px; color:#64748b; margin-bottom:20px;">탑승하실 장소를 선택해주세요.</p>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <button class="quiz-opt-btn" onclick="applyShuttle('osong', '오송역')">오송역</button>
-            <button class="quiz-opt-btn" onclick="applyShuttle('terminal', '청주터미널')">청주터미널</button>
-            <button class="quiz-opt-btn" onclick="applyShuttle('airport', '청주공항')">청주공항</button>
+        <p style="font-size:13px; color:#64748b; margin-bottom:20px;">탑승하실 장소를 선택하고 성함을 입력해주세요.</p>
+        
+        <!-- 목적지 버튼 (클릭 시 색상 변경을 위해 ID 부여) -->
+        <div id="shuttleButtons" style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">
+            <button class="quiz-opt-btn shuttle-btn" id="btn-osong" onclick="selectShuttle('osong', '오송역')">오송역</button>
+            <button class="quiz-opt-btn shuttle-btn" id="btn-terminal" onclick="selectShuttle('terminal', '청주터미널')">청주터미널</button>
+            <button class="quiz-opt-btn shuttle-btn" id="btn-airport" onclick="selectShuttle('airport', '청주공항')">청주공항</button>
         </div>
-        <button onclick="document.getElementById('shuttleModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:#f1f5f9;">취소</button>
+
+        <!-- 이름 입력 칸 (이름을 직접 쓰도록 변경, 가운데 정렬) -->
+        <div id="shuttleInputArea" style="display:none;">
+            <input type="text" id="shuttleUserName" placeholder="본인 성함 입력" 
+                   style="width: 100%; padding: 15px; border: 2px solid #3b82f6; border-radius: 12px; font-size: 18px; font-weight: 800; text-align: center; outline: none; margin-bottom: 15px;">
+            <button onclick="submitShuttleRequest()" 
+                    style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold;">
+                차량 신청 완료하기
+            </button>
+        </div>
+
+        <button onclick="document.getElementById('shuttleModal').style.display='none'" 
+                style="margin-top:15px; width:100%; padding:10px; border:none; border-radius:8px; background:#f1f5f9; color: #94a3b8;">취소</button>
     </div>
 </div>
+
+
     <script src="config.js"></script>
     <script>
         let serverTimeOffset = 0; // 추가
@@ -561,49 +577,93 @@ function openRoomMove() {
 }
 
 
-async function applyShuttle(locId, locName) {
-    // 0. 토큰이 없으면 생성 (퀴즈를 안 풀었을 경우 대비)
+let tempSelectedLoc = null; // 선택한 장소를 잠시 담아두는 바구니
+
+// 1. 햄버거 메뉴에서 '차량 신청' 버튼을 누를 때 실행 (초기화)
+function openShuttleApply() {
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('shuttleModal').style.display = 'flex';
+    
+    // 이전에 입력했던 흔적 지우기
+    tempSelectedLoc = null;
+    document.getElementById('shuttleInputArea').style.display = 'none';
+    document.getElementById('shuttleUserName').value = "";
+    
+    // 버튼 색상 원래대로(회색) 돌리기
+    document.querySelectorAll('.shuttle-btn').forEach(btn => {
+        btn.style.background = "#f8fafc";
+        btn.style.color = "#333";
+    });
+}
+
+// 2. 목적지 버튼(오송역 등)을 눌렀을 때 실행
+function selectShuttle(locId, locName) {
+    tempSelectedLoc = { id: locId, name: locName };
+    
+    // 모든 버튼 색상을 회색으로 초기화
+    document.querySelectorAll('.shuttle-btn').forEach(btn => {
+        btn.style.background = "#f8fafc";
+        btn.style.color = "#333";
+    });
+
+    // 내가 누른 버튼만 파란색으로 변경
+    const activeBtn = document.getElementById(`btn-${locId}`);
+    activeBtn.style.background = "#3b82f6";
+    activeBtn.style.color = "#fff";
+
+    // 아래 숨겨져 있던 이름 입력창 나타내기
+    document.getElementById('shuttleInputArea').style.display = 'block';
+    document.getElementById('shuttleUserName').focus();
+}
+
+// 3. '차량 신청 완료하기' 파란색 버튼을 누를 때 실행 (서버 저장)
+async function submitShuttleRequest() {
+    if (!tempSelectedLoc) return;
+
+    const name = document.getElementById('shuttleUserName').value.trim();
+    if (!name) {
+        alert("성함을 입력해주세요.");
+        return;
+    }
+
+    // 유저 고유 토큰 생성/확인
     let uToken = localStorage.getItem('uToken');
-    if(!uToken) {
+    if (!uToken) {
         uToken = Math.random().toString(36).substr(2);
         localStorage.setItem('uToken', uToken);
     }
 
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
 
-    // 1. 중복 확인
-    const snap = await shuttleRef.once('value');
-    const data = snap.val() || {};
-    let already = false;
-    
-    // 모든 목적지를 돌면서 내 토큰이 있는지 확인
-    Object.values(data).forEach(loc => { 
-        if(loc && loc[uToken]) already = true; 
-    });
+    try {
+        // 이미 신청했는지 중복 체크
+        const snap = await shuttleRef.once('value');
+        const data = snap.val() || {};
+        let already = false;
+        Object.values(data).forEach(loc => { if (loc && loc[uToken]) already = true; });
 
-    if(already) {
-        alert("이미 신청하신 내역이 있습니다.\n변경을 원하시면 강사님께 말씀해 주세요.");
-        return;
-    }
+        if (already) {
+            alert("이미 신청하신 내역이 있습니다.\n변경을 원하시면 강사님께 말씀해 주세요.");
+            return;
+        }
 
+        // 인원 제한 체크 (50명)
+        const locSnap = await shuttleRef.child(tempSelectedLoc.id).once('value');
+        if (locSnap.numChildren() >= 50) {
+            alert("죄송합니다. 해당 차량은 이미 정원(50명)이 찼습니다.");
+            return;
+        }
 
-
-    // 2. 신청자 이름 입력
-    const name = prompt(`${locName} 탑승 신청을 위해\n본인의 성함을 입력해주세요.`);
-    if(!name || name.trim() === "") return;
-
-    // 3. 인원 제한 확인 (50명)
-    const locSnap = await shuttleRef.child(locId).once('value');
-    if(locSnap.numChildren() >= 50) {
-        alert("죄송합니다. 해당 차량은 이미 정원(50명)이 찼습니다.");
-        return;
-    }
-
-    // 4. 저장
-    shuttleRef.child(locId).child(uToken).set(name.trim()).then(() => {
-        alert("✅ 차량 신청이 완료되었습니다.");
+        // 서버에 최종 저장
+        await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(name);
+        
+        alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
         document.getElementById('shuttleModal').style.display = 'none';
-    });
+
+    } catch (error) {
+        console.error("저장 오류:", error);
+        alert("신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    }
 }
 
 
