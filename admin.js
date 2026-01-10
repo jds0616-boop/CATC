@@ -415,85 +415,86 @@ const ui = {
     },
 
 
+
 initRoomSelect: function() {
-        console.log("현황판 그리기 시작..."); 
+        console.log("리스트형 현황판 업데이트 시작...");
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
-            const dashboard = document.getElementById('statusDashboard'); 
-            const savedValue = sel.value || state.room; 
+            const tableBody = document.getElementById('statusTableBody'); // 새로 만든 표의 몸통
+            const savedValue = sel ? sel.value : state.room; 
             
             if(sel) sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
-            if(dashboard) dashboard.innerHTML = "";
+            if(tableBody) tableBody.innerHTML = "";
 
-            console.log("데이터 수신됨, 루프를 시작합니다.");
+            let count = 1; // 연번 시작
 
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
+                const settings = roomData.settings || {};
+                const questions = roomData.questions || {};
                 const connObj = roomData.connections || {};
+                
                 const userCount = Object.keys(connObj).length;
                 const isRoomActive = (st.roomStatus === 'active');
                 
-                // 안전한 데이터 추출 ( ?. 대신 전통적인 방식 사용 )
-                const profName = st.professorName ? st.professorName : "미지정";
-                let courseName = "설정된 과정명 없음";
-                if (roomData.settings && roomData.settings.courseName) {
-                    courseName = roomData.settings.courseName;
+                // 과정명 및 교수명 (없으면 "-" 표시)
+                const courseName = settings.courseName ? settings.courseName : "-";
+                const profName = st.professorName ? st.professorName : "-";
+
+                // 마지막 활동 시간 계산 (마지막 질문 시간 기준)
+                let lastTime = "-";
+                const qValues = Object.values(questions);
+                if (qValues.length > 0) {
+                    const latestQ = qValues.sort((a, b) => b.timestamp - a.timestamp)[0];
+                    const dTime = new Date(latestQ.timestamp);
+                    lastTime = (dTime.getMonth() + 1) + "/" + dTime.getDate() + " " + dTime.getHours() + ":" + dTime.getMinutes().toString().padStart(2, '0');
                 }
 
-                // --- (A) 사이드바 드롭다운 ---
+                // --- (A) 사이드바 드롭다운 생성 (기존 기능 유지) ---
                 if(sel) {
                     const opt = document.createElement('option');
                     opt.value = c;
                     if(isRoomActive) {
-                        opt.innerText = `Room ${c} (🔴 사용중, ${userCount}명)`;
-                        opt.style.color = '#ef4444';
+                        opt.innerText = "Room " + c + " (사용중)";
+                        opt.style.color = "#ef4444";
                     } else {
-                        opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
+                        opt.innerText = "Room " + c + " (대기)";
                     }
                     if(c === savedValue) opt.selected = true;
                     sel.appendChild(opt);
                 }
 
-                // --- (B) 메인 현황판 카드 ---
-                if(dashboard) {
-                    const statusClass = isRoomActive ? 'active' : 'idle';
-                    const statusText = isRoomActive ? '🟢 사용 중' : '⚪ 비어 있음';
+                // --- (B) 메인 현황판 리스트 행 생성 ---
+                if(tableBody) {
+                    const row = document.createElement('tr');
                     
-                    const card = document.createElement('div');
-                    card.className = "room-status-card " + statusClass; // 문자열 합치기로 변경
-                    card.style.display = "flex"; // 강제 표시
-                    card.onclick = () => dataMgr.switchRoomAttempt(c); 
+                    const statusBadge = isRoomActive 
+                        ? '<span class="badge-status badge-active">🟢 사용 중</span>' 
+                        : '<span class="badge-status badge-idle">⚪ 비어 있음</span>';
 
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <span class="card-room-name" style="color:#1e293b; font-weight:900;">Room ${c}</span>
-                            <span class="status-badge">${statusText}</span>
-                        </div>
-                        <div class="card-body" style="color:#475569;">
-                            <div class="info-item">
-                                <i class="fa-solid fa-graduation-cap"></i>
-                                <span><b>과정:</b> ${courseName}</span>
-                            </div>
-                            <div class="info-item">
-                                <i class="fa-solid fa-user-tie"></i>
-                                <span><b>교수:</b> ${profName}</span>
-                            </div>
-                            <div class="info-item">
-                                <i class="fa-solid fa-users"></i>
-                                <span><b>접속:</b> ${userCount}명</span>
-                            </div>
-                        </div>
-                        <div class="btn-enter-room">강의실 입장하기</div>
+                    row.innerHTML = `
+                        <td>${count++}</td>
+                        <td style="font-weight:900; color:#3b82f6;">Room ${c}</td>
+                        <td style="text-align:left;"><div class="td-course-name" title="${courseName}">${courseName}</div></td>
+                        <td style="font-weight:600;">${profName}</td>
+                        <td>${statusBadge}</td>
+                        <td style="font-weight:700;">${userCount}명</td>
+                        <td style="color:#94a3b8; font-size:12px;">${lastTime}</td>
+                        <td>
+                            <button class="btn-table-action" onclick="dataMgr.switchRoomAttempt('${c}')">입장하기</button>
+                        </td>
                     `;
-                    dashboard.appendChild(card);
+                    tableBody.appendChild(row);
                 }
             }
-            console.log("현황판 카드 26개 생성 완료!");
+            console.log("현황판 리스트 26개 출력 완료!");
         });
     },
+
+
 
 
     toggleMiniQR: function() {
