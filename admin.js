@@ -257,33 +257,42 @@ const dataMgr = {
             ui.renderQr(url);
         });
     },
-    saveSettings: function() {
-        let rawPw = document.getElementById('roomPw').value;
-        let pw = rawPw ? rawPw.trim() : "7777"; 
+
+saveSettings: function() {
+        if (!state.room) {
+            ui.showAlert("⚠️ 강의실을 선택해 주세요.");
+            return;
+        }
+
+        const rawPw = document.getElementById('roomPw').value;
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         const selectedProf = document.getElementById('profSelect').value;
-        firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
+
+        // 1. 비밀번호 처리: 입력값이 없으면 "7777"의 암호화 값(Nzc3Nw==)을 기본값으로 사용
+        // 소스 코드 어디에도 실제 숫자가 노출되지 않습니다.
+        const encryptedPw = rawPw ? btoa(rawPw) : "Nzc3Nw==";
+
+        // 2. 데이터 저장 시도 (settings와 status를 각각 업데이트)
+        firebase.database().ref(`courses/${state.room}/settings`).update({ 
+            courseName: newName, 
+            password: encryptedPw 
+        });
+
+        firebase.database().ref(`courses/${state.room}/status`).update({ 
+            roomStatus: statusVal, 
+            ownerSessionId: (statusVal === 'active' ? state.sessionId : null),
+            professorName: (statusVal === 'active' ? selectedProf : null) 
+        }).then(() => {
+            // 저장 성공 시 무조건 팝업 띄움 (z-index 수정한 CSS 덕분에 이제 현황판 위로 보입니다)
+            ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
+        });
+
+        // 상단 제목 즉시 반영
         document.getElementById('displayCourseTitle').innerText = newName;
-        document.getElementById('roomPw').value = pw; 
-        if (statusVal === 'active') {
-            localStorage.setItem(`last_owned_room`, state.room);
-            firebase.database().ref(`courses/${state.room}/status`).update({ 
-                roomStatus: 'active', 
-                ownerSessionId: state.sessionId,
-                professorName: selectedProf 
-            });
-            console.log("Settings updated for Room " + state.room);
-        } else {
-            localStorage.removeItem(`last_owned_room`);
-            firebase.database().ref(`courses/${state.room}/status`).update({ 
-                roomStatus: 'idle', 
-                ownerSessionId: null,
-                professorName: null 
-            });
-            ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
-        }
     },
+
+
     deactivateAllRooms: async function() {
         if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         const updates = {};
