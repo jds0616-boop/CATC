@@ -607,53 +607,65 @@ body.night-mode .quiz-card.result-mode {
     min-width: 150px;
 }
 
-/* [현황판 최종 해결판] */
+/* --- [강의 현황판] 중앙 정렬 및 가독성 최종 보정 --- */
+
+/* 1. 전체 바구니: 중앙 정렬을 위한 설정 */
 .full-dashboard {
     position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     background: var(--bg-color) !important;
-    padding: 40px !important;
-    overflow-y: auto !important; /* 여기서만 스크롤이 생기게 함 */
-    display: none; 
-    flex-direction: column;
-    align-items: center; /* 표를 중앙으로 배치 */
+    padding: 40px 20px 150px 20px !important; /* 좌우 여백 균등하게 */
+    overflow-y: auto !important;
     z-index: 1000 !important;
+    display: none; /* JS에서 flex로 제어 */
+    flex-direction: column;
+    align-items: center; /* ★ 내부 모든 요소를 가로 중앙으로 정렬 */
 }
 
+/* 2. 제목 박스: 표와 같은 너비로 설정하고 왼쪽 정렬 유지 */
 .dashboard-header-box {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1200px; /* ★ 표와 동일한 최대 너비 */
     margin-bottom: 25px;
-    text-align: left;
+    text-align: left; /* 제목 텍스트는 왼쪽이 예쁨 */
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
-/* 표 자체가 흰색 종이가 되도록 설정 (잘릴 수가 없는 구조) */
+/* 3. 테이블 디자인: 중앙 정렬 유지 */
 .status-table {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1200px; /* ★ 제목 박스와 동일한 너비 */
+    border-collapse: collapse;
     background: white !important;
     border-radius: 12px;
-    border-collapse: collapse;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    overflow: hidden; 
-    flex-shrink: 0; /* 표가 찌그러지지 않게 방어 */
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
+/* 4. 테이블 내부 칸들 (요청하신 대로 큼직하게) */
 .status-table th {
     background: #f8fafc;
     padding: 18px 10px;
     border-bottom: 2px solid #e2e8f0;
     color: #64748b;
+    font-size: 15px;
 }
 
 .status-table td {
-    padding: 15px 10px;
+    padding: 18px 10px;
     border-bottom: 1px solid #f1f5f9;
-    background: white !important; /* 각 칸마다 흰색 배경 확정 */
-    text-align: center !important;
+    background: white !important;
+    text-align: center !important; /* ★ 내용 가운데 정렬 */
     font-size: 16px;
+    color: #1e293b;
+    vertical-align: middle;
 }
 
-/* 파란색 스크롤바 디자인 */
+/* 스크롤바 디자인 */
 .full-dashboard::-webkit-scrollbar { width: 10px; }
-.full-dashboard::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+.full-dashboard::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
