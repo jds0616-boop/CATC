@@ -699,29 +699,44 @@ body.night-mode .quiz-card.result-mode {
     min-width: 800px; /* 화면이 작아져도 표가 찌그러지지 않게 */
 }
 
-/* [현황판 스크롤 완벽 해결] */
+/* [현황판 스크롤 문제 최종 해결책] */
+
+/* 1. 현황판 전체 바구니를 화면에 꽉 채우고 스크롤을 직접 가집니다 */
 #view-waiting {
     position: absolute !important;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 30px 40px !important;
-    overflow-y: auto !important; /* 세로 스크롤 강제 활성화 */
-    display: none; /* 기본은 숨김 (JS가 flex로 바꿈) */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 40px !important;
+    overflow-y: scroll !important; /* 항상 스크롤 바를 준비함 */
+    z-index: 100 !important;
+    background: var(--bg-color); /* 배경색 유지 */
+    display: none; /* JS에서 제어함 */
     flex-direction: column;
 }
 
-/* 테이블이 짤리지 않도록 내부 바구니에 여백 추가 */
+/* 2. 현황판 내부의 테이블 컨테이너에 하단 여백을 강제로 줍니다 */
 #view-waiting > div {
-    min-width: 1000px; /* 가로로 너무 줄어들지 않게 */
-    margin-bottom: 50px !important; /* 맨 밑줄이 보일 수 있게 여백 */
+    margin-bottom: 100px !important; /* 마지막 줄이 보이도록 넉넉한 여백 */
+    display: block !important;
 }
 
-/* 표의 흰색 배경 박스 */
-#view-waiting .list-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+/* 3. 테이블이 찌그러지지 않게 최소 너비 고정 */
+#view-waiting table {
+    min-width: 900px !important;
+    margin-bottom: 50px !important;
+}
+
+/* 4. 스크롤바를 눈에 띄게 만듭니다 (오른쪽 끝 확인용) */
+#view-waiting::-webkit-scrollbar {
+    width: 12px !important;
+    display: block !important;
+}
+#view-waiting::-webkit-scrollbar-thumb {
+    background-color: #3b82f6 !important; /* 파란색 스크롤바 */
+    border-radius: 10px !important;
+    border: 3px solid #f1f5f9 !important;
 }
