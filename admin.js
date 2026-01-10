@@ -453,16 +453,25 @@ initRoomSelect: function() {
                     lastTime = (dTime.getMonth() + 1) + "/" + dTime.getDate() + " " + dTime.getHours() + ":" + dTime.getMinutes().toString().padStart(2, '0');
                 }
 
-                // --- (A) 사이드바 드롭다운 생성 (기존 기능 유지) ---
+                // --- (A) 사이드바 드롭다운 생성 (정보 복구 완료!) ---
                 if(sel) {
                     const opt = document.createElement('option');
                     opt.value = c;
+                    
                     if(isRoomActive) {
-                        opt.innerText = "Room " + c + " (사용중)";
-                        opt.style.color = "#ef4444";
+                        // 내가 관리 중인 방인지 확인
+                        if (st.ownerSessionId === state.sessionId) {
+                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, ${userCount}명)`;
+                            opt.style.color = '#3b82f6';
+                            opt.style.fontWeight = 'bold';
+                        } else {
+                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName}, ${userCount}명)`;
+                            opt.style.color = '#ef4444';
+                        }
                     } else {
-                        opt.innerText = "Room " + c + " (대기)";
+                        opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
                     }
+                    
                     if(c === savedValue) opt.selected = true;
                     sel.appendChild(opt);
                 }
