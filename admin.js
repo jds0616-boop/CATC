@@ -609,24 +609,26 @@ const ui = {
         const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
         window.open(url, 'googleTranslatePopup', 'width=1000,height=600');
     },
-    showWaitingRoom: function() {
+showWaitingRoom: function() {
     state.room = null;
     document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
     
-    // 1. 대기실일 때는 상단 모드 전환 탭(Q&A, 퀴즈)을 아예 숨깁니다.
-    document.querySelector('.mode-tabs').style.display = 'none';
-    // 2. 혹시 가리고 있을지 모를 잠금 화면을 숨깁니다.
-    document.getElementById('statusOverlay').style.display = 'none'; 
+    // [추가] 대기실일 때는 상단 버튼(탭) 메뉴를 아예 숨깁니다. (이게 핵심!)
+    const tabs = document.querySelector('.mode-tabs');
+    if(tabs) tabs.style.display = 'none'; 
     
+    // [수정] 대기실만 켜고 나머지는 확실히 끕니다.
     document.getElementById('view-qa').style.display = 'none';
     document.getElementById('view-quiz').style.display = 'none';
-    document.getElementById('view-waiting').style.display = 'flex';
+    document.getElementById('statusOverlay').style.display = 'none'; // 잠금 화면 해제
+    document.getElementById('view-waiting').style.display = 'flex'; // 대기실 문구 등장
     
     const statusSel = document.getElementById('roomStatusSelect');
-    statusSel.value = 'waiting';
-    statusSel.disabled = true;
-}
-};
+    if(statusSel) {
+        statusSel.value = 'waiting';
+        statusSel.disabled = true;
+    }
+},
 
 // --- 4. Quiz Logic ---
 const quizMgr = {
