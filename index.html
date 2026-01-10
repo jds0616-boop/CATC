@@ -97,7 +97,9 @@
             <!-- [수정] 나가기 버튼 기능 변경 (완전 퇴장) -->
             <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
             <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
-            <div class="header-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></div>
+            <div class="header-btn" onclick="document.getElementById('menuModal').style.display='flex'">
+    <i class="fa-solid fa-bars"></i>
+</div>
         </div>
         <div class="sort-bar">
             <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
@@ -141,8 +143,29 @@
         </div>
     </div>
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
-        <div class="menu-box"><h3>강의실 이동</h3><div id="roomList" style="max-height:300px; overflow-y:auto;"></div><button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#e2e8f0;">닫기</button></div>
+    <div class="menu-box">
+        <h3>Menu</h3>
+        <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
+        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
+        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-bullhorn"></i> 공지사항(준비중)</div>
+        <div class="menu-item" onclick="openRoomMove()"><i class="fa-solid fa-door-open"></i> 강의실 이동</div>
+        <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
     </div>
+</div>
+
+<!-- 차량 신청용 팝업 추가 -->
+<div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
+    <div class="menu-box" style="width:90%;">
+        <h3>목적지 선택</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:20px;">탑승하실 장소를 선택해주세요.</p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button class="quiz-opt-btn" onclick="applyShuttle('osong', '오송역')">오송역</button>
+            <button class="quiz-opt-btn" onclick="applyShuttle('terminal', '청주터미널')">청주터미널</button>
+            <button class="quiz-opt-btn" onclick="applyShuttle('airport', '청주공항')">청주공항</button>
+        </div>
+        <button onclick="document.getElementById('shuttleModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:#f1f5f9;">취소</button>
+    </div>
+</div>
     <script src="config.js"></script>
     <script>
         let serverTimeOffset = 0; // 추가
@@ -524,6 +547,69 @@ dbRef.quiz.on('value', s => {
                 if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) { window.location.href = `?room=${r}`; } else { alert("⛔ 비밀번호가 올바르지 않습니다."); }
             });
         }
+
+function openShuttleApply() {
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('shuttleModal').style.display = 'flex';
+}
+
+function openRoomMove() {
+    document.getElementById('menuModal').style.display = 'none';
+    // 기존에 있던 강의실 이동(prompt 등) 로직을 여기에 연결하거나 
+    // 기존에 openMenu() 함수가 있었다면 그걸 실행하게 하세요.
+    if(typeof openMenu === 'function') openMenu(); 
+}
+
+
+async function applyShuttle(locId, locName) {
+    // 0. 토큰이 없으면 생성 (퀴즈를 안 풀었을 경우 대비)
+    let uToken = localStorage.getItem('uToken');
+    if(!uToken) {
+        uToken = Math.random().toString(36).substr(2);
+        localStorage.setItem('uToken', uToken);
+    }
+
+    const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
+
+    // 1. 중복 확인
+    const snap = await shuttleRef.once('value');
+    const data = snap.val() || {};
+    let already = false;
+    
+    // 모든 목적지를 돌면서 내 토큰이 있는지 확인
+    Object.values(data).forEach(loc => { 
+        if(loc && loc[uToken]) already = true; 
+    });
+
+    if(already) {
+        alert("이미 신청하신 내역이 있습니다.\n변경을 원하시면 강사님께 말씀해 주세요.");
+        return;
+    }
+
+
+
+    // 2. 신청자 이름 입력
+    const name = prompt(`${locName} 탑승 신청을 위해\n본인의 성함을 입력해주세요.`);
+    if(!name || name.trim() === "") return;
+
+    // 3. 인원 제한 확인 (50명)
+    const locSnap = await shuttleRef.child(locId).once('value');
+    if(locSnap.numChildren() >= 50) {
+        alert("죄송합니다. 해당 차량은 이미 정원(50명)이 찼습니다.");
+        return;
+    }
+
+    // 4. 저장
+    shuttleRef.child(locId).child(uToken).set(name.trim()).then(() => {
+        alert("✅ 차량 신청이 완료되었습니다.");
+        document.getElementById('shuttleModal').style.display = 'none';
+    });
+}
+
+
+
+
+
     </script>
 </body>
 </html>

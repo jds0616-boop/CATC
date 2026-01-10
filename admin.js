@@ -584,6 +584,7 @@ if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
         document.getElementById('view-qa').style.display = (mode === 'qa') ? 'flex' : 'none';
         document.getElementById('view-quiz').style.display = (mode === 'quiz') ? 'flex' : 'none';
         document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'block' : 'none';
+        document.getElementById('view-shuttle').style.display = (mode === 'shuttle') ? 'flex' : 'none';
         
         // 2. 탭 버튼 활성화 상태 표시 (로컬)
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -615,8 +616,44 @@ if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
                     quizMgr.loadSavedQuizList();
                 }
             }
+        // ✅ 여기에 차량 수요조사 로직을 추가하세요
+        if (mode === 'shuttle') {
+            ui.loadShuttleData(); // 실시간 명단 불러오기 실행
+        }
         }
     },
+
+    // ✅ 여기에 복사한 코드를 붙여넣으세요
+    loadShuttleData: function() {
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('shuttleTableBody');
+            const locations = [
+                { id: 'osong', name: '오송역' },
+                { id: 'terminal', name: '청주터미널' },
+                { id: 'airport', name: '청주공항' }
+            ];
+            
+            tbody.innerHTML = "";
+            locations.forEach((loc, index) => {
+                const applicants = data[loc.id] ? Object.values(data[loc.id]) : [];
+                const count = applicants.length;
+                const names = applicants.join(', ');
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td style="font-weight:bold;">${loc.name}</td>
+                        <td style="font-weight:800; color:#3b82f6;">${count} / 50</td>
+                        <td style="text-align:left; padding: 10px 15px;">${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}</td>
+                        <td>${count >= 50 ? '<span style="color:red;">만차</span>' : '-'}</td>
+                    </tr>
+                `;
+            });
+        });
+    }, // <--- 붙여넣은 코드 끝에 이 콤마(,)가 있는지 꼭 확인하세요!
+
 
 
     filterQa: function(f, event) { 
