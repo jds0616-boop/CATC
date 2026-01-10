@@ -185,6 +185,7 @@ const dataMgr = {
         state.pendingRoom = null;
     },
     forceEnterRoom: async function(room) {
+        firebase.database().ref(`courses/${room}/status`).update({ lastAdminEntry: firebase.database.ServerValue.TIMESTAMP });
         document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
@@ -452,14 +453,12 @@ initRoomSelect: function() {
                 const courseName = settings.courseName ? settings.courseName : "-";
                 const profName = st.professorName ? st.professorName : "-";
 
-                // 마지막 활동 시간 계산 (마지막 질문 시간 기준)
-                let lastTime = "-";
-                const qValues = Object.values(questions);
-                if (qValues.length > 0) {
-                    const latestQ = qValues.sort((a, b) => b.timestamp - a.timestamp)[0];
-                    const dTime = new Date(latestQ.timestamp);
-                    lastTime = (dTime.getMonth() + 1) + "/" + dTime.getDate() + " " + dTime.getHours() + ":" + dTime.getMinutes().toString().padStart(2, '0');
-                }
+                // 마지막 활동 시간 계산 (관리자 마지막 입장 시간 기준)
+let lastTime = "-";
+if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
+    const dTime = new Date(st.lastAdminEntry);
+    lastTime = (dTime.getMonth() + 1) + "/" + dTime.getDate() + " " + dTime.getHours() + ":" + dTime.getMinutes().toString().padStart(2, '0');
+}
 
                 // --- (A) 사이드바 드롭다운 생성 (정보 복구 완료!) ---
                 if(sel) {
