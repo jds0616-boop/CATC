@@ -188,7 +188,7 @@ const dataMgr = {
         firebase.database().ref(`courses/${room}/status`).update({ lastAdminEntry: firebase.database.ServerValue.TIMESTAMP });
         document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
-        
+        if (state.room) {
             const oldPath = `courses/${state.room}`;
             firebase.database().ref(`${oldPath}/questions`).off();
             firebase.database().ref(`${oldPath}/activeQuiz`).off();
@@ -578,41 +578,48 @@ if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
     },
 
 
-setMode: function(mode) {
-        // 1. [로컬 UI 전환] 강사 화면 상자 제어
+    setMode: function(mode) {
+        // 1. [로컬 UI 전환] 강사 화면에서 어떤 박스를 보여줄지만 결정 (파이어베이스와 상관없음)
+        // 현황판(waiting), Q&A(qa), 퀴즈(quiz) 중 선택된 것만 'flex'로 보여줌
         document.getElementById('view-qa').style.display = (mode === 'qa') ? 'flex' : 'none';
         document.getElementById('view-quiz').style.display = (mode === 'quiz') ? 'flex' : 'none';
         document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'block' : 'none';
         document.getElementById('view-shuttle').style.display = (mode === 'shuttle') ? 'flex' : 'none';
         
-        // 2. 탭 버튼 활성화 스타일
+        // 2. 탭 버튼 활성화 상태 표시 (로컬)
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
-        // 3. [중요] 파이어베이스 동기화 (학생 화면 제어)
+        // 3. [중요] 파이어베이스 동기화 제어 (경우의 수 판단)
         if (state.room) {
-            let studentTargetMode = mode;
-
-            // 핵심 로직: 강사가 '강의 현황'이나 '차량 조사'를 볼 땐 학생은 무조건 Q&A로 보냄
-            if (mode === 'waiting' || mode === 'shuttle') {
-                studentTargetMode = 'qa';
+            // 현황판('waiting')은 강사만 보는 화면이므로 파이어베이스에 저장하지 않음!
+            // 이렇게 하면 강사가 현황판을 보는 동안에도 학생들은 원래 보던 화면(Q&A나 퀴즈)에 그대로 머물게 됩니다.
+            if (mode !== 'waiting') {
+                firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
             }
-
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentTargetMode);
 
             // 4. 각 모드별 특수 로직 처리
             if (mode === 'quiz') {
+                // 퀴즈 파일이 로드되어 있다면 퀴즈 화면 구성
                 if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) {
                     quizMgr.showQuiz();
                 } else {
+                    // 파일이 없으면 선택 창 띄우기
                     document.getElementById('quizSelectModal').style.display = 'flex';
+                    document.getElementById('btnPause').style.display = 'none';
+                    const smartBtn = document.getElementById('btnSmartNext');
+                    if(smartBtn) {
+                        smartBtn.style.display = 'flex';
+                        smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
+                    }
                     quizMgr.loadSavedQuizList();
                 }
             }
-            if (mode === 'shuttle') {
-                ui.loadShuttleData();
-            }
+        // ✅ 여기에 차량 수요조사 로직을 추가하세요
+        if (mode === 'shuttle') {
+            ui.loadShuttleData(); // 실시간 명단 불러오기 실행
+        }
         }
     },
 
