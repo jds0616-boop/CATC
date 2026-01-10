@@ -185,6 +185,7 @@ const dataMgr = {
         state.pendingRoom = null;
     },
     forceEnterRoom: async function(room) {
+        document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
@@ -607,7 +608,9 @@ const ui = {
     state.room = null;
     document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
     
-    // 1. 잠금 오버레이를 숨겨서 대기실 문구가 보이게 함 (추가된 줄)
+    // 1. 대기실일 때는 상단 모드 전환 탭(Q&A, 퀴즈)을 아예 숨깁니다.
+    document.querySelector('.mode-tabs').style.display = 'none';
+    // 2. 혹시 가리고 있을지 모를 잠금 화면을 숨깁니다.
     document.getElementById('statusOverlay').style.display = 'none'; 
     
     document.getElementById('view-qa').style.display = 'none';
