@@ -607,45 +607,39 @@ body.night-mode .quiz-card.result-mode {
     min-width: 150px;
 }
 
-/* --- [강의 현황판] 스크롤 및 여백 최종 해결 --- */
+/* --- [강의 현황판] 레이아웃 & 정렬 최종 해결 --- */
 
-/* 1. 현황판 전체 바구니 */
+/* 1. 현황판 전체 바구니: 부모 박스(content-area)에 딱 맞춰서 내부 스크롤만 허용 */
 .full-dashboard {
-    display: none;                /* JS에서 flex로 변경함 */
-    flex-direction: column;
+    display: none;                /* JS에서 제어함 */
     width: 100% !important;
-    height: 100% !important;      /* 부모 높이 꽉 채우기 */
-    padding: 0 20px 100px 20px !important; /* 위쪽 0, 아래쪽 100px 여백으로 넉넉하게 */
-    overflow-y: auto !important;  /* 내부 스크롤 활성화 */
+    height: 100% !important;      /* 화면 높이 꽉 채우기 */
+    overflow-y: auto !important;  /* ★ 이 박스 안에서만 스크롤이 일어나게 함 */
+    padding: 20px 30px 100px 30px !important; /* 아래쪽 100px 여유 공간 (잘림 방지) */
     box-sizing: border-box !important;
-}
-
-/* 2. 제목 영역 여백 최적화 */
-.dashboard-title-area {
-    padding: 30px 10px 20px 10px; /* 제목 위아래 적당한 여백 */
     background: var(--bg-color);
-    position: sticky;             /* 스크롤 내려도 제목은 고정 (선택사항) */
-    top: 0;
-    z-index: 10;
 }
 
-/* 3. 테이블 컨테이너 (여백 삭제하여 꽉 채움) */
+/* 2. 제목 영역: 깔끔하게 위쪽에 붙임 */
+.dashboard-title-area {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+/* 3. 테이블 컨테이너: 흰색 배경 박스 */
 .dashboard-table-container {
-    background: white;
+    background: white !important;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    width: 100% !important;
-    margin-top: 10px;
-    margin-bottom: 50px !important; /* 테이블 하단 여유 */
-    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    width: 100%;
+    /* overflow: hidden; 을 삭제해서 내용이 잘리지 않게 함 */
 }
 
-/* 4. 테이블 디자인 */
+/* 4. 테이블 디자인 (가운데 정렬 핵심) */
 .status-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed; /* 칸 너비 고정으로 안정감 부여 */
 }
 
 .status-table th {
@@ -654,23 +648,32 @@ body.night-mode .quiz-card.result-mode {
     font-size: 14px;
     color: #64748b;
     border-bottom: 2px solid #e2e8f0;
+    text-align: center; /* 제목 가운데 정렬 */
 }
 
 .status-table td {
-    padding: 15px 10px;
+    padding: 12px 10px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
-    word-break: keep-all; /* 텍스트 줄바꿈 방지 */
+    font-size: 14px; /* 기존 크기 유지 */
+    text-align: center !important; /* ★ 모든 내용 강제 가운데 정렬 */
+    color: #1e293b;
+    vertical-align: middle;
 }
 
-/* 5. 스크롤바를 눈에 띄게 (작동 확인용) */
+/* 과정명 칸: 글자가 길어도 가운데 유지 */
+.td-course-name {
+    word-break: keep-all;
+    line-height: 1.4;
+    max-width: 450px;
+    margin: 0 auto; /* 박스 자체를 가운데로 */
+    text-align: center; /* 안의 텍스트도 가운데로 */
+}
+
+/* 5. 스크롤바를 눈에 띄게 (파란색) */
 .full-dashboard::-webkit-scrollbar {
     width: 10px;
 }
 .full-dashboard::-webkit-scrollbar-thumb {
-    background: #3b82f6; /* 파란색으로 표시하여 스크롤 위치 확인 가능하게 함 */
+    background: #3b82f6; 
     border-radius: 10px;
-}
-.full-dashboard::-webkit-scrollbar-track {
-    background: #f1f5f9;
 }

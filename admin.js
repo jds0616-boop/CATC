@@ -487,11 +487,11 @@ initRoomSelect: function() {
                     row.innerHTML = `
                         <td>${count++}</td>
                         <td style="font-weight:900; color:#3b82f6;">Room ${c}</td>
-                        <td style="text-align:left;"><div class="td-course-name" title="${courseName}">${courseName}</div></td>
+                        <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
                         <td style="font-weight:700;">${userCount}명</td>
-                        <td style="color:#94a3b8; font-size:12px;">${lastTime}</td>
+                        <td style="color:#94a3b8; font-size:14px;">${lastTime}</td>
                         <td>
                             <button class="btn-table-action" onclick="dataMgr.switchRoomAttempt('${c}')">입장하기</button>
                         </td>
@@ -576,7 +576,7 @@ initRoomSelect: function() {
         // 현황판(waiting), Q&A(qa), 퀴즈(quiz) 중 선택된 것만 'flex'로 보여줌
         document.getElementById('view-qa').style.display = (mode === 'qa') ? 'flex' : 'none';
         document.getElementById('view-quiz').style.display = (mode === 'quiz') ? 'flex' : 'none';
-        document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'flex' : 'none';
+        document.getElementById('view-waiting').style.display = (mode === 'waiting') ? 'block' : 'none';
         
         // 2. 탭 버튼 활성화 상태 표시 (로컬)
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
