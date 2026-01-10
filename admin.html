@@ -195,8 +195,74 @@
             </div>
         </div>
 
-<div class="content-area">
-            <!-- 1. 안내 화면 (하나만 존재해야 함) -->
+        <div class="content-area">
+            <div id="view-qa">
+                <div class="qa-filters">
+                    <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
+                    <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
+                    <div class="filter-chip" onclick="ui.filterQa('later')">Answer Later</div>
+                </div>
+                <div class="qa-list" id="qaList"></div>
+            </div>
+
+            <div id="view-quiz">
+                <div class="quiz-card">
+                    <div class="quiz-top-bar">
+                        <div class="quiz-top-info">
+                            <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
+                            <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:08</div></div>
+<div class="quiz-info-item">
+    <i class="fa-solid fa-users"></i> 
+    <span id="currentJoinCount" style="font-weight:800;">0</span>명
+    <span id="answerStatus" style="font-size:24px; font-weight:800; margin-left:10px; color:#64748b;">
+    (제출: <b id="answeredCount" style="color:#10b981;">0</b> / 대기: <b id="pendingCount" style="color:#ef4444;">0</b>)
+</span>
+</div>
+                        </div>
+                        <div class="quiz-exit-icon" onclick="quizMgr.closeQuizMode()" title="Exit"><i class="fa-solid fa-xmark"></i></div>
+                    </div>
+                    
+                    <div id="quizContent">
+                        <div class="quiz-question-area">
+                            <div id="quizGuideArea" style="margin-bottom:10px; font-size:12px; color:#94a3b8; font-weight:700;">Press Start</div>
+                            <div class="quiz-question" id="d-qtext">Ready?</div>
+                        </div>
+                        <div class="quiz-options" id="d-options"></div>
+                        <div class="chart-area" id="d-chart"></div>
+                    </div>
+                    
+<!-- [개편] 퀴즈 하단 컨트롤바: 더 크고 단순하게 -->
+<div class="quiz-status-bar" style="padding: 30px 20px; background: #f8fafc; border-top: 2px solid #e2e8f0;">
+    <div id="quizControls" style="display:none; gap:15px; width: 100%; max-width: 1000px; margin: 0 auto; justify-content: center; align-items: center;">
+        
+        <!-- 1. 이전 문제 (<<) -->
+        <button class="q-btn btn-nav btn-giant" onclick="quizMgr.prevNext(-1)" title="이전 문제" style="height: 75px; min-width: 90px; font-size: 25px; border-radius: 15px; background: #475569;">
+            <i class="fa-solid fa-angles-left"></i>
+        </button>
+
+        <!-- 2. 메인 시작 버튼 (현재 퀴즈 시작) -->
+        <button class="q-btn btn-start btn-giant-main" id="btnSmartNext" onclick="quizMgr.smartNext()" style="height: 75px; flex-grow: 1; font-size: 26px; font-weight: 900; border-radius: 15px; box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3); display: flex; justify-content: center; align-items: center;">
+            현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>
+        </button>
+
+        <!-- [전환용] 일시정지 버튼 (시작하면 위 버튼 대신 나타남) -->
+        <button class="q-btn btn-giant-main" id="btnPause" onclick="quizMgr.togglePause()" style="display:none; height: 75px; flex-grow: 1; font-size: 26px; font-weight: 900; border-radius: 15px; background: #f59e0b; color: white; justify-content: center; align-items: center; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(245, 158, 11, 0.3);">
+            일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>
+        </button>
+
+        <!-- 3. 다음 문제 (>>) -->
+        <button class="q-btn btn-nav btn-giant" onclick="quizMgr.prevNext(1)" title="다음 문제" style="height: 75px; min-width: 90px; font-size: 25px; border-radius: 15px; background: #475569;">
+            <i class="fa-solid fa-angles-right"></i>
+        </button>
+
+        <!-- 4. 종료 버튼 -->
+        <button class="q-btn btn-giant" onclick="quizMgr.showFinalSummary()" style="height: 75px; min-width: 140px; font-size: 22px; font-weight: 800; border-radius: 15px; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center;">
+            종료 <i class="fa-solid fa-flag-checkered" style="margin-left:12px;"></i>
+        </button>
+
+    </div>
+</div>
+
             <div id="view-waiting" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; color:#64748b; position: relative;">
                 <div style="position: absolute; top: 30px; left: 30px; font-size: 40px; color: var(--accent-color); animation: bounceLeft 1.5s infinite; display:flex; flex-direction:column; align-items:flex-start;">
                     <i class="fa-solid fa-arrow-left-long"></i> 
@@ -207,43 +273,17 @@
                 <p style="font-size: 16px; margin-bottom: 40px;">현재 입장된 강의실이 없습니다.<br>수업을 진행하려면 좌측 상단에서 강의실을 선택하세요.</p>
                 <style>@keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }</style>
             </div>
+        </div>
 
-            <!-- 2. Q&A 영역 (처음엔 숨김) -->
-            <div id="view-qa" style="display:none; width: 100%; height: 100%; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative;">
-                <div class="qa-filters">
-                    <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
-                    <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
-                    <div class="filter-chip" onclick="ui.filterQa('later')">Answer Later</div>
-                </div>
-                <div class="qa-list" id="qaList"></div>
-            </div>
-
-            <!-- 3. 퀴즈 영역 (처음엔 숨김) -->
-            <div id="view-quiz" style="display:none;">
-                <div class="quiz-card">
-                    <div class="quiz-top-bar">
-                        <div class="quiz-top-info">
-                            <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
-                            <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:08</div></div>
-                            <div class="quiz-info-item">
-                                <i class="fa-solid fa-users"></i> 
-                                <span id="currentJoinCount" style="font-weight:800;">0</span>명
-                                <span id="answerStatus" style="font-size:24px; font-weight:800; margin-left:10px; color:#64748b;">
-                                (제출: <b id="answeredCount" style="color:#10b981;">0</b> / 대기: <b id="pendingCount" style="color:#ef4444;">0</b>)
-                                </span>
-                            </div>
-                        </div>
-                        <div class="quiz-exit-icon" onclick="quizMgr.closeQuizMode()" title="Exit"><i class="fa-solid fa-xmark"></i></div>
-                    </div>
-                    <div id="quizContent">
-                        <div class="quiz-question-area">
-                            <div id="quizGuideArea" style="margin-bottom:10px; font-size:12px; color:#94a3b8; font-weight:700;">Press Start</div>
-                            <div class="quiz-question" id="d-qtext">Ready?</div>
-                        </div>
-                        <div class="quiz-options" id="d-options"></div>
-                        <div class="chart-area" id="d-chart"></div>
-                    </div>
-                </div>
+        <div class="overlay-panel" id="rightPanel">
+            <div class="overlay-toggle-tab" onclick="ui.toggleRightPanel()"><i class="fa-solid fa-chevron-left" id="panelIcon"></i></div>
+            <div class="panel-header"><h3>Quiz Editor</h3></div>
+            <div class="panel-body">
+                <textarea id="manualQ" class="editor-input" placeholder="퀴즈 질문 내용을 입력하세요..."></textarea>
+                <input type="text" id="manualO1" class="editor-input" placeholder="Option 1"><input type="text" id="manualO2" class="editor-input" placeholder="Option 2"><input type="text" id="manualO3" class="editor-input" placeholder="Option 3"><input type="text" id="manualO4" class="editor-input" placeholder="Option 4"><input type="number" id="manualAns" class="editor-input" placeholder="Correct Answer (1-4)">
+                <button class="btn-action btn-primary" onclick="quizMgr.addManualQuiz()">Add <i class="fa-solid fa-plus"></i></button>
+                <hr class="panel-divider" style="border:0; border-top:1px solid #e2e8f0; margin:10px 0;">
+                <div id="miniQuizList"></div>
             </div>
         </div>
 
