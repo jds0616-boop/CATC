@@ -1,6 +1,6 @@
-/* --- admin.js (최종 수정본: 현황판 메인 표시 및 팝업 기능 복구) --- */
+/* --- admin.js (최종 통합본: 원본 모든 기능 유지 + 현황판/교수관리 추가) --- */
 
-// --- [기본 데이터] 20문항 ---
+// --- [기본 데이터] ---
 const DEFAULT_QUIZ_DATA = [
     { text: "[상식] 사람의 뼈는 성인이 되면서 뼈의 개수가 줄어든다.", options: ["O (줄어든다)", "X (늘어난다)"], correct: 1, isSurvey: false, isOX: true, checked: true },
     { text: "[건강] 식사 후 바로 눕는 습관은 소화에 도움이 된다.", options: ["O", "X"], correct: 2, isSurvey: false, isOX: true, checked: true },
@@ -45,7 +45,8 @@ const state = {
     timerAudio: null,
     newBadgeTimer: null,
     remainingTime: 8,
-    ansListener: null
+    ansListener: null,
+    adminCallback: null
 };
 
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
@@ -84,6 +85,7 @@ const authMgr = {
         const newPw = document.getElementById('cp-new').value;
         const confirmPw = document.getElementById('cp-confirm').value;
         if(!user) return ui.showAlert("로그인 상태가 아닙니다.");
+        if(!newPw || !confirmPw) return ui.showAlert("모든 필드를 입력해주세요.");
         if(newPw !== confirmPw) return ui.showAlert("새 비밀번호가 일치하지 않습니다.");
         try { await user.updatePassword(newPw); ui.showAlert("비밀번호가 변경되었습니다."); ui.closePwModal(); } catch (e) { ui.showAlert("변경 실패: " + e.message); }
     }
@@ -101,27 +103,34 @@ const dataMgr = {
         const next = document.getElementById('secret-new').value;
         const isRight = await this.checkAdminSecret(curr);
         if(!isRight) return ui.showAlert("현재 관리자 암호가 틀립니다.");
+        if(next.length < 4) return ui.showAlert("새 암호는 4자리 이상이어야 합니다.");
         await firebase.database().ref('system/adminSecret').set(btoa(next));
         ui.showAlert("시스템 관리자 암호가 변경되었습니다.");
         ui.closeSecretModal();
     },
+    checkMobile: function() {
+        const ua = navigator.userAgent;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        if (isMobile) {
+            const overlay = document.getElementById('mobileRestrictOverlay');
+            if(overlay) overlay.style.display = 'flex';
+        }
+    },
     initSystem: function() {
         firebase.auth().onAuthStateChanged(user => {
-            if (user) { 
-                document.getElementById('loginOverlay').style.display = 'none'; 
-                this.loadInitialData(); 
-            } else { 
-                document.getElementById('loginOverlay').style.display = 'flex'; 
-            }
+            if (user) { document.getElementById('loginOverlay').style.display = 'none'; this.loadInitialData(); } 
+            else { document.getElementById('loginOverlay').style.display = 'flex'; }
         });
     },
     loadInitialData: function() {
         ui.initRoomSelect();
-        ui.showWaitingRoom(); // 로그인 후 대기실(현황판) 먼저 보여주기
+        ui.showWaitingRoom(); 
         state.quizList = DEFAULT_QUIZ_DATA; 
+        state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { if(e.target.value) this.switchRoomAttempt(e.target.value); };
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
+        const qrEl = document.getElementById('qrcode'); if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
     switchRoomAttempt: async function(newRoom) {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
@@ -130,6 +139,7 @@ const dataMgr = {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
         } else {
             this.forceEnterRoom(newRoom);
         }
@@ -137,87 +147,160 @@ const dataMgr = {
     verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         let input = document.getElementById('takeoverPwInput').value;
+        if(input) input = input.trim(); 
+        if (!newRoom || !input) return;
         const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
+            alert("인증 성공! 제어권을 가져옵니다."); 
             localStorage.setItem(`last_owned_room`, newRoom);
             await firebase.database().ref(`courses/${newRoom}/status`).update({ ownerSessionId: state.sessionId });
             this.forceEnterRoom(newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
         } else {
             ui.showAlert("비밀번호가 일치하지 않습니다.");
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverPwInput').focus();
         }
     },
+    cancelTakeover: function() {
+        document.getElementById('takeoverModal').style.display = 'none';
+        document.getElementById('roomSelect').value = state.room || ""; 
+        state.pendingRoom = null;
+    },
     forceEnterRoom: async function(room) {
+        const tabs = document.querySelector('.mode-tabs');
+        if(tabs) tabs.style.display = 'flex'; 
+        document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
             firebase.database().ref(`${oldPath}/questions`).off();
             firebase.database().ref(`${oldPath}/activeQuiz`).off();
             firebase.database().ref(`${oldPath}/status`).off();
+            firebase.database().ref(`${oldPath}/settings`).off();
+            firebase.database().ref(`${oldPath}/connections`).off();
         }
+        await firebase.database().ref(`courses/${room}/activeQuiz`).set(null);
+        await firebase.database().ref(`courses/${room}/quizAnswers`).set(null);
+        await firebase.database().ref(`courses/${room}/quizFinalResults`).set(null);
+        await firebase.database().ref(`courses/${room}/status/quizStep`).set('none');
         state.room = room;
         localStorage.setItem('kac_last_room', room);
         document.getElementById('roomSelect').value = room;
+        document.getElementById('roomStatusSelect').disabled = false;
         ui.updateHeaderRoom(room);
-        ui.setMode('qa'); // 입장 시 Q&A 모드로 자동 전환
-
+        ui.setMode('qa');
+        document.getElementById('qaList').innerHTML = "";
+        state.qaData = {};
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
         dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
+        dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
         dbRef.connections = firebase.database().ref(`${rPath}/connections`);
-
         dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
         dbRef.status.on('value', s => {
+            if(state.room !== room) return;
             const st = s.val() || {};
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                if (localStorage.getItem(`last_owned_room`) === room) { dbRef.status.update({ ownerSessionId: state.sessionId }); return; }
+            }
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
+            if(st.professorName) { document.getElementById('profSelect').value = st.professorName; }
+            else { document.getElementById('profSelect').value = ""; }
         });
         dbRef.connections.on('value', s => {
             const count = s.numChildren();
             const counter = document.getElementById('currentJoinCount');
             if(counter) counter.innerText = count;
         });
-        dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
         this.fetchCodeAndRenderQr(room);
+        dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
+        if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
+        state.newBadgeTimer = setInterval(() => {
+            const cards = document.querySelectorAll('.q-card.is-new');
+            cards.forEach(card => {
+                const ts = parseInt(card.getAttribute('data-ts'));
+                if (Date.now() - ts >= 120000) {
+                    card.classList.remove('is-new');
+                    const badge = card.querySelector('.new-badge-icon');
+                    if(badge) badge.remove();
+                }
+            });
+        }, 5000); 
     },
     fetchCodeAndRenderQr: function(room) {
-        const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+        const pathArr = window.location.pathname.split('/'); pathArr.pop(); 
+        const baseUrl = window.location.origin + pathArr.join('/');
         firebase.database().ref('public_codes').orderByValue().equalTo(room).once('value', s => {
             const d = s.val();
-            const url = d ? `${baseUrl}?code=${Object.keys(d)[0]}` : `${baseUrl}?room=${room}`;
+            const url = d ? `${baseUrl}/index.html?code=${Object.keys(d)[0]}` : `${baseUrl}/index.html?room=${room}`;
             ui.renderQr(url);
         });
     },
     saveSettings: function() {
+        let rawPw = document.getElementById('roomPw').value;
+        let pw = rawPw ? rawPw.trim() : "7777"; 
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         const selectedProf = document.getElementById('profSelect').value;
-        firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName });
+        firebase.database().ref(`courses/${state.room}/settings`).update({ courseName: newName, password: btoa(pw) });
+        document.getElementById('displayCourseTitle').innerText = newName;
+        document.getElementById('roomPw').value = pw; 
         if (statusVal === 'active') {
+            const now = Date.now(); 
+            localStorage.setItem(`last_owned_room`, state.room);
             firebase.database().ref(`courses/${state.room}/status`).update({ 
                 roomStatus: 'active', 
                 ownerSessionId: state.sessionId,
-                professorName: selectedProf,
-                lastUsed: Date.now()
+                professorName: selectedProf ,
+                lastUsed: now  
             });
         } else {
-            firebase.database().ref(`courses/${state.room}/status`).update({ roomStatus: 'idle', ownerSessionId: null });
+            localStorage.removeItem(`last_owned_room`);
+            firebase.database().ref(`courses/${state.room}/status`).update({ 
+                roomStatus: 'idle', 
+                ownerSessionId: null,
+                professorName: null,
+            });
+            ui.showAlert(`✅ [Room ${state.room}] 강의 종료 (비어있음 처리)`); 
         }
-        ui.showAlert("설정이 저장되었습니다.");
     },
     deactivateAllRooms: async function() {
-        if(!confirm("모든 강의실을 '비어있음' 상태로 변경하시겠습니까?")) return;
+        if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
         const updates = {};
-        for(let i=65; i<=90; i++) updates[`courses/${String.fromCharCode(i)}/status/roomStatus`] = 'idle';
+        for(let i=65; i<=90; i++) {
+            const char = String.fromCharCode(i);
+            updates[`courses/${char}/status/roomStatus`] = 'idle';
+            updates[`courses/${char}/status/ownerSessionId`] = null;
+        }
         await firebase.database().ref().update(updates);
-        ui.showAlert("초기화 완료.");
+        ui.showAlert("모든 강의실이 비활성화되었습니다.");
+        if(state.room) this.forceEnterRoom(state.room);
+    },
+    updateQa: function(action) {
+        if(!state.activeQaKey) return;
+        const item = state.qaData[state.activeQaKey];
+        if (action === 'delete') { if(confirm("정말 삭제하시겠습니까?")) { dbRef.qa.child(state.activeQaKey).remove(); ui.closeQaModal(); }} 
+        else {
+            let ns = action;
+            if(item.status === action) ns = 'normal';
+            else if(action === 'done' && item.status==='pin') ns = 'pin-done';
+            dbRef.qa.child(state.activeQaKey).update({ status: ns });
+            ui.closeQaModal();
+        }
+    },
+    resetCourse: function() {
+        if(confirm("현재 강의실 데이터를 초기화하시겠습니까?\n(질문, 퀴즈 내역이 모두 삭제됩니다)")) {
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => { ui.showAlert("초기화 완료."); location.reload(); });
+        }
     }
 };
 
-// --- [교수님 명단 관리] ---
+// --- [교수님 관리 로직] ---
 const profMgr = {
     list: [],
     init: function() {
@@ -225,33 +308,50 @@ const profMgr = {
             const data = s.val() || {};
             this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
             this.renderSelect();
+            const modal = document.getElementById('profManageModal');
+            if (modal && modal.style.display === 'flex') { this.renderManageList(); }
         });
     },
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
         if(!sel) return;
+        const currentVal = sel.value; 
         sel.innerHTML = '<option value="">(선택 안함)</option>';
-        this.list.forEach(p => { sel.innerHTML += `<option value="${p.name}">${p.name} 교수</option>`; });
+        this.list.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name; opt.innerText = p.name + " 교수";
+            if (p.name === currentVal) opt.selected = true;
+            sel.appendChild(opt);
+        });
     },
     openManageModal: function() {
         this.renderManageList();
         document.getElementById('profManageModal').style.display = 'flex';
+        const input = document.getElementById('newProfInput');
+        if(input) input.focus();
     },
     renderManageList: function() {
         const div = document.getElementById('profListContainer');
-        div.innerHTML = this.list.length ? "" : "<div style='padding:20px; text-align:center;'>등록된 정보 없음</div>";
+        if(!div) return;
+        div.innerHTML = "";
+        if (this.list.length === 0) { div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>"; return; }
         this.list.forEach(p => {
-            div.innerHTML += `<div class="prof-item"><span>${p.name}</span><button onclick="profMgr.deleteProf('${p.key}')">삭제</button></div>`;
+            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
         });
+        div.scrollTop = div.scrollHeight;
     },
     addProf: function() {
-        const name = document.getElementById('newProfInput').value.trim();
-        if(name) firebase.database().ref('system/professors').push(name).then(() => { document.getElementById('newProfInput').value = ""; });
+        const input = document.getElementById('newProfInput');
+        const name = input.value.trim();
+        if (!name) { alert("교수님 성함을 입력해주세요."); return; }
+        firebase.database().ref('system/professors').push(name).then(() => {
+            input.value = ""; input.focus();
+        }).catch(err => { alert("저장 실패: " + err.message); });
     },
-    deleteProf: function(key) { if(confirm("삭제하시겠습니까?")) firebase.database().ref(`system/professors/${key}`).remove(); }
+    deleteProf: function(key) { if(confirm("정말 삭제하시겠습니까?")) { firebase.database().ref(`system/professors/${key}`).remove(); } }
 };
 
-// --- 3. UI 객체 (핵심 로직) ---
+// --- 3. UI ---
 const ui = {
     showAlert: function(msg) {
         const textEl = document.getElementById('customAlertText');
@@ -259,55 +359,88 @@ const ui = {
         if(textEl && modalEl) { textEl.innerText = msg; modalEl.style.display = 'flex'; }
     },
     requestAdminAuth: function(type) {
-        state.adminCallback = (type === 'pw') ? () => ui.openPwModal() : () => dataMgr.deactivateAllRooms();
+        if(type === 'pw') state.adminCallback = () => ui.openPwModal();
+        else if(type === 'idle') state.adminCallback = () => dataMgr.deactivateAllRooms();
+        document.getElementById('adminAuthInput').value = "";
         document.getElementById('adminAuthModal').style.display = 'flex';
+        document.getElementById('adminAuthInput').focus();
     },
     confirmAdminAuth: async function() {
-        const isSuccess = await dataMgr.checkAdminSecret(document.getElementById('adminAuthInput').value);
+        const input = document.getElementById('adminAuthInput').value;
+        const isSuccess = await dataMgr.checkAdminSecret(input);
         if(isSuccess) {
             document.getElementById('adminAuthModal').style.display = 'none';
             if(state.adminCallback) state.adminCallback();
-        } else { ui.showAlert("관리자 인증 실패!"); }
+            state.adminCallback = null;
+        } else {
+            ui.showAlert("⛔ 관리자 인증 실패!");
+            document.getElementById('adminAuthInput').value = "";
+        }
     },
-    closeAdminAuth: function() { document.getElementById('adminAuthModal').style.display = 'none'; },
-    openSecretModal: function() { document.getElementById('changeAdminSecretModal').style.display = 'flex'; },
+    closeAdminAuth: function() { document.getElementById('adminAuthModal').style.display = 'none'; state.adminCallback = null; },
+    openSecretModal: function() {
+        document.getElementById('secret-current').value = "";
+        document.getElementById('secret-new').value = "";
+        document.getElementById('changeAdminSecretModal').style.display = 'flex';
+    },
     closeSecretModal: function() { document.getElementById('changeAdminSecretModal').style.display = 'none'; },
     initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
             if(!sel) return;
+            const savedValue = sel.value || state.room; 
             sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
-                const st = d[c]?.status || {};
-                const userCount = d[c]?.connections ? Object.keys(d[c].connections).length : 0;
-                let text = `Room ${c} (${st.roomStatus === 'active' ? '🔴사용중' : '⚪대기'}, ${userCount}명)`;
-                sel.innerHTML += `<option value="${c}">${text}</option>`;
+                const roomData = d[c] || {};
+                const st = roomData.status || {};
+                const connObj = roomData.connections || {};
+                const userCount = Object.keys(connObj).length;
+                const profName = st.professorName ? `, ${st.professorName}` : "";
+                const opt = document.createElement('option');
+                opt.value = c;
+                if(st.roomStatus === 'active') {
+                    if (st.ownerSessionId === state.sessionId) {
+                        opt.innerText = `Room ${c} (🔵 내 강의실${profName}, ${userCount}명)`;
+                        opt.style.color = '#3b82f6'; opt.style.fontWeight = 'bold';
+                    } else {
+                        opt.innerText = `Room ${c} (🔴 사용중${profName}, ${userCount}명)`;
+                        opt.style.color = '#ef4444';
+                    }
+                } else { opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`; }
+                if(c === savedValue) opt.selected = true;
+                sel.appendChild(opt);
             }
-            if(state.room) sel.value = state.room;
         });
     },
     toggleMiniQR: function() {
         const qrBox = document.getElementById('floatingQR');
-        if (!state.room) return this.showAlert("강의실을 먼저 선택해 주세요.");
+        if (!state.room) { this.showAlert("좌측 상단에서 강의실을 먼저 선택해 주세요."); return; }
         if (qrBox.style.display === 'flex') { qrBox.style.display = 'none'; } 
         else {
             qrBox.style.display = 'flex';
             const target = document.getElementById('miniQRElement');
-            target.innerHTML = "";
-            const url = `${window.location.origin}${window.location.pathname.replace('admin.html', 'index.html')}?room=${state.room}`;
-            new QRCode(target, { text: url, width: 140, height: 140 });
+            const label = document.querySelector('.qr-label');
+            target.innerHTML = ""; 
+            const pathArr = window.location.pathname.split('/'); pathArr.pop();
+            const baseUrl = window.location.origin + pathArr.join('/');
+            const forcedUrl = `${baseUrl}/index.html?room=${state.room}`;
+            label.innerText = `Room ${state.room} Join`;
+            new QRCode(target, { text: forcedUrl, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.H });
         }
     },
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
-        if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';
-        else overlay.style.display = 'flex';
+        if(overlay) {
+            if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';
+            else overlay.style.display = 'flex';
+        }
     },
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
     renderSettings: function(d) {
         document.getElementById('courseNameInput').value = d.courseName || "";
+        document.getElementById('roomPw').value = d.password ? atob(d.password) : "7777";
         document.getElementById('displayCourseTitle').innerText = d.courseName || "";
     },
     renderRoomStatus: function(st) { 
@@ -317,10 +450,10 @@ const ui = {
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
-        new QRCode(qrDiv, { text: url, width: 35, height: 35 });
+        try { new QRCode(qrDiv, { text: url, width: 35, height: 35 }); } catch(e) {}
     },
     openQrModal: function() {
-        const url = document.getElementById('studentLink').value;
+        const url = document.getElementById('studentLink').value; if(!url) return;
         document.getElementById('qrModal').style.display = 'flex';
         document.getElementById('qrBigTarget').innerHTML = ""; 
         setTimeout(() => new QRCode(document.getElementById('qrBigTarget'), { text: url, width: 300, height: 300 }), 50);
@@ -328,125 +461,331 @@ const ui = {
     closeQrModal: function() { document.getElementById('qrModal').style.display = 'none'; },
     copyLink: function() {
         const linkInput = document.getElementById('studentLink');
-        navigator.clipboard.writeText(linkInput.value).then(() => ui.showAlert("링크가 복사되었습니다!"));
+        const url = linkInput.value;
+        if (!url) { ui.showAlert("강의실을 먼저 선택하세요!"); return; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => { ui.showAlert("클립보드에 링크가 복사되었습니다!"); })
+            .catch(() => { linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!"); });
+        } else { linkInput.select(); document.execCommand('copy'); ui.showAlert("링크가 복사되었습니다!"); }
     },
     setMode: function(mode) {
         if (!state.room) { this.showWaitingRoom(); return; }
         document.getElementById('globalDashboardModal').style.display = 'none';
         document.getElementById('view-waiting').style.display = 'none';
-        document.querySelector('.mode-tabs').style.display = 'flex';
-        
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`tab-${mode}`).classList.add('active');
+        const targetTab = document.getElementById(`tab-${mode}`);
+        if(targetTab) targetTab.classList.add('active');
 
-        document.getElementById('view-qa').style.display = (mode === 'qa' ? 'flex' : 'none');
-        document.getElementById('view-quiz').style.display = (mode === 'quiz' ? 'flex' : 'none');
+        if (mode === 'qa') {
+            document.getElementById('view-qa').style.display = 'flex';
+            document.getElementById('view-quiz').style.display = 'none';
+        }
 
-        firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
-        if(mode === 'quiz' && !state.isExternalFileLoaded) {
-            document.getElementById('quizSelectModal').style.display = 'flex';
-            quizMgr.loadSavedQuizList();
+        if (state.room) {
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
+            if (mode === 'quiz') {
+                document.getElementById('view-qa').style.display = 'none';
+                document.getElementById('view-quiz').style.display = 'flex';
+                if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) { quizMgr.showQuiz(); } 
+                else {
+                    document.getElementById('quizSelectModal').style.display = 'flex';
+                    document.getElementById('btnPause').style.display = 'none';
+                    const smartBtn = document.getElementById('btnSmartNext');
+                    if(smartBtn) { smartBtn.style.display = 'flex'; smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>'; }
+                    quizMgr.loadSavedQuizList();
+                }
+            }
         }
     },
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
-        event.target.classList.add('active'); 
+        if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
     renderQaList: function(f) {
         const list = document.getElementById('qaList'); list.innerHTML = "";
-        let items = Object.values(state.qaData).map((v, i) => ({ id: Object.keys(state.qaData)[i], ...v }));
-        if(f !== 'all') items = items.filter(x => x.status === f);
+        let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
+        if(f==='pin') items=items.filter(x=>x.status==='pin'); 
+        else if(f==='later') items=items.filter(x=>x.status==='later');
+        items.sort((a,b) => {
+            const getPrio = s => (s === 'pin' ? 3 : (s === 'later' ? 2 : (s === 'done' ? 0 : 1)));
+            const pA = getPrio(a.status); const pB = getPrio(b.status);
+            if (pA !== pB) return pB - pA;
+            const likeA = a.likes || 0; const likeB = b.likes || 0;
+            if (likeA !== likeB) return likeB - likeA;
+            return b.timestamp - a.timestamp;
+        });
         items.forEach(i => {
-            list.innerHTML += `<div class="q-card" onclick="ui.openQaModal('${i.id}')">
-                <div class="q-content">${i.text}</div>
-                <div class="q-meta"><div class="q-like-badge">👍 ${i.likes||0}</div></div>
+            let cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
+            const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
+            const isRecent = (Date.now() - i.timestamp) < 120000; 
+            let newBadge = "";
+            if (isRecent && i.status !== 'pin' && i.status !== 'done') { cls += " is-new"; newBadge = `<span class="new-badge-icon">NEW</span>`; }
+            list.innerHTML += `
+            <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
+                <div class="q-content">${newBadge}${icon}${i.text}
+                    <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
+                </div>
+                <div class="q-meta">
+                    <div class="q-like-badge">👍 ${i.likes||0}</div>
+                    <div class="q-time">${new Date(i.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                </div>
             </div>`;
         });
     },
     openQaModal: function(k) { state.activeQaKey=k; document.getElementById('m-text').innerText=state.qaData[k].text; document.getElementById('qaModal').style.display='flex'; },
-    closeQaModal: function() { document.getElementById('qaModal').style.display = 'none'; },
+    closeQaModal: function(e) { if (!e || e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') document.getElementById('qaModal').style.display = 'none'; },
     openPwModal: function() { document.getElementById('changePwModal').style.display='flex'; },
     closePwModal: function() { document.getElementById('changePwModal').style.display='none'; },
     toggleNightMode: function() { 
-        const isNight = document.body.classList.toggle('night-mode'); 
-        document.getElementById('iconSun').classList.toggle('active', !isNight);
-        document.getElementById('iconMoon').classList.toggle('active', isNight);
+        document.body.classList.toggle('night-mode'); 
+        const n = document.body.classList.contains('night-mode');
+        const sun = document.getElementById('iconSun'); const moon = document.getElementById('iconMoon');
+        if(sun) sun.classList.toggle('active', !n);
+        if(moon) moon.classList.toggle('active', n);
     },
+    toggleRightPanel: function() { document.getElementById('rightPanel').classList.toggle('open'); },
     toggleFullScreen: function() {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-        else document.exitFullscreen();
+        const elem = document.querySelector('.main-stage');
+        if (!document.fullscreenElement) elem.requestFullscreen().catch(err => console.log(err));
+        else if (document.exitFullscreen) document.exitFullscreen();
+    },
+    translateQa: function(id) {
+        if (!state.qaData[id]) return;
+        const text = state.qaData[id].text;
+        const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+        const targetLang = hasKorean ? 'en' : 'ko';
+        const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
+        window.open(url, 'googleTranslatePopup', 'width=1000,height=600');
     },
     showWaitingRoom: function() {
         state.room = null;
-        document.getElementById('view-waiting').style.display = 'flex';
-        document.getElementById('view-qa').style.display = 'none';
-        document.getElementById('view-quiz').style.display = 'none';
-        document.querySelector('.mode-tabs').style.display = 'none';
-        document.getElementById('statusOverlay').style.display = 'none';
         document.getElementById('displayRoomName').innerText = "KAC 강사 대기실 (전체 현황)";
         document.getElementById('displayCourseTitle').innerText = "";
+        const tabs = document.querySelector('.mode-tabs'); if(tabs) tabs.style.display = 'none'; 
+        document.getElementById('view-qa').style.display = 'none';
+        document.getElementById('view-quiz').style.display = 'none';
+        document.getElementById('statusOverlay').style.display = 'none';
+        document.getElementById('view-waiting').style.display = 'flex';
+        const statusSel = document.getElementById('roomStatusSelect');
+        if(statusSel) { statusSel.value = 'waiting'; statusSel.disabled = true; }
     }
 };
 
-// --- [현황판 모니터링] ---
+// --- [현황판 모니터링 로직] ---
 const dashboardMgr = {
     init: function() {
         firebase.database().ref('courses').on('value', snap => {
             const allData = snap.val() || {};
-            this.render(allData, 'mainDashboardBody');
-            this.render(allData, 'popupDashboardBody');
+            this.render(allData, 'mainDashboardBody'); 
+            this.render(allData, 'popupDashboardBody'); 
             const ticket = document.getElementById('lastUpdateTicket');
             if(ticket) ticket.innerText = `업데이트: ${new Date().toLocaleTimeString()}`;
         });
     },
     render: function(allData, targetId) {
-        const tbody = document.getElementById(targetId);
-        if(!tbody) return;
+        const tbody = document.getElementById(targetId); if(!tbody) return;
         let html = "";
         for(let i=65; i<=90; i++) { 
-            const code = String.fromCharCode(i);
-            const d = allData[code] || {};
-            const st = d.status || {};
-            let statusClass = st.roomStatus === 'active' ? 'active' : 'waiting';
-            html += `<tr><td>${i-64}</td><td style="font-weight:bold; color:#3b82f6;">${code}</td>
-                    <td style="text-align:left;">${d.settings?.courseName || "-"}</td>
-                    <td>${st.professorName || "-"}</td>
-                    <td><span class="status-badge ${statusClass}">${st.roomStatus === 'active' ? '사용중' : '대기중'}</span></td>
-                    <td style="font-size:12px;">${st.lastUsed ? new Date(st.lastUsed).toLocaleTimeString() : "-"}</td></tr>`;
+            const code = String.fromCharCode(i); const data = allData[code] || {};
+            const settings = data.settings || {}; const status = data.status || {}; const activeQuiz = data.activeQuiz || null;
+            const courseName = settings.courseName || "-"; const professor = status.professorName || "-"; const roomStatus = status.roomStatus || "idle";
+            let statusText = "대기중", statusClass = "waiting";
+            if(roomStatus === 'active') {
+                statusText = "사용중"; statusClass = "active";
+                if(activeQuiz && activeQuiz.status && activeQuiz.status !== 'ready') { statusText = "강의중(퀴즈)"; statusClass = "ingame"; }
+            }
+            let lastTime = "-";
+            if(status.lastUsed) { lastTime = new Date(status.lastUsed).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}); }
+            html += `<tr><td>${i - 64}</td><td style="font-weight:bold; color:#3b82f6;">${code}</td><td style="text-align:left; font-weight:600;">${courseName}</td><td>${professor}</td><td><span class="status-badge ${statusClass}">${statusText}</span></td><td style="font-size:12px; color:#94a3b8;">${lastTime}</td></tr>`;
         }
         tbody.innerHTML = html;
     },
-    openPopup: function() { document.getElementById('globalDashboardModal').style.display = 'flex'; }
+    openPopup: function() { const modal = document.getElementById('globalDashboardModal'); if(modal) modal.style.display = 'flex'; }
 };
 
-// --- 4. Quiz Logic (간략화) ---
+// --- 4. Quiz Logic (핵심 상세 로직 모두 복구) ---
 const quizMgr = {
     loadFile: function(e) {
         const f = e.target.files[0]; if (!f) return;
         const r = new FileReader();
         r.onload = (evt) => {
-            state.quizList = [];
+            const b = evt.target.result.trim().split(/\n\s*\n/); state.quizList = [];
+            b.forEach(bl => {
+                const l = bl.split('\n').map(x=>x.trim()).filter(x=>x);
+                if (l.length >= 2) {
+                    const lastLine = l[l.length - 1].toUpperCase();
+                    const isSurvey = (lastLine === 'SURVEY' || lastLine === 'S');
+                    const correct = isSurvey ? 0 : parseInt(lastLine);
+                    const options = l.slice(1, l.length - 1);
+                    state.quizList.push({ text: l[0], options: options, correct: correct, checked: true, isSurvey: isSurvey, isOX: (options.length === 2 && options[0].toUpperCase() === 'O') });
+                }
+            });
             state.isExternalFileLoaded = true;
-            this.showQuiz();
+            const quizTitle = prompt("퀴즈 세트 이름을 입력하세요:", `${new Date().toLocaleDateString()} 퀴즈`);
+            if (!quizTitle) return;
+            firebase.database().ref(`courses/${state.room}/quizBank`).push().set({ title: quizTitle, data: state.quizList, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            this.renderMiniList(); this.showQuiz();
         };
         r.readAsText(f);
     },
-    renderMiniList: function() { /* 원본 유지 */ },
-    loadSavedQuizList: function() { /* 원본 유지 */ },
-    showQuiz: function() {
-        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ status: 'ready' });
-        document.getElementById('quizControls').style.display = 'flex';
+    addManualQuiz: function() {
+        const q = document.getElementById('manualQ').value, a = document.getElementById('manualAns').value;
+        const opts = [1,2,3,4].map(i => document.getElementById('manualO'+i).value).filter(v => v);
+        if(!q || !a) return ui.showAlert("내용을 입력하세요.");
+        state.quizList.push({ text: q, options: opts, correct: parseInt(a), checked: true, isOX: opts.length === 2, isSurvey: false });
+        this.renderMiniList();
     },
-    smartNext: function() { firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: 'open' }); },
-    prevNext: function(d) { /* 원본 유지 */ },
-    closeQuizMode: function() { ui.setMode('qa'); }
+    renderMiniList: function() {
+        const d = document.getElementById('miniQuizList'); if(!d) return; d.innerHTML = "";
+        state.quizList.forEach((q, i) => {
+            const typeLabel = q.isSurvey ? '[설문]' : (q.isOX ? '[OX]' : '[4지]');
+            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeLabel} Q${i+1}.</b> ${q.text.substring(0,20)}...</div>`;
+        });
+    },
+    downloadSample: function() {
+        let content = "";
+        DEFAULT_QUIZ_DATA.forEach(q => { content += q.text + "\n" + q.options.join('\n') + "\n" + (q.isSurvey ? "SURVEY" : q.correct) + "\n\n"; });
+        const blob = new Blob([content], {type: "text/plain"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "kac_quiz_sample.txt"; a.click();
+    },
+    useDefaultQuiz: function() { state.quizList = DEFAULT_QUIZ_DATA; state.isExternalFileLoaded = true; this.renderMiniList(); this.completeQuizLoading(); },
+    completeQuizLoading: function() { document.getElementById('quizSelectModal').style.display = 'none'; state.currentQuizIdx = 0; this.showQuiz(); },
+    loadSavedQuizList: function() {
+        const container = document.getElementById('savedQuizListContainer'); if(!container) return;
+        firebase.database().ref(`courses/${state.room}/quizBank`).on('value', snap => {
+            container.innerHTML = ""; const data = snap.val();
+            if (!data) { container.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444; font-weight:bold;">⚠️ 저장된 퀴즈가 없음.</div>`; return; }
+            Object.keys(data).reverse().forEach(key => {
+                const quizSet = data[key]; const item = document.createElement('div'); item.className = 'saved-quiz-item';
+                item.innerHTML = `<div style="flex-grow:1; cursor:pointer;" onclick="quizMgr.useSavedQuizSet('${key}')"><div class="q-title">${quizSet.title}</div><div class="q-info">${quizSet.data.length}문항</div></div><button class="btn-del-mini" onclick="quizMgr.deleteQuizSet('${key}', '${quizSet.title}')"><i class="fa-solid fa-trash-can"></i></button>`;
+                container.appendChild(item);
+            });
+        });
+    },
+    useSavedQuizSet: function(key) {
+        firebase.database().ref(`courses/${state.room}/quizBank/${key}`).once('value', snap => {
+            const val = snap.val(); if (val) { state.quizList = val.data; state.isExternalFileLoaded = true; this.renderMiniList(); this.completeQuizLoading(); }
+        });
+    },
+    deleteQuizSet: function(key, title) { if (confirm(`'${title}' 삭제할까요?`)) firebase.database().ref(`courses/${state.room}/quizBank/${key}`).remove(); },
+    prevNext: function(d) {
+        let n = state.currentQuizIdx + d; if (n < 0 || n >= state.quizList.length) return ui.showAlert("문항 범위를 벗어났습니다.");
+        if(!state.quizList[n].checked) { state.currentQuizIdx = n; this.prevNext(d); return; }
+        state.currentQuizIdx = n; this.showQuiz();
+    },
+    showQuiz: function() {
+        document.querySelector('.quiz-card').classList.remove('result-mode');
+        const q = state.quizList[state.currentQuizIdx]; this.resetTimerUI(); this.renderScreen(q);
+        document.getElementById('btnPause').style.display = 'none'; document.getElementById('btnSmartNext').style.display = 'flex';
+        firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q });
+        document.getElementById('quizControls').style.display = 'flex'; state.remainingTime = 8; this.startAnswerMonitor();
+    },
+    renderScreen: function(q) {
+        document.getElementById('d-qtext').innerText = q.text; document.getElementById('quizNumberLabel').innerText = `Q${state.currentQuizIdx + 1}`;
+        const oDiv = document.getElementById('d-options'); oDiv.style.display = 'flex'; document.getElementById('d-chart').style.display = 'none'; oDiv.innerHTML = "";
+        q.options.forEach((o, i) => { oDiv.innerHTML += `<div class="quiz-opt ${q.isOX?'ox-mode':''}" id="opt-${i+1}"><div class="opt-num">${i+1}</div><div class="opt-text">${o}</div></div>`; });
+        document.getElementById('quizGuideArea').innerText = ""; 
+    },
+    startAnswerMonitor: function() {
+        const id = `Q${state.currentQuizIdx}`; if (state.ansListener) dbRef.ans.child(id).off();
+        state.ansListener = dbRef.ans.child(id).on('value', snap => {
+            const answers = snap.val() || {}; const answeredCount = Object.keys(answers).length;
+            const totalCount = parseInt(document.getElementById('currentJoinCount').innerText) || 0;
+            document.getElementById('answeredCount').innerText = answeredCount; document.getElementById('pendingCount').innerText = Math.max(0, totalCount - answeredCount);
+        });
+    },
+    action: function(act) {
+        firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
+        if(act === 'open') { this.startTimer(); }
+        else if(act === 'close') { 
+            this.stopTimer(); const q = state.quizList[state.currentQuizIdx];
+            if(!q.isSurvey) { const opt = document.getElementById(`opt-${q.correct}`); if(opt) opt.classList.add('reveal-answer'); }
+        }
+        else if(act === 'result') { 
+            this.stopTimer(); document.querySelector('.quiz-card').classList.add('result-mode');
+            document.getElementById('d-options').style.display='none'; document.getElementById('d-chart').style.display='flex'; 
+            this.renderChart(`Q${state.currentQuizIdx}`, state.quizList[state.currentQuizIdx].correct); 
+        }
+    },
+    smartNext: function() { this.action('open'); },
+    togglePause: function() {
+        if (state.timerInterval) { this.stopTimer(); firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: 'pause', remainingTime: state.remainingTime });
+            document.getElementById('btnPause').innerHTML = '다시 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
+        } else { this.action('open'); document.getElementById('btnPause').innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:10px;"></i>'; }
+    },
+    startTimer: function() {
+        this.stopTimer(); document.getElementById('btnSmartNext').style.display = 'none';
+        const pauseBtn = document.getElementById('btnPause'); pauseBtn.style.display = 'flex'; pauseBtn.innerHTML = '일시정지 <i class="fa-solid fa-pause" style="margin-left:15px;"></i>';
+        let t = state.remainingTime; const d = document.getElementById('quizTimer'); 
+        const endTime = Date.now() + (t * 1000); dbRef.quiz.update({ status: 'open', endTime: endTime });
+        if(!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
+        state.timerInterval = setInterval(() => {
+            const r = Math.ceil((endTime - Date.now()) / 1000); state.remainingTime = r < 0 ? 0 : r;
+            if (d) { d.innerText = `00:${state.remainingTime < 10 ? '0' + state.remainingTime : state.remainingTime}`; if(r <= 5) d.classList.add('urgent'); }
+            if (r <= 8 && r > 0) { state.timerAudio.currentTime = 0; state.timerAudio.play().catch(e => {}); }
+            if(r <= 0) { this.stopTimer(); this.action('close'); setTimeout(() => { this.action('result'); pauseBtn.style.display = 'none'; document.getElementById('btnSmartNext').style.display = 'flex'; }, 1500); }
+        }, 200);
+    },
+    stopTimer: function() { if(state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; } if (state.timerAudio) { state.timerAudio.pause(); } },
+    resetTimerUI: function() { this.stopTimer(); document.getElementById('quizTimer').innerText = "00:08"; document.getElementById('quizTimer').classList.remove('urgent'); },
+    showFinalSummary: async function() {
+        const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
+        const allAns = snap.val() || {}; const totalParticipants = new Set(); let totalQuestions = 0; let totalCorrect = 0; let totalAnswerCount = 0;
+        const userScoreMap = {};
+        state.quizList.forEach((q, idx) => {
+            if(!q.checked || q.isSurvey) return; const id = `Q${idx}`; const answers = allAns[id] || {}; const keys = Object.keys(answers);
+            if(keys.length > 0) totalQuestions++;
+            keys.forEach(k => { totalParticipants.add(k); totalAnswerCount++; if(!userScoreMap[k]) userScoreMap[k] = { score: 0, pCount: 0 };
+                userScoreMap[k].pCount++; if(answers[k].choice === q.correct) { totalCorrect++; userScoreMap[k].score++; } });
+        });
+        const sortedUsers = Object.keys(userScoreMap).map(t => ({ token: t, ...userScoreMap[t] })).sort((a, b) => b.score - a.score);
+        const finalRankingData = {}; sortedUsers.forEach((u, i) => { finalRankingData[u.token] = { score: u.score, rank: i+1 }; });
+        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
+        await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+        document.getElementById('summaryStats').innerHTML = `<div class="summary-card">총 인원<b>${totalParticipants.size}명</b></div><div class="summary-card">평균 정답률<b>${totalAnswerCount?Math.round((totalCorrect/totalAnswerCount)*100):0}%</b></div>`;
+        document.getElementById('quizSummaryOverlay').style.display = 'flex';
+    },
+    renderChart: function(id, corr) {
+        const div = document.getElementById('d-chart'); div.innerHTML = ""; const q = state.quizList[state.currentQuizIdx];
+        firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
+            const d = s.val() || {}; const cnt = new Array(q.options.length).fill(0);
+            Object.values(d).forEach(v => { if(v.choice >= 1 && v.choice <= q.options.length) cnt[v.choice-1]++; });
+            const max = Math.max(...cnt, 1);
+            for(let i=0; i < q.options.length; i++) {
+                const isCorrect = !q.isSurvey && (i + 1) === corr; const h = (cnt[i]/max)*80;
+                const crown = isCorrect ? `<div class="crown-icon">👑</div>` : '';
+                div.innerHTML += `<div class="bar-wrapper ${isCorrect ? 'correct' : ''}">${crown}<div class="bar-value">${cnt[i]}</div><div class="bar-fill" style="height:${h}%"></div><div class="bar-label">${q.isOX?(i===0?'O':'X'):(i+1)}</div></div>`;
+            }
+        });
+    },
+    closeQuizMode: function() { ui.setMode('qa'); },
+    confirmExitQuiz: function(type) { ui.setMode('qa'); }
 };
 
-// --- [초기 실행] ---
+// --- 5. Print & Report ---
+const printMgr = {
+    openInputModal: function() { 
+        document.getElementById('printDateInput').value = ""; document.getElementById('printProfInput').value = document.getElementById('profSelect').value || ""; 
+        document.getElementById('printInputModal').style.display = 'flex'; 
+    },
+    closeInputModal: function() { document.getElementById('printInputModal').style.display = 'none'; },
+    confirmPrint: function(isSkip) { this.closeInputModal(); this.openPreview(document.getElementById('printDateInput').value, document.getElementById('printProfInput').value); },
+    openPreview: function(date, prof) { 
+        document.getElementById('doc-cname').innerText = document.getElementById('courseNameInput').value || "미설정"; 
+        document.getElementById('doc-date').innerText = date || "-"; document.getElementById('doc-prof').innerText = prof || "-";
+        const listBody = document.getElementById('docListBody'); listBody.innerHTML = ""; 
+        const items = Object.values(state.qaData || {}); 
+        items.sort((a,b) => b.likes - a.likes).forEach((item, idx) => { listBody.innerHTML += `<tr><td>${idx + 1}</td><td style="text-align:left;">${item.text}</td><td>❤️ ${item.likes || 0}</td></tr>`; });
+        document.getElementById('printPreviewModal').style.display = 'flex'; 
+    },
+    closePreview: function() { document.getElementById('printPreviewModal').style.display = 'none'; },
+    executePrint: function() { window.print(); }
+};
+
+// --- 초기 실행 ---
 window.onload = function() { 
-    if (typeof dataMgr !== 'undefined') dataMgr.initSystem(); 
-    if (typeof profMgr !== 'undefined') profMgr.init(); 
-    dashboardMgr.init(); 
-    setTimeout(() => ui.showWaitingRoom(), 300); 
+    dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); dashboardMgr.init(); 
+    setTimeout(() => { if(!state.room) ui.showWaitingRoom(); }, 200); 
 };
