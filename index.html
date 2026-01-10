@@ -564,59 +564,50 @@ dbRef.quiz.on('value', s => {
             });
         }
 
-function openShuttleApply() {
-    document.getElementById('menuModal').style.display = 'none';
-    document.getElementById('shuttleModal').style.display = 'flex';
-}
+// --- 차량 신청 및 메뉴 관련 함수 정리 ---
 
-function openRoomMove() {
-    document.getElementById('menuModal').style.display = 'none';
-    // 기존에 있던 강의실 이동(prompt 등) 로직을 여기에 연결하거나 
-    // 기존에 openMenu() 함수가 있었다면 그걸 실행하게 하세요.
-    if(typeof openMenu === 'function') openMenu(); 
-}
+let tempSelectedLoc = null; // 선택한 장소를 잠시 담아두는 변수
 
-
-let tempSelectedLoc = null; // 선택한 장소를 잠시 담아두는 바구니
-
-// 1. 햄버거 메뉴에서 '차량 신청' 버튼을 누를 때 실행 (초기화)
+// 1. 메뉴에서 차량 신청 버튼 누를 때 (초기화 및 열기)
 function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    // 이전에 입력했던 흔적 지우기
+    // 상태 초기화
     tempSelectedLoc = null;
     document.getElementById('shuttleInputArea').style.display = 'none';
     document.getElementById('shuttleUserName').value = "";
     
-    // 버튼 색상 원래대로(회색) 돌리기
+    // 버튼 색상들 초기화
     document.querySelectorAll('.shuttle-btn').forEach(btn => {
         btn.style.background = "#f8fafc";
         btn.style.color = "#333";
     });
 }
 
-// 2. 목적지 버튼(오송역 등)을 눌렀을 때 실행
+// 2. 목적지 버튼(오송역 등)을 클릭했을 때
 function selectShuttle(locId, locName) {
     tempSelectedLoc = { id: locId, name: locName };
     
-    // 모든 버튼 색상을 회색으로 초기화
+    // 모든 버튼 색상 초기화
     document.querySelectorAll('.shuttle-btn').forEach(btn => {
         btn.style.background = "#f8fafc";
         btn.style.color = "#333";
     });
 
-    // 내가 누른 버튼만 파란색으로 변경
+    // 선택한 버튼만 파란색으로 변경
     const activeBtn = document.getElementById(`btn-${locId}`);
-    activeBtn.style.background = "#3b82f6";
-    activeBtn.style.color = "#fff";
+    if(activeBtn) {
+        activeBtn.style.background = "#3b82f6";
+        activeBtn.style.color = "#fff";
+    }
 
-    // 아래 숨겨져 있던 이름 입력창 나타내기
+    // 이름 입력 칸 나타내기
     document.getElementById('shuttleInputArea').style.display = 'block';
     document.getElementById('shuttleUserName').focus();
 }
 
-// 3. '차량 신청 완료하기' 파란색 버튼을 누를 때 실행 (서버 저장)
+// 3. 최종 [차량 신청 완료하기] 버튼 클릭 시
 async function submitShuttleRequest() {
     if (!tempSelectedLoc) return;
 
@@ -626,7 +617,7 @@ async function submitShuttleRequest() {
         return;
     }
 
-    // 유저 고유 토큰 생성/확인
+    // 유저 토큰 확인/생성
     let uToken = localStorage.getItem('uToken');
     if (!uToken) {
         uToken = Math.random().toString(36).substr(2);
@@ -636,7 +627,7 @@ async function submitShuttleRequest() {
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
 
     try {
-        // 이미 신청했는지 중복 체크
+        // 중복 신청 체크
         const snap = await shuttleRef.once('value');
         const data = snap.val() || {};
         let already = false;
@@ -654,7 +645,7 @@ async function submitShuttleRequest() {
             return;
         }
 
-        // 서버에 최종 저장
+        // 서버 저장
         await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(name);
         
         alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
@@ -666,6 +657,11 @@ async function submitShuttleRequest() {
     }
 }
 
+// 4. 강의실 이동 메뉴 클릭 시
+function openRoomMove() {
+    document.getElementById('menuModal').style.display = 'none';
+    if(typeof openMenu === 'function') openMenu(); 
+}
 
 
 
