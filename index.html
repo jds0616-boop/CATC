@@ -145,6 +145,7 @@
     </div>
     <script src="config.js"></script>
     <script>
+        let serverTimeOffset = 0; // 추가
         let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
         
         (async function init() {
@@ -250,6 +251,10 @@ function exitApp() {
             dbRef.connections.on("value", (snap) => { const count = snap.numChildren(); document.getElementById('realUserCount').innerText = `${count}명 접속`; });
         }
         function setupListeners() {
+firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+        serverTimeOffset = snap.val() || 0;
+    });
+
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
@@ -377,7 +382,7 @@ dbRef.quiz.on('value', s => {
             if(q.endTime && sTimerBox && sTimerText) {
                 sTimerBox.style.display = 'flex';
                 studentTimerInterval = setInterval(() => {
-                    const remain = Math.ceil((q.endTime - Date.now()) / 1000);
+                    const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
                     const display = remain < 0 ? 0 : remain;
                     sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
                     sTimerText.style.color = (remain <= 5) ? "#ef4444" : "#1e293b";
