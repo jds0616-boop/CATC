@@ -47,6 +47,22 @@
         .input-dock { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--input-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200; display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 80px; }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
+/* 입력창 가이드 문구 디자인 개선 */
+.real-input::placeholder {
+    color: rgba(239, 68, 68, 0.6); /* 투명도가 있는 빨간색 (부드러운 경고) */
+    font-weight: 700;
+    font-style: italic;           /* 기울임꼴로 실제 댓글과 차별화 */
+    font-size: 14px;              /* 글자 크기를 살짝 줄임 */
+}
+
+/* 아이폰/사파리 대응 */
+.real-input::-webkit-input-placeholder {
+    color: rgba(239, 68, 68, 0.6);
+    font-weight: 700;
+    font-style: italic;
+    font-size: 14px;
+}
+
         .real-input:disabled { background: transparent; color: #94a3b8; opacity: 1; }
         .send-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-color); color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; flex-shrink: 0; transition: 0.2s; margin-left: 8px; margin-bottom: 1px; }
         .send-btn:active { transform: scale(0.9); }
@@ -90,7 +106,9 @@
         <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
         <div class="input-dock" id="inputDock">
             <div class="input-box">
-                <textarea id="qInput" class="real-input" rows="1" placeholder="강의장 공개, 예의있는 질문" maxlength="100" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                <textarea id="qInput" class="real-input" rows="1" 
+          placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" 
+          maxlength="100" ...></textarea>
                 <button id="submitBtn" class="send-btn" onclick="submitQ()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="input-info-row"><span id="coolTimer" class="cooldown-text"></span><span id="charCount" class="char-counter">0 / 100</span></div>
@@ -234,20 +252,45 @@ function exitApp() {
         function setupListeners() {
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+
+
+
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
-    // 모드가 확실히 'qa'일 때만 퀴즈를 강제 종료함
-    // quizStep === 'none'일 때 종료하는 로직을 제거하여 화면 깜빡임 방지
+
+    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
         forceCloseQuiz(); 
         return; 
     }
+
+    // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 교육생에게 오버레이를 보여줌
+    if (st.mode === 'quiz') {
+        // 리포트 요약 화면이 아닐 때만 "준비중" 오버레이 표시
+        if (st.quizStep !== 'summary') {
+            document.getElementById('quizOverlay').style.display = 'flex';
+            document.getElementById('quizActiveBox').style.display = 'block';
+            document.getElementById('quizResultBox').style.display = 'none';
+            
+            // 아직 문제가 도착하지 않았을 때(강사가 문제 선택 중일 때) 보여줄 문구
+            // activeQuiz가 업데이트 되기 전까지 이 문구가 유지됩니다.
+            if (!currentQuizId) {
+                document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다. 잠시만 기다려 주세요...";
+                document.getElementById('btnGroupMultiple').style.display = 'none';
+                document.getElementById('btnGroupOX').style.display = 'none';
+                document.getElementById('quizFeedback').innerText = "";
+            }
+        }
+    }
     
-    // 리포트 요약 화면(summary) 처리
+    // 3. 퀴즈가 종료되어 결과 리포트가 떴을 때
     if (st.quizStep === 'summary') { 
         if(!hasClosedSummary) showFinalRanking(); 
     }
 });
+
+
+
 
 dbRef.quiz.on('value', s => {
     const q = s.val(); if(!q) return;
