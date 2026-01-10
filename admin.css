@@ -607,72 +607,53 @@ body.night-mode .quiz-card.result-mode {
     min-width: 150px;
 }
 
-/* --- [진짜 최종] 현황판 제목/표 수직 정렬 및 스크롤 해결 --- */
-
-/* 1. 현황판 전체 바구니: 절대 위치로 부모의 flex 영향을 차단 */
+/* [현황판 최종 해결판] */
 .full-dashboard {
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: var(--bg-color);
-    z-index: 500;
-    overflow-y: auto !important; /* 전체 박스에서 스크롤 발생 */
-    display: none; /* JS에서 flex로 변경 */
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    background: var(--bg-color) !important;
+    padding: 40px !important;
+    overflow-y: auto !important; /* 여기서만 스크롤이 생기게 함 */
+    display: none; 
+    flex-direction: column;
+    align-items: center; /* 표를 중앙으로 배치 */
+    z-index: 1000 !important;
 }
 
-/* 2. 내부 래퍼: 여기서 제목과 표를 위아래로 정렬 */
-.dashboard-inner-wrapper {
-    display: flex !important;
-    flex-direction: column !important; /* 위에서 아래로 쌓기 */
-    width: 100%;
-    max-width: 1200px; /* 너무 넓어지지 않게 조절 */
-    margin: 0 auto;    /* 가운데 배치 */
-    padding: 40px 20px 150px 20px !important; /* 아래 여백 150px */
-}
-
-/* 3. 제목 박스 디자인 */
 .dashboard-header-box {
     width: 100%;
+    max-width: 1200px;
     margin-bottom: 25px;
     text-align: left;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 20px;
 }
 
-/* 4. 테이블 하얀 배경 박스 */
-.dashboard-table-container {
-    background: white !important;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    width: 100% !important;
-    overflow: hidden;
-}
-
-/* 5. 테이블 상세 디자인 */
+/* 표 자체가 흰색 종이가 되도록 설정 (잘릴 수가 없는 구조) */
 .status-table {
     width: 100%;
+    max-width: 1200px;
+    background: white !important;
+    border-radius: 12px;
     border-collapse: collapse;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden; 
+    flex-shrink: 0; /* 표가 찌그러지지 않게 방어 */
 }
 
 .status-table th {
     background: #f8fafc;
     padding: 18px 10px;
-    font-size: 15px;
-    color: #64748b;
     border-bottom: 2px solid #e2e8f0;
+    color: #64748b;
 }
 
 .status-table td {
     padding: 15px 10px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 16px; 
+    background: white !important; /* 각 칸마다 흰색 배경 확정 */
     text-align: center !important;
-    vertical-align: middle;
+    font-size: 16px;
 }
 
-/* 스크롤바 예쁘게 */
+/* 파란색 스크롤바 디자인 */
 .full-dashboard::-webkit-scrollbar { width: 10px; }
-.full-dashboard::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.full-dashboard::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
