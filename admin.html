@@ -195,8 +195,21 @@
             </div>
         </div>
 
-        <div class="content-area">
-            <div id="view-qa">
+<div class="content-area">
+            <!-- 1. 대기실 안내 (가장 위로 이동) -->
+            <div id="view-waiting" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; color:#64748b; position: relative;">
+                <div style="position: absolute; top: 30px; left: 30px; font-size: 40px; color: var(--accent-color); animation: bounceLeft 1.5s infinite; display:flex; flex-direction:column; align-items:flex-start;">
+                    <i class="fa-solid fa-arrow-left-long"></i> 
+                    <span style="font-size:16px; font-weight:bold; margin-top:5px; margin-left:5px;">Select Room</span>
+                </div>
+                <div style="font-size: 80px; margin-bottom: 20px; color: #cbd5e1;"><i class="fa-solid fa-chalkboard-user"></i></div>
+                <h1 style="font-size: 32px; font-weight: 800; color: var(--text-color); margin: 0 0 10px 0;">강사 대기실</h1>
+                <p style="font-size: 16px; margin-bottom: 40px;">현재 입장된 강의실이 없습니다.<br>수업을 진행하려면 좌측 상단에서 강의실을 선택하세요.</p>
+                <style>@keyframes bounceLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }</style>
+            </div>
+
+            <!-- 2. Q&A 모드 (초기값 숨김: display:none) -->
+            <div id="view-qa" style="display:none; width: 100%; height: 100%; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative;">
                 <div class="qa-filters">
                     <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
                     <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
@@ -205,19 +218,20 @@
                 <div class="qa-list" id="qaList"></div>
             </div>
 
-            <div id="view-quiz">
+            <!-- 3. 퀴즈 모드 (초기값 숨김: display:none) -->
+            <div id="view-quiz" style="display:none;">
                 <div class="quiz-card">
                     <div class="quiz-top-bar">
                         <div class="quiz-top-info">
                             <span id="quizNumberLabel" style="color:var(--accent-color); font-weight:800;">Q. --</span>
                             <div class="quiz-info-item"><i class="fa-regular fa-clock"></i> <div class="quiz-timer-box" id="quizTimer">00:08</div></div>
-<div class="quiz-info-item">
-    <i class="fa-solid fa-users"></i> 
-    <span id="currentJoinCount" style="font-weight:800;">0</span>명
-    <span id="answerStatus" style="font-size:24px; font-weight:800; margin-left:10px; color:#64748b;">
-    (제출: <b id="answeredCount" style="color:#10b981;">0</b> / 대기: <b id="pendingCount" style="color:#ef4444;">0</b>)
-</span>
-</div>
+                            <div class="quiz-info-item">
+                                <i class="fa-solid fa-users"></i> 
+                                <span id="currentJoinCount" style="font-weight:800;">0</span>명
+                                <span id="answerStatus" style="font-size:24px; font-weight:800; margin-left:10px; color:#64748b;">
+                                (제출: <b id="answeredCount" style="color:#10b981;">0</b> / 대기: <b id="pendingCount" style="color:#ef4444;">0</b>)
+                                </span>
+                            </div>
                         </div>
                         <div class="quiz-exit-icon" onclick="quizMgr.closeQuizMode()" title="Exit"><i class="fa-solid fa-xmark"></i></div>
                     </div>
@@ -230,6 +244,9 @@
                         <div class="quiz-options" id="d-options"></div>
                         <div class="chart-area" id="d-chart"></div>
                     </div>
+                </div>
+            </div>
+        </div>
                     
 <!-- [개편] 퀴즈 하단 컨트롤바: 더 크고 단순하게 -->
 <div class="quiz-status-bar" style="padding: 30px 20px; background: #f8fafc; border-top: 2px solid #e2e8f0;">

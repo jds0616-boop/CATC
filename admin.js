@@ -508,42 +508,36 @@ const ui = {
         }
     },
     setMode: function(mode) {
-            // 1. 모든 화면 레이어를 일단 다 숨깁니다.
-            document.getElementById('view-waiting').style.display = 'none';
-            document.getElementById('view-qa').style.display = 'none';
-            document.getElementById('view-quiz').style.display = 'none';
+            // 1. 모든 화면을 일단 숨깁니다 (안내창 포함)
+            if(document.getElementById('view-waiting')) document.getElementById('view-waiting').style.display = 'none';
+            if(document.getElementById('view-qa')) document.getElementById('view-qa').style.display = 'none';
+            if(document.getElementById('view-quiz')) document.getElementById('view-quiz').style.display = 'none';
 
-            // 2. 상단 탭 버튼의 활성화 상태(파란색 불)를 조절합니다.
+            // 2. 버튼 활성화 표시
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             const targetTab = document.getElementById(`tab-${mode}`);
             if(targetTab) targetTab.classList.add('active');
 
-            // 3. 선택된 모드(qa 또는 quiz)에 해당하는 화면만 딱 보여줍니다.
+            // 3. 선택한 모드만 보여줍니다.
             if (mode === 'qa') {
                 document.getElementById('view-qa').style.display = 'flex';
             } else if (mode === 'quiz') {
                 document.getElementById('view-quiz').style.display = 'flex';
             }
 
-            // 4. 데이터베이스에 현재 모드가 무엇인지 알려줍니다. (교육생 화면 연동)
+            // 4. 서버에 현재 모드 저장
             if (state.room) {
                 firebase.database().ref(`courses/${state.room}/status/mode`).set(mode);
                 if (mode === 'quiz') {
-                    // 퀴즈 모드일 때 추가 설정 (기존 로직 유지)
                     if (state.isExternalFileLoaded && state.quizList && state.quizList.length > 0) {
                         quizMgr.showQuiz();
                     } else {
                         document.getElementById('quizSelectModal').style.display = 'flex';
-                        document.getElementById('btnPause').style.display = 'none';
-                        const smartBtn = document.getElementById('btnSmartNext');
-                        smartBtn.style.display = 'flex';
-                        smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
                         quizMgr.loadSavedQuizList();
                     }
                 }
             }
         },
-
     filterQa: function(f) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
@@ -610,16 +604,20 @@ const ui = {
         window.open(url, 'googleTranslatePopup', 'width=1000,height=600');
     },
     showWaitingRoom: function() {
-            state.room = null; // 선택된 방 없음으로 초기화
+            state.room = null;
             document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
-            // 아래 세 줄이 확실하게 되어 있어야 안내 화면이 보입니다.
-            document.getElementById('view-qa').style.display = 'none';
-            document.getElementById('view-quiz').style.display = 'none';
-            document.getElementById('view-waiting').style.display = 'flex';
             
+            // 1. 안내창(화살표)만 켜고 나머지는 다 끕니다.
+            if(document.getElementById('view-waiting')) document.getElementById('view-waiting').style.display = 'flex';
+            if(document.getElementById('view-qa')) document.getElementById('view-qa').style.display = 'none';
+            if(document.getElementById('view-quiz')) document.getElementById('view-quiz').style.display = 'none';
+            
+            // 2. 사이드바 상태를 대기로 변경
             const statusSel = document.getElementById('roomStatusSelect');
-            statusSel.value = 'waiting';
-            statusSel.disabled = true;
+            if(statusSel) {
+                statusSel.value = 'waiting';
+                statusSel.disabled = true;
+            }
         }
 };
 
