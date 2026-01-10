@@ -417,24 +417,35 @@ const ui = {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
+            const dashboard = document.getElementById('statusDashboard'); // 현황판 영역
             const savedValue = sel.value || state.room; 
+            
+            // 1. 사이드바 셀렉트 박스 초기화
             sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
+            
+            // 2. 현황판 초기화
+            if(dashboard) dashboard.innerHTML = "";
+
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
                 const connObj = roomData.connections || {};
                 const userCount = Object.keys(connObj).length;
-                const profName = st.professorName ? `, ${st.professorName}` : "";
+                const isRoomActive = st.roomStatus === 'active';
+                const profName = st.professorName || "미지정";
+                const courseName = roomData.settings?.courseName || "설정된 과정명 없음";
+
+                // --- (A) 사이드바 드롭다운 생성 로직 ---
                 const opt = document.createElement('option');
                 opt.value = c;
-                if(st.roomStatus === 'active') {
+                if(isRoomActive) {
                     if (st.ownerSessionId === state.sessionId) {
-                        opt.innerText = `Room ${c} (🔵 내 강의실${profName}, ${userCount}명)`;
+                        opt.innerText = `Room ${c} (🔵 내 강의실, ${userCount}명)`;
                         opt.style.color = '#3b82f6';
                         opt.style.fontWeight = 'bold';
                     } else {
-                        opt.innerText = `Room ${c} (🔴 사용중${profName}, ${userCount}명)`;
+                        opt.innerText = `Room ${c} (🔴 사용중 - ${st.professorName || '교수'}, ${userCount}명)`;
                         opt.style.color = '#ef4444';
                     }
                 } else {
@@ -442,9 +453,44 @@ const ui = {
                 }
                 if(c === savedValue) opt.selected = true;
                 sel.appendChild(opt);
+
+                // --- (B) 메인 현황판 카드 생성 로직 ---
+                if(dashboard) {
+                    const statusClass = isRoomActive ? 'active' : 'idle';
+                    const statusText = isRoomActive ? '🟢 사용 중' : '⚪ 비어 있음';
+                    
+                    const card = document.createElement('div');
+                    card.className = `room-status-card ${statusClass}`;
+                    card.onclick = () => dataMgr.switchRoomAttempt(c); // 클릭 시 해당 방으로 입장
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span class="card-room-name">Room ${c}</span>
+                            <span class="status-badge">${statusText}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                <span><b>과정:</b> ${courseName}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span><b>교수:</b> ${profName}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fa-solid fa-users"></i>
+                                <span><b>접속:</b> ${userCount}명</span>
+                            </div>
+                        </div>
+                        <div class="btn-enter-room">강의실 입장하기</div>
+                    `;
+                    dashboard.appendChild(card);
+                }
             }
         });
     },
+
+
     toggleMiniQR: function() {
         const qrBox = document.getElementById('floatingQR');
         if (!state.room) {

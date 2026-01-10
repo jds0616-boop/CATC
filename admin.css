@@ -606,3 +606,86 @@ body.night-mode .quiz-card.result-mode {
 .btn-exit {
     min-width: 150px;
 }
+
+
+/* --- 강사 대기실 현황판 카드 디자인 --- */
+
+/* 1. 개별 강의실 카드 기본 스타일 */
+.room-status-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 마우스 올렸을 때 효과 */
+.room-status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+    border-color: var(--accent-color);
+}
+
+/* 2. 카드 상단 (방 번호와 상태 배지) */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-room-name {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--text-color);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* 3. 상태별 색상 (사용중 / 대기중) */
+.room-status-card.active { border-top: 5px solid #22c55e; }
+.room-status-card.active .status-badge { background: #dcfce7; color: #15803d; }
+
+.room-status-card.idle { border-top: 5px solid #cbd5e1; opacity: 0.8; }
+.room-status-card.idle .status-badge { background: #f1f5f9; color: #64748b; }
+
+/* 4. 카드 중간 (정보 영역: 교수명, 접속 인원) */
+.card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: #475569;
+}
+
+.info-item { display: flex; align-items: center; gap: 8px; }
+.info-item i { width: 16px; color: #94a3b8; }
+
+/* 5. 하단 입장 버튼 */
+.btn-enter-room {
+    margin-top: 5px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #475569;
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    transition: 0.2s;
+}
+
+.room-status-card:hover .btn-enter-room {
+    background: var(--accent-color);
+    color: white;
+}
