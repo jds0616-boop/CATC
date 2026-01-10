@@ -1,4 +1,4 @@
-/* --- admin.js (Final Integrated Version - Fixed Syntax) --- */
+/* --- admin.js (최종 수정본: 문법 오류 해결 및 일시정지 동기화 기능 추가) --- */
 
 // --- [기본 데이터] 20문항 ---
 const DEFAULT_QUIZ_DATA = [
@@ -128,7 +128,8 @@ const dataMgr = {
         const ua = navigator.userAgent;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
         if (isMobile) {
-            document.getElementById('mobileRestrictOverlay').style.display = 'flex';
+            const overlay = document.getElementById('mobileRestrictOverlay');
+            if(overlay) overlay.style.display = 'flex';
         }
     },
     initSystem: function() {
@@ -185,7 +186,8 @@ const dataMgr = {
         state.pendingRoom = null;
     },
     forceEnterRoom: async function(room) {
-        document.querySelector('.mode-tabs').style.display = 'flex'; 
+        const tabs = document.querySelector('.mode-tabs');
+        if(tabs) tabs.style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
         if (state.room) {
             const oldPath = `courses/${state.room}`;
@@ -231,7 +233,8 @@ const dataMgr = {
         });
         dbRef.connections.on('value', s => {
             const count = s.numChildren();
-            document.getElementById('currentJoinCount').innerText = count;
+            const counter = document.getElementById('currentJoinCount');
+            if(counter) counter.innerText = count;
         });
         this.fetchCodeAndRenderQr(room);
         dbRef.qa.on('value', s => { if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }});
@@ -379,8 +382,12 @@ const profMgr = {
 // --- 3. UI ---
 const ui = {
     showAlert: function(msg) {
-        document.getElementById('customAlertText').innerText = msg;
-        document.getElementById('customAlertModal').style.display = 'flex';
+        const textEl = document.getElementById('customAlertText');
+        const modalEl = document.getElementById('customAlertModal');
+        if(textEl && modalEl) {
+            textEl.innerText = msg;
+            modalEl.style.display = 'flex';
+        }
     },
     requestAdminAuth: function(type) {
         if(type === 'pw') state.adminCallback = () => ui.openPwModal();
@@ -417,6 +424,7 @@ const ui = {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
+            if(!sel) return;
             const savedValue = sel.value || state.room; 
             sel.innerHTML = '<option value="" disabled selected>Select Room ▾</option>';
             for(let i=65; i<=90; i++) {
@@ -472,8 +480,10 @@ const ui = {
     },
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
-        if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';
-        else overlay.style.display = 'flex';
+        if(overlay) {
+            if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) overlay.style.display = 'none';
+            else overlay.style.display = 'flex';
+        }
     },
     updateHeaderRoom: function(r) { document.getElementById('displayRoomName').innerText = `Course ROOM ${r}`; },
     renderSettings: function(d) {
@@ -481,7 +491,10 @@ const ui = {
         document.getElementById('roomPw').value = d.password ? atob(d.password) : "7777";
         document.getElementById('displayCourseTitle').innerText = d.courseName || "";
     },
-    renderRoomStatus: function(st) { document.getElementById('roomStatusSelect').value = st || 'idle'; },
+    renderRoomStatus: function(st) { 
+        const sel = document.getElementById('roomStatusSelect');
+        if(sel) sel.value = st || 'idle'; 
+    },
     renderQr: function(url) {
         document.getElementById('studentLink').value = url;
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
@@ -509,7 +522,6 @@ const ui = {
         }
     },
     setMode: function(mode) {
-
         if (!state.room) {
             this.showWaitingRoom();
             return;
@@ -539,7 +551,6 @@ const ui = {
                     smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:15px;"></i>';
                     quizMgr.loadSavedQuizList();
                 }
-                return;
             }
         }
     }, 
@@ -591,8 +602,10 @@ const ui = {
     toggleNightMode: function() { 
         document.body.classList.toggle('night-mode'); 
         const n = document.body.classList.contains('night-mode');
-        document.getElementById('iconSun').classList.toggle('active', !n);
-        document.getElementById('iconMoon').classList.toggle('active', n);
+        const sun = document.getElementById('iconSun');
+        const moon = document.getElementById('iconMoon');
+        if(sun) sun.classList.toggle('active', !n);
+        if(moon) moon.classList.toggle('active', n);
     },
     toggleRightPanel: function() { document.getElementById('rightPanel').classList.toggle('open'); },
     toggleFullScreen: function() {
@@ -611,15 +624,12 @@ const ui = {
     showWaitingRoom: function() {
         state.room = null;
         document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
-        
         const tabs = document.querySelector('.mode-tabs');
         if(tabs) tabs.style.display = 'none'; 
-        
         document.getElementById('view-qa').style.display = 'none';
         document.getElementById('view-quiz').style.display = 'none';
         document.getElementById('statusOverlay').style.display = 'none'; 
         document.getElementById('view-waiting').style.display = 'flex'; 
-        
         const statusSel = document.getElementById('roomStatusSelect');
         if(statusSel) {
             statusSel.value = 'waiting';
@@ -779,8 +789,10 @@ const quizMgr = {
             const answers = snap.val() || {};
             const answeredCount = Object.keys(answers).length;
             const totalCount = parseInt(document.getElementById('currentJoinCount').innerText) || 0;
-            document.getElementById('answeredCount').innerText = answeredCount;
-            document.getElementById('pendingCount').innerText = Math.max(0, totalCount - answeredCount);
+            const ansCountEl = document.getElementById('answeredCount');
+            const pendCountEl = document.getElementById('pendingCount');
+            if(ansCountEl) ansCountEl.innerText = answeredCount;
+            if(pendCountEl) pendCountEl.innerText = Math.max(0, totalCount - answeredCount);
         });
     },
     action: function(act) {
@@ -825,7 +837,7 @@ const quizMgr = {
         if (d) d.classList.remove('urgent');
         if (d) d.innerText = `00:${t < 10 ? '0' + t : t}`;
         const endTime = Date.now() + (t * 1000);
-        dbRef.quiz.update({ endTime: endTime });
+        dbRef.quiz.update({ status: 'open', endTime: endTime });
         if(t <= 5 && d) d.classList.add('urgent');
         let lastPlayedSec = -1;
         if (!state.timerAudio) state.timerAudio = new Audio('timer.mp3');
@@ -942,4 +954,5 @@ const printMgr = {
         printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
     }
 };
+
 window.onload = function() { dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); };
