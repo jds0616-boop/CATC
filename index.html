@@ -605,6 +605,12 @@ function selectShuttle(locId, locName) {
     // 이름 입력 칸 나타내기
     document.getElementById('shuttleInputArea').style.display = 'block';
     document.getElementById('shuttleUserName').focus();
+// ✅ 추가: 엔터키 누르면 바로 신청되게 하기
+    document.getElementById('shuttleUserName').onkeyup = function(e) {
+        if (e.key === 'Enter') submitShuttleRequest();
+    };
+
+
 }
 
 // 3. 최종 [차량 신청 완료하기] 버튼 클릭 시
