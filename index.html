@@ -234,20 +234,45 @@ function exitApp() {
         function setupListeners() {
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+
+
+
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
-    // 모드가 확실히 'qa'일 때만 퀴즈를 강제 종료함
-    // quizStep === 'none'일 때 종료하는 로직을 제거하여 화면 깜빡임 방지
+
+    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
         forceCloseQuiz(); 
         return; 
     }
+
+    // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 교육생에게 오버레이를 보여줌
+    if (st.mode === 'quiz') {
+        // 리포트 요약 화면이 아닐 때만 "준비중" 오버레이 표시
+        if (st.quizStep !== 'summary') {
+            document.getElementById('quizOverlay').style.display = 'flex';
+            document.getElementById('quizActiveBox').style.display = 'block';
+            document.getElementById('quizResultBox').style.display = 'none';
+            
+            // 아직 문제가 도착하지 않았을 때(강사가 문제 선택 중일 때) 보여줄 문구
+            // activeQuiz가 업데이트 되기 전까지 이 문구가 유지됩니다.
+            if (!currentQuizId) {
+                document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다. 잠시만 기다려 주세요...";
+                document.getElementById('btnGroupMultiple').style.display = 'none';
+                document.getElementById('btnGroupOX').style.display = 'none';
+                document.getElementById('quizFeedback').innerText = "";
+            }
+        }
+    }
     
-    // 리포트 요약 화면(summary) 처리
+    // 3. 퀴즈가 종료되어 결과 리포트가 떴을 때
     if (st.quizStep === 'summary') { 
         if(!hasClosedSummary) showFinalRanking(); 
     }
 });
+
+
+
 
 dbRef.quiz.on('value', s => {
     const q = s.val(); if(!q) return;
