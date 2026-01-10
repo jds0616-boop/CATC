@@ -623,22 +623,106 @@ const ui = {
         const url = `https://translate.google.com/?sl=auto&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
         window.open(url, 'googleTranslatePopup', 'width=1000,height=600');
     },
-    showWaitingRoom: function() {
+showWaitingRoom: function() {
         state.room = null;
-        document.getElementById('displayRoomName').innerText = "Instructor Waiting Room";
+        document.getElementById('displayRoomName').innerText = "KAC 강사 대기실";
+        
         const tabs = document.querySelector('.mode-tabs');
         if(tabs) tabs.style.display = 'none'; 
+        
         document.getElementById('view-qa').style.display = 'none';
         document.getElementById('view-quiz').style.display = 'none';
         document.getElementById('statusOverlay').style.display = 'none'; 
-        document.getElementById('view-waiting').style.display = 'flex'; 
+
+        // 현황판(대기실) 화면을 보여줍니다.
+        const waitingView = document.getElementById('view-waiting');
+        if(waitingView) {
+            waitingView.style.display = 'flex';
+        }
+        
         const statusSel = document.getElementById('roomStatusSelect');
         if(statusSel) {
             statusSel.value = 'waiting';
             statusSel.disabled = true;
         }
+    } // 함수 끝 (사용자님 스크린샷 22번 줄)
+}; // ui 객체 끝 (사용자님 스크린샷 24번 줄)
+
+
+// --- [현황판 관리 도구 정의 - 이 부분이 빠져있었습니다] ---
+const dashboardMgr = {
+    init: function() {
+        console.log("전체 강의실 현황 모니터링 시작...");
+        // 모든 강의실 데이터(A~Z)를 실시간으로 감시합니다.
+        firebase.database().ref('courses').on('value', snap => {
+            const allData = snap.val() || {};
+            this.render(allData, 'mainDashboardBody'); // 대기실 메인 표
+            this.render(allData, 'popupDashboardBody'); // 로고 클릭 팝업 표
+            
+            const ticket = document.getElementById('lastUpdateTicket');
+            if(ticket) ticket.innerText = `업데이트: ${new Date().toLocaleTimeString()}`;
+        });
+    },
+
+    render: function(allData, targetId) {
+        const tbody = document.getElementById(targetId);
+        if(!tbody) return;
+        
+        let html = "";
+        // A(65)부터 Z(90)까지 순환하며 행을 만듭니다.
+        for(let i=65; i<=90; i++) { 
+            const code = String.fromCharCode(i);
+            const data = allData[code] || {};
+            
+            const settings = data.settings || {};
+            const status = data.status || {};
+            const activeQuiz = data.activeQuiz || null;
+            
+            const courseName = settings.courseName || "-";
+            const professor = status.professorName || "-";
+            const roomStatus = status.roomStatus || "idle";
+            
+            // 상태 텍스트 및 스타일 결정
+            let statusText = "대기중";
+            let statusClass = "waiting";
+            
+            if(roomStatus === 'active') {
+                statusText = "사용중";
+                statusClass = "active";
+                // 실제 퀴즈가 진행 중인지 확인
+                if(activeQuiz && activeQuiz.status && activeQuiz.status !== 'ready') {
+                    statusText = "강의중(퀴즈)";
+                    statusClass = "ingame";
+                }
+            }
+
+            // 마지막 사용 시간 변환
+            let lastTime = "-";
+            if(status.lastUsed) {
+                lastTime = new Date(status.lastUsed).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+            }
+
+            html += `
+                <tr>
+                    <td>${i - 64}</td>
+                    <td style="font-weight:bold; color:#3b82f6;">${code}</td>
+                    <td style="text-align:left; font-weight:600;">${courseName}</td>
+                    <td>${professor}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td style="font-size:12px; color:#94a3b8;">${lastTime}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    },
+
+    openPopup: function() {
+        const modal = document.getElementById('globalDashboardModal');
+        if(modal) modal.style.display = 'flex';
     }
 };
+
+
 
 // --- 4. Quiz Logic ---
 const quizMgr = {
@@ -957,85 +1041,12 @@ const printMgr = {
     }
 };
 
-// --- [현황판 관리 도구 정의] ---
-const dashboardMgr = {
-    init: function() {
-        console.log("현황판 감시 시작...");
-        // 모든 강의실 데이터 실시간 감시
-        firebase.database().ref('courses').on('value', snap => {
-            const allData = snap.val() || {};
-            this.render(allData, 'mainDashboardBody');
-            this.render(allData, 'popupDashboardBody');
-            
-            const timeStr = new Date().toLocaleTimeString();
-            const ticket = document.getElementById('lastUpdateTicket');
-            if(ticket) ticket.innerText = `마지막 업데이트: ${timeStr}`;
-        });
-    },
 
-    render: function(allData, targetId) {
-        const tbody = document.getElementById(targetId);
-        if(!tbody) return;
-        
-        let html = "";
-        // A부터 Z까지 26개 방 생성
-        for(let i=65; i<=90; i++) { 
-            const code = String.fromCharCode(i);
-            const data = allData[code] || {};
-            
-            const settings = data.settings || {};
-            const status = data.status || {};
-            const activeQuiz = data.activeQuiz || null;
-            
-            const courseName = settings.courseName || "-";
-            const professor = status.professorName || "-";
-            const roomStatus = status.roomStatus || "idle";
-            
-            // 상태 표시 로직
-            let statusText = "대기중";
-            let statusClass = "waiting";
-            
-            if(roomStatus === 'active') {
-                statusText = "사용중";
-                statusClass = "active";
-                // 퀴즈 진행 중 확인
-                if(activeQuiz && activeQuiz.status && activeQuiz.status !== 'ready') {
-                    statusText = "강의중(퀴즈)";
-                    statusClass = "ingame";
-                }
-            }
-
-            let lastTime = "-";
-            if(status.lastUsed) {
-                lastTime = new Date(status.lastUsed).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-            }
-
-            html += `
-                <tr>
-                    <td>${i - 64}</td>
-                    <td style="font-weight:bold; color:#3b82f6;">${code}</td>
-                    <td style="text-align:left; font-weight:600;">${courseName}</td>
-                    <td>${professor}</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td style="font-size:12px; color:#94a3b8;">${lastTime}</td>
-                </tr>
-            `;
-        }
-        tbody.innerHTML = html;
-    },
-
-    openPopup: function() {
-        const modal = document.getElementById('globalDashboardModal');
-        if(modal) modal.style.display = 'flex';
-    }
-};
-
-// --- [모든 준비가 끝나면 실행] ---
 window.onload = function() { 
-    if (typeof dataMgr !== 'undefined') dataMgr.checkMobile(); 
-    if (typeof dataMgr !== 'undefined') dataMgr.initSystem(); 
-    if (typeof profMgr !== 'undefined') profMgr.init(); 
+    dataMgr.checkMobile(); 
+    dataMgr.initSystem(); 
+    profMgr.init(); 
     
-    // 현황판 실행
+    // 현황판 실시간 감시 시작
     dashboardMgr.init(); 
 };
