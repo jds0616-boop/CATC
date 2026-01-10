@@ -672,3 +672,31 @@ body.night-mode .quiz-card.result-mode {
 #customAlertModal {
     z-index: 11000 !important; /* 일반 팝업보다 더 위로 */
 }
+
+/* 현황판 입장하기 버튼 세련된 디자인 */
+.btn-table-action {
+    background-color: var(--accent-color); /* 관리자 테마 파란색 사용 */
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px; /* 둥글게 */
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer; /* 마우스 손가락 모양 변환 */
+    transition: all 0.2s ease; /* 부드러운 움직임 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+/* 마우스 가까이 갔을 때 (Hover) */
+.btn-table-action:hover {
+    background-color: #2563eb; /* 좀 더 진한 파란색으로 */
+    transform: translateY(-2px); /* 위로 살짝 들림 */
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); /* 푸른 빛 그림자 */
+}
+
+/* 버튼을 실제로 클릭했을 때 (Active) */
+.btn-table-action:active {
+    transform: translateY(0); /* 다시 원래 위치로 (눌리는 효과) */
+    filter: brightness(0.9); /* 살짝 어두워짐 */
+}
