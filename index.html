@@ -987,29 +987,45 @@ async function saveProfile() {
 }
 
 
-// [수정완료] 재방문 수강생 체크 및 상태 업데이트
-function checkProfile() {
+// [최종 수정] 서버 데이터 확인형 프로필 체크 (리셋 대응)
+async function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
     const savedPhone = localStorage.getItem('kac_user_phone');
-    const uToken = localStorage.getItem('uToken');
-    
-    if (!savedName || !savedPhone) {
-        // 정보 없으면 팝업 띄움
-        document.getElementById('profileOverlay').style.display = 'flex';
-    } else if (currentRoom && uToken) {
-        // 이미 정보가 있다면 서버 명단에 온라인 상태만 즉시 업데이트
-        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        studentRef.update({
-            isOnline: true, // 다시 왔으니 온라인!
-            lastActive: firebase.database.ServerValue.TIMESTAMP
-        });
+    let uToken = localStorage.getItem('uToken');
 
-        // 나갈 때 오프라인 처리 예약
-        studentRef.child('isOnline').onDisconnect().set(false);
+    // 1. 토큰조차 없다면 당연히 처음 온 사람임
+    if (!uToken) {
+        document.getElementById('profileOverlay').style.display = 'flex';
+        return;
+    }
+
+    // 2. [핵심] 서버(파이어베이스)에 내 토큰 정보가 살아있는지 확인
+    // 강사가 리셋을 했다면 이 데이터가 null(없음)일 것입니다.
+    try {
+        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
+        
+        if (!snap.exists()) {
+            // 서버에 내 정보가 없다면 (처음 왔거나, 강사가 리셋했거나)
+            document.getElementById('profileOverlay').style.display = 'flex';
+            
+            // 기존에 입력했던 정보가 폰에 남아있다면 편의상 미리 채워줌
+            if(savedName) document.getElementById('userName').value = savedName;
+            if(savedPhone) document.getElementById('userPhone').value = savedPhone;
+        } else {
+            // 서버에 정보가 잘 있다면 온라인 상태만 업데이트하고 통과
+            const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+            studentRef.update({
+                isOnline: true,
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            });
+            studentRef.child('isOnline').onDisconnect().set(false);
+        }
+    } catch (e) {
+        console.error("서버 확인 오류:", e);
+        // 오류 시 안전하게 다시 입력받도록 팝업 띄움
+        document.getElementById('profileOverlay').style.display = 'flex';
     }
 }
-
 
 
 

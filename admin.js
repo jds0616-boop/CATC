@@ -319,11 +319,25 @@ saveSettings: function() {
             ui.closeQaModal();
         }
     },
+
+
+
     resetCourse: function() {
-        if(confirm("현재 강의실 데이터를 초기화하시겠습니까?\n(질문, 퀴즈 내역이 모두 삭제됩니다)")) {
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => { ui.showAlert("초기화 완료."); location.reload(); });
-        }
+    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 수강생 명부, 행정 기록)를 초기화하시겠습니까?")) {
+        // 전체 경로를 날려버려야 교육생들이 다시 입장 절차를 밟습니다.
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            ui.showAlert("강의실이 완전히 초기화되었습니다.");
+            location.reload();
+        });
     }
+}
+
+
+
+
+
+
+
 };
 
 // --- [신규] 교수님 명단 관리 ---
