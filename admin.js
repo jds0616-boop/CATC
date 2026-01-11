@@ -397,7 +397,6 @@ const dataMgr = {
         ui.showAlert("강의실이 완전히 초기화되었습니다.");
         setTimeout(() => location.reload(), 500);
     });
-}
 };
 
 // --- [신규] 교수님 명단 관리 ---
