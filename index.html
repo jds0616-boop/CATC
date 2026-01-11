@@ -405,10 +405,47 @@ function exitApp() {
 }
 
         function startPresence() {
-            const connectedRef = firebase.database().ref(".info/connected");
-            connectedRef.on("value", (snap) => { if (snap.val() === true) { const con = dbRef.connections.push(); con.onDisconnect().remove(); con.set(true); } });
-            dbRef.connections.on("value", (snap) => { const count = snap.numChildren(); document.getElementById('realUserCount').innerText = `${count}명 접속`; });
+    const uToken = localStorage.getItem('uToken');
+    if (!uToken || !currentRoom) return;
+
+    // 내 온라인 상태를 나타내는 경로
+    const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
+
+    // 연결 상태 감시 리스너
+    firebase.database().ref(".info/connected").on("value", (snap) => {
+        if (snap.val() === true) {
+            // 접속되면 즉시 온라인(true)으로 변경
+            myStatusRef.set(true);
+
+            // 브라우저를 완전히 끄거나 인터넷이 끊기면 자동으로 오프라인(false) 처리 (예약)
+            myStatusRef.onDisconnect().set(false);
+
+            // 전체 접속자 숫자 카운트용 로직
+            const con = dbRef.connections.push();
+            con.onDisconnect().remove();
+            con.set(true);
         }
+    });
+
+    // 접속자 수 숫자 업데이트 (기존 동일)
+    dbRef.connections.on("value", (snap) => {
+        const count = snap.numChildren();
+        if(document.getElementById('realUserCount')) {
+            document.getElementById('realUserCount').innerText = `${count}명 접속`;
+        }
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
         function setupListeners() {
 firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         serverTimeOffset = snap.val() || 0;

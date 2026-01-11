@@ -1151,6 +1151,7 @@ ui.setMode = function(mode) {
 // [신규] 수강생 명부 로드
 ui.loadStudentList = function() {
     if(!state.room) return;
+    // .on('value', ...) 를 사용해야 실시간으로 데이터가 바뀔 때마다 화면이 갱신됩니다.
     firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
         const data = snap.val() || {};
         const tbody = document.getElementById('studentListTableBody');
@@ -1160,18 +1161,10 @@ ui.loadStudentList = function() {
         const students = Object.values(data);
         totalEl.innerText = students.length;
 
-        if(students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' style='padding:50px; color:#94a3b8;'>입장한 수강생이 없습니다.</td></tr>";
-            return;
-        }
-
-        // 입장 시간 순으로 정렬
-        students.sort((a, b) => a.joinedAt - b.joinedAt);
-
         students.forEach((s, idx) => {
             const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
             
-            // [추가] 온라인이면 초록색 점, 오프라인이면 회색 점
+            // s.isOnline 값이 true면 녹색, false면 회색으로 표시
             const statusDot = s.isOnline 
                 ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
                 : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
