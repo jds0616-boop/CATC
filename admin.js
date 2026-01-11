@@ -375,32 +375,19 @@ const dataMgr = {
         }
     },
 
-// admin.js 내의 dataMgr 객체 끝부분을 이렇게 정리하세요.
     resetCourse: function() {
-        if(!confirm("강의실을 초기화하시겠습니까?")) return;
-
-        const newSessionId = "SES_" + Date.now();
-        const updates = {};
-        // 교육생들을 쫓아내기 위한 세션 변경
-        updates[`courses/${state.room}/questions`] = null;
-        updates[`courses/${state.room}/students`] = null;
-        updates[`courses/${state.room}/status/sessionId`] = newSessionId;
-        
-        // ★중요: 강사 본인의 제어권(ownerSessionId)은 유지해야 튕기지 않음
-        updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
-        updates[`courses/${state.room}/status/roomStatus`] = 'active'; 
-
-        firebase.database().ref().update(updates).then(() => {
-            ui.showAlert("초기화 완료");
-            setTimeout(() => location.reload(), 500);
-        });
-    } // resetCourse 끝
-}; // dataMgr 객체 끝 (여기가 정확히 1번만 있어야 함)
-
-
-
-
-
+        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
+            const newKey = "reset_" + Date.now();
+            
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+                firebase.database().ref(`courses/${state.room}/status/resetKey`).set(newKey).then(() => {
+                    ui.showAlert("강의실이 완전히 초기화되었습니다.");
+                    location.reload();
+                });
+            });
+        }
+    }
+};
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -971,38 +958,36 @@ const ui = {
         });
     },
 
- loadStudentList: function() {
-    if(!state.room) return;
-    firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
-        const data = snap.val() || {};
-        const tbody = document.getElementById('studentListTableBody');
-        if(!tbody) return;
-        const totalEl = document.getElementById('studentTotalCount');
-        
-        tbody.innerHTML = "";
-        const students = Object.values(data);
-        if(totalEl) totalEl.innerText = students.length;
+    loadStudentList: function() {
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('studentListTableBody');
+            if(!tbody) return;
+            const totalEl = document.getElementById('studentTotalCount');
+            
+            tbody.innerHTML = "";
+            const students = Object.values(data);
+            if(totalEl) totalEl.innerText = students.length;
 
-        students.forEach((s, idx) => {
-            // 데이터가 비어있을 경우(undefined) 표시하지 않음
-            if(!s.name || !s.phone) return;
+            students.forEach((s, idx) => {
+                const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const statusDot = s.isOnline 
+                    ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
+                    : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
 
-            const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-            const statusDot = s.isOnline 
-                ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
-                : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
-                    <td>${s.phone}</td>
-                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                </tr>
-            `;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                        <td>${s.phone}</td>
+                        <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                    </tr>
+                `;
+            });
         });
-    });
-}
+    }
+};
 
 
 // --- 4. Quiz Logic ---

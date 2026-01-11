@@ -523,30 +523,23 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 
 
 dbRef.status.on('value', snap => {
-    const st = snap.val();
-    if(!st) return;
+    const st = snap.val() || {};
 
-    // --- [2안 세션 방식 퇴장 로직] ---
-    const serverSession = st.sessionId;
-    const mySession = localStorage.getItem(`kac_session_${currentRoom}`);
 
-    // 내 폰의 입장권 번호(mySession)와 서버의 번호(serverSession)가 다르면 강제 퇴장!
-    if (mySession && serverSession && mySession !== serverSession) {
-        // 내 폰의 모든 데이터 삭제 (현재 방 관련)
-        localStorage.removeItem('kac_user_name');
-        localStorage.removeItem('kac_user_phone');
-        localStorage.removeItem('uToken');
-        localStorage.removeItem(`kac_session_${currentRoom}`);
-        localStorage.removeItem(`likes_${currentRoom}`);
-        localStorage.removeItem(`myqs_${currentRoom}`);
-        localStorage.removeItem(`lastTime_${currentRoom}`);
-        localStorage.removeItem(`kac_resetKey_${currentRoom}`);
-        lastPostTime = 0; // [추가] 이 줄을 넣어줘야 2분 제한이 즉시 풀립니다.
-        
-        alert("강의실이 초기화되어 퇴장 처리되었습니다.");
-        location.replace(location.href); // 초기 화면으로 튕겨냄
-        return; 
-    }
+// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
+        const serverResetKey = st.resetKey || 'init';
+        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
+        if (myKey && myKey !== serverResetKey) {
+            localStorage.clear(); 
+            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
+            location.reload(); 
+            return;
+        }
+
+
+
+
 
 
     // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
@@ -1093,6 +1086,7 @@ function openRoomMove() {
 
 
 
+// [수정] 프로필 저장 및 온라인 상태 연동 시작
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
@@ -1102,13 +1096,6 @@ async function saveProfile() {
         return;
     }
     
-    // --- [2안 세션 방식 추가] ---
-    // 입장하는 순간, 서버에 설정된 현재 세션 ID(입장권 번호)를 가져와 내 폰에 저장합니다.
-    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
-    const currentServerSession = statusSnap.val()?.sessionId || "INIT";
-    localStorage.setItem(`kac_session_${currentRoom}`, currentServerSession);
-    // --------------------------
-
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
@@ -1116,19 +1103,31 @@ async function saveProfile() {
     if (!uToken) { 
         uToken = Math.random().toString(36).substr(2); 
         localStorage.setItem('uToken', uToken); 
+// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
+        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+        const serverResetKey = statusSnap.val()?.resetKey || 'init';
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+
+
     }
 
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+        
+        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
         await studentRef.update({
             name: name,
             phone: phone,
             joinedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
+        // 프로필 저장 후 실시간 감지 함수 실행
         startPresence();
+
         document.getElementById('profileOverlay').style.display = 'none';
         alert(`${name}님, 환영합니다!`);
+        
+        // 메인 화면 표시
         showMainDashboard();
     } catch (e) {
         console.error("등록 오류:", e);
@@ -1137,37 +1136,32 @@ async function saveProfile() {
 }
 
 
-
 // [최종] 서버 명부 대조 방식의 프로필 체크
 async function checkProfile() {
-    const uToken = localStorage.getItem('uToken');
     const savedName = localStorage.getItem('kac_user_name');
+    const uToken = localStorage.getItem('uToken');
 
-    // 1. 이름이나 토큰이 아예 없으면 당연히 입력창 띄움
     if (!uToken || !savedName) {
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
     try {
-        // 2. 서버 DB에 내 정보가 진짜 있는지 확인 (리셋되면 서버엔 내 정보가 없음)
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
-            // ★ 핵심: 서버에 내 정보가 없다면 강사가 리셋한 것임 -> 내 폰 정보 싹 지우고 다시 입력받음
-            localStorage.clear(); 
-            lastPostTime = 0;
             document.getElementById('profileOverlay').style.display = 'flex';
         } else {
-            // 서버에 내 정보가 잘 있으면 통과
+            // 접속이 확인되면 실시간 감지 시작
             startPresence();
             showMainDashboard();
         }
     } catch (e) {
-        // 에러 나면 안전하게 다시 입력받도록 처리
         document.getElementById('profileOverlay').style.display = 'flex';
     }
 }
+
+
 
 
 // 메인 화면 전환 함수 (중복 제거용)
