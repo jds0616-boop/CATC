@@ -525,17 +525,17 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
 
+    // --- [핵심: 리셋 감지 로직] ---
+    const serverResetKey = st.resetKey || 'init'; // 서버의 키
+    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`); // 내 폰의 키
 
-// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
-        const serverResetKey = st.resetKey || 'init';
-        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-        if (myKey && myKey !== serverResetKey) {
-            localStorage.clear(); 
-            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
-            location.reload(); 
-            return;
-        }
+    if (myLocalKey && myLocalKey !== serverResetKey) {
+        // 서버 열쇠가 바뀌었다면 (강사가 리셋을 눌렀다면)
+        localStorage.clear(); // 폰에 저장된 이름, 폰번호, 입장기록 싹 다 삭제
+        alert("강의실이 초기화되어 퇴장 처리되었습니다.");
+        location.replace(location.href); // 페이지 새로고침하여 입장 화면으로 이동
+        return; 
+    }
 
 
 
@@ -1086,7 +1086,6 @@ function openRoomMove() {
 
 
 
-// [수정] 프로필 저장 및 온라인 상태 연동 시작
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
@@ -1096,6 +1095,7 @@ async function saveProfile() {
         return;
     }
     
+    // 1. 이름/폰번호 저장
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
@@ -1103,34 +1103,26 @@ async function saveProfile() {
     if (!uToken) { 
         uToken = Math.random().toString(36).substr(2); 
         localStorage.setItem('uToken', uToken); 
-// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
-        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
-        const serverResetKey = statusSnap.val()?.resetKey || 'init';
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-
-
     }
+
+    // --- [중요: 입장할 때 서버의 현재 리셋키를 내 폰에 저장] ---
+    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+    const currentServerKey = statusSnap.val()?.resetKey || 'init';
+    localStorage.setItem(`kac_resetKey_${currentRoom}`, currentServerKey);
+    // ---------------------------------------------------
 
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
         await studentRef.update({
             name: name,
             phone: phone,
             joinedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 프로필 저장 후 실시간 감지 함수 실행
-        startPresence();
-
+        startPresence(); // 온라인 체크 시작
         document.getElementById('profileOverlay').style.display = 'none';
-        alert(`${name}님, 환영합니다!`);
-        
-        // 메인 화면 표시
-        showMainDashboard();
+        showMainDashboard(); // 메인 화면 표시
     } catch (e) {
-        console.error("등록 오류:", e);
         alert("등록 중 오류가 발생했습니다.");
     }
 }

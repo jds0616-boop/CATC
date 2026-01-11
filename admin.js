@@ -375,19 +375,26 @@ const dataMgr = {
         }
     },
 
-    resetCourse: function() {
-        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
-            const newKey = "reset_" + Date.now();
-            
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-                firebase.database().ref(`courses/${state.room}/status/resetKey`).set(newKey).then(() => {
-                    ui.showAlert("강의실이 완전히 초기화되었습니다.");
-                    location.reload();
-                });
+// admin.js 내의 resetCourse 함수 부분을 아래와 같이 확인/수정하세요.
+resetCourse: function() {
+    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
+        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
+        
+        // 1. 해당 강의실의 모든 데이터를 삭제
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
+            firebase.database().ref(`courses/${state.room}/status`).set({
+                resetKey: newResetKey,
+                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
+                mode: 'qa'
+            }).then(() => {
+                ui.showAlert("강의실이 초기화되었습니다.");
+                // 강사 화면도 새로고침하여 상태 동기화
+                setTimeout(() => location.reload(), 1000);
             });
-        }
+        });
     }
-};
+}
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
