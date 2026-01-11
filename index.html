@@ -81,7 +81,16 @@
         .quiz-king-stamp { position: absolute; top: 5px; right: 5px; width: 95px; height: 95px; border: 4px double #facc15; border-radius: 50%; color: #facc15; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; transform: rotate(15deg); background: rgba(250, 204, 21, 0.1); z-index: 10; animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes stampIn { from { transform: scale(3) rotate(45deg); opacity: 0; } to { transform: scale(1) rotate(15deg); opacity: 1; } }
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
-        .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
+.menu-box { 
+    background: white; 
+    width: 80%; 
+    max-width: 350px; 
+    border-radius: 16px; 
+    padding: 20px; 
+    text-align: center; 
+    max-height: 85vh;    /* 화면 높이의 85%까지만 커지게 제한 */
+    overflow-y: auto;   /* 내용이 넘치면 세로 스크롤바 생성 */
+}
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
     </style>
 </head>
