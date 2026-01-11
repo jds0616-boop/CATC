@@ -316,7 +316,6 @@
             const db = firebase.database(); const rPath = `courses/${currentRoom}`;
             dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
 
-            checkProfile(); // <--- 이 줄을 추가하세요! (입장 시 이름 체크)
 
             setupListeners(); checkCooldown();
 
@@ -329,12 +328,27 @@
             });
         })();
 
-        function enterApp() {
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{}); else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
-            document.getElementById('landingPage').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; startPresence();
-        }
-        
+
+
+
+async function enterApp() {
+    // 1. 전체화면 요청
+    const doc = document.documentElement;
+    if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
+    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
+
+    // 2. [핵심] 입장 전 프로필 확인 (서버 대조)
+    await checkProfile();
+}
+
+
+
+
+
+
+
+
+
         // [수정] 완전히 나가기 (주소 초기화)
 function exitApp() {
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
@@ -987,44 +1001,49 @@ async function saveProfile() {
 }
 
 
-// [최종 수정] 서버 데이터 확인형 프로필 체크 (리셋 대응)
+// [최종] 서버 명부 대조 방식의 프로필 체크
 async function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
     const savedPhone = localStorage.getItem('kac_user_phone');
     let uToken = localStorage.getItem('uToken');
 
-    // 1. 토큰조차 없다면 당연히 처음 온 사람임
-    if (!uToken) {
+    // 1. 아예 처음 접속한 경우 -> 무조건 팝업
+    if (!uToken || !savedName) {
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
-    // 2. [핵심] 서버(파이어베이스)에 내 토큰 정보가 살아있는지 확인
-    // 강사가 리셋을 했다면 이 데이터가 null(없음)일 것입니다.
+    // 2. 서버(Firebase)에 내 정보가 아직 있는지 확인
     try {
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
-            // 서버에 내 정보가 없다면 (처음 왔거나, 강사가 리셋했거나)
+            // 강사가 리셋해서 서버에 데이터가 없다면 -> 다시 입력 팝업
             document.getElementById('profileOverlay').style.display = 'flex';
             
-            // 기존에 입력했던 정보가 폰에 남아있다면 편의상 미리 채워줌
-            if(savedName) document.getElementById('userName').value = savedName;
-            if(savedPhone) document.getElementById('userPhone').value = savedPhone;
+            // 편의를 위해 기존 입력값은 채워줌
+            document.getElementById('userName').value = savedName || "";
+            document.getElementById('userPhone').value = savedPhone || "";
         } else {
-            // 서버에 정보가 잘 있다면 온라인 상태만 업데이트하고 통과
+            // 서버에 내 정보가 잘 있다면 -> 온라인 표시만 하고 통과
             const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-            studentRef.update({
-                isOnline: true,
-                lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
+            studentRef.update({ isOnline: true });
             studentRef.child('isOnline').onDisconnect().set(false);
+            
+            // 메인 앱 화면 보여주기
+            showMainDashboard();
         }
     } catch (e) {
-        console.error("서버 확인 오류:", e);
-        // 오류 시 안전하게 다시 입력받도록 팝업 띄움
+        // 오류 시 안전하게 입력창 띄움
         document.getElementById('profileOverlay').style.display = 'flex';
     }
+}
+
+// 메인 화면 전환 함수 (중복 제거용)
+function showMainDashboard() {
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    startPresence();
 }
 
 
