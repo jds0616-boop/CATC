@@ -180,10 +180,9 @@
 <div id="shuttleCancelArea" style="display:none; background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #fda4af; margin-bottom: 20px;">
     <p style="font-size: 14px; font-weight: 800; color: #e11d48; margin: 0 0 10px 0;">기존 신청 내역이 있습니다.</p>
     <p id="myCurrentShuttle" style="font-size: 16px; font-weight: 900; color: #1e293b; margin-bottom: 15px;"></p>
-    <button onclick="cancelShuttleRequest()" 
-            style="width: 100%; padding: 10px; background: #e11d48; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold;">
-        신청 취소하기 (삭제)
-    </button>
+    <button onclick="cancelShuttleRequest()" style="width: 100%; padding: 18px; background: #e11d48; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 800; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);">
+    <i class="fa-solid fa-trash-can"></i> 신청 취소하기 (삭제)
+</button>
 </div>
 
 
@@ -206,7 +205,7 @@
             </button>
         </div>
 
-        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline;">취소하기</button>
+        <button onclick="closeShuttleModal()" style="margin-top:25px; width:100%; padding:15px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; color: #64748b; font-size: 16px; font-weight: bold; cursor: pointer;">창 닫기</button>
     </div>
 </div>
 
@@ -253,10 +252,14 @@
                 <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; margin-top:8px; padding:12px; border:1px solid #fda4af; border-radius:8px; font-size:16px; text-align:center;">
             </div>
 
-            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">신청 완료</button>
+            <button onclick="submitAdminAction()" style="width: 100%; padding: 18px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 19px; font-weight: 900; box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3); margin-top: 10px;">
+    신청 완료하기 <i class="fa-solid fa-check"></i>
+</button>
         </div>
 
-        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline;">닫기</button>
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:25px; width:100%; padding:15px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; color: #64748b; font-size: 16px; font-weight: bold; cursor: pointer;">
+    창 닫기
+</button>
     </div>
 </div>
 
