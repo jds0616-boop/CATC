@@ -1148,19 +1148,16 @@ ui.setMode = function(mode) {
 };
 
 
-// [실시간 수정] 수강생 명부 로드 (온라인 상태 실시간 감시)
+// [신규] 수강생 명부 로드
 ui.loadStudentList = function() {
     if(!state.room) return;
-    
-    // .once 대신 .on('value')를 써야 실시간으로 불빛이 바뀝니다.
     firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
         const data = snap.val() || {};
         const tbody = document.getElementById('studentListTableBody');
         const totalEl = document.getElementById('studentTotalCount');
         
         tbody.innerHTML = "";
-        // 명단을 배열로 변환
-        const students = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        const students = Object.values(data);
         totalEl.innerText = students.length;
 
         if(students.length === 0) {
@@ -1169,28 +1166,28 @@ ui.loadStudentList = function() {
         }
 
         // 입장 시간 순으로 정렬
-        students.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+        students.sort((a, b) => a.joinedAt - b.joinedAt);
 
         students.forEach((s, idx) => {
-            const joinTime = s.joinedAt 
-                ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})
-                : "-";
+            const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
             
-            // [핵심] s.isOnline이 true면 녹색(#22c55e), false면 회색(#cbd5e1)
-            const statusColor = s.isOnline === true ? "#22c55e" : "#cbd5e1";
-            const statusDot = `<span style="color:${statusColor}; margin-right:8px; font-size:18px;">●</span>`;
+            // [추가] 온라인이면 초록색 점, 오프라인이면 회색 점
+            const statusDot = s.isOnline 
+                ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
+                : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
 
             tbody.innerHTML += `
                 <tr>
                     <td>${idx + 1}</td>
-                    <td style="font-weight:bold; text-align:left; padding-left:20px;">${statusDot}${s.name}</td>
-                    <td style="color:#475569;">${s.phone || "-"}</td>
+                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                    <td>${s.phone}</td>
                     <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                 </tr>
             `;
         });
     });
 };
+
 
 
 
