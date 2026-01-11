@@ -398,6 +398,7 @@ const dataMgr = {
         setTimeout(() => location.reload(), 500);
     });
 }
+}
 };
 
 // --- [신규] 교수님 명단 관리 ---
