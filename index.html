@@ -404,11 +404,48 @@ function exitApp() {
     }
 }
 
-        function startPresence() {
-            const connectedRef = firebase.database().ref(".info/connected");
-            connectedRef.on("value", (snap) => { if (snap.val() === true) { const con = dbRef.connections.push(); con.onDisconnect().remove(); con.set(true); } });
-            dbRef.connections.on("value", (snap) => { const count = snap.numChildren(); document.getElementById('realUserCount').innerText = `${count}명 접속`; });
+
+
+
+// [수정] 실시간 상태 감지 및 수강생 명부 연동
+function startPresence() {
+    const uToken = localStorage.getItem('uToken');
+    if (!uToken || !currentRoom) return;
+
+    // Firebase 서버와의 연결 상태를 감시하는 특수 경로
+    const connectedRef = firebase.database().ref(".info/connected");
+    // 내 상태 값 (isOnline)
+    const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
+
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            // 접속되면 'isOnline'을 true로 변경 (녹색불)
+            myStatusRef.set(true);
+
+            // 브라우저를 닫거나 연결이 끊기면 자동으로 false로 변경 (회색불 예약)
+            myStatusRef.onDisconnect().set(false);
+
+            // 전체 접속자 카운트용 (퀴즈 모드 등에서 사용)
+            const con = dbRef.connections.push();
+            con.onDisconnect().remove();
+            con.set(true);
         }
+    });
+
+    // 접속자 수 실시간 업데이트
+    dbRef.connections.on("value", (snap) => {
+        const count = snap.numChildren();
+        const countEl = document.getElementById('realUserCount');
+        if(countEl) countEl.innerText = `${count}명 접속`;
+    });
+}
+
+
+
+
+
+
+
         function setupListeners() {
 firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         serverTimeOffset = snap.val() || 0;
@@ -956,7 +993,7 @@ function openRoomMove() {
 
 
 
-// [수정완료] 프로필 저장 및 실시간 수강생 명부 등록
+// [수정] 프로필 저장 및 온라인 상태 연동 시작
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
@@ -966,11 +1003,9 @@ async function saveProfile() {
         return;
     }
     
-    // 1. 로컬 저장
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    // 2. 토큰 확인 및 생성
     let uToken = localStorage.getItem('uToken');
     if (!uToken) { 
         uToken = Math.random().toString(36).substr(2); 
@@ -978,25 +1013,26 @@ async function saveProfile() {
     }
 
     try {
-        // 3. 서버 수강생 명부(students) 경로 정의
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
         
-        // 4. 정보 업로드 (입장 시간 및 온라인 상태 포함)
-        await studentRef.set({
+        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
+        await studentRef.update({
             name: name,
             phone: phone,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP,
-            isOnline: true // 입장했으니 온라인!
+            joinedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 5. [핵심] 이 사람이 창을 닫거나 인터넷이 끊기면 서버에서 자동으로 오프라인(false) 처리
-        studentRef.child('isOnline').onDisconnect().set(false);
+        // 프로필 저장 후 실시간 감지 함수 실행
+        startPresence();
 
         document.getElementById('profileOverlay').style.display = 'none';
         alert(`${name}님, 환영합니다!`);
+        
+        // 메인 화면 표시
+        showMainDashboard();
     } catch (e) {
         console.error("등록 오류:", e);
-        alert("등록 중 오류가 발생했습니다. 파이어베이스 규칙을 확인해주세요.");
+        alert("등록 중 오류가 발생했습니다.");
     }
 }
 
@@ -1004,40 +1040,30 @@ async function saveProfile() {
 // [최종] 서버 명부 대조 방식의 프로필 체크
 async function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
-    const savedPhone = localStorage.getItem('kac_user_phone');
-    let uToken = localStorage.getItem('uToken');
+    const uToken = localStorage.getItem('uToken');
 
-    // 1. 아예 처음 접속한 경우 -> 무조건 팝업
     if (!uToken || !savedName) {
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
-    // 2. 서버(Firebase)에 내 정보가 아직 있는지 확인
     try {
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
-            // 강사가 리셋해서 서버에 데이터가 없다면 -> 다시 입력 팝업
             document.getElementById('profileOverlay').style.display = 'flex';
-            
-            // 편의를 위해 기존 입력값은 채워줌
-            document.getElementById('userName').value = savedName || "";
-            document.getElementById('userPhone').value = savedPhone || "";
         } else {
-            // 서버에 내 정보가 잘 있다면 -> 온라인 표시만 하고 통과
-            const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-            studentRef.update({ isOnline: true });
-            studentRef.child('isOnline').onDisconnect().set(false);
-            
-            // 메인 앱 화면 보여주기
+            // 접속이 확인되면 실시간 감지 시작
+            startPresence();
             showMainDashboard();
         }
     } catch (e) {
-        // 오류 시 안전하게 입력창 띄움
         document.getElementById('profileOverlay').style.display = 'flex';
     }
 }
+
+
+
 
 // 메인 화면 전환 함수 (중복 제거용)
 function showMainDashboard() {
