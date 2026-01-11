@@ -700,3 +700,45 @@ body.night-mode .quiz-card.result-mode {
     transform: translateY(0); /* 다시 원래 위치로 (눌리는 효과) */
     filter: brightness(0.9); /* 살짝 어두워짐 */
 }
+
+/* --- 야간 모드 시 실시간 현황판(테이블) 스타일 수정 --- */
+body.night-mode .full-dashboard {
+    background-color: #0f172a !important; /* 전체 배경 어둡게 */
+}
+
+body.night-mode .status-table {
+    background-color: #1e293b !important; /* 테이블 배경 어둡게 */
+    color: #e2e8f0 !important;           /* 전체 글자색 연한 회색 */
+    border: 1px solid #334155;
+}
+
+body.night-mode .status-table th {
+    background-color: #0f172a !important; /* 헤더 배경 더 어둡게 */
+    color: #94a3b8 !important;            /* 헤더 글자색 */
+    border-bottom: 2px solid #334155;
+}
+
+body.night-mode .status-table td {
+    border-bottom: 1px solid #334155;     /* 줄 구분선 색상 변경 */
+    color: #cbd5e1 !important;            /* 셀 내부 글자색 */
+}
+
+body.night-mode .td-course-name {
+    color: #e2e8f0 !important;            /* 과정명 글자색 */
+}
+
+/* 마지막 활동 시간(날짜) 글자색 */
+body.night-mode .status-table td[style*="color:#94a3b8"] {
+    color: #64748b !important;
+}
+
+/* 룸 이름 (파란색)은 야간모드에서 좀 더 밝은 하늘색으로 변경하여 가독성 확보 */
+body.night-mode .status-table td[style*="color:#3b82f6"] {
+    color: #60a5fa !important;
+}
+
+/* 비어있음 배지 색상 조정 */
+body.night-mode .badge-idle {
+    background-color: #334155 !important;
+    color: #94a3b8 !important;
+}
