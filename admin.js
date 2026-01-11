@@ -375,34 +375,27 @@ const dataMgr = {
         }
     },
 
-resetCourse: function() {
-        if(!confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) return;
+// admin.js 내의 dataMgr 객체 끝부분을 이렇게 정리하세요.
+    resetCourse: function() {
+        if(!confirm("강의실을 초기화하시겠습니까?")) return;
 
-        // 1. 새로운 세션 ID 생성 (입장권 번호 갱신)
         const newSessionId = "SES_" + Date.now();
-        
-        // 2. 방 전체를 지우지 말고 항목별로 삭제 (연결 유지 목적)
         const updates = {};
+        // 교육생들을 쫓아내기 위한 세션 변경
         updates[`courses/${state.room}/questions`] = null;
         updates[`courses/${state.room}/students`] = null;
-        updates[`courses/${state.room}/shuttle`] = null;
-        updates[`courses/${state.room}/activeQuiz`] = null;
-        updates[`courses/${state.room}/quizAnswers`] = null;
-        updates[`courses/${state.room}/quizFinalResults`] = null;
-        
-        // 3. 핵심: 세션 ID를 새것으로 갈아끼우고 상태 초기화
         updates[`courses/${state.room}/status/sessionId`] = newSessionId;
-        updates[`courses/${state.room}/status/roomStatus`] = 'idle';
-        updates[`courses/${state.room}/status/mode`] = 'qa';
-        updates[`courses/${state.room}/status/resetKey`] = newSessionId; // 하위 호환용
+        
+        // ★중요: 강사 본인의 제어권(ownerSessionId)은 유지해야 튕기지 않음
+        updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
+        updates[`courses/${state.room}/status/roomStatus`] = 'active'; 
 
-        // 4. 서버 업데이트 실행
         firebase.database().ref().update(updates).then(() => {
-            ui.showAlert("강의실이 완전히 초기화되었습니다.");
+            ui.showAlert("초기화 완료");
             setTimeout(() => location.reload(), 500);
         });
-    }
-}; // dataMgr 객체 닫기 (이미지상의 중괄호 위치)
+    } // resetCourse 끝
+}; // dataMgr 객체 끝 (여기가 정확히 1번만 있어야 함)
 
 
 
