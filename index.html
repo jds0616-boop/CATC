@@ -1037,35 +1037,32 @@ async function saveProfile() {
 }
 
 
-// [핵심 수정] 서버 데이터 기반 입장 체크
+// [핵심] 서버 세션 키 대조 기반 체크
 async function checkProfile() {
-    const uToken = localStorage.getItem('uToken');
-    const savedName = localStorage.getItem('kac_user_name');
-
-    // 1. 브라우저에 토큰 자체가 없으면 (완전 처음 온 사람)
-    if (!uToken) {
-        console.log("신규 방문자: 프로필 입력 필요");
-        document.getElementById('profileOverlay').style.display = 'flex';
-        return;
-    }
-
     try {
-        // 2. [중요] 서버에 접속해서 "현재 이 방에 내 정보가 등록되어 있는지" 확인
-        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
+        // 1. 서버에서 현재 방의 리셋 키를 가져옴
+        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+        const serverResetKey = statusSnap.val()?.resetKey || 'init';
         
-        if (!snap.exists()) {
-            // 서버에 내 정보가 없다 = 강사가 리셋을 눌렀거나 처음 들어오는 과정임
-            console.log("서버에 정보 없음 (리셋됨): 프로필 재등록 필요");
+        // 2. 내 브라우저에 저장된 리셋 키와 이름/토큰을 가져옴
+        const localResetKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+        const uToken = localStorage.getItem('uToken');
+
+        // 3. 만약 리셋 키가 다르거나 토큰이 없다면? (리셋 발생 상황)
+        if (serverResetKey !== localResetKey || !uToken) {
+            console.log("세션 만료 또는 리셋됨: 정보를 새로 입력해야 합니다.");
             
-            // 기존 로컬 정보는 헷갈리지 않게 삭제
+            // 과거 정보 싹 다 삭제 (가장 중요!)
             localStorage.removeItem('kac_user_name');
             localStorage.removeItem('kac_user_phone');
+            localStorage.removeItem('uToken');
+            localStorage.removeItem(`kac_resetKey_${currentRoom}`);
             
-            // 프로필 입력창 표시
+            // 입력창 띄우기
             document.getElementById('profileOverlay').style.display = 'flex';
         } else {
-            // 3. 서버에 내 정보가 정상적으로 있음 (수업 중 새로고침 등)
-            console.log("기존 수강생 확인됨: 자동 입장");
+            // 4. 세션 키가 일치하면 (정상 수업 중)
+            console.log("세션 유효: 자동 입장");
             startPresence();
             showMainDashboard();
         }
@@ -1075,7 +1072,7 @@ async function checkProfile() {
     }
 }
 
-// [수정] 프로필 저장 시 데이터 구조 명확화
+// [수정] 프로필 저장 시 리셋 키도 함께 저장
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
@@ -1084,35 +1081,32 @@ async function saveProfile() {
         alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
         return;
     }
-    
-    // 로컬 저장
-    localStorage.setItem('kac_user_name', name);
-    localStorage.setItem('kac_user_phone', phone);
-    
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = Math.random().toString(36).substr(2); 
-        localStorage.setItem('uToken', uToken); 
-    }
 
+    // 1. 서버에서 현재 리셋 키 다시 확인
+    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+    const serverResetKey = statusSnap.val()?.resetKey || 'init';
+
+    let uToken = Math.random().toString(36).substr(2); // 매번 새로운 토큰 생성 권장
+    
     try {
-        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        // [구조 확정] 강사 화면에서 읽는 key와 일치시킴
-        await studentRef.set({
+        // 2. 서버에 등록
+        await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).set({
             name: name,
             phone: phone,
             joinedAt: firebase.database.ServerValue.TIMESTAMP,
-            isOnline: true // 입장 즉시 온라인
+            isOnline: true
         });
 
-        // 입장 후 오프라인 처리 예약 (onDisconnect)
-        studentRef.child('isOnline').onDisconnect().set(false);
+        // 3. 브라우저 로컬 스토리지 저장 (서버 리셋 키 포함)
+        localStorage.setItem('kac_user_name', name);
+        localStorage.setItem('kac_user_phone', phone);
+        localStorage.setItem('uToken', uToken);
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
 
         document.getElementById('profileOverlay').style.display = 'none';
         showMainDashboard();
     } catch (e) {
-        alert("등록 중 오류가 발생했습니다.");
+        alert("등록 중 오류 발생");
     }
 }
 
