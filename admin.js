@@ -375,18 +375,29 @@ const dataMgr = {
         }
     },
 
-    resetCourse: function() {
-        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
-            const newKey = "reset_" + Date.now();
-            
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-                firebase.database().ref(`courses/${state.room}/status/resetKey`).set(newKey).then(() => {
-                    ui.showAlert("강의실이 완전히 초기화되었습니다.");
-                    location.reload();
-                });
-            });
-        }
+// dataMgr 객체 내부의 resetCourse 함수를 찾아서 교체하세요.
+resetCourse: function() {
+    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 신청 내역 등)를 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
+        
+        // 1. 새로운 리셋 키 생성 (타임스탬프)
+        const newResetKey = Date.now().toString();
+
+        // 2. 해당 방의 모든 데이터를 날리고 새로운 리셋 키와 기본 상태만 설정
+        firebase.database().ref(`courses/${state.room}`).set({
+            status: {
+                resetKey: newResetKey,
+                roomStatus: 'idle',
+                mode: 'qa'
+            },
+            settings: {
+                courseName: document.getElementById('courseNameInput').value || "새 과정"
+            }
+        }).then(() => {
+            ui.showAlert("강의실이 완전히 초기화되었습니다.");
+            location.reload();
+        });
     }
+}
 };
 
 // --- [신규] 교수님 명단 관리 ---
