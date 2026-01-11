@@ -1081,29 +1081,76 @@ ui.loadShuttleData = function() {
     });
 };
 
-// 2. 외출/외박 데이터 로드 (어제 복귀자 포함 09시까지 노출)
+// [수정] 외출/외박 현황 실시간 감시 및 로드 (새로고침 없이 즉시 반영)
 ui.loadAdminActionData = function() {
     if(!state.room) return;
     const today = getTodayString();
     const yesterday = getYesterdayString();
     const now = new Date();
-    const showYesterday = now.getHours() < 9;
+    const showYesterday = now.getHours() < 9; // 오전 9시 전까지만 어제 복귀자 표시 여부 결정
+    
     const tbody = document.getElementById('adminActionTableBody');
-    const paths = [firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).once('value')];
-    if(showYesterday) paths.push(firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value'));
+    
+    // 1. 기존 리스너가 있다면 제거 (방 이동 시 중복 방지)
+    if (state.adminActionRef) {
+        state.adminActionRef.off();
+    }
 
-    Promise.all(paths).then(snapshots => {
-        tbody.innerHTML = ""; let count = 1;
-        snapshots.forEach((snap, idx) => {
-            const data = snap.val() || {};
-            Object.values(data).forEach(item => {
-                const typeNm = item.type === 'outing' ? '<span style="color:#f59e0b;">외출</span>' : '<span style="color:#ef4444;">외박</span>';
-                const datePrefix = (idx === 1) ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
-                tbody.innerHTML += `<tr><td>${count++}</td><td>${datePrefix}${typeNm}</td><td style="font-weight:bold;">${item.name}</td><td>${item.phone}</td><td style="color:#94a3b8; font-size:13px;">${new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+    // 2. 오늘 날짜 데이터 경로 설정 및 실시간 감시 시작 (.on 사용)
+    state.adminActionRef = firebase.database().ref(`courses/${state.room}/admin_actions/${today}`);
+    
+    state.adminActionRef.on('value', snap => {
+        const todayData = snap.val() || {};
+        
+        // 어제 데이터도 함께 보여줘야 하는 경우 (09시 이전)
+        if (showYesterday) {
+            firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value', ySnap => {
+                const yesterdayData = ySnap.val() || {};
+                renderAdminList(todayData, yesterdayData);
             });
-        });
-        if(count === 1) tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+        } else {
+            renderAdminList(todayData, {});
+        }
     });
+
+    // 화면에 목록을 그리는 내부 함수
+    function renderAdminList(todayData, yesterdayData) {
+        tbody.innerHTML = ""; 
+        let count = 1;
+
+        // 어제 데이터 먼저 표시 (어제 외박 나간 사람)
+        Object.values(yesterdayData).forEach(item => {
+            appendRow(item, true);
+        });
+
+        // 오늘 데이터 표시
+        Object.values(todayData).forEach(item => {
+            appendRow(item, false);
+        });
+
+        if (tbody.innerHTML === "") {
+            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+        }
+
+        function appendRow(item, isYesterday) {
+            const typeNm = item.type === 'outing' ? 
+                '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
+                '<span style="color:#ef4444; font-weight:bold;">외박</span>';
+            
+            const datePrefix = isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
+            const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${count++}</td>
+                    <td>${datePrefix}${typeNm}</td>
+                    <td style="font-weight:bold;">${item.name}</td>
+                    <td>${item.phone}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
+                </tr>
+            `;
+        }
+    }
 };
 
 // 3. 석식 제외 데이터 로드
