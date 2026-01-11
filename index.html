@@ -524,23 +524,21 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
+    
+    // --- [리셋 로직 강화] ---
+    const serverResetKey = st.resetKey || 'init';
+    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
 
-
-// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
-        const serverResetKey = st.resetKey || 'init';
-        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-        if (myKey && myKey !== serverResetKey) {
-            localStorage.clear(); 
-            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
-            location.reload(); 
-            return;
-        }
-
-
-
-
-
+    if (!myLocalKey) {
+        // 처음 접속한 경우 현재 서버의 키를 내 저장소에 저장
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+    } else if (myLocalKey !== serverResetKey) {
+        // 내 키와 서버의 키가 다르다면 (강사가 리셋을 눌렀다면)
+        localStorage.clear(); // 모든 로컬 데이터 삭제 (이름, 토큰, 좋아요 등)
+        alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
+        location.replace(location.pathname + location.search); // 페이지 완전히 새로고침 (파라미터 유지)
+        return;
+    }
 
     // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
