@@ -47,39 +47,9 @@
         .input-dock { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--input-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200; display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 80px; }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
-/* 입력창 가이드 문구 디자인 개선 */
-.real-input::placeholder {
-    color: rgba(239, 68, 68, 0.6); /* 투명도가 있는 빨간색 (부드러운 경고) */
-    font-weight: 700;
-    font-style: italic;           /* 기울임꼴로 실제 댓글과 차별화 */
-    font-size: 14px;              /* 글자 크기를 살짝 줄임 */
-}
-
-/* 아이폰/사파리 대응 */
-.real-input::-webkit-input-placeholder {
-    color: rgba(239, 68, 68, 0.6);
-    font-weight: 700;
-    font-style: italic;
-    font-size: 14px;
-}
-
-        .real-input:disabled { background: transparent; color: #94a3b8; opacity: 1; }
+        .real-input::placeholder { color: rgba(239, 68, 68, 0.6); font-weight: 700; font-style: italic; font-size: 14px; }
         .send-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-color); color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; flex-shrink: 0; transition: 0.2s; margin-left: 8px; margin-bottom: 1px; }
-        .send-btn:active { transform: scale(0.9); }
-        .send-btn.editing { background: #10b981; }
-        .input-info-row { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; font-size: 11px; font-weight: 600; }
-        .char-counter { color: #94a3b8; } .char-counter.limit { color: #ef4444; font-weight: 800; }
-        .cooldown-text { color: #ef4444; font-weight: 800; }
-        
-        .quiz-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(5px); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .quiz-box { width: 100%; background: white; border-radius: 24px; padding: 30px 20px; text-align: center; }
-        .quiz-opt-btn { width: 100%; height: 70px; margin-bottom: 10px; border-radius: 12px; font-size: 20px; font-weight: 800; border: 2px solid #e2e8f0; background: #f8fafc; color: #333; transition: 0.2s; }
         .quiz-opt-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); transform: scale(1.02); }
-        .quiz-opt-btn.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-        #quizResultBox { animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .quiz-king-stamp { position: absolute; top: 5px; right: 5px; width: 95px; height: 95px; border: 4px double #facc15; border-radius: 50%; color: #facc15; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; transform: rotate(15deg); background: rgba(250, 204, 21, 0.1); z-index: 10; animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes stampIn { from { transform: scale(3) rotate(45deg); opacity: 0; } to { transform: scale(1) rotate(15deg); opacity: 1; } }
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
         .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
@@ -87,524 +57,407 @@
 </head>
 <body>
 
-<!-- [추가] 교육생 프로필 등록 팝업 -->
+<!-- 본인 확인 팝업 -->
 <div id="profileOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:10000; flex-direction:column; align-items:center; justify-content:center; color:white; padding:20px; text-align:center;">
     <div style="background:white; color:#1e293b; padding:30px 20px; border-radius:24px; width:100%; max-width:350px;">
         <h2 style="margin:0 0 10px 0; font-weight:900;">본인 확인</h2>
         <p style="font-size:14px; color:#64748b; margin-bottom:25px;">원활한 교육 행정 서비스를 위해<br>정보를 입력해주세요.</p>
-        
         <input type="text" id="userName" placeholder="성함 입력" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:12px; text-align:center;">
         <input type="number" id="userPhone" placeholder="전화번호 뒷 4자리" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:20px; text-align:center;">
-        
         <button onclick="saveProfile()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:18px; font-weight:bold;">입장 완료</button>
     </div>
 </div>
 
-    <div id="landingPage" class="landing-page">
-        <div class="landing-course" id="landingTitle">Loading...</div>
-        <div class="landing-room" id="landingBadge">Room ...</div>
-        <button class="btn-enter" onclick="enterApp()">입장하기 <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
-        <img src="logo.png" alt="KAC" class="landing-logo">
-    </div>
-    <div class="app-container" id="mainApp">
-        <div class="header">
-            <!-- [수정] 나가기 버튼 기능 변경 (완전 퇴장) -->
-            <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
-            <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
-            <div class="header-btn" onclick="document.getElementById('menuModal').style.display='flex'">
-    <i class="fa-solid fa-bars"></i>
+<!-- 랜딩 페이지 -->
+<div id="landingPage" class="landing-page">
+    <div class="landing-course" id="landingTitle">Loading...</div>
+    <div class="landing-room" id="landingBadge">Room ...</div>
+    <button class="btn-enter" onclick="enterApp()">입장하기 <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+    <img src="logo.png" alt="KAC" class="landing-logo">
 </div>
-        </div>
-        <div class="sort-bar">
-            <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
-            <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
-        </div>
-        <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
-        <div class="input-dock" id="inputDock">
-            <div class="input-box">
-                <textarea id="qInput" class="real-input" rows="1" 
-          placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" 
-          maxlength="100" ...></textarea>
-                <button id="submitBtn" class="send-btn" onclick="submitQ()"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-            <div class="input-info-row"><span id="coolTimer" class="cooldown-text"></span><span id="charCount" class="char-counter">0 / 100</span></div>
-        </div>
+
+<!-- 앱 메인 화면 -->
+<div class="app-container" id="mainApp">
+    <div class="header">
+        <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
+        <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
+        <div class="header-btn" onclick="document.getElementById('menuModal').style.display='flex'"><i class="fa-solid fa-bars"></i></div>
     </div>
-    <div id="quizOverlay" class="quiz-overlay">
-        <div id="quizActiveBox" class="quiz-box">
-            <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
-<!-- 학생용 타이머 디자인 추가 -->
-<div id="studentQuizTimerBox" style="display:none; justify-content:center; align-items:center; gap:10px; margin-bottom:15px;">
-    <i class="fa-regular fa-clock" style="color:#64748b; font-size:20px;"></i>
-    <div id="studentTimer" style="font-family: monospace; font-size:30px; font-weight:900; color:#1e293b;">00:08</div>
+    <div class="sort-bar">
+        <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
+        <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
+    </div>
+    <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
+    <div class="input-dock" id="inputDock">
+        <div class="input-box">
+            <textarea id="qInput" class="real-input" rows="1" placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" maxlength="100"></textarea>
+            <button id="submitBtn" class="send-btn" onclick="submitQ()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+        <div class="input-info-row"><span id="coolTimer" class="cooldown-text"></span><span id="charCount" class="char-counter">0 / 100</span></div>
+    </div>
 </div>
-            <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">강사님이 퀴즈를 시작하기를 기다리고 있습니다...</div>
-            <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;">
-                <button class="quiz-opt-btn" onclick="sendAns(1)">1번</button><button class="quiz-opt-btn" onclick="sendAns(2)">2번</button><button class="quiz-opt-btn" onclick="sendAns(3)">3번</button><button class="quiz-opt-btn" onclick="sendAns(4)">4번</button>
-            </div>
-            <div id="btnGroupOX" style="display:none; gap:15px;">
-                <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button><button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
-            </div>
-            <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
+
+<!-- 퀴즈 오버레이 -->
+<div id="quizOverlay" class="quiz-overlay">
+    <div id="quizActiveBox" class="quiz-box">
+        <div style="margin-bottom:20px; font-weight:900; font-size:24px; color:#3b82f6;">LIVE QUIZ</div>
+        <div id="studentQuizTimerBox" style="display:none; justify-content:center; align-items:center; gap:10px; margin-bottom:15px;">
+            <i class="fa-regular fa-clock" style="color:#64748b; font-size:20px;"></i>
+            <div id="studentTimer" style="font-family: monospace; font-size:30px; font-weight:900; color:#1e293b;">00:08</div>
         </div>
-        <div id="quizResultBox" class="quiz-box" style="display:none; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); position:relative; overflow:hidden;">
-            <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp"><span style="font-size:30px;">👑</span><span>퀴즈왕</span></div>
-            <div style="font-size:50px; margin-bottom:10px;">🏆</div>
-            <h2 style="margin:0; font-weight:900; color:#0f172a;">QUIZ RESULT</h2>
-            <div style="margin:25px 0;"><div style="font-size:14px; color:#64748b; font-weight:bold;">당신의 최종 점수</div><div id="myFinalScore" style="font-size:48px; font-weight:900; color:#3b82f6;">0점</div></div>
-            <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">현재 <span id="myFinalRank">0</span>등 (전체 참여자 중)</div>
-            <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
+        <div id="quizStatusMsg" style="margin-bottom:20px; font-size:16px; font-weight:bold; color:#1e293b;">기다리는 중...</div>
+        <div id="btnGroupMultiple" style="display:none; flex-direction:column; gap:5px;"></div>
+        <div id="btnGroupOX" style="display:none; gap:15px;">
+            <button class="quiz-opt-btn ox-btn" onclick="sendAns(1)" style="flex:1; height:120px; font-size:40px;">O</button>
+            <button class="quiz-opt-btn ox-btn" onclick="sendAns(2)" style="flex:1; height:120px; font-size:40px;">X</button>
         </div>
+        <div id="quizFeedback" style="margin-top:15px; font-weight:800; color:#ef4444; min-height:20px;"></div>
     </div>
+    <div id="quizResultBox" class="quiz-box" style="display:none; position:relative; overflow:hidden;">
+        <div id="quizKingStamp" style="display:none;" class="quiz-king-stamp"><span style="font-size:30px;">👑</span><span>퀴즈왕</span></div>
+        <h2 style="margin:0; font-weight:900; color:#0f172a;">QUIZ RESULT</h2>
+        <div id="myFinalScore" style="font-size:48px; font-weight:900; color:#3b82f6; margin:20px 0;">0점</div>
+        <div style="background:#3b82f6; color:white; padding:15px; border-radius:12px; font-weight:800;">현재 <span id="myFinalRank">0</span>등</div>
+        <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">닫기</button>
+    </div>
+</div>
 
-
-
-
-
-
-    <!-- [수정] 메뉴창 구조: 메인메뉴와 강의실 리스트를 구분 -->
+<!-- 메뉴 모달 -->
 <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
     <div class="menu-box">
         <h3 id="menuTitle">Menu</h3>
-        
-        <!-- (1) 메인 메뉴 항목들 -->
         <div id="mainMenuItems">
             <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-bullhorn"></i> 공지사항(준비중)</div>
             <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
             <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
             <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
-            <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
-            <!-- 여기를 클릭하면 강의실 목록으로 전환됨 -->
             <div class="menu-item" onclick="showRoomList()"><i class="fa-solid fa-door-open"></i> 강의실 이동</div>
         </div>
-
-        <!-- (2) 강의실 이동용 리스트 (평소엔 숨김) -->
         <div id="roomSelectionItems" style="display:none; max-height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 12px; padding: 5px;">
             <div id="roomList"></div>
         </div>
-
-        <!-- 하단 버튼들 -->
         <button id="menuBackButton" onclick="toggleMenuView('main')" style="display:none; margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#3b82f6; color:white; font-weight:bold;">이전으로</button>
         <button onclick="document.getElementById('menuModal').style.display='none'; toggleMenuView('main');" style="margin-top:10px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
     </div>
 </div>
 
-
-
-
-
-
-
-
-
-
-
-
-<!-- 차량 신청용 팝업 (구분감 확실한 디자인) -->
+<!-- 차량 신청 모달 -->
 <div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px;">
-        <h3 style="margin-bottom: 5px;">차량 탑승 신청</h3>
-        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">1단계: 목적지 선택 -> 2단계: 성함 입력</p>
-        
-
-<!-- 기존 신청 내역 확인 및 취소 영역 -->
-<div id="shuttleCancelArea" style="display:none; background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #fda4af; margin-bottom: 20px;">
-    <p style="font-size: 14px; font-weight: 800; color: #e11d48; margin: 0 0 10px 0;">기존 신청 내역이 있습니다.</p>
-    <p id="myCurrentShuttle" style="font-size: 16px; font-weight: 900; color: #1e293b; margin-bottom: 15px;"></p>
-    <button onclick="cancelShuttleRequest()" 
-            style="width: 100%; padding: 10px; background: #e11d48; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold;">
-        신청 취소하기 (삭제)
-    </button>
-</div>
-
-
-
-        <!-- 1단계: 목적지 버튼 -->
-        <div id="shuttleButtons" style="display:flex; flex-direction:column; gap:10px; margin-bottom: 25px;">
-            <button class="quiz-opt-btn shuttle-btn" id="btn-osong" onclick="selectShuttle('osong', '오송역')" style="justify-content: center;">오송역</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-terminal" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center;">청주터미널</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-airport" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center;">청주공항</button>
+        <h3>차량 탑승 신청</h3>
+        <div id="shuttleCancelArea" style="display:none; background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #fda4af; margin-bottom: 20px;">
+            <p id="myCurrentShuttle" style="font-weight: 900; color: #1e293b;"></p>
+            <button onclick="cancelShuttleRequest()" style="width: 100%; padding: 10px; background: #e11d48; color: white; border: none; border-radius: 8px; font-weight: bold;">신청 취소</button>
         </div>
-
-        <!-- 2단계: 이름 입력 영역 (색상으로 확실히 구분) -->
-        <div id="shuttleInputArea" style="display:none; background: #f0f7ff; padding: 20px; border-radius: 15px; border: 2px dashed #3b82f6;">
-            <label style="display:block; font-size:13px; font-weight:800; color:#3b82f6; margin-bottom:10px;">👇 탑승자 성함을 입력해 주세요</label>
-            <input type="text" id="shuttleUserName" placeholder="성함 입력" 
-                   style="width: 100%; padding: 15px; border: 2px solid #3b82f6; border-radius: 10px; font-size: 20px; font-weight: 900; text-align: center; outline: none; background: white; margin-bottom: 10px;">
-            <button onclick="submitShuttleRequest()" 
-                    style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                신청 완료하기
-            </button>
+        <div id="shuttleButtons" style="display:flex; flex-direction:column; gap:10px;">
+            <button class="quiz-opt-btn" onclick="selectShuttle('osong', '오송역')">오송역</button>
+            <button class="quiz-opt-btn" onclick="selectShuttle('terminal', '청주터미널')">청주터미널</button>
+            <button class="quiz-opt-btn" onclick="selectShuttle('airport', '청주공항')">청주공항</button>
         </div>
-
-        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline; font-size: 18px; font-weight: bold;">나가기</button>
+        <button onclick="document.getElementById('shuttleModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; background:transparent; color: #94a3b8; text-decoration: underline; font-size: 18px; font-weight: bold;">나가기</button>
     </div>
 </div>
 
-
-
-<!-- [신규] 통합 행정 신청 팝업 (외출/외박/석식 제외) -->
+<!-- 행정 신청 모달 -->
 <div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
-    <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px; max-width: 400px;">
-        <h3 style="margin-bottom: 5px;">일일 행정 신청</h3>
-        <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:20px;">오늘 날짜: 202X-XX-XX</p>
-
-        <!-- 신청 현황 표시 (신청했을 때만 보임) -->
-        <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 20px; text-align: left;">
-            <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 내역</p>
-            <div id="adminStatusText" style="font-size: 15px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
-            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold;">신청 취소</button>
+    <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px;">
+        <h3>일일 행정 신청</h3>
+        <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <div id="adminStatusText"></div>
+            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px;">신청 취소</button>
         </div>
-
-        <!-- 신청 입력 폼 -->
         <div id="adminActionForm">
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">1. 오늘 저녁 식사 여부</label>
-                <div style="margin-top: 10px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                        <input type="checkbox" id="skipDinner" style="width:20px; height:20px;">
-                        <span style="font-size:15px; font-weight:600;">오늘 저녁은 먹지 않습니다. (동의)</span>
-                    </label>
-                    <p style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px;">※ 16:00 이후에는 신청/취소 불가</p>
-                </div>
+            <div style="text-align:left; margin-bottom:15px;">
+                <label><input type="checkbox" id="skipDinner"> 오늘 저녁 식사 제외</label>
             </div>
-
-            <div style="text-align: left; margin-bottom: 25px;">
-                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">2. 외출·외박 신청 (해당 시)</label>
-                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-none" onclick="selectAdminType('none')" style="height:50px; font-size:16px;">해당 없음</button>
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:50px; font-size:16px;">외출 (당일 복귀)</button>
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:50px; font-size:16px;">외박 (익일 복귀)</button>
-                </div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                <button class="quiz-opt-btn" id="btn-none" onclick="selectAdminType('none')">해당 없음</button>
+                <button class="quiz-opt-btn" id="btn-outing" onclick="selectAdminType('outing')">외출</button>
+                <button class="quiz-opt-btn" id="btn-overnight" onclick="selectAdminType('overnight')">외박</button>
             </div>
-
-            <!-- 외출/외박 선택 시에만 나타나는 전화번호 입력 -->
-            <div id="fullPhoneArea" style="display:none; text-align: left; margin-bottom: 25px; background: #fff1f2; padding: 15px; border-radius: 12px;">
-                <label style="font-weight: 800; font-size: 13px; color: #e11d48;">비상 연락처 (전체 번호 입력)</label>
-                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; margin-top:8px; padding:12px; border:1px solid #fda4af; border-radius:8px; font-size:16px; text-align:center;">
+            <div id="fullPhoneArea" style="display:none; margin-bottom:15px;">
+                <input type="tel" id="fullPhone" placeholder="비상연락처 (010-0000-0000)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
             </div>
-
-           <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">신청 완료</button>
+            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold;">신청 완료</button>
         </div>
-
-        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline; font-size: 18px; font-weight: bold;">나가기</button>
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; background:transparent; color: #94a3b8; text-decoration: underline; font-size: 18px; font-weight: bold;">나가기</button>
     </div>
 </div>
 
-
-
-
-<!-- [신규] 식단표 이미지 팝업 -->
+<!-- 식단표 모달 -->
 <div id="mealMenuModal" class="menu-overlay" style="display:none; z-index: 8000;" onclick="this.style.display='none'">
-    <div style="width:90%; max-width:500px; background:white; border-radius:20px; padding:10px; position:relative;">
-        <img id="mealMenuImage" src="" style="width:100%; border-radius:15px; display:block;" alt="식단표 준비중">
-        <p style="margin-top:10px; font-weight:bold; color:#64748b;">(화면을 터치하면 닫힙니다)</p>
+    <div style="width:90%; max-width:500px; background:white; border-radius:20px; padding:10px;">
+        <img id="mealMenuImage" src="" style="width:100%; border-radius:15px; display:block;">
     </div>
 </div>
 
+<script src="config.js"></script>
+<script>
+    let serverTimeOffset = 0;
+    let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoiceIdx = null; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null; let allQuestionsData = {};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <script src="config.js"></script>
-    <script>
-    <script src="config.js"></script>
-    <script>
-        let serverTimeOffset = 0;
-        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
+    (async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code'); const directRoom = params.get('room');
+        if (code) currentRoom = await resolveRoomFromCode(code); else if (directRoom) currentRoom = directRoom;
         
-        (async function init() {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code'); const directRoom = params.get('room');
-            if (code) currentRoom = await resolveRoomFromCode(code); else if (directRoom) currentRoom = directRoom;
+        if (!currentRoom) { 
+            document.getElementById('landingBadge').innerText = "강의실을 선택해주세요";
+            const btn = document.querySelector('.btn-enter');
+            btn.innerHTML = '강의실 목록 보기 <i class="fa-solid fa-list"></i>';
+            btn.onclick = function() { document.getElementById('menuModal').style.display = 'flex'; showRoomList(); };
+            return;
+        }
+
+        myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}');
+        myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
+        lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
+
+        const db = firebase.database(); const rPath = `courses/${currentRoom}`;
+        dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
+
+        setupListeners(); checkCooldown();
+    })();
+
+    function setupListeners() {
+        firebase.database().ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
+        dbRef.settings.on('value', s => { 
+            const val = s.val() || {}; 
+            document.getElementById('roomTitle').innerText = val.courseName || `Room ${currentRoom}`; 
+            document.getElementById('landingTitle').innerText = val.courseName || "KAC Student Platform";
+            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+            document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+        });
+        
+        dbRef.qa.on('value', snap => {
+            allQuestionsData = snap.val() || {};
+            renderList(allQuestionsData);
+        });
+
+        dbRef.status.on('value', snap => {
+            const st = snap.val() || {};
+            if (st.mode === 'qa') { forceCloseQuiz(); return; }
+            if (st.mode === 'quiz' && st.quizStep !== 'summary') {
+                document.getElementById('quizOverlay').style.display = 'flex';
+                document.getElementById('quizActiveBox').style.display = 'block';
+                document.getElementById('quizResultBox').style.display = 'none';
+            }
+            if (st.quizStep === 'summary' && !hasClosedSummary) showFinalRanking();
+        });
+
+        dbRef.quiz.on('value', s => {
+            const q = s.val(); if(!q) return;
+            if(studentTimerInterval) clearInterval(studentTimerInterval);
+            const sTimerBox = document.getElementById('studentQuizTimerBox');
+            const sTimerText = document.getElementById('studentTimer');
+            sTimerBox.style.display = 'none';
+
+            if (q.status === 'ready') { myLastChoiceIdx = null; myLastChoice = null; }
             
-            if (!currentRoom) { 
-                document.getElementById('roomBadge').innerText = "Select Room";
-                document.getElementById('landingBadge').innerText = "강의실을 선택해주세요";
-                document.getElementById('landingTitle').innerText = "KAC Student Platform";
-                
-                const btn = document.querySelector('.btn-enter');
-                btn.innerHTML = '강의실 목록 보기 <i class="fa-solid fa-list"></i>';
-                btn.onclick = function() {
-                    document.getElementById('menuModal').style.display = 'flex';
-                    showRoomList(); // openMenu -> showRoomList로 수정
-                };
-                return;
-            }
-
-            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`; document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-            myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
-            lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
-            const db = firebase.database(); const rPath = `courses/${currentRoom}`;
-            dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
-
-            setupListeners(); checkCooldown();
-
-            dbRef.status.once('value', s => {
-                const st = s.val() || {};
-                if(st.quizStep !== 'summary') {
-                    document.getElementById('quizOverlay').style.display = 'none';
-                    document.getElementById('quizResultBox').style.display = 'none';
-                }
-            });
-        })();
-
-        async function enterApp() {
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
-            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
-            await checkProfile();
-        }
-
-        function exitApp() {
-            if (confirm("현재 강의실에서 나가시겠습니까?")) {
-                const ua = navigator.userAgent.toLowerCase();
-                if (ua.indexOf('kakaotalk') !== -1) { location.href = 'kakaotalk://inappbrowser/close'; return; }
-                if (ua.indexOf('naver') !== -1) { location.href = 'naversearchapp://inappbrowser/close'; return; }
-                document.documentElement.innerHTML = `<div style="background:#0f172a; color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif;"><h2>퇴장 완료</h2><p>브라우저 창을 닫아주세요.</p></div>`;
-                setTimeout(() => { window.close(); }, 300);
-            }
-        }
-
-        // [핵심] 실시간 상태 감지 (녹색불/회색불)
-        function startPresence() {
-            const uToken = localStorage.getItem('uToken');
-            if (!uToken || !currentRoom) return;
-
-            const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
-
-            firebase.database().ref(".info/connected").on("value", (snap) => {
-                if (snap.val() === true) {
-                    myStatusRef.set(true); // 연결 시 녹색
-                    myStatusRef.onDisconnect().set(false); // 연결 끊기면 회색
-
-                    const con = dbRef.connections.push();
-                    con.onDisconnect().remove();
-                    con.set(true);
-                }
-            });
-
-            dbRef.connections.on("value", (snap) => {
-                const count = snap.numChildren();
-                if(document.getElementById('realUserCount')) {
-                    document.getElementById('realUserCount').innerText = `${count}명 접속`;
-                }
-            });
-        }
-
-        function setupListeners() {
-            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => { serverTimeOffset = snap.val() || 0; });
-            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
-            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+            document.getElementById('quizStatusMsg').innerText = q.status === 'ready' ? "강사님이 퀴즈를 준비 중입니다..." : "정답을 선택하세요!";
+            const multArea = document.getElementById('btnGroupMultiple');
+            const oxArea = document.getElementById('btnGroupOX');
             
-            dbRef.status.on('value', snap => {
-                const st = snap.val() || {};
-                if (st.mode === 'qa') { forceCloseQuiz(); return; }
-                if (st.mode === 'quiz' && st.quizStep !== 'summary') {
-                    document.getElementById('quizOverlay').style.display = 'flex';
-                    document.getElementById('quizActiveBox').style.display = 'block';
-                    document.getElementById('quizResultBox').style.display = 'none';
-                    if (!currentQuizId) {
-                        document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다...";
-                        document.getElementById('btnGroupMultiple').style.display = 'none';
-                        document.getElementById('btnGroupOX').style.display = 'none';
-                    }
+            if(q.status === 'open') {
+                canAnswer = true;
+                if(q.endTime) {
+                    sTimerBox.style.display = 'flex';
+                    studentTimerInterval = setInterval(() => {
+                        const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
+                        sTimerText.innerText = `00:${remain < 10 ? '0' + remain : remain}`;
+                        if(remain <= 0) clearInterval(studentTimerInterval);
+                    }, 200);
                 }
-                if (st.quizStep === 'summary' && !hasClosedSummary) showFinalRanking(); 
-            });
-
-            dbRef.quiz.on('value', s => {
-                const q = s.val(); if(!q) return;
-                if(studentTimerInterval) clearInterval(studentTimerInterval);
-                const sTimerBox = document.getElementById('studentQuizTimerBox');
-                const sTimerText = document.getElementById('studentTimer');
-                if(sTimerBox) sTimerBox.style.display = 'none';
-
-                dbRef.status.once('value', statusSnap => {
-                    const st = statusSnap.val() || {};
-                    if (q.status === 'ready') { myLastChoiceIdx = null; myLastChoice = null; }
-                    if (st.quizStep === 'summary' && !hasClosedSummary) return; 
-
-                    document.getElementById('quizOverlay').style.display = 'flex';
-                    const multArea = document.getElementById('btnGroupMultiple');
-                    const oxArea = document.getElementById('btnGroupOX');
-                    const msgBox = document.getElementById('quizStatusMsg');
-                    const feedBox = document.getElementById('quizFeedback');
-
-                    if(q.status === 'pause') {
-                        canAnswer = false; 
-                        msgBox.innerText = "일시 정지 상태입니다.";
-                        document.querySelectorAll('.quiz-opt-btn').forEach((btn, idx) => {
-                            btn.classList.add('locked');
-                            if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
-                        });
-                        return;
-                    }
-
-                    if (q.status === 'result') { 
-                        multArea.style.display = 'none'; oxArea.style.display = 'none';
-                        const correctAns = q.correct;
-                        if (q.isSurvey) { msgBox.innerText = "📋 설문 집계 완료"; } 
-                        else {
-                            if (myLastChoiceIdx === correctAns) { msgBox.innerText = "🎉 정답입니다!"; msgBox.style.color = "#10b981"; }
-                            else { msgBox.innerText = "앗, 틀렸습니다!"; msgBox.style.color = "#ef4444"; }
-                        }
-                        return; 
-                    }
-
-                    if(q.status === 'open') {
-                        canAnswer = true;
-                        msgBox.innerText = "정답을 선택하세요!";
-                        if(q.endTime && sTimerBox) {
-                            sTimerBox.style.display = 'flex';
-                            studentTimerInterval = setInterval(() => {
-                                const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
-                                sTimerText.innerText = `00:${remain < 10 ? '0' + remain : remain}`;
-                                if(remain <= 0) clearInterval(studentTimerInterval);
-                            }, 200);
-                        }
-                        if(q.isOX) {
-                            multArea.style.display = 'none'; oxArea.style.display = 'flex';
-                            document.querySelectorAll('.ox-btn').forEach((btn, i) => {
-                                btn.classList.remove('locked', 'selected');
-                                if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
-                            });
-                        } else {
-                            oxArea.style.display = 'none'; multArea.style.display = 'flex';
-                            multArea.innerHTML = "";
-                            q.options.forEach((opt, i) => {
-                                const btn = document.createElement('button');
-                                btn.className = 'quiz-opt-btn';
-                                btn.innerText = `${i+1}. ${opt}`;
-                                btn.onclick = () => sendAns(i+1);
-                                if((i+1) === myLastChoiceIdx) btn.classList.add('selected');
-                                multArea.appendChild(btn);
-                            });
-                        }
-                    }
-                });
-            });
-
-            const qInputEl = document.getElementById('qInput');
-            qInputEl.addEventListener('input', function() {
-                this.style.height = '1px'; this.style.height = (this.scrollHeight) + 'px';
-                document.getElementById('charCount').innerText = `${this.value.length} / 100`;
-            });
-        }
-
-        // --- Q&A 로직 ---
-        function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); renderList(myQs); }
-        function renderList(data) {
-            const list = document.getElementById('qList'); list.innerHTML = "";
-            let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            items.forEach(item => {
-                const isMine = myQs[item.id] ? 'my-q' : '';
-                list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${item.text}</div></div><div class="q-like-area"><div class="like-btn" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
-            });
-        }
-
-        async function sendAns(c) {
-            if(!canAnswer) return;
-            myLastChoiceIdx = c;
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
-            event.target.classList.add('selected');
-            let t = localStorage.getItem('uToken');
-            dbRef.ans.child(currentQuizId).child(t).set({choice:c});
-        }
-
-        // --- [수정] 강의실 이동 및 메뉴 관리 ---
-        function showRoomList() {
-            const box = document.getElementById('roomList');
-            box.innerHTML = "";
-            for(let i = 65; i <= 90; i++) {
-                let r = String.fromCharCode(i);
-                box.innerHTML += `<div class="menu-item" style="text-align:center;" onclick="changeRoom('${r}')">Room ${r}</div>`;
+                if(q.isOX) {
+                    multArea.style.display = 'none'; oxArea.style.display = 'flex';
+                } else {
+                    oxArea.style.display = 'none'; multArea.style.display = 'flex';
+                    multArea.innerHTML = "";
+                    q.options.forEach((opt, i) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'quiz-opt-btn'; btn.innerText = `${i+1}. ${opt}`;
+                        btn.onclick = () => sendAns(i+1);
+                        if((i+1) === myLastChoiceIdx) btn.classList.add('selected');
+                        multArea.appendChild(btn);
+                    });
+                }
+            } else if (q.status === 'result') {
+                canAnswer = false;
+                multArea.style.display = 'none'; oxArea.style.display = 'none';
+                document.getElementById('quizStatusMsg').innerText = q.isSurvey ? "📋 설문 결과 요약" : (myLastChoiceIdx === q.correct ? "🎉 정답입니다!" : "앗, 틀렸습니다!");
             }
-            toggleMenuView('rooms');
-        }
+        });
+    }
 
-        function toggleMenuView(view) {
-            const main = document.getElementById('mainMenuItems');
-            const rooms = document.getElementById('roomSelectionItems');
-            const backBtn = document.getElementById('menuBackButton');
-            const title = document.getElementById('menuTitle');
-            if (view === 'rooms') {
-                main.style.display = 'none'; rooms.style.display = 'block';
-                backBtn.style.display = 'block'; title.innerText = "강의실 선택";
-            } else {
-                main.style.display = 'block'; rooms.style.display = 'none';
-                backBtn.style.display = 'none'; title.innerText = "Menu";
+    function startPresence() {
+        const uToken = localStorage.getItem('uToken');
+        if (!uToken || !currentRoom) return;
+        const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
+        firebase.database().ref(".info/connected").on("value", snap => {
+            if (snap.val() === true) {
+                myStatusRef.set(true);
+                myStatusRef.onDisconnect().set(false);
+                const con = dbRef.connections.push();
+                con.onDisconnect().remove(); con.set(true);
             }
-        }
+        });
+        dbRef.connections.on("value", snap => {
+            const count = snap.numChildren();
+            if(document.getElementById('realUserCount')) document.getElementById('realUserCount').innerText = `${count}명 접속`;
+        });
+    }
 
-        function changeRoom(r) {
-            const pw = prompt(`Room ${r} 비밀번호를 입력하세요:`);
-            if (!pw) return;
-            firebase.database().ref(`courses/${r}/settings/password`).once('value', snap => {
-                const dbPw = snap.val();
-                if (!dbPw) { alert("미개설 강의실입니다."); return; }
-                if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) { window.location.href = `?room=${r}`; }
-                else { alert("비밀번호 불일치"); }
-            });
-        }
+    async function enterApp() { await checkProfile(); }
 
-        // --- 기타 행정 함수들 ---
-        async function saveProfile() {
-            const name = document.getElementById('userName').value.trim();
-            const phone = document.getElementById('userPhone').value.trim();
-            if (!name || phone.length !== 4) { alert("정보를 정확히 입력해주세요."); return; }
-            localStorage.setItem('kac_user_name', name);
-            localStorage.setItem('kac_user_phone', phone);
-            let uToken = localStorage.getItem('uToken') || Math.random().toString(36).substr(2);
-            localStorage.setItem('uToken', uToken);
-            await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({ name, phone, joinedAt: firebase.database.ServerValue.TIMESTAMP });
-            startPresence();
-            document.getElementById('profileOverlay').style.display = 'none';
-            showMainDashboard();
+    function exitApp() {
+        if (confirm("현재 강의실에서 나가시겠습니까?")) {
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.indexOf('kakaotalk') !== -1) { location.href = 'kakaotalk://inappbrowser/close'; return; }
+            if (ua.indexOf('naver') !== -1) { location.href = 'naversearchapp://inappbrowser/close'; return; }
+            document.body.innerHTML = "<div style='height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a; color:white;'>퇴장 완료. 브라우저를 닫아주세요.</div>";
         }
+    }
 
-        async function checkProfile() {
-            const name = localStorage.getItem('kac_user_name');
-            const uToken = localStorage.getItem('uToken');
-            if (!uToken || !name) { document.getElementById('profileOverlay').style.display = 'flex'; return; }
-            const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
-            if (!snap.exists()) { document.getElementById('profileOverlay').style.display = 'flex'; }
-            else { startPresence(); showMainDashboard(); }
-        }
+    function setSort(type) {
+        currentSort = type;
+        document.getElementById('sortNew').classList.toggle('active', type === 'new');
+        document.getElementById('sortLike').classList.toggle('active', type === 'like');
+        renderList(allQuestionsData);
+    }
 
-        function showMainDashboard() {
-            document.getElementById('landingPage').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'flex';
-        }
+    function renderList(data) {
+        const list = document.getElementById('qList'); list.innerHTML = "";
+        let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+        if(currentSort === 'like') items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp);
+        else items.sort((a,b) => b.timestamp - a.timestamp);
+        items.forEach(item => {
+            if(item.status === 'delete') return;
+            const isMine = myQs[item.id] ? 'my-q' : '';
+            const likedClass = myLikes[item.id] ? 'active' : '';
+            list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${item.text}</div></div><div class="q-like-area"><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
+        });
+    }
 
-        async function openShuttleApply() {
-            document.getElementById('menuModal').style.display = 'none';
-            document.getElementById('shuttleModal').style.display = 'flex';
-            // 기존 신청 로직 유지...
-        }
+    function submitQ() {
+        const txt = document.getElementById('qInput').value.trim(); if(!txt) return;
+        const now = Date.now();
+        if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
+        const ref = dbRef.qa.push();
+        ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
+        myQs[ref.key] = now; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
+        lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
+        document.getElementById('qInput').value = ""; checkCooldown();
+    }
 
-        async function openAdminAction() {
-            document.getElementById('menuModal').style.display = 'none';
-            document.getElementById('adminActionModal').style.display = 'flex';
-            // 기존 신청 로직 유지...
+    function toggleLike(key) {
+        if(myLikes[key]) {
+            dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; });
+            delete myLikes[key];
+        } else {
+            dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; });
+            myLikes[key] = true;
         }
+        localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes));
+    }
 
-        async function viewMealMenu() {
-            document.getElementById('menuModal').style.display = 'none';
-            const snap = await firebase.database().ref('system/nutrition_menu').once('value');
-            if (snap.val()) { document.getElementById('mealMenuImage').src = snap.val(); document.getElementById('mealMenuModal').style.display = 'flex'; }
-            else { alert("식단표가 없습니다."); }
+    function checkCooldown() {
+        const diff = Date.now() - lastPostTime;
+        if(diff < 120000) {
+            const remain = Math.ceil((120000 - diff) / 1000);
+            document.getElementById('coolTimer').innerText = `⏳ 질문 제한: ${remain}초`;
+            setTimeout(checkCooldown, 1000);
+        } else document.getElementById('coolTimer').innerText = "";
+    }
+
+    async function sendAns(c) {
+        if(!canAnswer) return;
+        myLastChoiceIdx = c;
+        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
+        event.target.classList.add('selected');
+        let t = localStorage.getItem('uToken');
+        dbRef.ans.child(currentQuizId).child(t).set({choice:c});
+    }
+
+    function showRoomList() {
+        const box = document.getElementById('roomList'); box.innerHTML = "";
+        for(let i=65; i<=90; i++) {
+            let r = String.fromCharCode(i);
+            box.innerHTML += `<div class="menu-item" style="text-align:center;" onclick="changeRoom('${r}')">Room ${r}</div>`;
         }
-    </script>
+        toggleMenuView('rooms');
+    }
+
+    function toggleMenuView(view) {
+        const main = document.getElementById('mainMenuItems');
+        const rooms = document.getElementById('roomSelectionItems');
+        const backBtn = document.getElementById('menuBackButton');
+        const title = document.getElementById('menuTitle');
+        if (view === 'rooms') { main.style.display = 'none'; rooms.style.display = 'block'; backBtn.style.display = 'block'; title.innerText = "강의실 선택"; }
+        else { main.style.display = 'block'; rooms.style.display = 'none'; backBtn.style.display = 'none'; title.innerText = "Menu"; }
+    }
+
+    function changeRoom(r) {
+        const pw = prompt(`Room ${r} 비밀번호:`); if (!pw) return;
+        firebase.database().ref(`courses/${r}/settings/password`).once('value', snap => {
+            const dbPw = snap.val();
+            if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) { window.location.href = `?room=${r}`; }
+            else alert("비밀번호 불일치");
+        });
+    }
+
+    async function saveProfile() {
+        const name = document.getElementById('userName').value.trim();
+        const phone = document.getElementById('userPhone').value.trim();
+        if (!name || phone.length !== 4) { alert("정확히 입력해주세요."); return; }
+        localStorage.setItem('kac_user_name', name); localStorage.setItem('kac_user_phone', phone);
+        let uToken = localStorage.getItem('uToken') || Math.random().toString(36).substr(2);
+        localStorage.setItem('uToken', uToken);
+        await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({ name, phone, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+        startPresence(); document.getElementById('profileOverlay').style.display = 'none';
+        document.getElementById('landingPage').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex';
+    }
+
+    async function checkProfile() {
+        const name = localStorage.getItem('kac_user_name'); const uToken = localStorage.getItem('uToken');
+        if (!uToken || !name) { document.getElementById('profileOverlay').style.display = 'flex'; return; }
+        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
+        if (!snap.exists()) document.getElementById('profileOverlay').style.display = 'flex';
+        else { startPresence(); document.getElementById('landingPage').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; }
+    }
+    
+    // 외출/외박 관련 함수 (기존 로직 유지)
+    let selectedAdminType = 'none';
+    function selectAdminType(t) {
+        selectedAdminType = t;
+        const types = ['none', 'outing', 'overnight'];
+        types.forEach(type => {
+            const btn = document.getElementById(`btn-${type}`);
+            btn.style.background = (t === type) ? "#3b82f6" : "#f8fafc";
+            btn.style.color = (t === type) ? "white" : "#333";
+        });
+        document.getElementById('fullPhoneArea').style.display = (t === 'none') ? 'none' : 'block';
+    }
+
+    async function openAdminAction() {
+        document.getElementById('menuModal').style.display = 'none';
+        document.getElementById('adminActionModal').style.display = 'flex';
+    }
+    
+    async function openShuttleApply() {
+        document.getElementById('menuModal').style.display = 'none';
+        document.getElementById('shuttleModal').style.display = 'flex';
+    }
+    
+    async function viewMealMenu() {
+        document.getElementById('menuModal').style.display = 'none';
+        const snap = await firebase.database().ref('system/nutrition_menu').once('value');
+        if (snap.val()) { document.getElementById('mealMenuImage').src = snap.val(); document.getElementById('mealMenuModal').style.display = 'flex'; }
+        else alert("식단표가 없습니다.");
+    }
+    
+    function forceCloseQuiz() { document.getElementById('quizOverlay').style.display = 'none'; }
+    function closeResultOverlay() { document.getElementById('quizOverlay').style.display = 'none'; hasClosedSummary = true; }
+    function showFinalRanking() { /* 랭킹 로직 */ }
+</script>
 </body>
 </html>
