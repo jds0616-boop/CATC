@@ -263,7 +263,7 @@ forceEnterRoom: async function(room) {
 
 saveSettings: function() {
         if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요.");
+            ui.showAlert(⚠️ 강의실을 먼저 선택해 주세요.");
             return;
         }
 
@@ -336,15 +336,7 @@ resetCourse: function() {
             });
         }
     }
-
 }
-
-
-
-
-
-
-
 };
 
 // --- [신규] 교수님 명단 관리 ---
