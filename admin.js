@@ -322,16 +322,17 @@ saveSettings: function() {
 
 
 
-    resetCourse: function() {
-    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 수강생 명부, 행정 기록)를 초기화하시겠습니까?")) {
-        // 전체 경로를 날려버려야 교육생들이 다시 입장 절차를 밟습니다.
+resetCourse: function() {
+    if(!state.room) return;
+    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 수강생 명단, 행정 기록)를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
+        // 해당 강의실 경로를 null로 만들어 완전히 삭제
         firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-            ui.showAlert("강의실이 완전히 초기화되었습니다.");
-            location.reload();
+            ui.showAlert("✅ 강의실이 완전히 초기화되었습니다.");
+            // 초기화 후 강사 화면도 새로고침하여 상태 반영
+            setTimeout(() => location.reload(), 1000);
         });
     }
 }
-
 
 
 
