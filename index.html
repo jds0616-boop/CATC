@@ -766,33 +766,26 @@ async function openShuttleApply() {
 
 
 
-// [신규 추가] 차량 버튼 클릭 시 색상 변경 및 확인창 로직
 function selectShuttle(locId, locName) {
-    // 1. 기존에 선택된 파란색 색상 모두 제거 (초기화)
-    document.querySelectorAll('.shuttle-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
+        // 1. 모든 셔틀 버튼에서 파란색(selected) 클래스 제거
+        document.querySelectorAll('.shuttle-btn').forEach(b => b.classList.remove('selected'));
+        
+        // 2. 현재 누른 버튼에 파란색 클래스 추가
+        const targetBtn = document.getElementById('btn-' + locId);
+        if (targetBtn) targetBtn.classList.add('selected');
 
-    // 2. 현재 클릭한 버튼에만 파란색(selected 클래스) 추가
-    const targetBtn = document.getElementById('btn-' + locId);
-    if (targetBtn) targetBtn.classList.add('selected');
-
-    // 3. 사용자 정보 가져오기
-    const savedName = localStorage.getItem('kac_user_name');
-    const savedPhone = localStorage.getItem('kac_user_phone');
-    
-    // 4. 신청 확인창
-    if(!confirm(`${savedName}(${savedPhone})님,\n${locName}행 셔틀을 신청하시겠습니까?`)) {
-        // 취소 시 파란색 다시 제거
-        if (targetBtn) targetBtn.classList.remove('selected');
-        return;
+        const name = localStorage.getItem('kac_user_name');
+        
+        // 3. 확인창 띄우기
+        if(!confirm(`${name}님, ${locName}행을 신청하시겠습니까?`)) {
+            if (targetBtn) targetBtn.classList.remove('selected'); // 취소 시 파란색 제거
+            return;
+        }
+        
+        // 4. 전역 변수에 저장 후 서버 전송 함수 호출
+        tempSelectedLoc = { id: locId, name: locName };
+        submitShuttleRequest();
     }
-    
-    // 5. 상단에 선언된 전역 변수에 정보 저장 후 서버 전송 함수 호출
-    tempSelectedLoc = { id: locId, name: locName };
-    submitShuttleRequest(); // 이 함수는 현재 파일 375라인 근처에 이미 존재함
-}
-
 
 
 
@@ -829,24 +822,23 @@ function selectShuttle(locId, locName) {
 
 // 3. 최종 [차량 신청 완료하기] 버튼 클릭 시
 async function submitShuttleRequest() {
-    if (!tempSelectedLoc) return;
+        if (!tempSelectedLoc) return;
+        
+        const uToken = localStorage.getItem('uToken');
+        const name = localStorage.getItem('kac_user_name');
+        const phone = localStorage.getItem('kac_user_phone');
+        const fullName = `${name}(${phone})`;
 
-    const name = localStorage.getItem('kac_user_name');
-    const phone = localStorage.getItem('kac_user_phone');
-    const fullName = `${name}(${phone})`; // "홍길동(1234)" 형식으로 저장
-
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { uToken = Math.random().toString(36).substr(2); localStorage.setItem('uToken', uToken); }
-
-    const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
-    try {
-        await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(fullName);
-        alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
-        document.getElementById('shuttleModal').style.display = 'none';
-    } catch (error) {
-        alert("신청 중 오류가 발생했습니다.");
+        try {
+            // 서버에 데이터 저장
+            await dbRef.shuttle.child(tempSelectedLoc.id).child(uToken).set(fullName);
+            alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
+            document.getElementById('shuttleModal').style.display = 'none';
+        } catch (e) {
+            console.error(e);
+            alert("신청 중 오류가 발생했습니다.");
+        }
     }
-}
 
 // 창 닫기 함수 추가
 function closeShuttleModal() {
