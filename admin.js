@@ -358,7 +358,7 @@ const dataMgr = {
         if(state.room) this.forceEnterRoom(state.room);
     },
     
-    updateQa: function(action) {
+updateQa: function(action) {
         if(!state.activeQaKey) return;
         const item = state.qaData[state.activeQaKey];
         if (action === 'delete') { 
@@ -375,31 +375,37 @@ const dataMgr = {
         }
     },
 
-resetCourse: function() {
-    if(!confirm("강의실을 초기화하시겠습니까?")) return;
+    // [수정 완료] 강사 튕김 방지 + 교육생 즉시 퇴장 리셋 함수
+    resetCourse: function() {
+        if(!confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) return;
 
-    const newSessionId = "SES_" + Date.now();
-    const updates = {};
-    updates[`courses/${state.room}/questions`] = null;
-    updates[`courses/${state.room}/students`] = null;
-    // ★ [추가] 접속자 카운트 경로도 같이 날려버립니다.
-    updates[`courses/${state.room}/connections`] = null; 
-    updates[`courses/${state.room}/shuttle`] = null;
-    updates[`courses/${state.room}/activeQuiz`] = null;
-    updates[`courses/${state.room}/quizAnswers`] = null;
-    updates[`courses/${state.room}/quizFinalResults`] = null;
-    
-    updates[`courses/${state.room}/status/sessionId`] = newSessionId;
-    updates[`courses/${state.room}/status/roomStatus`] = 'idle';
-    updates[`courses/${state.room}/status/mode`] = 'qa';
+        const newSessionId = "SES_" + Date.now();
+        const updates = {};
 
-    firebase.database().ref().update(updates).then(() => {
-        ui.showAlert("강의실이 완전히 초기화되었습니다.");
-        setTimeout(() => location.reload(), 500);
-    });
-}
-}
-};
+        // 1. 알맹이 데이터만 삭제 (연결 통로인 courses/ROOM 경로는 유지)
+        updates[`courses/${state.room}/questions`] = null;
+        updates[`courses/${state.room}/students`] = null;
+        updates[`courses/${state.room}/connections`] = null; 
+        updates[`courses/${state.room}/shuttle`] = null;
+        updates[`courses/${state.room}/activeQuiz`] = null;
+        updates[`courses/${state.room}/quizAnswers`] = null;
+        updates[`courses/${state.room}/quizFinalResults`] = null;
+        
+        // 2. 핵심: 세션 ID를 새것으로 갈아끼움 (교육생 퇴장 신호)
+        updates[`courses/${state.room}/status/sessionId`] = newSessionId;
+        updates[`courses/${state.room}/status/mode`] = 'qa';
+        updates[`courses/${state.room}/status/quizStep`] = 'none';
+
+        // 3. 강사 본인의 제어권 유지를 위해 '사용중' 상태와 세션ID 보존
+        updates[`courses/${state.room}/status/roomStatus`] = 'active'; 
+        updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
+
+        firebase.database().ref().update(updates).then(() => {
+            ui.showAlert("강의실이 깨끗하게 초기화되었습니다.");
+            setTimeout(() => location.reload(), 500);
+        });
+    }
+}; // 이 중괄호가 dataMgr 객체를 닫는 유일한 지점이어야 합니다.
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
