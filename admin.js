@@ -978,36 +978,38 @@ const ui = {
         });
     },
 
-    loadStudentList: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
-            const data = snap.val() || {};
-            const tbody = document.getElementById('studentListTableBody');
-            if(!tbody) return;
-            const totalEl = document.getElementById('studentTotalCount');
-            
-            tbody.innerHTML = "";
-            const students = Object.values(data);
-            if(totalEl) totalEl.innerText = students.length;
+ loadStudentList: function() {
+    if(!state.room) return;
+    firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
+        const data = snap.val() || {};
+        const tbody = document.getElementById('studentListTableBody');
+        if(!tbody) return;
+        const totalEl = document.getElementById('studentTotalCount');
+        
+        tbody.innerHTML = "";
+        const students = Object.values(data);
+        if(totalEl) totalEl.innerText = students.length;
 
-            students.forEach((s, idx) => {
-                const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-                const statusDot = s.isOnline 
-                    ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
-                    : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+        students.forEach((s, idx) => {
+            // 데이터가 비어있을 경우(undefined) 표시하지 않음
+            if(!s.name || !s.phone) return;
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">${statusDot}${s.name}</td>
-                        <td>${s.phone}</td>
-                        <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                    </tr>
-                `;
-            });
+            const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+            const statusDot = s.isOnline 
+                ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
+                : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                    <td>${s.phone}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                </tr>
+            `;
         });
-    }
-};
+    });
+}
 
 
 // --- 4. Quiz Logic ---
