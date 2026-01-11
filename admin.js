@@ -323,31 +323,52 @@ saveSettings: function() {
 
 
 resetCourse: function() {
-    if(!state.room) return;
-    if(confirm("현재 강의실을 완전히 초기화하시겠습니까? (교육생 모두 재로그인 필요)")) {
-        // 1. 새로운 랜덤 세션 키 생성
-        const newResetKey = Math.random().toString(36).substring(2, 10);
-        
-        // 2. 데이터 전체 삭제 및 새로운 리셋 키 설정
-        firebase.database().ref(`courses/${state.room}`).set({
-            status: {
-                roomStatus: 'idle',
-                resetKey: newResetKey, // 이 키가 학생의 브라우저 키와 다르면 쫓겨남
-                mode: 'qa'
-            }
-        }).then(() => {
-            ui.showAlert("✅ 강의실이 초기화되었습니다.");
-            setTimeout(() => location.reload(), 1000);
-        });
-    }
-}
+        if (!state.room) {
+            ui.showAlert("⚠️ 초기화할 강의실을 먼저 선택해주세요.");
+            return;
+        }
 
+        if (confirm("🚨 [주의] 현재 강의실을 완전히 초기화하시겠습니까?\n\n1. 수강생 명부 및 접속 기록 삭제\n2. 모든 질문 및 채팅 삭제\n3. 외출/외박 및 셔틀 신청 기록 삭제\n4. 접속 중인 모든 교육생은 즉시 강제 퇴장됩니다.\n\n이 작업은 되돌릴 수 없습니다.")) {
+            
+            // 1. 새로운 랜덤 세션 키(열쇠) 생성
+            // 이 키가 바뀌는 순간 교육생 브라우저가 감지하여 튕겨나갑니다.
+            const newResetKey = Math.random().toString(36).substring(2, 10);
+            
+            // 2. 현재 입력된 설정값 유지 (초기화 후 방이름/비번이 날아가지 않게 함)
+            const currentCourseName = document.getElementById('courseNameInput').value || "새로운 과정";
+            const currentPw = document.getElementById('roomPw').value || "7777";
 
-
-
-
-
-};
+            // 3. 해당 강의실(Room) 데이터 전체 덮어쓰기 (초기화)
+            firebase.database().ref(`courses/${state.room}`).set({
+                // 상태 초기화
+                status: {
+                    roomStatus: 'idle',         // 방 상태를 비어있음으로 변경
+                    resetKey: newResetKey,      // ★ 새로운 열쇠 발행 (교육생 퇴장용)
+                    mode: 'qa',                 // 기본 모드를 Q&A로
+                    quizStep: 'none',           // 퀴즈 단계 초기화
+                    ownerSessionId: state.sessionId, // 제어권 유지
+                    lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
+                },
+                // 설정 유지
+                settings: {
+                    courseName: currentCourseName,
+                    password: btoa(currentPw)
+                }
+                // [참고] students, questions, admin_actions, shuttle 등은 
+                // 위 구조에 포함되지 않으므로 자동으로 전체 삭제됩니다.
+            }).then(() => {
+                ui.showAlert("✅ 강의실이 깨끗하게 초기화되었습니다.\n모든 교육생이 퇴장 처리되었습니다.");
+                
+                // 4. 강사 화면도 최신 상태로 새로고침
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }).catch((error) => {
+                console.error("Reset Error:", error);
+                ui.showAlert("❌ 초기화 중 오류가 발생했습니다.");
+            });
+        }
+    },
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
