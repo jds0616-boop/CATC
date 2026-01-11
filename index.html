@@ -473,33 +473,40 @@ function exitApp() {
 
 
 
+// [수정] 실시간 상태 감지 및 수강생 명부 연동
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
-    const savedName = localStorage.getItem('kac_user_name'); // 이름 저장 확인
-    
-    // ★ [수정] 이름 정보가 없으면 서버에 접속 기록을 남기지 않습니다.
-    if (!uToken || !currentRoom || !savedName) return;
+    if (!uToken || !currentRoom) return;
 
+    // Firebase 서버와의 연결 상태를 감시하는 특수 경로
     const connectedRef = firebase.database().ref(".info/connected");
+    // 내 상태 값 (isOnline)
     const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
 
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
+            // 접속되면 'isOnline'을 true로 변경 (녹색불)
             myStatusRef.set(true);
+
+            // 브라우저를 닫거나 연결이 끊기면 자동으로 false로 변경 (회색불 예약)
             myStatusRef.onDisconnect().set(false);
 
+            // 전체 접속자 카운트용 (퀴즈 모드 등에서 사용)
             const con = dbRef.connections.push();
             con.onDisconnect().remove();
             con.set(true);
         }
     });
 
+    // 접속자 수 실시간 업데이트
     dbRef.connections.on("value", (snap) => {
         const count = snap.numChildren();
         const countEl = document.getElementById('realUserCount');
         if(countEl) countEl.innerText = `${count}명 접속`;
     });
 }
+
+
 
 
 
