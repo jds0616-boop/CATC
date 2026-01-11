@@ -322,53 +322,23 @@ saveSettings: function() {
 
 
 
-resetCourse: function() {
-        if (!state.room) {
-            ui.showAlert("⚠️ 초기화할 강의실을 먼저 선택해주세요.");
-            return;
-        }
+    resetCourse: function() {
+    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 수강생 명부, 행정 기록)를 초기화하시겠습니까?")) {
+        // 전체 경로를 날려버려야 교육생들이 다시 입장 절차를 밟습니다.
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            ui.showAlert("강의실이 완전히 초기화되었습니다.");
+            location.reload();
+        });
+    }
+}
 
-        if (confirm("🚨 [주의] 현재 강의실을 완전히 초기화하시겠습니까?\n\n1. 수강생 명부 및 접속 기록 삭제\n2. 모든 질문 및 채팅 삭제\n3. 외출/외박 및 셔틀 신청 기록 삭제\n4. 접속 중인 모든 교육생은 즉시 강제 퇴장됩니다.\n\n이 작업은 되돌릴 수 없습니다.")) {
-            
-            // 1. 새로운 랜덤 세션 키(열쇠) 생성
-            // 이 키가 바뀌는 순간 교육생 브라우저가 감지하여 튕겨나갑니다.
-            const newResetKey = Math.random().toString(36).substring(2, 10);
-            
-            // 2. 현재 입력된 설정값 유지 (초기화 후 방이름/비번이 날아가지 않게 함)
-            const currentCourseName = document.getElementById('courseNameInput').value || "새로운 과정";
-            const currentPw = document.getElementById('roomPw').value || "7777";
 
-            // 3. 해당 강의실(Room) 데이터 전체 덮어쓰기 (초기화)
-            firebase.database().ref(`courses/${state.room}`).set({
-                // 상태 초기화
-                status: {
-                    roomStatus: 'idle',         // 방 상태를 비어있음으로 변경
-                    resetKey: newResetKey,      // ★ 새로운 열쇠 발행 (교육생 퇴장용)
-                    mode: 'qa',                 // 기본 모드를 Q&A로
-                    quizStep: 'none',           // 퀴즈 단계 초기화
-                    ownerSessionId: state.sessionId, // 제어권 유지
-                    lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
-                },
-                // 설정 유지
-                settings: {
-                    courseName: currentCourseName,
-                    password: btoa(currentPw)
-                }
-                // [참고] students, questions, admin_actions, shuttle 등은 
-                // 위 구조에 포함되지 않으므로 자동으로 전체 삭제됩니다.
-            }).then(() => {
-                ui.showAlert("✅ 강의실이 깨끗하게 초기화되었습니다.\n모든 교육생이 퇴장 처리되었습니다.");
-                
-                // 4. 강사 화면도 최신 상태로 새로고침
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            }).catch((error) => {
-                console.error("Reset Error:", error);
-                ui.showAlert("❌ 초기화 중 오류가 발생했습니다.");
-            });
-        }
-    },
+
+
+
+
+
+};
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -1225,32 +1195,23 @@ ui.setMode = function(mode) {
 };
 
 
-// [수정] 수강생 명부 로드 (undefined 방지 및 방어 코드)
+// [신규] 수강생 명부 로드
 ui.loadStudentList = function() {
     if(!state.room) return;
-    
+    // .on('value', ...) 를 사용해야 실시간으로 데이터가 바뀔 때마다 화면이 갱신됩니다.
     firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
         const data = snap.val() || {};
         const tbody = document.getElementById('studentListTableBody');
         const totalEl = document.getElementById('studentTotalCount');
         
-        if(!tbody) return;
         tbody.innerHTML = "";
-        
-        const students = Object.keys(data).map(key => data[key]);
+        const students = Object.values(data);
         totalEl.innerText = students.length;
 
-        if (students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' style='padding:50px; color:#94a3b8;'>입장한 수강생이 없습니다.</td></tr>";
-            return;
-        }
-
         students.forEach((s, idx) => {
-            // 데이터가 비어있을 경우를 대비한 기본값 처리
-            const sName = s.name || "이름 없음";
-            const sPhone = s.phone || "0000";
-            const sTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+            const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
             
+            // s.isOnline 값이 true면 녹색, false면 회색으로 표시
             const statusDot = s.isOnline 
                 ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
                 : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
@@ -1258,9 +1219,9 @@ ui.loadStudentList = function() {
             tbody.innerHTML += `
                 <tr>
                     <td>${idx + 1}</td>
-                    <td style="font-weight:bold;">${statusDot}${sName}</td>
-                    <td>${sPhone}</td>
-                    <td style="color:#94a3b8; font-size:13px;">${sTime}</td>
+                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                    <td>${s.phone}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                 </tr>
             `;
         });
