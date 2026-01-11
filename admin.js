@@ -1195,23 +1195,32 @@ ui.setMode = function(mode) {
 };
 
 
-// [신규] 수강생 명부 로드
+// [수정] 수강생 명부 로드 (undefined 방지 및 방어 코드)
 ui.loadStudentList = function() {
     if(!state.room) return;
-    // .on('value', ...) 를 사용해야 실시간으로 데이터가 바뀔 때마다 화면이 갱신됩니다.
+    
     firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
         const data = snap.val() || {};
         const tbody = document.getElementById('studentListTableBody');
         const totalEl = document.getElementById('studentTotalCount');
         
+        if(!tbody) return;
         tbody.innerHTML = "";
-        const students = Object.values(data);
+        
+        const students = Object.keys(data).map(key => data[key]);
         totalEl.innerText = students.length;
 
+        if (students.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' style='padding:50px; color:#94a3b8;'>입장한 수강생이 없습니다.</td></tr>";
+            return;
+        }
+
         students.forEach((s, idx) => {
-            const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+            // 데이터가 비어있을 경우를 대비한 기본값 처리
+            const sName = s.name || "이름 없음";
+            const sPhone = s.phone || "0000";
+            const sTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
             
-            // s.isOnline 값이 true면 녹색, false면 회색으로 표시
             const statusDot = s.isOnline 
                 ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
                 : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
@@ -1219,9 +1228,9 @@ ui.loadStudentList = function() {
             tbody.innerHTML += `
                 <tr>
                     <td>${idx + 1}</td>
-                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
-                    <td>${s.phone}</td>
-                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                    <td style="font-weight:bold;">${statusDot}${sName}</td>
+                    <td>${sPhone}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${sTime}</td>
                 </tr>
             `;
         });

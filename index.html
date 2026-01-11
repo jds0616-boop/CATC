@@ -1037,12 +1037,13 @@ async function saveProfile() {
 }
 
 
-// [최종] 서버 명부 대조 방식의 프로필 체크
+// [수정] 서버 명부 대조 방식의 프로필 체크 강화
 async function checkProfile() {
-    const savedName = localStorage.getItem('kac_user_name');
     const uToken = localStorage.getItem('uToken');
-
-    if (!uToken || !savedName) {
+    // 로컬 스토리지에 이름이 있어도, 서버에 데이터가 없으면(리셋 상황) 다시 입력받아야 함
+    
+    if (!uToken) {
+        // 토큰 자체가 없으면 최초 접속자
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
@@ -1051,9 +1052,11 @@ async function checkProfile() {
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
+            // [중요] 강사가 방을 리셋하여 서버에 내 토큰 정보가 없는 경우
+            console.log("방이 리셋되었거나 정보가 없습니다. 프로필 입력을 다시 시작합니다.");
             document.getElementById('profileOverlay').style.display = 'flex';
         } else {
-            // 접속이 확인되면 실시간 감지 시작
+            // 정보가 확인되면 정상 입장
             startPresence();
             showMainDashboard();
         }
@@ -1062,6 +1065,46 @@ async function checkProfile() {
     }
 }
 
+// [수정] 프로필 저장 시 데이터 구조 명확화
+async function saveProfile() {
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+    
+    if (!name || phone.length !== 4) {
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
+        return;
+    }
+    
+    // 로컬 저장
+    localStorage.setItem('kac_user_name', name);
+    localStorage.setItem('kac_user_phone', phone);
+    
+    let uToken = localStorage.getItem('uToken');
+    if (!uToken) { 
+        uToken = Math.random().toString(36).substr(2); 
+        localStorage.setItem('uToken', uToken); 
+    }
+
+    try {
+        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+        
+        // [구조 확정] 강사 화면에서 읽는 key와 일치시킴
+        await studentRef.set({
+            name: name,
+            phone: phone,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isOnline: true // 입장 즉시 온라인
+        });
+
+        // 입장 후 오프라인 처리 예약 (onDisconnect)
+        studentRef.child('isOnline').onDisconnect().set(false);
+
+        document.getElementById('profileOverlay').style.display = 'none';
+        showMainDashboard();
+    } catch (e) {
+        alert("등록 중 오류가 발생했습니다.");
+    }
+}
 
 
 
