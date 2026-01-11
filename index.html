@@ -509,44 +509,40 @@ function startPresence() {
 
 
 
+function setupListeners() {
+    // ... 기존 코드 (서버시간, 제목 설정 등) ...
 
-
-
-        function setupListeners() {
-firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
-        serverTimeOffset = snap.val() || 0;
-    });
-
-            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
-            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
-
-
-
-dbRef.status.on('value', snap => {
-    const st = snap.val() || {};
-
-
-// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
+    // 4. 상태 변화 감시 (리셋 및 모드 전환)
+    dbRef.status.on('value', snap => {
+        const st = snap.val() || {};
+        
+        // --- 리셋 로직 시작 ---
         const serverResetKey = st.resetKey || 'init';
-        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+        const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
 
-        if (myKey && myKey !== serverResetKey) {
-            localStorage.clear(); 
+        // 내 키가 있고 서버 키도 있는데 둘이 다르다면? -> 강사가 방을 새로 판 것임
+        if (myLocalKey && myLocalKey !== serverResetKey) {
             alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
-            location.reload(); 
+            
+            // 모든 로컬 데이터 삭제 (이름, 번호, 토큰, 기존 신청 이력 찌꺼기 등)
+            localStorage.clear(); 
+            
+            // 페이지 새로고침 -> 초기 랜딩 페이지(이름 입력창)로 이동
+            location.reload();
             return;
         }
+        // --- 리셋 로직 끝 ---
+
+        // 기존 모드 전환 로직 (qa/quiz)
+        if (st.mode === 'qa') { 
+            forceCloseQuiz(); 
+        } else if (st.mode === 'quiz') {
+            // ... 퀴즈 처리 코드 ...
+        }
+    });
+}
 
 
-
-
-
-
-    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
-    if (st.mode === 'qa') { 
-        forceCloseQuiz(); 
-        return; 
-    }
 
     // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 교육생에게 오버레이를 보여줌
     if (st.mode === 'quiz') {
@@ -1091,46 +1087,35 @@ async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
     
-    if (!name || phone.length !== 4) {
-        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
-        return;
-    }
-    
-    localStorage.setItem('kac_user_name', name);
-    localStorage.setItem('kac_user_phone', phone);
-    
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = Math.random().toString(36).substr(2); 
-        localStorage.setItem('uToken', uToken); 
-// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
-        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
-        const serverResetKey = statusSnap.val()?.resetKey || 'init';
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-
-
+    if (!name || phone.length !== 4) { 
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요."); 
+        return; 
     }
 
     try {
-        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
-        await studentRef.update({
-            name: name,
-            phone: phone,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP
+        // 1. 현재 서버의 최신 리셋 키를 가져옴
+        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+        const serverResetKey = statusSnap.val()?.resetKey || 'init';
+
+        const uToken = Math.random().toString(36).substr(2);
+
+        // 2. 서버에 학생 정보 등록
+        await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).set({
+            name: name, phone: phone, joinedAt: firebase.database.ServerValue.TIMESTAMP, isOnline: true
         });
 
-        // 프로필 저장 후 실시간 감지 함수 실행
-        startPresence();
+        // 3. 로컬 스토리지에 키와 정보를 함께 저장
+        localStorage.setItem('kac_user_name', name);
+        localStorage.setItem('kac_user_phone', phone);
+        localStorage.setItem('uToken', uToken);
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey); // ★ 중요: 리셋 키 저장
 
         document.getElementById('profileOverlay').style.display = 'none';
-        alert(`${name}님, 환영합니다!`);
-        
-        // 메인 화면 표시
         showMainDashboard();
+        startPresence();
+        setupListeners();
     } catch (e) {
-        console.error("등록 오류:", e);
+        console.error(e);
         alert("등록 중 오류가 발생했습니다.");
     }
 }
