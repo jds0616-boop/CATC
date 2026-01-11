@@ -993,7 +993,17 @@ async function saveProfile() {
         studentRef.child('isOnline').onDisconnect().set(false);
 
         document.getElementById('profileOverlay').style.display = 'none';
+        
+        // [추가] 입장 화면을 숨기고 메인 화면을 보여줍니다.
+        showMainDashboard(); 
+        
         alert(`${name}님, 환영합니다!`);
+
+
+
+
+
+
     } catch (e) {
         console.error("등록 오류:", e);
         alert("등록 중 오류가 발생했습니다. 파이어베이스 규칙을 확인해주세요.");
@@ -1024,10 +1034,13 @@ async function checkProfile() {
             // 편의를 위해 기존 입력값은 채워줌
             document.getElementById('userName').value = savedName || "";
             document.getElementById('userPhone').value = savedPhone || "";
-        } else {
+            } else {
             // 서버에 내 정보가 잘 있다면 -> 온라인 표시만 하고 통과
             const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-            studentRef.update({ isOnline: true });
+            
+            // [수정] 확실하게 서버에 온라인 신호를 보낼 때까지 기다립니다.
+            await studentRef.update({ isOnline: true }); 
+            
             studentRef.child('isOnline').onDisconnect().set(false);
             
             // 메인 앱 화면 보여주기
