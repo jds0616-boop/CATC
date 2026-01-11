@@ -375,38 +375,26 @@ const dataMgr = {
         }
     },
 
-resetCourse: function() {
-        if (confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
-            const newSessionId = "SES_" + Date.now();
-            const updates = {};
-
-            // 1. 삭제할 데이터 경로들 (알맹이만 삭제)
-            updates[`courses/${state.room}/questions`] = null;
-            updates[`courses/${state.room}/students`] = null;
-            updates[`courses/${state.room}/connections`] = null; 
-            updates[`courses/${state.room}/shuttle`] = null;
-            updates[`courses/${state.room}/activeQuiz`] = null;
-            updates[`courses/${state.room}/quizAnswers`] = null;
-            updates[`courses/${state.room}/quizFinalResults`] = null;
-            
-            // 2. 초기화할 상태 경로들 (세션 ID 변경이 핵심)
-            updates[`courses/${state.room}/status/sessionId`] = newSessionId;
-            updates[`courses/${state.room}/status/roomStatus`] = 'idle';
-            updates[`courses/${state.room}/status/mode`] = 'qa';
-            updates[`courses/${state.room}/status/resetKey`] = newSessionId;
-
-            // 3. 서버 업데이트 실행
-            firebase.database().ref().update(updates).then(() => {
-                ui.showAlert("강의실이 완전히 초기화되었습니다.");
-                setTimeout(() => location.reload(), 500);
+    resetCourse: function() {
+    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
+        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
+        
+        // 1. 해당 강의실의 모든 데이터를 삭제
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
+            firebase.database().ref(`courses/${state.room}/status`).set({
+                resetKey: newResetKey,
+                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
+                mode: 'qa'
+            }).then(() => {
+                ui.showAlert("강의실이 초기화되었습니다.");
+                // 강사 화면도 새로고침하여 상태 동기화
+                setTimeout(() => location.reload(), 1000);
             });
-        }
+        });
     }
-}; // 이 중괄호가 dataMgr 객체를 닫는 유일한 지점입니다.
-
-
-
-
+}
+};
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -541,17 +529,8 @@ const ui = {
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
-
-
-
-               const studentObj = roomData.students || {};
-                // 단순히 개수를 세지 말고, 이름(name)이 존재하는 객체만 필터링합니다.
-               const actualStudents = Object.values(studentObj).filter(s => s.name);
-               const userCount = actualStudents.length; 
-
-
-
-
+                const studentObj = roomData.students || {};
+                const userCount = Object.keys(studentObj).length;
                 const isRoomActive = (st.roomStatus === 'active');
                 
                 const courseName = settings.courseName ? settings.courseName : "-";
