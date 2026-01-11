@@ -770,8 +770,9 @@ function selectShuttle(locId, locName) {
         // 1. 모든 셔틀 버튼에서 파란색(selected) 클래스 제거
         document.querySelectorAll('.shuttle-btn').forEach(b => b.classList.remove('selected'));
         
-        // 2. 현재 누른 버튼에 파란색 클래스 추가
-        const targetBtn = document.getElementById('btn-' + locId);
+        // 2. 현재 누른 버튼의 ID('s-' + locId)를 찾아 파란색 클래스 추가
+        // 사용자님의 HTML에 id="s-osong"으로 되어 있으므로 's-'를 사용해야 합니다.
+        const targetBtn = document.getElementById('s-' + locId); 
         if (targetBtn) targetBtn.classList.add('selected');
 
         const name = localStorage.getItem('kac_user_name');
