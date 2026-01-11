@@ -446,9 +446,8 @@ initRoomSelect: function() {
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
                 const questions = roomData.questions || {};
-                const connObj = roomData.connections || {};
-                
-                const userCount = Object.keys(connObj).length;
+                const studentObj = roomData.students || {}; // connections 대신 students를 가져옵니다.
+                const userCount = Object.keys(studentObj).length; // 등록된 수강생 수를 셉니다.
                 const isRoomActive = (st.roomStatus === 'active');
                 
                 // 과정명 및 교수명 (없으면 "-" 표시)
@@ -470,15 +469,15 @@ if (st.lastAdminEntry) { // 서버에 기록된 입장 시간 확인
                     if(isRoomActive) {
                         // 내가 관리 중인 방인지 확인
                         if (st.ownerSessionId === state.sessionId) {
-                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, ${userCount}명)`;
+                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#3b82f6';
                             opt.style.fontWeight = 'bold';
                         } else {
-                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName}, ${userCount}명)`;
+                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#ef4444';
                         }
                     } else {
-                        opt.innerText = `Room ${c} (⚪ 대기, ${userCount}명)`;
+                        opt.innerText = `Room ${c} (⚪ 대기, 수강생 ${userCount}명)`;
                     }
                     
                     if(c === savedValue) opt.selected = true;
@@ -1108,7 +1107,7 @@ ui.loadDinnerSkipData = function() {
 
 // [통합 수정] UI 모드 전환 함수
 ui.setMode = function(mode) {
-    const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip'];
+    const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip', 'view-students']; 
     views.forEach(v => { const el = document.getElementById(v); if(el) el.style.display = 'none'; });
     
     const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
@@ -1120,18 +1119,62 @@ ui.setMode = function(mode) {
     if(targetTab) targetTab.classList.add('active');
 
     if (state.room) {
-        let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip'].includes(mode)) ? 'qa' : mode;
+        let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students'].includes(mode)) ? 'qa' : mode;
         firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
         
         if (mode === 'shuttle') ui.loadShuttleData();
         if (mode === 'admin-action') ui.loadAdminActionData();
         if (mode === 'dinner-skip') ui.loadDinnerSkipData();
+        if (mode === 'students') ui.loadStudentList();
         if (mode === 'quiz') {
             if (state.isExternalFileLoaded && state.quizList.length > 0) quizMgr.showQuiz();
             else { document.getElementById('quizSelectModal').style.display = 'flex'; quizMgr.loadSavedQuizList(); }
         }
     }
 };
+
+
+// [신규] 수강생 명부 로드
+ui.loadStudentList = function() {
+    if(!state.room) return;
+    firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
+        const data = snap.val() || {};
+        const tbody = document.getElementById('studentListTableBody');
+        const totalEl = document.getElementById('studentTotalCount');
+        
+        tbody.innerHTML = "";
+        const students = Object.values(data);
+        totalEl.innerText = students.length;
+
+        if(students.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' style='padding:50px; color:#94a3b8;'>입장한 수강생이 없습니다.</td></tr>";
+            return;
+        }
+
+        // 입장 시간 순으로 정렬
+        students.sort((a, b) => a.joinedAt - b.joinedAt);
+
+        students.forEach((s, idx) => {
+            const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+            
+            // [추가] 온라인이면 초록색 점, 오프라인이면 회색 점
+            const statusDot = s.isOnline 
+                ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
+                : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                    <td>${s.phone}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                </tr>
+            `;
+        });
+    });
+};
+
+
 
 
 window.onload = function() { dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); };

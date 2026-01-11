@@ -181,6 +181,7 @@
 <button class="mode-btn" id="tab-waiting" onclick="ui.setMode('waiting')">
     <i class="fa-solid fa-chart-line"></i> 강의 현황
 </button>
+            <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i>수강생 현황</button>
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
             <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
@@ -227,7 +228,7 @@
     <table class="status-table">
         <thead>
             <tr>
-                <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>접속</th><th>마지막 활동</th><th>관리</th>
+                <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>교육생</th><th>마지막 활동</th><th>관리</th>
             </tr>
         </thead>
         <tbody id="statusTableBody">
@@ -309,6 +310,37 @@
         </tbody>
     </table>
 </div>
+
+
+
+<!-- [신규] 수강생 현황 섹션 -->
+<div id="view-students" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+    <div class="dashboard-header-box" style="margin-bottom: 25px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">👥 수강생 명부</h1>
+        <p style="color: #64748b; margin-top:5px;">현재 이 강의실에 입장한 모든 교육생 명단입니다.</p>
+    </div>
+    <div style="margin-bottom:20px; font-size:18px; font-weight:bold;">
+        등록 인원: <span id="studentTotalCount" style="color:#3b82f6;">0</span>명
+    </div>
+    <table class="status-table">
+        <thead>
+            <tr>
+                <th style="width:80px;">연번</th>
+                <th>성명</th>
+                <th>전화번호(뒤4자리)</th>
+                <th>최초 입장시간</th>
+            </tr>
+        </thead>
+        <tbody id="studentListTableBody">
+            <!-- 데이터 자동 삽입 -->
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
 
 
 

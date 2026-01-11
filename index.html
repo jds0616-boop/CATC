@@ -937,8 +937,13 @@ function openRoomMove() {
     if(typeof openMenu === 'function') openMenu(); 
 }
 
-// [추가] 프로필 저장 함수
-function saveProfile() {
+
+
+
+
+
+// [수정완료] 프로필 저장 및 실시간 수강생 명부 등록
+async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
     
@@ -947,23 +952,69 @@ function saveProfile() {
         return;
     }
     
-    // 로컬 스토리지에 저장 (한 번 저장하면 계속 유지됨)
+    // 1. 로컬 저장
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    document.getElementById('profileOverlay').style.display = 'none';
-    alert(`${name}님, 환영합니다!`);
+    // 2. 토큰 확인 및 생성
+    let uToken = localStorage.getItem('uToken');
+    if (!uToken) { 
+        uToken = Math.random().toString(36).substr(2); 
+        localStorage.setItem('uToken', uToken); 
+    }
+
+    try {
+        // 3. 서버 수강생 명부(students) 경로 정의
+        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+        
+        // 4. 정보 업로드 (입장 시간 및 온라인 상태 포함)
+        await studentRef.set({
+            name: name,
+            phone: phone,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isOnline: true // 입장했으니 온라인!
+        });
+
+        // 5. [핵심] 이 사람이 창을 닫거나 인터넷이 끊기면 서버에서 자동으로 오프라인(false) 처리
+        studentRef.child('isOnline').onDisconnect().set(false);
+
+        document.getElementById('profileOverlay').style.display = 'none';
+        alert(`${name}님, 환영합니다!`);
+    } catch (e) {
+        console.error("등록 오류:", e);
+        alert("등록 중 오류가 발생했습니다. 파이어베이스 규칙을 확인해주세요.");
+    }
 }
 
-// [수정] 앱 시작 시 프로필 체크 (기존 init 함수 등에 추가)
+
+// [수정완료] 재방문 수강생 체크 및 상태 업데이트
 function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
     const savedPhone = localStorage.getItem('kac_user_phone');
+    const uToken = localStorage.getItem('uToken');
     
     if (!savedName || !savedPhone) {
+        // 정보 없으면 팝업 띄움
         document.getElementById('profileOverlay').style.display = 'flex';
+    } else if (currentRoom && uToken) {
+        // 이미 정보가 있다면 서버 명단에 온라인 상태만 즉시 업데이트
+        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+        
+        studentRef.update({
+            isOnline: true, // 다시 왔으니 온라인!
+            lastActive: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // 나갈 때 오프라인 처리 예약
+        studentRef.child('isOnline').onDisconnect().set(false);
     }
 }
+
+
+
+
+
+
 
 
 // [신규] 식단표 보기 기능
