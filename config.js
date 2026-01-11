@@ -31,3 +31,27 @@ async function resolveRoomFromCode(code) {
         return null;
     }
 }
+
+/* --- config.js 추가분 (행정 로직용) --- */
+
+// 석식 마감 시간 설정 (16시)
+const DINNER_DEADLINE_HOUR = 16;
+
+// 현재 날짜를 YYYY-MM-DD 형식으로 반환하는 함수 (서버/행정용)
+function getTodayString() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+// 어제 날짜를 YYYY-MM-DD 형식으로 반환하는 함수 (복귀 확인용)
+function getYesterdayString() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}

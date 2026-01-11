@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAC 영양사 플랫폼</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        :root { --primary: #10b981; --bg: #f8fafc; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        h1 { font-size: 24px; color: #1e293b; margin-bottom: 10px; }
+        .total-box { font-size: 48px; font-weight: 900; color: var(--primary); margin: 20px 0; }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .room-item { background: #f1f5f9; padding: 15px; border-radius: 12px; font-weight: bold; }
+        .upload-btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: block; margin: 20px auto; }
+        #preview { width: 100%; max-width: 300px; border-radius: 10px; margin-top: 15px; display: none; margin-left: auto; margin-right: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🍴 금일 석식 미취식 통합 현황</h1>
+            <p style="color:#64748b;">전체 강의실에서 "안 먹어요"를 누른 인원입니다.</p>
+            <div class="total-box"><span id="grandTotal">0</span>명</div>
+            <div class="room-grid" id="roomStats"></div>
+        </div>
+
+        <div class="card">
+            <h1>📸 식단표 업로드</h1>
+            <p style="color:#64748b;">사진을 올리면 모든 교육생 앱에 즉시 공유됩니다.</p>
+            <input type="file" id="menuFile" accept="image/*" style="display:none;" onchange="handleFileUpload(this)">
+            <button class="upload-btn" onclick="document.getElementById('menuFile').click()">사진 선택 및 업로드</button>
+            <img id="preview" alt="미리보기">
+            <p id="uploadStatus" style="font-size:14px; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // 1. 통합 인원 집계 (A-Z 모든 방 조사)
+        function loadGrandTotal() {
+            const today = getTodayString();
+            firebase.database().ref('courses').on('value', snap => {
+                const allData = snap.val() || {};
+                let total = 0;
+                const statsDiv = document.getElementById('roomStats');
+                statsDiv.innerHTML = "";
+
+                for(let i=65; i<=90; i++) {
+                    const room = String.fromCharCode(i);
+                    const skips = allData[room]?.dinner_skips?.[today] || {};
+                    const count = Object.keys(skips).length;
+                    
+                    if(count > 0) {
+                        total += count;
+                        statsDiv.innerHTML += `<div class="room-item">Room ${room}<br><span style="color:#10b981;">${count}명</span></div>`;
+                    }
+                }
+                document.getElementById('grandTotal').innerText = total;
+            });
+        }
+
+        // 2. 사진 업로드 (Base64 압축 방식 - 초보자용)
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            document.getElementById('uploadStatus').innerText = "업로드 중...";
+            
+            reader.onload = async function(e) {
+                const base64Image = e.target.result;
+                
+                // 미리보기
+                const img = document.getElementById('preview');
+                img.src = base64Image;
+                img.style.display = "block";
+
+                // 서버 저장 (기존 사진 덮어쓰기)
+                try {
+                    await firebase.database().ref('system/nutrition_menu').set(base64Image);
+                    document.getElementById('uploadStatus').innerText = "✅ 업로드 완료!";
+                    document.getElementById('uploadStatus').style.color = "#10b981";
+                } catch(err) {
+                    alert("사진 용량이 너무 큽니다. 좀 더 작은 사진을 올려주세요.");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        loadGrandTotal();
+    </script>
+</body>
+</html>

@@ -184,6 +184,11 @@
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
             <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
+           <button class="mode-btn" id="tab-admin-action" onclick="ui.setMode('admin-action')"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박</button>
+           <button class="mode-btn" id="tab-dinner-skip" onclick="ui.setMode('dinner-skip')"><i class="fa-solid fa-utensils"></i> 석식 제외</button>
+
+
+
         </div>
 
 
@@ -257,6 +262,55 @@
         </tbody>
     </table>
 </div>
+
+
+
+<!-- [신규] 외출/외박 현황 섹션 -->
+<div id="view-admin-action" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+    <div class="dashboard-header-box" style="margin-bottom: 25px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📍 외출·외박 신청 현황</h1>
+        <p style="color: #64748b; margin-top:5px;">※ 익일 오전 09:00까지 명단이 유지됩니다.</p>
+    </div>
+    <table class="status-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">연번</th>
+                <th style="width:100px;">구분</th>
+                <th style="width:150px;">성명(뒷자리)</th>
+                <th>비상 연락처</th>
+                <th style="width:150px;">신청시간</th>
+            </tr>
+        </thead>
+        <tbody id="adminActionTableBody">
+            <!-- 데이터 자동 삽입 -->
+        </tbody>
+    </table>
+</div>
+
+<!-- [신규] 석식 제외 현황 섹션 -->
+<div id="view-dinner-skip" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+    <div class="dashboard-header-box" style="margin-bottom: 25px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">🍴 금일 석식 제외 명단</h1>
+        <p style="color: #64748b; margin-top:5px;">※ 매일 16:00에 신청이 마감됩니다.</p>
+    </div>
+    <div style="margin-bottom:20px; font-size:20px; font-weight:bold; color:#3b82f6;">
+        총 제외 인원: <span id="dinnerSkipTotal">0</span>명
+    </div>
+    <table class="status-table">
+        <thead>
+            <tr>
+                <th style="width:80px;">연번</th>
+                <th>성명(뒷자리)</th>
+                <th style="width:200px;">상태</th>
+            </tr>
+        </thead>
+        <tbody id="dinnerSkipTableBody">
+            <!-- 데이터 자동 삽입 -->
+        </tbody>
+    </table>
+</div>
+
+
 
 
 

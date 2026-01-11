@@ -1050,4 +1050,88 @@ const printMgr = {
         printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
     }
 };
+
+/* --- 행정 데이터 로드 함수 모음 --- */
+
+// 1. 차량 신청(셔틀) 데이터 로드
+ui.loadShuttleData = function() {
+    if(!state.room) return;
+    firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
+        const data = snap.val() || {};
+        const tbody = document.getElementById('shuttleTableBody');
+        const locations = [{ id: 'osong', name: '오송역' }, { id: 'terminal', name: '청주터미널' }, { id: 'airport', name: '청주공항' }];
+        tbody.innerHTML = "";
+        locations.forEach((loc, index) => {
+            const applicants = data[loc.id] ? Object.values(data[loc.id]) : [];
+            tbody.innerHTML += `<tr><td>${index+1}</td><td style="font-weight:bold;">${loc.name}</td><td style="font-weight:800; color:#3b82f6;">${applicants.length}명</td><td style="text-align:left; padding:10px 15px;">${applicants.join(', ') || '<span style="color:#cbd5e1;">신청자 없음</span>'}</td><td>${applicants.length >= 100 ? '만차' : '-'}</td></tr>`;
+        });
+    });
+};
+
+// 2. 외출/외박 데이터 로드 (어제 복귀자 포함 09시까지 노출)
+ui.loadAdminActionData = function() {
+    if(!state.room) return;
+    const today = getTodayString();
+    const yesterday = getYesterdayString();
+    const now = new Date();
+    const showYesterday = now.getHours() < 9;
+    const tbody = document.getElementById('adminActionTableBody');
+    const paths = [firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).once('value')];
+    if(showYesterday) paths.push(firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value'));
+
+    Promise.all(paths).then(snapshots => {
+        tbody.innerHTML = ""; let count = 1;
+        snapshots.forEach((snap, idx) => {
+            const data = snap.val() || {};
+            Object.values(data).forEach(item => {
+                const typeNm = item.type === 'outing' ? '<span style="color:#f59e0b;">외출</span>' : '<span style="color:#ef4444;">외박</span>';
+                const datePrefix = (idx === 1) ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
+                tbody.innerHTML += `<tr><td>${count++}</td><td>${datePrefix}${typeNm}</td><td style="font-weight:bold;">${item.name}</td><td>${item.phone}</td><td style="color:#94a3b8; font-size:13px;">${new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+            });
+        });
+        if(count === 1) tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+    });
+};
+
+// 3. 석식 제외 데이터 로드
+ui.loadDinnerSkipData = function() {
+    if(!state.room) return;
+    const today = getTodayString();
+    firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
+        const data = snap.val() || {};
+        const tbody = document.getElementById('dinnerSkipTableBody');
+        const items = Object.values(data);
+        document.getElementById('dinnerSkipTotal').innerText = items.length;
+        tbody.innerHTML = items.length ? items.map((name, idx) => `<tr><td>${idx+1}</td><td style="font-weight:bold;">${name}</td><td style="color:#ef4444; font-weight:800;">석식 미취식</td></tr>`).join('') : "<tr><td colspan='3' style='padding:50px; color:#94a3b8;'>제외 신청자가 없습니다.</td></tr>";
+    });
+};
+
+// [통합 수정] UI 모드 전환 함수
+ui.setMode = function(mode) {
+    const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip'];
+    views.forEach(v => { const el = document.getElementById(v); if(el) el.style.display = 'none'; });
+    
+    const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
+    const targetEl = document.getElementById(targetView);
+    if(targetEl) targetEl.style.display = (mode === 'waiting') ? 'block' : 'flex';
+
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    const targetTab = document.getElementById(`tab-${mode}`);
+    if(targetTab) targetTab.classList.add('active');
+
+    if (state.room) {
+        let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip'].includes(mode)) ? 'qa' : mode;
+        firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+        
+        if (mode === 'shuttle') ui.loadShuttleData();
+        if (mode === 'admin-action') ui.loadAdminActionData();
+        if (mode === 'dinner-skip') ui.loadDinnerSkipData();
+        if (mode === 'quiz') {
+            if (state.isExternalFileLoaded && state.quizList.length > 0) quizMgr.showQuiz();
+            else { document.getElementById('quizSelectModal').style.display = 'flex'; quizMgr.loadSavedQuizList(); }
+        }
+    }
+};
+
+
 window.onload = function() { dataMgr.checkMobile(); dataMgr.initSystem(); profMgr.init(); };

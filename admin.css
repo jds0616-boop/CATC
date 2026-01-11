@@ -742,3 +742,11 @@ body.night-mode .badge-idle {
     background-color: #334155 !important;
     color: #94a3b8 !important;
 }
+
+/* 식단표 팝업 애니메이션 */
+#mealMenuModal img {
+    max-height: 80vh;
+    object-fit: contain;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+

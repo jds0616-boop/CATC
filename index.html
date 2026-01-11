@@ -86,6 +86,20 @@
     </style>
 </head>
 <body>
+
+<!-- [추가] 교육생 프로필 등록 팝업 -->
+<div id="profileOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:10000; flex-direction:column; align-items:center; justify-content:center; color:white; padding:20px; text-align:center;">
+    <div style="background:white; color:#1e293b; padding:30px 20px; border-radius:24px; width:100%; max-width:350px;">
+        <h2 style="margin:0 0 10px 0; font-weight:900;">본인 확인</h2>
+        <p style="font-size:14px; color:#64748b; margin-bottom:25px;">원활한 교육 행정 서비스를 위해<br>정보를 입력해주세요.</p>
+        
+        <input type="text" id="userName" placeholder="성함 입력" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:12px; text-align:center;">
+        <input type="number" id="userPhone" placeholder="전화번호 뒷 4자리" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:20px; text-align:center;">
+        
+        <button onclick="saveProfile()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:18px; font-weight:bold;">입장 완료</button>
+    </div>
+</div>
+
     <div id="landingPage" class="landing-page">
         <div class="landing-course" id="landingTitle">Loading...</div>
         <div class="landing-room" id="landingBadge">Room ...</div>
@@ -145,9 +159,11 @@
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
     <div class="menu-box">
         <h3>Menu</h3>
-        <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
-        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
         <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-bullhorn"></i> 공지사항(준비중)</div>
+        <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
+        <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
+        <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
+        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
         <div class="menu-item" onclick="openRoomMove()"><i class="fa-solid fa-door-open"></i> 강의실 이동</div>
         <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
     </div>
@@ -194,6 +210,81 @@
     </div>
 </div>
 
+
+
+<!-- [신규] 통합 행정 신청 팝업 (외출/외박/석식 제외) -->
+<div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
+    <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px; max-width: 400px;">
+        <h3 style="margin-bottom: 5px;">일일 행정 신청</h3>
+        <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:20px;">오늘 날짜: 202X-XX-XX</p>
+
+        <!-- 신청 현황 표시 (신청했을 때만 보임) -->
+        <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 20px; text-align: left;">
+            <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 내역</p>
+            <div id="adminStatusText" style="font-size: 15px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
+            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold;">신청 취소</button>
+        </div>
+
+        <!-- 신청 입력 폼 -->
+        <div id="adminActionForm">
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">1. 오늘 저녁 식사 여부</label>
+                <div style="margin-top: 10px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="skipDinner" style="width:20px; height:20px;">
+                        <span style="font-size:15px; font-weight:600;">오늘 저녁은 먹지 않습니다. (동의)</span>
+                    </label>
+                    <p style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px;">※ 16:00 이후에는 신청/취소 불가</p>
+                </div>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 25px;">
+                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">2. 외출·외박 신청 (해당 시)</label>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <button class="quiz-opt-btn admin-type-btn" id="btn-none" onclick="selectAdminType('none')" style="height:50px; font-size:16px;">해당 없음</button>
+                    <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:50px; font-size:16px;">외출 (당일 복귀)</button>
+                    <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:50px; font-size:16px;">외박 (익일 복귀)</button>
+                </div>
+            </div>
+
+            <!-- 외출/외박 선택 시에만 나타나는 전화번호 입력 -->
+            <div id="fullPhoneArea" style="display:none; text-align: left; margin-bottom: 25px; background: #fff1f2; padding: 15px; border-radius: 12px;">
+                <label style="font-weight: 800; font-size: 13px; color: #e11d48;">비상 연락처 (전체 번호 입력)</label>
+                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; margin-top:8px; padding:12px; border:1px solid #fda4af; border-radius:8px; font-size:16px; text-align:center;">
+            </div>
+
+            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">신청 완료</button>
+        </div>
+
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline;">닫기</button>
+    </div>
+</div>
+
+
+
+
+<!-- [신규] 식단표 이미지 팝업 -->
+<div id="mealMenuModal" class="menu-overlay" style="display:none; z-index: 8000;" onclick="this.style.display='none'">
+    <div style="width:90%; max-width:500px; background:white; border-radius:20px; padding:10px; position:relative;">
+        <img id="mealMenuImage" src="" style="width:100%; border-radius:15px; display:block;" alt="식단표 준비중">
+        <p style="margin-top:10px; font-weight:bold; color:#64748b;">(화면을 터치하면 닫힙니다)</p>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <script src="config.js"></script>
     <script>
         let serverTimeOffset = 0; // 추가
@@ -224,6 +315,9 @@
             lastPostTime = parseInt(localStorage.getItem(`lastTime_${currentRoom}`) || '0');
             const db = firebase.database(); const rPath = `courses/${currentRoom}`;
             dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
+
+            checkProfile(); // <--- 이 줄을 추가하세요! (입장 시 이름 체크)
+
             setupListeners(); checkCooldown();
 
             dbRef.status.once('value', s => {
@@ -580,49 +674,38 @@ dbRef.quiz.on('value', s => {
 
 let tempSelectedLoc = null; // 선택한 장소를 잠시 담아두는 변수
 
-// [업그레이드] 차량 신청 팝업 열기 (기존 신청 내역 체크 포함)
+
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    // 초기화
     tempSelectedLoc = null;
-    document.getElementById('shuttleInputArea').style.display = 'none';
     document.getElementById('shuttleCancelArea').style.display = 'none';
     document.getElementById('shuttleButtons').style.display = 'flex';
-    document.getElementById('shuttleUserName').value = "";
-    document.querySelectorAll('.shuttle-btn').forEach(btn => {
-        btn.style.background = "#f8fafc";
-        btn.style.color = "#333";
-    });
+    
+    // [수정] 이름 입력 영역은 이제 숨깁니다 (자동입력)
+    document.getElementById('shuttleInputArea').style.display = 'none';
 
-    // --- 기존 신청 내역이 있는지 서버에서 확인 ---
     let uToken = localStorage.getItem('uToken');
     if (!uToken) return;
 
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
     const snap = await shuttleRef.once('value');
     const data = snap.val() || {};
-
     const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항' };
     let foundLoc = null;
-
-    for (const locId in data) {
-        if (data[locId][uToken]) {
-            foundLoc = locId;
-            break;
-        }
-    }
+    for (const locId in data) { if (data[locId][uToken]) { foundLoc = locId; break; } }
 
     if (foundLoc) {
-        // 신청 내역이 있으면: 신청 버튼 숨기고 취소 버튼 보여줌
         document.getElementById('shuttleButtons').style.display = 'none';
         document.getElementById('shuttleCancelArea').style.display = 'block';
         document.getElementById('myCurrentShuttle').innerText = `📍 신청 장소: ${locNames[foundLoc]}`;
-        // 취소를 위해 현재 위치 저장
         tempSelectedLoc = { id: foundLoc, name: locNames[foundLoc] };
     }
 }
+
+
+
 
 // [신규] 차량 신청 취소 함수
 async function cancelShuttleRequest() {
@@ -641,41 +724,14 @@ async function cancelShuttleRequest() {
     }
 }
 
-// 목적지 선택 시 실행되는 함수
 function selectShuttle(locId, locName) {
+    const savedName = localStorage.getItem('kac_user_name');
+    const savedPhone = localStorage.getItem('kac_user_phone');
+    
+    if(!confirm(`${savedName}(${savedPhone})님,\n${locName}행 셔틀을 신청하시겠습니까?`)) return;
+    
     tempSelectedLoc = { id: locId, name: locName };
-    
-    // 1. 모든 버튼 초기화 (원래 이름으로 복구 및 색상 초기화)
-    const locMap = { osong: '오송역', terminal: '청주터미널', airport: '청주공항' };
-    document.querySelectorAll('.shuttle-btn').forEach(btn => {
-        const id = btn.id.replace('btn-', '');
-        btn.innerText = locMap[id]; // 원래 이름으로
-        btn.style.background = "#f8fafc";
-        btn.style.color = "#333";
-        btn.style.borderColor = "#e2e8f0";
-    });
-
-    // 2. 선택한 버튼만 강조 (체크 표시 추가 + 파란색)
-    const activeBtn = document.getElementById(`btn-${locId}`);
-    activeBtn.innerHTML = `✅ ${locName} 선택됨`;
-    activeBtn.style.background = "#3b82f6";
-    activeBtn.style.color = "#fff";
-    activeBtn.style.borderColor = "#3b82f6";
-
-    // 3. 입력창 영역 강조하며 나타내기
-    const inputArea = document.getElementById('shuttleInputArea');
-    inputArea.style.display = 'block';
-    
-    // 부드러운 스크롤 효과 (입력창이 아래에 있을 경우)
-    inputArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    // 입력칸에 바로 포커스
-    document.getElementById('shuttleUserName').focus();
-    
-    // 엔터키 지원
-    document.getElementById('shuttleUserName').onkeyup = function(e) {
-        if (e.key === 'Enter') submitShuttleRequest();
-    };
+    submitShuttleRequest(); // 바로 신청 함수 호출
 }
 
 
@@ -684,49 +740,20 @@ function selectShuttle(locId, locName) {
 async function submitShuttleRequest() {
     if (!tempSelectedLoc) return;
 
-    const name = document.getElementById('shuttleUserName').value.trim();
-    if (!name) {
-        alert("성함을 입력해주세요.");
-        return;
-    }
+    const name = localStorage.getItem('kac_user_name');
+    const phone = localStorage.getItem('kac_user_phone');
+    const fullName = `${name}(${phone})`; // "홍길동(1234)" 형식으로 저장
 
-    // 유저 토큰 확인/생성
     let uToken = localStorage.getItem('uToken');
-    if (!uToken) {
-        uToken = Math.random().toString(36).substr(2);
-        localStorage.setItem('uToken', uToken);
-    }
+    if (!uToken) { uToken = Math.random().toString(36).substr(2); localStorage.setItem('uToken', uToken); }
 
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
-
     try {
-        // 중복 신청 체크
-        const snap = await shuttleRef.once('value');
-        const data = snap.val() || {};
-        let already = false;
-        Object.values(data).forEach(loc => { if (loc && loc[uToken]) already = true; });
-
-        if (already) {
-            alert("이미 신청하신 내역이 있습니다.\n변경을 원하시면 강사님께 말씀해 주세요.");
-            return;
-        }
-
-        // 인원 제한 체크 (100명)
-        const locSnap = await shuttleRef.child(tempSelectedLoc.id).once('value');
-        if (locSnap.numChildren() >= 100) {
-            alert("죄송합니다. 해당 차량은 이미 정원(100명)이 찼습니다.");
-            return;
-        }
-
-        // 서버 저장
-        await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(name);
-        
+        await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(fullName);
         alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
         document.getElementById('shuttleModal').style.display = 'none';
-
     } catch (error) {
-        console.error("저장 오류:", error);
-        alert("신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        alert("신청 중 오류가 발생했습니다.");
     }
 }
 
@@ -735,12 +762,223 @@ function closeShuttleModal() {
     document.getElementById('shuttleModal').style.display = 'none';
 }
 
+// --- [신규] 통합 행정 신청(외출/외박/석식) 로직 ---
+
+let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
+
+// 1. 팝업 열기 & 기존 신청 내역 확인
+async function openAdminAction() {
+    document.getElementById('menuModal').style.display = 'none';
+    const modal = document.getElementById('adminActionModal');
+    modal.style.display = 'flex';
+    
+    // 오늘 날짜 표시 (config.js의 함수 사용)
+    const today = getTodayString();
+    document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
+
+    // 입력폼 초기화
+    selectedAdminType = 'none';
+    updateAdminTypeButtons();
+    document.getElementById('skipDinner').checked = false;
+    document.getElementById('fullPhoneArea').style.display = 'none';
+    document.getElementById('fullPhone').value = "";
+
+    // 기존 신청 내역이 있는지 서버에서 조회
+    const uToken = localStorage.getItem('uToken');
+    const dinnerRef = firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`);
+    const actionRef = firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`);
+
+    const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
+    
+    if (dinnerSnap.exists() || actionSnap.exists()) {
+        // 신청 내역이 있으면 현황창 보여주기
+        document.getElementById('adminActionForm').style.display = 'none';
+        document.getElementById('adminStatusArea').style.display = 'block';
+        
+        let statusMsg = "";
+        if(dinnerSnap.exists()) statusMsg += "🍴 오늘 저녁 식사 제외 신청됨<br>";
+        if(actionSnap.exists()) {
+            const data = actionSnap.val();
+            const typeNm = data.type === 'outing' ? '외출' : '외박';
+            statusMsg += `📍 ${typeNm} 신청됨 (비상연락처: ${data.phone})`;
+        }
+        document.getElementById('adminStatusText').innerHTML = statusMsg;
+    } else {
+        document.getElementById('adminActionForm').style.display = 'block';
+        document.getElementById('adminStatusArea').style.display = 'none';
+    }
+}
+
+// 2. 외출/외박 종류 선택 시 로직
+function selectAdminType(type) {
+    selectedAdminType = type;
+    updateAdminTypeButtons();
+
+    // 외출이나 외박을 선택하면 석식 제외를 자동으로 체크해줌 (아이디어 반영)
+    if (type === 'outing' || type === 'overnight') {
+        document.getElementById('skipDinner').checked = true;
+        document.getElementById('fullPhoneArea').style.display = 'block';
+        
+        // 이전에 저장된 전체 번호가 있으면 미리 채워줌
+        const savedFullPhone = localStorage.getItem('kac_user_full_phone');
+        if(savedFullPhone) document.getElementById('fullPhone').value = savedFullPhone;
+    } else {
+        document.getElementById('fullPhoneArea').style.display = 'none';
+    }
+}
+
+// 3. 버튼 선택 디자인 업데이트
+function updateAdminTypeButtons() {
+    const types = ['none', 'outing', 'overnight'];
+    types.forEach(t => {
+        const btn = document.getElementById(`btn-${t}`);
+        if (t === selectedAdminType) {
+            btn.style.background = "#3b82f6";
+            btn.style.color = "white";
+        } else {
+            btn.style.background = "#f8fafc";
+            btn.style.color = "#333";
+        }
+    });
+}
+
+// 4. 최종 신청 제출
+async function submitAdminAction() {
+    const today = getTodayString();
+    const now = new Date();
+    
+    // 시간 제한 체크 (16시)
+    if (now.getHours() >= DINNER_DEADLINE_HOUR) {
+        alert("⚠️ 오후 4시가 지나 금일 행정 신청이 마감되었습니다.");
+        return;
+    }
+
+    // [보완] 토큰이 없으면 여기서 생성해줍니다.
+    let uToken = localStorage.getItem('uToken');
+    if (!uToken) { 
+        uToken = Math.random().toString(36).substr(2); 
+        localStorage.setItem('uToken', uToken); 
+    }
+
+    const name = localStorage.getItem('kac_user_name');
+    const phoneShort = localStorage.getItem('kac_user_phone');
+    const skipDinner = document.getElementById('skipDinner').checked;
+    const fullPhone = document.getElementById('fullPhone').value.trim();
+
+    // 외출/외박 시 전화번호 필수 체크
+    if ((selectedAdminType === 'outing' || selectedAdminType === 'overnight') && !fullPhone) {
+        alert("외출/외박 신청 시 비상 연락처를 입력해주세요.");
+        return;
+    }
+    
+    // 비상 연락처 저장 (다음 신청 때 자동완성용)
+    if (selectedAdminType !== 'none') localStorage.setItem('kac_user_full_phone', fullPhone);
+
+    try {
+        // (1) 석식 제외 저장
+        if (skipDinner) {
+            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
+        } else {
+            // 체크 해제 시 삭제
+            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+        }
+
+        // (2) 외출/외박 저장
+        if (selectedAdminType !== 'none') {
+            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
+                name: name,
+                phone: fullPhone,
+                type: selectedAdminType,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        } else {
+            // '해당 없음' 선택 시 기록 삭제
+            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
+        }
+        
+        if (!skipDinner && selectedAdminType === 'none') {
+            alert("신청할 항목을 선택해주세요."); return;
+        }
+
+        alert("✅ 신청이 완료되었습니다.");
+        document.getElementById('adminActionModal').style.display = 'none';
+    } catch (e) {
+        alert("저장 중 오류 발생");
+    }
+}
+
+// 5. 신청 취소 로직
+async function cancelAdminAction() {
+    const now = new Date();
+    if (now.getHours() >= DINNER_DEADLINE_HOUR) {
+        alert("⚠️ 오후 4시 이후에는 취소가 불가능합니다.");
+        return;
+    }
+    if (!confirm("정말로 신청을 취소하시겠습니까?")) return;
+
+    const today = getTodayString();
+    const uToken = localStorage.getItem('uToken');
+    
+    await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+    await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
+    
+    alert("취소되었습니다.");
+    openAdminAction(); // 다시 로드해서 폼 보여주기
+}
+
+
+
+
 
 
 // 4. 강의실 이동 메뉴 클릭 시
 function openRoomMove() {
     document.getElementById('menuModal').style.display = 'none';
     if(typeof openMenu === 'function') openMenu(); 
+}
+
+// [추가] 프로필 저장 함수
+function saveProfile() {
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+    
+    if (!name || phone.length !== 4) {
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
+        return;
+    }
+    
+    // 로컬 스토리지에 저장 (한 번 저장하면 계속 유지됨)
+    localStorage.setItem('kac_user_name', name);
+    localStorage.setItem('kac_user_phone', phone);
+    
+    document.getElementById('profileOverlay').style.display = 'none';
+    alert(`${name}님, 환영합니다!`);
+}
+
+// [수정] 앱 시작 시 프로필 체크 (기존 init 함수 등에 추가)
+function checkProfile() {
+    const savedName = localStorage.getItem('kac_user_name');
+    const savedPhone = localStorage.getItem('kac_user_phone');
+    
+    if (!savedName || !savedPhone) {
+        document.getElementById('profileOverlay').style.display = 'flex';
+    }
+}
+
+
+// [신규] 식단표 보기 기능
+async function viewMealMenu() {
+    document.getElementById('menuModal').style.display = 'none';
+    const snap = await firebase.database().ref('system/nutrition_menu').once('value');
+    const imageUrl = snap.val();
+    
+    if (!imageUrl) {
+        alert("등록된 식단표 사진이 없습니다.");
+        return;
+    }
+    
+    document.getElementById('mealMenuImage').src = imageUrl;
+    document.getElementById('mealMenuModal').style.display = 'flex';
 }
 
 
