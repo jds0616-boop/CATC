@@ -375,24 +375,29 @@ const dataMgr = {
         }
     },
 
-    resetCourse: function() {
-    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
-        
-        // 1. 해당 강의실의 모든 데이터를 삭제
-        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
-            firebase.database().ref(`courses/${state.room}/status`).set({
-                resetKey: newResetKey,
-                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
-                mode: 'qa'
-            }).then(() => {
-                ui.showAlert("강의실이 초기화되었습니다.");
-                // 강사 화면도 새로고침하여 상태 동기화
-                setTimeout(() => location.reload(), 1000);
-            });
-        });
-    }
+resetCourse: function() {
+    if(!confirm("강의실을 초기화하시겠습니까?")) return;
+
+    const newSessionId = "SES_" + Date.now();
+    const updates = {};
+    updates[`courses/${state.room}/questions`] = null;
+    updates[`courses/${state.room}/students`] = null;
+    // ★ [추가] 접속자 카운트 경로도 같이 날려버립니다.
+    updates[`courses/${state.room}/connections`] = null; 
+    updates[`courses/${state.room}/shuttle`] = null;
+    updates[`courses/${state.room}/activeQuiz`] = null;
+    updates[`courses/${state.room}/quizAnswers`] = null;
+    updates[`courses/${state.room}/quizFinalResults`] = null;
+    
+    updates[`courses/${state.room}/status/sessionId`] = newSessionId;
+    updates[`courses/${state.room}/status/roomStatus`] = 'idle';
+    updates[`courses/${state.room}/status/mode`] = 'qa';
+
+    firebase.database().ref().update(updates).then(() => {
+        ui.showAlert("강의실이 완전히 초기화되었습니다.");
+        setTimeout(() => location.reload(), 500);
+    });
+}
 }
 };
 
@@ -529,10 +534,17 @@ const ui = {
                 const roomData = d[c] || {};
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
-                const studentObj = roomData.students || {};
-                const userCount = Object.keys(studentObj).length;
-                const isRoomActive = (st.roomStatus === 'active');
-                
+
+
+    const studentObj = roomData.students || {};
+    // 단순히 개수를 세지 말고, 이름(name)이 존재하는 객체만 필터링합니다.
+    const actualStudents = Object.values(studentObj).filter(s => s.name);
+    const userCount = actualStudents.length; 
+
+
+
+
+                const isRoomActive = (st.roomStatus === 'active'); 
                 const courseName = settings.courseName ? settings.courseName : "-";
                 const profName = st.professorName ? st.professorName : "-";
 
