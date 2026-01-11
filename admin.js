@@ -376,11 +376,11 @@ const dataMgr = {
     },
 
 resetCourse: function() {
-        if (confirm("강의실을 초기화하시겠습니까?")) {
+        if (confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
             const newSessionId = "SES_" + Date.now();
             const updates = {};
 
-            // 1. 삭제할 데이터 경로들
+            // 1. 삭제할 데이터 경로들 (알맹이만 삭제)
             updates[`courses/${state.room}/questions`] = null;
             updates[`courses/${state.room}/students`] = null;
             updates[`courses/${state.room}/connections`] = null; 
@@ -389,19 +389,20 @@ resetCourse: function() {
             updates[`courses/${state.room}/quizAnswers`] = null;
             updates[`courses/${state.room}/quizFinalResults`] = null;
             
-            // 2. 초기화할 상태 경로들
+            // 2. 초기화할 상태 경로들 (세션 ID 변경이 핵심)
             updates[`courses/${state.room}/status/sessionId`] = newSessionId;
             updates[`courses/${state.room}/status/roomStatus`] = 'idle';
             updates[`courses/${state.room}/status/mode`] = 'qa';
+            updates[`courses/${state.room}/status/resetKey`] = newSessionId;
 
             // 3. 서버 업데이트 실행
             firebase.database().ref().update(updates).then(() => {
                 ui.showAlert("강의실이 완전히 초기화되었습니다.");
                 setTimeout(() => location.reload(), 500);
-            }); // .then 끝
-        } // if 끝
-    } // resetCourse 함수 끝
-}; // dataMgr 객체 끝
+            });
+        }
+    }
+}; // 이 중괄호가 dataMgr 객체를 닫는 유일한 지점입니다.
 
 
 
