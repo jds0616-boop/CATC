@@ -375,29 +375,37 @@ const dataMgr = {
         }
     },
 
-    resetCourse: function() {
-    if(!confirm("강의실을 초기화하시겠습니까?")) return;
+resetCourse: function() {
+        if (confirm("강의실을 초기화하시겠습니까?")) {
+            const newSessionId = "SES_" + Date.now();
+            const updates = {};
 
-    const newSessionId = "SES_" + Date.now();
-    const updates = {};
-    updates[`courses/${state.room}/questions`] = null;
-    updates[`courses/${state.room}/students`] = null;
-    // ★ [추가] 접속자 카운트 경로도 같이 날려버립니다.
-    updates[`courses/${state.room}/connections`] = null; 
-    updates[`courses/${state.room}/shuttle`] = null;
-    updates[`courses/${state.room}/activeQuiz`] = null;
-    updates[`courses/${state.room}/quizAnswers`] = null;
-    updates[`courses/${state.room}/quizFinalResults`] = null;
-    
-    updates[`courses/${state.room}/status/sessionId`] = newSessionId;
-    updates[`courses/${state.room}/status/roomStatus`] = 'idle';
-    updates[`courses/${state.room}/status/mode`] = 'qa';
+            // 1. 삭제할 데이터 경로들
+            updates[`courses/${state.room}/questions`] = null;
+            updates[`courses/${state.room}/students`] = null;
+            updates[`courses/${state.room}/connections`] = null; 
+            updates[`courses/${state.room}/shuttle`] = null;
+            updates[`courses/${state.room}/activeQuiz`] = null;
+            updates[`courses/${state.room}/quizAnswers`] = null;
+            updates[`courses/${state.room}/quizFinalResults`] = null;
+            
+            // 2. 초기화할 상태 경로들
+            updates[`courses/${state.room}/status/sessionId`] = newSessionId;
+            updates[`courses/${state.room}/status/roomStatus`] = 'idle';
+            updates[`courses/${state.room}/status/mode`] = 'qa';
 
-    firebase.database().ref().update(updates).then(() => {
-        ui.showAlert("강의실이 완전히 초기화되었습니다.");
-        setTimeout(() => location.reload(), 500);
-    });
-};
+            // 3. 서버 업데이트 실행
+            firebase.database().ref().update(updates).then(() => {
+                ui.showAlert("강의실이 완전히 초기화되었습니다.");
+                setTimeout(() => location.reload(), 500);
+            }); // .then 끝
+        } // if 끝
+    } // resetCourse 함수 끝
+}; // dataMgr 객체 끝
+
+
+
+
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
