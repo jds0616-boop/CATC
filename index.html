@@ -525,6 +525,23 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
 
+
+// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
+        const serverResetKey = st.resetKey || 'init';
+        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
+        if (myKey && myKey !== serverResetKey) {
+            localStorage.clear(); 
+            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
+            location.reload(); 
+            return;
+        }
+
+
+
+
+
+
     // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
         forceCloseQuiz(); 
@@ -1086,6 +1103,12 @@ async function saveProfile() {
     if (!uToken) { 
         uToken = Math.random().toString(36).substr(2); 
         localStorage.setItem('uToken', uToken); 
+// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
+        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+        const serverResetKey = statusSnap.val()?.resetKey || 'init';
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+
+
     }
 
     try {

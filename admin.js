@@ -321,15 +321,22 @@ saveSettings: function() {
     },
 
 
-
-    resetCourse: function() {
-    if(confirm("현재 강의실의 모든 데이터(질문, 퀴즈, 수강생 명부, 행정 기록)를 초기화하시겠습니까?")) {
-        // 전체 경로를 날려버려야 교육생들이 다시 입장 절차를 밟습니다.
-        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-            ui.showAlert("강의실이 완전히 초기화되었습니다.");
-            location.reload();
-        });
+resetCourse: function() {
+        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
+            // 새로운 열쇠(Reset Key)를 생성
+            const newKey = "reset_" + Date.now();
+            
+            // 1. 모든 데이터 삭제
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+                // 2. 삭제 직후 새로운 열쇠만 서버에 딱 심어줌
+                firebase.database().ref(`courses/${state.room}/status/resetKey`).set(newKey).then(() => {
+                    ui.showAlert("강의실이 완전히 초기화되었습니다.");
+                    location.reload();
+                });
+            });
+        }
     }
+
 }
 
 
