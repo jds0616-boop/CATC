@@ -420,30 +420,42 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
         }
     },
 
-    resetCourse: function() {
-if (!state.room) {
-    ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
-    return;
-}
-    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
-        
-        // 1. 해당 강의실의 모든 데이터를 삭제
-        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
-            firebase.database().ref(`courses/${state.room}/status`).set({
-                resetKey: newResetKey,
-                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
-                mode: 'qa'
-            }).then(() => {
-                ui.showAlert("강의실이 초기화되었습니다.");
-                // 강사 화면도 새로고침하여 상태 동기화
-                setTimeout(() => location.reload(), 1000);
+resetCourse: function() {
+        if (!state.room) {
+            ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
+            return;
+        }
+        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
+            const newResetKey = "reset_" + Date.now();
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+                firebase.database().ref(`courses/${state.room}/status`).set({
+                    resetKey: newResetKey,
+                    roomStatus: 'idle',
+                    mode: 'qa'
+                }).then(() => {
+                    ui.showAlert("강의실이 초기화되었습니다.");
+                    setTimeout(() => location.reload(), 1000);
+                });
             });
-        });
+        }
+    }, // <--- 여기 쉼표가 아주 중요합니다!
+
+    deleteStudent: function(token) {
+        if(!state.room) return;
+        if(confirm("해당 수강생을 명부에서 삭제하시겠습니까?\n삭제 시 해당 수강생의 화면도 초기화될 수 있습니다.")) {
+            firebase.database().ref(`courses/${state.room}/students/${token}`).remove()
+                .then(() => {
+                    ui.showAlert("수강생이 명부에서 삭제되었습니다.");
+                })
+                .catch(err => {
+                    alert("삭제 중 오류 발생: " + err.message);
+                });
+        }
     }
-}
-};
+}; // <--- dataMgr 객체를 닫는 최종 괄호입니다.
+
+
+
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -1122,7 +1134,7 @@ if (c === state.room) {
         });
     },
 
-    loadStudentList: function() {
+loadStudentList: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
             const data = snap.val() || {};
@@ -1131,11 +1143,16 @@ if (c === state.room) {
             const totalEl = document.getElementById('studentTotalCount');
             
             tbody.innerHTML = "";
-            const students = Object.values(data).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
-            if(totalEl) totalEl.innerText = students.length;
 
-            students.forEach((s, idx) => {
-                if (!s.name || s.name === "undefined" || s.name === undefined) return;
+            // [수정 포인트] 데이터를 가져올 때 학생 고유의 키(token)를 포함하도록 배열 생성
+            const studentList = Object.keys(data).map(key => ({
+                token: key,
+                ...data[key]
+            })).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
+
+            if(totalEl) totalEl.innerText = studentList.length;
+
+            studentList.forEach((s, idx) => {
                 const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const statusDot = s.isOnline 
                     ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
@@ -1147,12 +1164,17 @@ if (c === state.room) {
                         <td style="font-weight:bold;">${statusDot}${s.name}</td>
                         <td>${s.phone}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                        <td>
+                            <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
+                                    style="background-color:#ef4444; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:12px;">
+                                <i class="fa-solid fa-user-minus"></i> 삭제
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
         });
-    }
-};
+    }, // <--- ui 객체 안의 다른 함수와 구분하기 위한 쉼표입니다.
 
 
 // --- 4. Quiz Logic ---
