@@ -846,7 +846,7 @@ function submitQ() {
                 timerEl.innerText = `⏳ 질문 제한: ${mm}:${ss.toString().padStart(2, '0')} 남음`;
                 btn.disabled = true; btn.style.opacity = 0.5; input.disabled = true; input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
                 setTimeout(checkCooldown, 1000);
-            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "강의장 공개, 예의있는 질문"; }
+            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "익명으로 작성되며, 강의장에 공개됩니다. 예의 있는 표현을 부탁드립니다."; }
         }
         function formatTime(ts) { const d = new Date(ts); return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
