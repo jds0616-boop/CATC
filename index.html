@@ -172,6 +172,14 @@
         </div>
         <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
         <div class="input-dock" id="inputDock">
+
+<!-- [신규] 질문 대상(과목) 선택창 -->
+<div style="padding: 0 15px 8px 15px;">
+    <select id="subjectSelect" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
+        <option value="일반">질문 대상 선택 (기본: 일반)</option>
+    </select>
+</div>
+
             <div class="input-box">
                 <textarea id="qInput" class="real-input" rows="1" 
           placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" 
@@ -542,6 +550,18 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
+// [추가] 과목 리스트 실시간 로드
+    firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
+        const data = s.val() || {};
+        const sel = document.getElementById('subjectSelect');
+        if(!sel) return;
+        
+        let html = '<option value="일반">질문 대상 선택 (기본: 일반)</option>';
+        Object.values(data).forEach(name => {
+            html += `<option value="${name}">${name}</option>`;
+        });
+        sel.innerHTML = html;
+    });
 
 
 dbRef.status.on('value', snap => {
@@ -756,15 +776,55 @@ dbRef.quiz.on('value', s => {
                 list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${escapeHtml(item.text)}</div>${metaHtml}</div><div class="q-like-area"><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
             });
         }
-        function submitQ() {
-            const txt = document.getElementById('qInput').value.trim(); if(!txt) return;
-            if(editingKey) { dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); }); return; }
-            const now = Date.now();
-            if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
-            const ref = dbRef.qa.push(); ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
-            myQs[ref.key] = now; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs)); lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
-            resetInput(); checkCooldown();
-        }
+
+
+function submitQ() {
+    const txt = document.getElementById('qInput').value.trim();
+    if(!txt) return;
+
+    // [추가] 선택된 과목(교수님) 가져오기
+    const subject = document.getElementById('subjectSelect').value;
+
+    // 수정 모드일 때
+    if(editingKey) {
+        dbRef.qa.child(editingKey).update({ 
+            text: txt, 
+            subject: subject // 수정 시에도 과목 반영
+        }).then(() => { 
+            alert("수정 완료"); 
+            resetInput(); 
+        });
+        return;
+    }
+
+    // 도배 방지 체크
+    const now = Date.now();
+    if(now - lastPostTime < 120000) { 
+        alert("잠시 후 질문해주세요."); 
+        return; 
+    }
+
+    // 새 질문 등록
+    const ref = dbRef.qa.push();
+    ref.set({
+        text: txt,
+        subject: subject, // 과목명 저장
+        likes: 0,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // 로컬 데이터 업데이트
+    myQs[ref.key] = now;
+    localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
+    lastPostTime = now;
+    localStorage.setItem(`lastTime_${currentRoom}`, now);
+    
+    resetInput();
+    checkCooldown();
+}
+
+
+
         function toggleLike(key) { if(myLikes[key]) { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; }); delete myLikes[key]; } else { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; }); myLikes[key] = true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
         function editQ(key) {
             dbRef.qa.child(key).once('value', s => {

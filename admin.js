@@ -255,6 +255,7 @@ const dataMgr = {
         document.getElementById('roomSelect').value = room;
         document.getElementById('roomStatusSelect').disabled = false;
         ui.updateHeaderRoom(room);
+        subjectMgr.init();
         ui.setMode('qa');
         document.getElementById('qaList').innerHTML = "";
         state.qaData = {};
@@ -438,6 +439,90 @@ const profMgr = {
             }
         });
     },
+
+
+// --- [신규] 과목(세션) 관리 로직 ---
+const subjectMgr = {
+    list: [],
+    selectedFilter: 'all', // [추가] 현재 선택된 과목 필터
+    
+    // 과목 데이터 초기화 및 감시
+    init: function() {
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
+            const data = s.val() || {};
+            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+            this.renderList();
+            this.renderFilters(); // [추가] 필터 버튼 업데이트
+            // 학생 화면에 과목 리스트가 있으면 여기서도 업데이트 트리거 가능
+        });
+    },
+
+    // [신규] Q&A 상단에 과목 필터 버튼 생성
+    renderFilters: function() {
+        const bar = document.getElementById('subjectFilterBar');
+        if(!bar) return;
+        
+        // 전체 보기 버튼 기본 생성
+        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
+        
+        this.list.forEach(item => {
+            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
+        });
+        bar.innerHTML = html;
+    },
+
+    // [신규] 필터 변경 시 작동
+    setFilter: function(subName) {
+        this.selectedFilter = subName;
+        this.renderFilters();
+        ui.renderQaList('all'); // 질문 목록 다시 그리기 (기본 필터는 'all'로 유지하며 과목만 필터링)
+    },
+
+
+
+    
+    // 과목 리스트 그리기
+    renderList: function() {
+        const container = document.getElementById('subjectListContainer');
+        if(!container) return;
+        container.innerHTML = "";
+        
+        if(this.list.length === 0) {
+            container.innerHTML = '<div style="color: #64748b; font-size: 11px; text-align: center; padding: 10px;">등록된 과목이 없습니다.</div>';
+            return;
+        }
+
+        this.list.forEach(item => {
+            container.innerHTML += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: #1e293b; margin-bottom: 3px; border-radius: 4px; font-size: 12px; color: white;">
+                    <span>${item.name}</span>
+                    <i class="fa-solid fa-xmark" onclick="subjectMgr.deleteSubject('${item.key}')" style="cursor: pointer; color: #ef4444;"></i>
+                </div>
+            `;
+        });
+    },
+    
+    // 과목 추가
+    addSubject: function() {
+        const input = document.getElementById('newSubjectInput');
+        const name = input.value.trim();
+        if(!name) return;
+        
+        firebase.database().ref(`courses/${state.room}/settings/subjects`).push(name).then(() => {
+            input.value = "";
+            input.focus();
+        });
+    },
+    
+    // 과목 삭제
+    deleteSubject: function(key) {
+        if(confirm("이 과목을 삭제하시겠습니까?")) {
+            firebase.database().ref(`courses/${state.room}/settings/subjects/${key}`).remove();
+        }
+    }
+};
+
     
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
@@ -793,6 +878,11 @@ const ui = {
         if(!list) return;
         list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
+
+        // [추가] 과목 필터링 로직
+        if(subjectMgr.selectedFilter !== 'all') {
+            items = items.filter(x => x.subject === subjectMgr.selectedFilter);
+        }
         
         if(f==='pin') items=items.filter(x=>x.status==='pin'); 
         else if(f==='later') items=items.filter(x=>x.status==='later');

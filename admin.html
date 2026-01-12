@@ -110,6 +110,19 @@
             </div>
 
             <div class="setting-group"><label class="setting-label">Course Name</label><input type="text" id="courseNameInput" class="setting-input"></div>
+<!-- [신규] 과목(세션) 관리 섹션 -->
+<div class="setting-group" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+    <label class="setting-label">과목(세션) 관리</label>
+    <div id="subjectListContainer" style="max-height: 120px; overflow-y: auto; background: #0f172a; border-radius: 6px; padding: 5px; margin-bottom: 8px; border: 1px solid #334155;">
+        <!-- 과목 리스트가 여기에 생성됨 -->
+    </div>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="newSubjectInput" class="setting-input" placeholder="과목 또는 강사명 입력" style="flex: 1;">
+        <button class="btn-action btn-primary btn-small" onclick="subjectMgr.addSubject()" style="width: 50px;">추가</button>
+    </div>
+</div>
+
+
                 <div class="setting-group"><label class="setting-label">Student Room PW</label><input type="password" id="roomPw" class="setting-input" maxlength="4"></div>
                 <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings</button>
                 <div class="divider"></div>
@@ -211,6 +224,8 @@
                     <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
                     <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
                     <div class="filter-chip" onclick="ui.filterQa('later')">Answer Later</div>
+                   <div id="subjectFilterBar" style="display:flex; gap:8px; margin-left:15px; padding-left:15px; border-left:1px solid #e2e8f0; overflow-x:auto; white-space:nowrap; scrollbar-width:none;"></div>
+    <!-- 과목 필터 버튼들이 여기에 생성됨 -->
                 </div>
                 <div class="qa-list" id="qaList"></div>
             </div>
