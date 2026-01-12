@@ -364,7 +364,7 @@ let confirmCallback = null;
         let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
 
 
-ffunction sendAns(idx) {
+function sendAns(idx) {
     if (!canAnswer || !currentQuizId) return; 
 
     myLastChoiceIdx = idx; // 내가 선택한 번호 저장
