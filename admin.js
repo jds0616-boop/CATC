@@ -126,6 +126,9 @@ const authMgr = {
     }
 };
 
+
+
+
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     checkAdminSecret: async function(input) {
@@ -165,23 +168,20 @@ const dataMgr = {
     },
     
     loadInitialData: function() {
-    // 1. 마지막 접속했던 방 정보가 있는지 확인
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        state.room = lastRoom; // 변수에 미리 넣어줌
-    }
+        const lastRoom = localStorage.getItem('kac_last_room');
+        if (lastRoom) {
+            state.room = lastRoom;
+        }
 
-    // 2. 목록 그리기 시작
-    ui.initRoomSelect();
+        ui.initRoomSelect();
 
-    // 3. 마지막 방 정보가 있으면 바로 그 방으로 입장 처리, 없으면 대기실행
-    if (lastRoom) {
-        this.forceEnterRoom(lastRoom);
-    } else {
-        ui.showWaitingRoom();
-    }
+        if (lastRoom) {
+            this.forceEnterRoom(lastRoom);
+        } else {
+            ui.showWaitingRoom();
+        }
 
-    state.quizList = DEFAULT_QUIZ_DATA;
+        state.quizList = DEFAULT_QUIZ_DATA;
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { 
@@ -193,11 +193,10 @@ const dataMgr = {
     },
     
     switchRoomAttempt: async function(newRoom) {
-    // [추가] 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
-    if (localStorage.getItem('last_owned_room') === newRoom) {
-        this.forceEnterRoom(newRoom);
-        return;
-    }
+        if (localStorage.getItem('last_owned_room') === newRoom) {
+            this.forceEnterRoom(newRoom);
+            return;
+        }
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
@@ -238,39 +237,34 @@ const dataMgr = {
     },
 
     forceEnterRoom: async function(room) {
-    firebase.database().ref(`courses/${room}/status`).update({ 
-        lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
-    });
-    document.querySelector('.mode-tabs').style.display = 'flex'; 
-    document.getElementById('floatingQR').style.display = 'none';
+        firebase.database().ref(`courses/${room}/status`).update({ 
+            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
+        });
+        document.querySelector('.mode-tabs').style.display = 'flex'; 
+        document.getElementById('floatingQR').style.display = 'none';
 
-    // --- [추가 코드 시작] ---
-    state.room = room; // 방 번호 업데이트
+        state.room = room;
 
-    // 현황판 테이블 하이라이트 즉시 갱신
-    const rows = document.querySelectorAll('#statusTableBody tr');
-    rows.forEach(row => {
-        const roomCell = row.querySelector('td:nth-child(2)'); // Room 이름이 적힌 두 번째 칸
-        if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
-            row.classList.add('is-my-room'); // 강조 클래스 추가
-            // MY 배지가 없으면 추가
-            if (!roomCell.querySelector('.my-room-badge')) {
-                roomCell.innerHTML += '<span class="my-room-badge">MY</span>';
+        const rows = document.querySelectorAll('#statusTableBody tr');
+        rows.forEach(row => {
+            const roomCell = row.querySelector('td:nth-child(2)');
+            if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
+                row.classList.add('is-my-room');
+                if (!roomCell.querySelector('.my-room-badge')) {
+                    roomCell.innerHTML += '<span class="my-room-badge">MY</span>';
+                }
+            } else {
+                row.classList.remove('is-my-room');
+                const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
+                if (badge) badge.remove();
             }
-        } else {
-            row.classList.remove('is-my-room'); // 강조 클래스 제거
-            // 다른 방의 MY 배지는 삭제
-            const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
-            if (badge) badge.remove();
-        }
-    });
-
+        });
 
         const btnReset = document.getElementById('btnReset');
         if(btnReset) {
-            btnReset.disabled = false; // 버튼 클릭 허용
-            btnReset.style.opacity = '1'; // 다시 진하게
-            btnReset.style.cursor = 'pointer'; // 다시 손가락 모양으로
+            btnReset.disabled = false;
+            btnReset.style.opacity = '1';
+            btnReset.style.cursor = 'pointer';
         }
         localStorage.setItem('kac_last_room', room);
         document.getElementById('roomSelect').value = room;
@@ -309,22 +303,15 @@ const dataMgr = {
             }
         });
         
-// 수강생 명부(students)를 실시간으로 감시하여 진짜 온라인인 사람만 셉니다.
-firebase.database().ref(`courses/${room}/students`).on('value', s => {
-    const data = s.val() || {};
-    // 1. 이름이 있고 + 2. 온라인(isOnline)인 사람만 필터링
-    const activeUsers = Object.values(data).filter(user => 
-        user.name && user.name !== "undefined" && user.isOnline === true
-    );
-    
-    const count = activeUsers.length;
-    
-    // 퀴즈 화면의 숫자 업데이트
-    const quizEl = document.getElementById('currentJoinCount');
-    if(quizEl) quizEl.innerText = count;
-
-    // 대기실 현황판의 '대기' 인원 등 계산을 위해 필요 시 활용 가능
-});
+        firebase.database().ref(`courses/${room}/students`).on('value', s => {
+            const data = s.val() || {};
+            const activeUsers = Object.values(data).filter(user => 
+                user.name && user.name !== "undefined" && user.isOnline === true
+            );
+            const count = activeUsers.length;
+            const quizEl = document.getElementById('currentJoinCount');
+            if(quizEl) quizEl.innerText = count;
+        });
         
         this.fetchCodeAndRenderQr(room);
         
@@ -362,15 +349,13 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
 
     saveSettings: function() {
         if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요."); // 수정됨
+            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요.");
             return;
         }
-
         const rawPw = document.getElementById('roomPw').value;
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         const selectedProf = document.getElementById('profSelect').value;
-        
         const encryptedPw = rawPw ? btoa(rawPw) : "Nzc3Nw==";
 
         firebase.database().ref(`courses/${state.room}/settings`).update({ 
@@ -386,7 +371,6 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
             localStorage.setItem('last_owned_room', state.room);
             ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
         });
-
         document.getElementById('displayCourseTitle').innerText = newName;
     },
 
@@ -420,7 +404,7 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
         }
     },
 
-resetCourse: function() {
+    resetCourse: function() {
         if (!state.room) {
             ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
             return;
@@ -438,7 +422,7 @@ resetCourse: function() {
                 });
             });
         }
-    }, // <--- 여기 쉼표가 아주 중요합니다!
+    },
 
     deleteStudent: function(token) {
         if(!state.room) return;
@@ -452,15 +436,11 @@ resetCourse: function() {
                 });
         }
     }
-}; // <--- dataMgr 객체를 닫는 최종 괄호입니다.
-
-
-
+}; 
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
     list: [],
-    
     init: function() {
         firebase.database().ref('system/professors').on('value', s => {
             const data = s.val() || {};
@@ -472,7 +452,6 @@ const profMgr = {
             }
         });
     },
-
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
         if(!sel) return;
@@ -486,14 +465,12 @@ const profMgr = {
             sel.appendChild(opt);
         });
     },
-    
     openManageModal: function() {
         this.renderManageList();
         document.getElementById('profManageModal').style.display = 'flex';
         const input = document.getElementById('newProfInput');
         if(input) input.focus();
     },
-    
     renderManageList: function() {
         const div = document.getElementById('profListContainer');
         if(!div) return;
@@ -507,22 +484,14 @@ const profMgr = {
         });
         div.scrollTop = div.scrollHeight;
     },
-    
     addProf: function() {
         const input = document.getElementById('newProfInput');
         const name = input.value.trim();
-        if (!name) { 
-            alert("교수님 성함을 입력해주세요."); 
-            return; 
-        }
+        if (!name) { alert("교수님 성함을 입력해주세요."); return; }
         firebase.database().ref('system/professors').push(name).then(() => {
-            input.value = ""; 
-            input.focus();
-        }).catch(err => { 
-            alert("저장 실패: " + err.message); 
+            input.value = ""; input.focus();
         });
     },
-    
     deleteProf: function(key) {
         if(confirm("정말 삭제하시겠습니까?")) {
             firebase.database().ref(`system/professors/${key}`).remove();
@@ -534,8 +503,7 @@ const profMgr = {
 const subjectMgr = {
     list: [],
     selectedFilter: 'all', 
-    
-init: function() {
+    init: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
             const data = s.val() || {};
@@ -544,35 +512,28 @@ init: function() {
             this.renderFilters(); 
         });
     },
-
     renderFilters: function() {
         const bar = document.getElementById('subjectFilterBar');
         if(!bar) return;
-        
         let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
-        
         this.list.forEach(item => {
             html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
         });
         bar.innerHTML = html;
     },
-
     setFilter: function(subName) {
         this.selectedFilter = subName;
         this.renderFilters();
         ui.renderQaList('all'); 
     },
-    
     renderList: function() {
         const container = document.getElementById('subjectListContainer');
         if(!container) return;
         container.innerHTML = "";
-        
         if(this.list.length === 0) {
             container.innerHTML = '<div style="color: #64748b; font-size: 11px; text-align: center; padding: 10px;">등록된 과목이 없습니다.</div>';
             return;
         }
-
         this.list.forEach(item => {
             container.innerHTML += `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: #1e293b; margin-bottom: 3px; border-radius: 4px; font-size: 12px; color: white;">
@@ -582,24 +543,28 @@ init: function() {
             `;
         });
     },
-    
     addSubject: function() {
         const input = document.getElementById('newSubjectInput');
         const name = input.value.trim();
         if(!name) return;
-        
         firebase.database().ref(`courses/${state.room}/settings/subjects`).push(name).then(() => {
-            input.value = "";
-            input.focus();
+            input.value = ""; input.focus();
         });
     },
-    
     deleteSubject: function(key) {
         if(confirm("이 과목을 삭제하시겠습니까?")) {
             firebase.database().ref(`courses/${state.room}/settings/subjects/${key}`).remove();
         }
     }
 };
+
+
+
+
+
+
+
+
 
 
 
