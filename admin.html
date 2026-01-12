@@ -228,8 +228,8 @@
         <div class="mode-tabs">
             <button class="mode-btn" id="tab-waiting" onclick="ui.setMode('waiting')"><i class="fa-solid fa-chart-line"></i> 강의 현황</button>
             <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i>수강생 현황</button>
-            <button class="mode-btn" id="tab-notice" onclick="ui.setMode('notice')"><i class="fa-solid fa-bullhorn"></i> 공지 관리</button>
-            <button class="mode-btn" id="tab-qr" onclick="ui.setMode('qr')"><i class="fa-solid fa-qrcode"></i> 출결 QR</button>
+            <button class="mode-btn" onclick="dataMgr.openNoticeManage()"><i class="fa-solid fa-bullhorn"></i> 공지 관리</button>
+            <button class="mode-btn" onclick="dataMgr.openAttendanceQr()"><i class="fa-solid fa-qrcode"></i> 출결 QR</button>
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
             <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
