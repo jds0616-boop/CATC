@@ -55,3 +55,6 @@ function getYesterdayString() {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 }
+
+// 오프라인 상태에서도 데이터를 임시로 저장하여 앱이 멈추지 않게 함
+firebase.database().goOnline();

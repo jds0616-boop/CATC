@@ -1728,8 +1728,20 @@ const printMgr = {
     }
 };
 
+// 기존 window.onload를 아래 내용으로 덮어쓰기 하세요.
 window.onload = function() { 
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
     profMgr.init(); 
+
+    // [추가] 새로고침해도 마지막에 선택한 방으로 자동 입장
+    const lastRoom = localStorage.getItem('kac_last_room');
+    if (lastRoom) {
+        // 약간의 시간을 두고 실행하여 Firebase 연결을 기다립니다.
+        setTimeout(() => {
+            if (firebase.auth().currentUser) {
+                dataMgr.forceEnterRoom(lastRoom);
+            }
+        }, 1000);
+    }
 };

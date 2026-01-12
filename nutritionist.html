@@ -37,7 +37,18 @@
 
         /* 업로드 영역 */
         .upload-section { display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .upload-btn { background: var(--accent); color: white; border: none; padding: 15px 40px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .upload-btn { 
+    background: #059669; /* 좀 더 진한 녹색으로 변경 */
+    color: white; 
+    border: none; 
+    padding: 20px 50px; /* 더 크게 */
+    border-radius: 15px; 
+    font-size: 18px; /* 글자도 크게 */
+    font-weight: 800; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3); /* 그림자 추가 */
+}
         .upload-btn:hover { background: #2563eb; transform: translateY(-2px); }
         #preview { width: 100%; max-width: 400px; border-radius: 15px; margin-top: 10px; display: none; border: 4px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         
