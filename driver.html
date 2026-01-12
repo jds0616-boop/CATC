@@ -2,436 +2,274 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SHUTTLE DASHBOARD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>KAC Driver Monitoring</title>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+  <!-- Font Awesome & Pretendard Font -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 
   <style>
-    :root{
-      --bg: #f6f7fb;
-      --ink: #0f172a;
-      --muted:#64748b;
-      --card:#ffffff;
-      --line:#e6e8ef;
-      --shadow: 0 10px 30px rgba(15,23,42,.08);
-
-      --osong:#2563eb;      /* blue */
-      --terminal:#f59e0b;   /* amber */
-      --airport:#10b981;    /* emerald */
-      --car: #8b5cf6; /* Purple */
+    :root {
+      --navy-dark: #0f172a;   /* 상/하단바 배경 */
+      --bg-light: #f8fafc;    /* 메인 배경색 */
+      --card-white: #ffffff;  /* 카드 배경 */
+      --text-dark: #1e293b;   /* 메인 텍스트 */
+      --accent-blue: #2563eb;
+      --osong: #3b82f6;
+      --term: #f59e0b;
+      --air: #10b981;
     }
 
-    *{box-sizing:border-box}
-    body{
-      font-family:'Pretendard',system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif;
-      background: var(--bg);
-      margin:0; color:var(--ink);
-      line-height:1.55;
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Pretendard', sans-serif;
+      background: #e2e8f0; 
+      display: flex; justify-content: center;
+      color: var(--text-dark);
     }
 
-    .dashboard-wrapper{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 18px 14px 88px;
+    .app-container {
+      width: 100%;
+      max-width: 600px; 
+      min-height: 100dvh;
+      background: var(--bg-light); 
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 30px rgba(0,0,0,0.1);
     }
 
-    /* Header */
-    .app-header{
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(255,255,255,.75);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(230,232,239,.6);
-      border-radius: 18px;
-      padding: 16px 16px 14px;
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
+    /* --- 상단바 (고정) --- */
+    .app-header {
+      position: fixed; top: 0; width: 100%; max-width: 600px; height: 60px;
+      background: var(--navy-dark);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 1000;
     }
-    .app-header h1{
-      margin:0;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: -0.3px;
-      display:flex;
-      align-items:center;
-      gap:10px;
+    .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
+    .header-title { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -0.5px; }
+
+    /* --- 하단바 (고정) --- */
+    .app-footer {
+      position: fixed; bottom: 0; width: 100%; max-width: 600px; height: 54px;
+      background: var(--navy-dark); color: #94a3b8;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; font-size: 12px; z-index: 1000;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .app-header h1 .dot{
-      width:10px;height:10px;border-radius:999px;
-      background: #22c55e;
-      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
-      flex:0 0 auto;
-    }
-    .app-header p{
-      margin:6px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
+    .footer-logo img { 
+      height: 22px; 
+      display: block;
+      filter: brightness(0) invert(1); /* 어두운 배경에 맞게 로고 반전 */
+      opacity: 0.8;
     }
 
-    /* Summary */
-    .stats-grid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .stat-card{
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px 14px;
-      box-shadow: var(--shadow);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      min-height: 62px;
-    }
-    .stat-left{
-      display:flex;align-items:center;gap:10px;
-    }
-    .pill{
-      width: 10px;height: 34px;border-radius: 999px;
-      opacity:.95;
-    }
-    .stat-meta{
-      display:flex;flex-direction:column;
-      gap:2px;
-    }
-    .stat-meta span{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .stat-meta strong{
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: -0.4px;
+    /* --- 메인 콘텐츠 영역 --- */
+    .app-content {
+      flex: 1;
+      margin-top: 60px; margin-bottom: 54px;
+      padding: 24px 20px;
     }
 
-    /* Main grid */
-    .main-grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 14px;
+    /* 전체 요약 카드 */
+    .main-summary {
+      background: var(--card-white);
+      border-radius: 24px; padding: 24px;
+      text-align: center; margin-bottom: 28px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+    .summary-label { font-size: 14px; color: #64748b; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .summary-label i { color: #3b82f6; font-size: 10px; }
+    .summary-count { font-size: 60px; font-weight: 900; color: var(--navy-dark); line-height: 1; }
+    .summary-count span { font-size: 22px; font-weight: 700; color: #94a3b8; margin-left: 4px; }
+
+    /* 목적지 섹션 리스트 */
+    .dest-list { display: flex; flex-direction: column; gap: 16px; }
+    
+    .dest-card {
+      background: var(--card-white);
+      border-radius: 20px; 
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
 
-    .destination-block{
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      overflow:hidden;
-      box-shadow: var(--shadow);
+    .dest-header {
+      padding: 16px 20px; 
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
     }
 
-    .dest-header{
-      padding: 14px 14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-      color:#fff;
+    .dest-info { display: flex; align-items: center; gap: 14px; }
+    .dest-icon { 
+        width: 44px; height: 44px; border-radius: 12px; 
+        display: flex; align-items: center; justify-content: center; font-size: 20px; 
     }
-    .dest-header h2{
-      margin:0;
-      font-size: 15px;
-      font-weight: 900;
-      letter-spacing: -0.2px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .dest-header h2 i{opacity:.95}
-    .total-badge{
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.22);
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-    }
-    .osong-bg{background: linear-gradient(135deg, rgba(37,99,235,1), rgba(59,130,246,1));}
-    .terminal-bg{background: linear-gradient(135deg, rgba(245,158,11,1), rgba(251,191,36,1));}
-    .airport-bg{background: linear-gradient(135deg, rgba(16,185,129,1), rgba(52,211,153,1));}
+    .dest-name { font-size: 17px; font-weight: 800; color: var(--text-dark); }
+    .dest-total-val { font-size: 20px; font-weight: 900; color: var(--navy-dark); }
 
-    .dest-content{
-      padding: 12px 12px 14px;
+    .dest-body {
+      padding: 16px 20px;
+      display: flex; flex-wrap: wrap; gap: 10px;
+      background: #fafcfe;
     }
 
-    /* Room list (clean) */
-    .room-unit{
-      background: #fbfcff;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      overflow:hidden;
-      margin-bottom: 10px;
+    /* 강의실별 배지 */
+    .room-badge {
+      background: #fff; 
+      border: 1.5px solid #e2e8f0;
+      padding: 10px 14px; border-radius: 12px; 
+      font-size: 14px; font-weight: 800;
+      color: #475569;
+      display: flex; align-items: center;
     }
-    .room-unit-header{
-      padding: 10px 12px;
-      background: #0b1220;
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .2px;
-    }
-    .room-unit-header span:last-child{
-      color: rgba(255,255,255,.92);
-      font-weight: 900;
-    }
+    .room-badge b { color: var(--accent-blue); margin-left: 8px; font-size: 16px; }
 
-    /* Names: less "sticker", more "list" */
-    .names-flex{
-      padding: 10px 12px 12px;
-      display:flex;
-      flex-wrap:wrap;
-      gap: 6px 10px;
-    }
-    .name-label{
-      background: transparent;
-      border: none;
-      box-shadow:none;
-      padding: 0;
-      border-radius: 0;
-      font-size: 14px;
-      font-weight: 800;
-      color: #111827;
-    }
-    .name-label::before{
-      content:"•";
-      margin-right: 6px;
-      color: #94a3b8;
-      font-weight: 900;
-    }
+    /* 포인트 컬러 */
+    .osong .dest-icon { background: #eff6ff; color: var(--osong); }
+    .terminal .dest-icon { background: #fffbeb; color: var(--term); }
+    .airport .dest-icon { background: #ecfdf5; color: var(--air); }
 
-    .empty-info{
-      text-align:center;
-      padding: 32px 12px;
-      color: #94a3b8;
-      font-weight: 700;
-      border: 1px dashed rgba(148,163,184,.5);
-      border-radius: 14px;
-      background: #fafafa;
-    }
+    .empty-text { font-size: 13px; color: #cbd5e1; width: 100%; text-align: center; padding: 10px 0; }
 
-    /* bottom bar: smaller + subtle */
-    .bottom-sync{
-      position: fixed;
-      bottom: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(520px, calc(100% - 24px));
-      background: rgba(15, 23, 42, .92);
-      color: #a7f3d0;
-      padding: 10px 12px;
-      text-align: center;
-      font-size: 12px;
-      font-weight: 800;
-      border-radius: 999px;
-      box-shadow: 0 16px 40px rgba(15,23,42,.22);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-    }
-    .bottom-sync i{margin-right:6px}
-
-    /* Mobile */
-    @media (max-width: 640px){
-      .stats-grid{grid-template-columns: 1fr;}
-      .app-header{border-radius: 16px;}
-      .destination-block{border-radius: 16px;}
-    }
   </style>
 </head>
 
 <body>
-  <div class="dashboard-wrapper">
 
+  <div class="app-container">
+    <!-- 상단바 -->
     <header class="app-header">
-      <h1><span class="dot"></span> 셔틀 탑승객 통합 현황</h1>
-      <p id="updateTimeText">데이터를 실시간으로 불러오는 중...</p>
+      <button class="header-btn" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+      <div class="header-title">KAC Driver Monitoring</div>
+      <button class="header-btn"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <!-- 상단 요약 바 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-left">
-          <div class="pill" style="background: var(--osong)"></div>
-          <div class="stat-meta">
-            <span>오송역</span>
-            <strong id="total-osong">0</strong>
+    <!-- 메인 콘텐츠 -->
+    <main class="app-content">
+      
+      <!-- 전체 요약 (자차 제외 셔틀 인원만 합산) -->
+      <div class="main-summary">
+          <span class="summary-label"><i class="fa-solid fa-shuttle-van"></i> 셔틀 탑승 총원</span>
+          <div class="summary-count" id="total-all">0<span>명</span></div>
+      </div>
+
+      <!-- 목적지 리스트 -->
+      <div class="dest-list">
+          
+          <!-- 오송역 -->
+          <div class="dest-card osong">
+              <div class="dest-header">
+                  <div class="dest-info">
+                      <div class="dest-icon"><i class="fa-solid fa-train"></i></div>
+                      <div class="dest-name">오송역</div>
+                  </div>
+                  <div class="dest-total-val" id="total-osong">0명</div>
+              </div>
+              <div class="dest-body" id="list-osong"></div>
           </div>
-        </div>
-        <i class="fa-solid fa-train" style="opacity:.35"></i>
-      </div>
 
-      <div class="stat-card">
-        <div class="stat-left">
-          <div class="pill" style="background: var(--terminal)"></div>
-          <div class="stat-meta">
-            <span>터미널</span>
-            <strong id="total-terminal">0</strong>
+          <!-- 청주터미널 -->
+          <div class="dest-card terminal">
+              <div class="dest-header">
+                  <div class="dest-info">
+                      <div class="dest-icon"><i class="fa-solid fa-bus-simple"></i></div>
+                      <div class="dest-name">청주터미널</div>
+                  </div>
+                  <div class="dest-total-val" id="total-terminal">0명</div>
+              </div>
+              <div class="dest-body" id="list-terminal"></div>
           </div>
-        </div>
-        <i class="fa-solid fa-bus-simple" style="opacity:.35"></i>
-      </div>
 
-      <div class="stat-card">
-        <div class="stat-left">
-          <div class="pill" style="background: var(--airport)"></div>
-          <div class="stat-meta">
-            <span>청주공항</span>
-            <strong id="total-airport">0</strong>
+          <!-- 청주공항 -->
+          <div class="dest-card airport">
+              <div class="dest-header">
+                  <div class="dest-info">
+                      <div class="dest-icon"><i class="fa-solid fa-plane-up"></i></div>
+                      <div class="dest-name">청주공항</div>
+                  </div>
+                  <div class="dest-total-val" id="total-airport">0명</div>
+              </div>
+              <div class="dest-body" id="list-airport"></div>
           </div>
-        </div>
-        <i class="fa-solid fa-plane-up" style="opacity:.35"></i>
+
       </div>
-    </div>
+    </main>
 
-
-
-<div class="stat-card">
-    <div class="stat-left">
-        <div class="pill" style="background: var(--car)"></div>
-        <div class="stat-meta">
-            <span>자차</span>
-            <strong id="total-car">0</strong>
-        </div>
-    </div>
-    <i class="fa-solid fa-car" style="opacity:.35"></i>
-</div>
-
-
-
-
-
-
-
-    <!-- 메인 콘텐츠 그리드 -->
-    <div class="main-grid">
-
-      <!-- 오송역 블록 -->
-      <div class="destination-block">
-        <div class="dest-header osong-bg">
-          <h2><i class="fa-solid fa-train"></i> 오송역</h2>
-          <span class="total-badge" id="badge-osong">0명</span>
-        </div>
-        <div id="list-osong" class="dest-content"></div>
+    <!-- 하단바 -->
+    <footer class="app-footer">
+      <div id="footer-time">0000년 00월 00일 (요일) 00:00</div>
+      <div class="footer-logo">
+          <img src="logo.png" alt="KAC Logo">
       </div>
-
-      <!-- 터미널 블록 -->
-      <div class="destination-block">
-        <div class="dest-header terminal-bg">
-          <h2><i class="fa-solid fa-bus-simple"></i> 청주터미널</h2>
-          <span class="total-badge" id="badge-terminal">0명</span>
-        </div>
-        <div id="list-terminal" class="dest-content"></div>
-      </div>
-
-      <!-- 공항 블록 -->
-      <div class="destination-block">
-        <div class="dest-header airport-bg">
-          <h2><i class="fa-solid fa-plane-up"></i> 청주공항</h2>
-          <span class="total-badge" id="badge-airport">0명</span>
-        </div>
-        <div id="list-airport" class="dest-content"></div>
-      </div>
-
-<div class="destination-block">
-    <div class="dest-header" style="background: var(--car)">
-        <h2><i class="fa-solid fa-car"></i> 자차 이동</h2>
-        <span class="total-badge" id="badge-car">0명</span>
-    </div>
-    <div id="list-car" class="dest-content"></div>
-</div>
-
-
-
-
-
-
-
-
-    </div>
-  </div>
-
-  <div class="bottom-sync">
-    <i class="fa-solid fa-circle-dot"></i> LIVE DATA SYNC ACTIVE
+    </footer>
   </div>
 
   <script src="config.js"></script>
   <script>
-    firebase.database().ref('courses').on('value', snap => {
-      const allRooms = snap.val() || {};
-      const totals = { osong: 0, terminal: 0, airport: 0, car: 0 };
-      const details = { osong: {}, terminal: {}, airport: {}, car: {} };
+    // --- 실시간 시계 설정 ---
+    function runClock() {
+        const now = new Date();
+        const week = ['일','월','화','수','목','금','토'];
+        const dateStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        document.getElementById('footer-time').innerText = dateStr;
+    }
+    setInterval(runClock, 1000);
+    runClock();
 
-      Object.keys(allRooms).forEach(roomId => {
-        const shuttle = allRooms[roomId].shuttle;
+    // --- Firebase 실시간 데이터 연동 ---
+    firebase.database().ref('courses').on('value', snap => {
+      const data = snap.val() || {};
+      const totals = { osong: 0, terminal: 0, airport: 0 };
+      const details = { osong: {}, terminal: {}, airport: {} };
+
+      Object.keys(data).forEach(rid => {
+        const shuttle = data[rid].shuttle;
         if(!shuttle) return;
 
-        ['osong', 'terminal', 'airport', 'car'].forEach(loc => {
+        ['osong', 'terminal', 'airport'].forEach(loc => {
           if(shuttle[loc]) {
-            const names = Object.values(shuttle[loc]);
-            if(names.length > 0) {
-              totals[loc] += names.length;
-              details[loc][roomId] = names;
+            const count = Object.keys(shuttle[loc]).length;
+            if(count > 0) {
+              totals[loc] += count;
+              details[loc][rid] = count;
             }
           }
         });
       });
 
-      // 숫자 업데이트
-      document.getElementById('total-osong').innerText = totals.osong;
-      document.getElementById('total-terminal').innerText = totals.terminal;
-      document.getElementById('total-airport').innerText = totals.airport;
-      document.getElementById('badge-osong').innerText = totals.osong + '명';
-      document.getElementById('badge-terminal').innerText = totals.terminal + '명';
-      document.getElementById('badge-airport').innerText = totals.airport + '명';
+      // 합계 업데이트
+      const grandTotal = totals.osong + totals.terminal + totals.airport;
+      document.getElementById('total-all').innerHTML = `${grandTotal}<span>명</span>`;
 
-      // 명단 업데이트
-      renderSection('osong', details.osong);
-      renderSection('terminal', details.terminal);
-      renderSection('airport', details.airport);
-      renderSection('car', details.car);
+      // 각 목적지별 렌더링
+      ['osong', 'terminal', 'airport'].forEach(loc => {
+          document.getElementById(`total-${loc}`).innerText = totals[loc] + '명';
+          const container = document.getElementById(`list-${loc}`);
+          container.innerHTML = "";
+          
+          const rooms = Object.keys(details[loc]).sort();
 
-      document.getElementById('updateTimeText').innerText =
-        "최근 업데이트: " + new Date().toLocaleTimeString();
-    });
-
-    function renderSection(locId, data) {
-      const container = document.getElementById(`list-${locId}`);
-      container.innerHTML = "";
-      const roomIds = Object.keys(data).sort();
-
-      if(roomIds.length === 0) {
-        container.innerHTML = `<div class="empty-info">신청자가 없습니다</div>`;
-        return;
-      }
-
-      roomIds.forEach(roomId => {
-        const names = data[roomId];
-        const unit = document.createElement('div');
-        unit.className = 'room-unit';
-        unit.innerHTML = `
-          <div class="room-unit-header">
-            <span>ROOM ${roomId}</span>
-            <span>${names.length}명</span>
-          </div>
-          <div class="names-flex">
-            ${names.map(name => `<div class="name-label">${name}</div>`).join('')}
-          </div>
-        `;
-        container.appendChild(unit);
+          if(rooms.length === 0) {
+              container.innerHTML = `<span class="empty-text">신청자 없음</span>`;
+          } else {
+              rooms.forEach(rid => {
+                  const badge = document.createElement('div');
+                  badge.className = 'room-badge';
+                  badge.innerHTML = `ROOM ${rid} <b>${details[loc][rid]}명</b>`;
+                  container.appendChild(badge);
+              });
+          }
       });
-    }
+    });
   </script>
 </body>
 </html>
