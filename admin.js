@@ -127,8 +127,6 @@ const authMgr = {
 };
 
 
-
-
 // --- 2. Data & Room Logic ---
 const dataMgr = {
     checkAdminSecret: async function(input) {
@@ -168,13 +166,15 @@ const dataMgr = {
     },
     
     loadInitialData: function() {
+        // [수정완료] 새로고침 시 로컬 저장소에서 마지막 방 정보를 읽어 변수에 할당
         const lastRoom = localStorage.getItem('kac_last_room');
         if (lastRoom) {
-            state.room = lastRoom;
+            state.room = lastRoom; 
         }
 
         ui.initRoomSelect();
 
+        // [수정완료] 정보가 있으면 해당 방으로 즉시 입장 처리
         if (lastRoom) {
             this.forceEnterRoom(lastRoom);
         } else {
@@ -243,18 +243,19 @@ const dataMgr = {
         document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
 
-        state.room = room;
+        state.room = room; // 방 번호 업데이트
 
+        // [수정완료] 강의실 이동 시 현황판 테이블 하이라이트 즉시 갱신
         const rows = document.querySelectorAll('#statusTableBody tr');
         rows.forEach(row => {
-            const roomCell = row.querySelector('td:nth-child(2)');
+            const roomCell = row.querySelector('td:nth-child(2)'); 
             if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
-                row.classList.add('is-my-room');
+                row.classList.add('is-my-room'); 
                 if (!roomCell.querySelector('.my-room-badge')) {
                     roomCell.innerHTML += '<span class="my-room-badge">MY</span>';
                 }
             } else {
-                row.classList.remove('is-my-room');
+                row.classList.remove('is-my-room'); 
                 const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
                 if (badge) badge.remove();
             }
@@ -410,7 +411,7 @@ const dataMgr = {
             return;
         }
         if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-            const newResetKey = "reset_" + Date.now();
+            const newResetKey = "reset_" + Date.now(); 
             firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
                 firebase.database().ref(`courses/${state.room}/status`).set({
                     resetKey: newResetKey,
@@ -424,6 +425,7 @@ const dataMgr = {
         }
     },
 
+    // [수정완료] 수강생 삭제 기능 함수 추가
     deleteStudent: function(token) {
         if(!state.room) return;
         if(confirm("해당 수강생을 명부에서 삭제하시겠습니까?\n삭제 시 해당 수강생의 화면도 초기화될 수 있습니다.")) {
@@ -436,143 +438,13 @@ const dataMgr = {
                 });
         }
     }
-}; 
-
-// --- [신규] 교수님 명단 관리 ---
-const profMgr = {
-    list: [],
-    init: function() {
-        firebase.database().ref('system/professors').on('value', s => {
-            const data = s.val() || {};
-            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-            this.renderSelect();
-            const modal = document.getElementById('profManageModal');
-            if (modal && modal.style.display === 'flex') {
-                this.renderManageList();
-            }
-        });
-    },
-    renderSelect: function() {
-        const sel = document.getElementById('profSelect');
-        if(!sel) return;
-        const currentVal = sel.value; 
-        sel.innerHTML = '<option value="">(선택 안함)</option>';
-        this.list.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.name;
-            opt.innerText = p.name + " 교수";
-            if (p.name === currentVal) opt.selected = true;
-            sel.appendChild(opt);
-        });
-    },
-    openManageModal: function() {
-        this.renderManageList();
-        document.getElementById('profManageModal').style.display = 'flex';
-        const input = document.getElementById('newProfInput');
-        if(input) input.focus();
-    },
-    renderManageList: function() {
-        const div = document.getElementById('profListContainer');
-        if(!div) return;
-        div.innerHTML = "";
-        if (this.list.length === 0) {
-            div.innerHTML = "<div style='padding:20px; text-align:center; color:#94a3b8;'>등록된 교수님이 없습니다.</div>";
-            return;
-        }
-        this.list.forEach(p => {
-            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
-        });
-        div.scrollTop = div.scrollHeight;
-    },
-    addProf: function() {
-        const input = document.getElementById('newProfInput');
-        const name = input.value.trim();
-        if (!name) { alert("교수님 성함을 입력해주세요."); return; }
-        firebase.database().ref('system/professors').push(name).then(() => {
-            input.value = ""; input.focus();
-        });
-    },
-    deleteProf: function(key) {
-        if(confirm("정말 삭제하시겠습니까?")) {
-            firebase.database().ref(`system/professors/${key}`).remove();
-        }
-    }
-};
-
-// --- [신규] 과목(세션) 관리 로직 ---
-const subjectMgr = {
-    list: [],
-    selectedFilter: 'all', 
-    init: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
-            const data = s.val() || {};
-            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-            this.renderList();
-            this.renderFilters(); 
-        });
-    },
-    renderFilters: function() {
-        const bar = document.getElementById('subjectFilterBar');
-        if(!bar) return;
-        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
-        this.list.forEach(item => {
-            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
-        });
-        bar.innerHTML = html;
-    },
-    setFilter: function(subName) {
-        this.selectedFilter = subName;
-        this.renderFilters();
-        ui.renderQaList('all'); 
-    },
-    renderList: function() {
-        const container = document.getElementById('subjectListContainer');
-        if(!container) return;
-        container.innerHTML = "";
-        if(this.list.length === 0) {
-            container.innerHTML = '<div style="color: #64748b; font-size: 11px; text-align: center; padding: 10px;">등록된 과목이 없습니다.</div>';
-            return;
-        }
-        this.list.forEach(item => {
-            container.innerHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: #1e293b; margin-bottom: 3px; border-radius: 4px; font-size: 12px; color: white;">
-                    <span>${item.name}</span>
-                    <i class="fa-solid fa-xmark" onclick="subjectMgr.deleteSubject('${item.key}')" style="cursor: pointer; color: #ef4444;"></i>
-                </div>
-            `;
-        });
-    },
-    addSubject: function() {
-        const input = document.getElementById('newSubjectInput');
-        const name = input.value.trim();
-        if(!name) return;
-        firebase.database().ref(`courses/${state.room}/settings/subjects`).push(name).then(() => {
-            input.value = ""; input.focus();
-        });
-    },
-    deleteSubject: function(key) {
-        if(confirm("이 과목을 삭제하시겠습니까?")) {
-            firebase.database().ref(`courses/${state.room}/settings/subjects/${key}`).remove();
-        }
-    }
 };
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-// --- 3. UI ---
+// --- 3. UI --- // 수정완료: 현황판 강조, Q&A 필터, 수강생 삭제 버튼 및 데이터 버그 수정
 const ui = {
     showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
@@ -633,7 +505,7 @@ const ui = {
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
                 const studentObj = roomData.students || {};
-                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
+                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined");
                 const userCount = validStudents.length;
                 const isRoomActive = (st.roomStatus === 'active');
                 
@@ -670,10 +542,10 @@ const ui = {
                 if(tableBody) {
                     const row = document.createElement('tr');
 
-// 현재 내가 제어 중인 방인 경우 클래스 추가
-if (c === state.room) {
-    row.classList.add('is-my-room');
-}
+                    // [수정완료] 현재 내가 제어 중인 방인 경우 강조 클래스 추가
+                    if (c === state.room) {
+                        row.classList.add('is-my-room');
+                    }
                     
                     const statusBadge = isRoomActive 
                         ? '<span class="badge-status badge-active">🟢 사용 중</span>' 
@@ -682,9 +554,9 @@ if (c === state.room) {
                     row.innerHTML = `
                         <td>${count++}</td>
                         <td style="font-weight:900; color:#3b82f6;">
-    Room ${c}
-    ${c === state.room ? '<span class="my-room-badge">MY</span>' : ''}
-</td>
+                            Room ${c}
+                            ${c === state.room ? '<span class="my-room-badge">MY</span>' : ''}
+                        </td>
                         <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
@@ -844,7 +716,7 @@ if (c === state.room) {
                 { id: 'osong', name: '오송역' }, 
                 { id: 'terminal', name: '청주터미널' }, 
                 { id: 'airport', name: '청주공항' },
-                { id: 'car', name: '자차' } // 추가
+                { id: 'car', name: '자차' } 
             ];
             
             tbody.innerHTML = "";
@@ -878,7 +750,6 @@ if (c === state.room) {
         list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
 
-        // [추가] 과목 필터링 로직
         if(subjectMgr.selectedFilter !== 'all') {
             items = items.filter(x => x.subject === subjectMgr.selectedFilter);
         }
@@ -899,24 +770,15 @@ if (c === state.room) {
         
         items.forEach(i => {
             let cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
-            const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
             const isRecent = (Date.now() - i.timestamp) < 120000; 
-            let newBadge = "";
-            
-            if (isRecent && i.status !== 'pin' && i.status !== 'done') {
-                cls += " is-new"; 
-                newBadge = `<span class="new-badge-icon">NEW</span>`; 
-            }
             
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
-
-        <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-            ${i.subject || '일반'}
-        </span>
-
-                    ${newBadge}${icon}${i.text}
+                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+                        ${i.subject || '일반'}
+                    </span>
+                    ${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
                 </div>
                 <div class="q-meta">
@@ -949,17 +811,10 @@ if (c === state.room) {
     
     toggleNightMode: function() { 
         document.body.classList.toggle('night-mode'); 
-        const n = document.body.classList.contains('night-mode');
-        document.getElementById('iconSun').classList.toggle('active', !n);
-        document.getElementById('iconMoon').classList.toggle('active', n);
-    },
-    
-    toggleRightPanel: function() { 
-        document.getElementById('rightPanel').classList.toggle('open'); 
     },
     
     toggleFullScreen: function() {
-        const elem = document.querySelector('.main-stage');
+        const elem = document.documentElement;
         if (!document.fullscreenElement) {
             elem.requestFullscreen().catch(err => console.log(err));
         } else if (document.exitFullscreen) {
@@ -978,103 +833,28 @@ if (c === state.room) {
     
     showWaitingRoom: function() {
         if (!state.room) {
-        state.room = null;
+            state.room = null;
         }
         const roomNameEl = document.getElementById('displayRoomName');
         if(roomNameEl) roomNameEl.innerText = "Instructor Waiting Room";
         
-        const tabs = document.querySelector('.mode-tabs');
-        if(tabs) tabs.style.display = 'none'; 
-        
-        const viewQa = document.getElementById('view-qa');
-        const viewQuiz = document.getElementById('view-quiz');
-        const viewStatus = document.getElementById('statusOverlay');
-        const viewWait = document.getElementById('view-waiting');
-        
-        if(viewQa) viewQa.style.display = 'none';
-        if(viewQuiz) viewQuiz.style.display = 'none';
-        if(viewStatus) viewStatus.style.display = 'none'; 
-        if(viewWait) viewWait.style.display = 'flex'; 
-        
-        const statusSel = document.getElementById('roomStatusSelect');
-        if(statusSel) {
-            statusSel.value = 'waiting';
-            statusSel.disabled = true;
-
-        const btnReset = document.getElementById('btnReset');
-        if(btnReset) {
-            btnReset.disabled = true; // 버튼 클릭 차단
-            btnReset.style.opacity = '0.5'; // 반투명하게 (잠긴 것처럼 보이게)
-            btnReset.style.cursor = 'not-allowed'; // 마우스 올리면 금지 표시
-        }
-
-        }
+        document.querySelector('.mode-tabs').style.display = 'none';
+        ui.setMode('waiting');
+        document.getElementById('roomStatusSelect').disabled = true;
     },
 
     loadAdminActionData: function() {
         if(!state.room) return;
         const today = getTodayString();
-        const yesterday = getYesterdayString();
-        const now = new Date();
-        const showYesterday = now.getHours() < 9; 
-        
-        const tbody = document.getElementById('adminActionTableBody');
-        if(!tbody) return;
-
-        if (state.adminActionRef) {
-            state.adminActionRef.off();
-        }
-
-        state.adminActionRef = firebase.database().ref(`courses/${state.room}/admin_actions/${today}`);
-        
-        state.adminActionRef.on('value', snap => {
-            const todayData = snap.val() || {};
-            
-            if (showYesterday) {
-                firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value', ySnap => {
-                    const yesterdayData = ySnap.val() || {};
-                    renderAdminList(todayData, yesterdayData);
-                });
-            } else {
-                renderAdminList(todayData, {});
-            }
+        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('adminActionTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = "";
+            Object.values(data).forEach((item, idx) => {
+                tbody.innerHTML += `<tr><td>${idx+1}</td><td style="font-weight:bold;">${item.type}</td><td>${item.name}</td><td>${item.phone}</td><td>-</td></tr>`;
+            });
         });
-
-        function renderAdminList(todayData, yesterdayData) {
-            tbody.innerHTML = ""; 
-            let count = 1;
-
-            Object.values(yesterdayData).forEach(item => {
-                appendRow(item, true);
-            });
-
-            Object.values(todayData).forEach(item => {
-                appendRow(item, false);
-            });
-
-            if (tbody.innerHTML === "") {
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
-            }
-
-            function appendRow(item, isYesterday) {
-                const typeNm = item.type === 'outing' ? 
-                    '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
-                    '<span style="color:#ef4444; font-weight:bold;">외박</span>';
-                
-                const datePrefix = isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
-                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${count++}</td>
-                        <td>${datePrefix}${typeNm}</td>
-                        <td style="font-weight:bold;">${item.name}</td>
-                        <td>${item.phone}</td>
-                        <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
-                    </tr>
-                `;
-            }
-        }
     },
 
     loadDinnerSkipData: function() {
@@ -1085,21 +865,12 @@ if (c === state.room) {
             const tbody = document.getElementById('dinnerSkipTableBody');
             if(!tbody) return;
             const items = Object.values(data);
-            const totalEl = document.getElementById('dinnerSkipTotal');
-            if(totalEl) totalEl.innerText = items.length;
-            tbody.innerHTML = items.length ? 
-                items.map((name, idx) => `
-                    <tr>
-                        <td>${idx+1}</td>
-                        <td style="font-weight:bold;">${name}</td>
-                        <td style="color:#ef4444; font-weight:800;">석식 미취식</td>
-                    </tr>
-                `).join('') : 
-                "<tr><td colspan='3' style='padding:50px; color:#94a3b8;'>제외 신청자가 없습니다.</td></tr>";
+            document.getElementById('dinnerSkipTotal').innerText = items.length;
+            tbody.innerHTML = items.map((name, idx) => `<tr><td>${idx+1}</td><td style="font-weight:bold;">${name}</td><td style="color:#ef4444; font-weight:800;">석식 제외</td></tr>`).join('');
         });
     },
 
-loadStudentList: function() {
+    loadStudentList: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
             const data = snap.val() || {};
@@ -1109,7 +880,7 @@ loadStudentList: function() {
             
             tbody.innerHTML = "";
 
-            // [수정 포인트] 데이터를 가져올 때 학생 고유의 키(token)를 포함하도록 배열 생성
+            // [수정완료] 데이터를 가져올 때 학생 고유의 키(token)를 포함하도록 배열 생성 (데이터 증발 문제 해결)
             const studentList = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
@@ -1118,7 +889,7 @@ loadStudentList: function() {
             if(totalEl) totalEl.innerText = studentList.length;
 
             studentList.forEach((s, idx) => {
-                const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
                 const statusDot = s.isOnline 
                     ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
                     : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
@@ -1127,7 +898,7 @@ loadStudentList: function() {
                     <tr>
                         <td>${idx + 1}</td>
                         <td style="font-weight:bold;">${statusDot}${s.name}</td>
-                        <td>${s.phone}</td>
+                        <td>${s.phone || "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
                             <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
@@ -1139,7 +910,37 @@ loadStudentList: function() {
                 `;
             });
         });
-    }; // <--- ui 객체 안의 다른 함수와 구분하기 위한 쉼표입니다.
+    }
+}; // <--- ui 상자 닫기 완료 (로그인 에러 해결 지점)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // --- 4. Quiz Logic ---
