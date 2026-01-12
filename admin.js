@@ -510,15 +510,6 @@ init: function() {
             this.renderList();
             this.renderFilters(); 
         });
-
-        // [추가] 마우스 휠을 굴리면 가로로 스크롤 되게 설정
-        const filterBar = document.getElementById('subjectFilterBar');
-        if(filterBar) {
-            filterBar.addEventListener('wheel', (evt) => {
-                evt.preventDefault();
-                filterBar.scrollLeft += evt.deltaY;
-            });
-        }
     },
 
     renderFilters: function() {
