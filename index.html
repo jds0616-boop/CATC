@@ -600,20 +600,25 @@ firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) =>
 
 
 
-        function setupListeners() {
-firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+function setupListeners() {
+    firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         serverTimeOffset = snap.val() || 0;
     });
 
-            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
-            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+    dbRef.settings.on('value', s => { 
+        const val = s.val() || {}; 
+        const title = val.courseName || `Course ${currentRoom}`; 
+        document.getElementById('roomTitle').innerText = title; 
+        document.getElementById('landingTitle').innerText = title; 
+    });
 
-// [추가] 과목 리스트 실시간 로드
+    dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+
+    // [추가] 과목 리스트 실시간 로드
     firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
         const data = s.val() || {};
         const sel = document.getElementById('subjectSelect');
         if(!sel) return;
-        
         let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
         Object.values(data).forEach(name => {
             html += `<option value="${name}">${name}</option>`;
@@ -621,64 +626,58 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         sel.innerHTML = html;
     });
 
-
-dbRef.status.on('value', snap => {
-    const st = snap.val() || {};
-
-
-    // [추가] 강사가 상태를 'active'가 아닌 다른 것으로 바꾸면 즉시 퇴장시킵니다.
-    if (st.roomStatus !== 'active') {
-        alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
-        location.reload(); // 페이지를 새로고침하여 초기 입장 화면으로 튕겨냄
-        return;
-    }
-    
-    // --- [리셋 로직 강화] ---
-    const serverResetKey = st.resetKey || 'init';
-    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-    if (!myLocalKey) {
-        // 처음 접속한 경우 현재 서버의 키를 내 저장소에 저장
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-    } else if (myLocalKey !== serverResetKey) {
-        // 내 키와 서버의 키가 다르다면 (강사가 리셋을 눌렀다면)
-        localStorage.clear(); // 모든 로컬 데이터 삭제 (이름, 토큰, 좋아요 등)
-        alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
-        location.replace(location.pathname + location.search); // 페이지 완전히 새로고침 (파라미터 유지)
-        return;
+    // [신규 추가] 외출외박 비상연락처 하이픈 자동 생성 로직 (여기에 들어갑니다)
+    const fullPhoneInput = document.getElementById('fullPhone');
+    if (fullPhoneInput) {
+        fullPhoneInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^0-9]/g, ''); 
+            let result = '';
+            if (val.length < 4) { result = val; } 
+            else if (val.length < 8) { result = val.substr(0, 3) + '-' + val.substr(3); } 
+            else { result = val.substr(0, 3) + '-' + val.substr(3, 4) + '-' + val.substr(7); }
+            e.target.value = result;
+        });
     }
 
-    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
-    if (st.mode === 'qa') { 
-        forceCloseQuiz(); 
-        return; 
-    }
+    // --- 여기서부터 사용자님이 사진으로 보여주신 코드 부분입니다 ---
+    dbRef.status.on('value', snap => {
+        const st = snap.val() || {};
+        
+        // [리셋 로직]
+        const serverResetKey = st.resetKey || 'init';
+        const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+        if (!myLocalKey) {
+            localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+        } else if (myLocalKey !== serverResetKey) {
+            localStorage.clear();
+            alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
+            location.replace(location.pathname + location.search);
+            return;
+        }
 
-    // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 교육생에게 오버레이를 보여줌
-    if (st.mode === 'quiz') {
-        // 리포트 요약 화면이 아닐 때만 "준비중" 오버레이 표시
-        if (st.quizStep !== 'summary') {
-            document.getElementById('quizOverlay').style.display = 'flex';
-            document.getElementById('quizActiveBox').style.display = 'block';
-            document.getElementById('quizResultBox').style.display = 'none';
-            
-            // 아직 문제가 도착하지 않았을 때(강사가 문제 선택 중일 때) 보여줄 문구
-            // activeQuiz가 업데이트 되기 전까지 이 문구가 유지됩니다.
-            if (!currentQuizId) {
-                document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다. 잠시만 기다려 주세요...";
-                document.getElementById('btnGroupMultiple').style.display = 'none';
-                document.getElementById('btnGroupOX').style.display = 'none';
-                document.getElementById('quizFeedback').innerText = "";
+        // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
+        if (st.mode === 'qa') { forceCloseQuiz(); return; }
+
+        // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 오버레이 보여줌
+        if (st.mode === 'quiz') {
+            if (st.quizStep !== 'summary') {
+                document.getElementById('quizOverlay').style.display = 'flex';
+                document.getElementById('quizActiveBox').style.display = 'block';
+                document.getElementById('quizResultBox').style.display = 'none';
+                
+                if (!currentQuizId) {
+                    document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다. 잠시만 기다려 주세요...";
+                    document.getElementById('btnGroupMultiple').style.display = 'none';
+                    document.getElementById('btnGroupOX').style.display = 'none';
+                    document.getElementById('quizFeedback').innerText = "";
+                }
             }
         }
-    }
-    
-    // 3. 퀴즈가 종료되어 결과 리포트가 떴을 때
-    if (st.quizStep === 'summary') { 
-        if(!hasClosedSummary) showFinalRanking(); 
-    }
-});
-
+        
+        // 3. 퀴즈 종료 시 결과 리포트
+        if (st.quizStep === 'summary' && !hasClosedSummary) { showFinalRanking(); }
+    });
+}
 
 
 
@@ -1079,58 +1078,74 @@ function closeShuttleModal() {
 let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
 
 // 1. 팝업 열기 & 기존 신청 내역 확인
+// [수정] 팝업을 열 때 16시 마감 체크
 async function openAdminAction() {
     document.getElementById('menuModal').style.display = 'none';
-    const modal = document.getElementById('adminActionModal');
-    modal.style.display = 'flex';
+    document.getElementById('adminActionModal').style.display = 'flex';
     
     const today = getTodayString();
     document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
 
-    // 시간 체크 (16시 마감)
+    // --- 16시 이후 석식 체크박스 비활성화 로직 ---
     const now = new Date();
     const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR;
     const skipDinnerCheckbox = document.getElementById('skipDinner');
-    const dinnerContainer = skipDinnerCheckbox.parentElement.parentElement; // 회색 박스 영역
+    const dinnerContainer = skipDinnerCheckbox.closest('div'); // 체크박스를 감싸는 박스 찾기
 
     if (isAfterDeadline) {
         skipDinnerCheckbox.disabled = true;
-        dinnerContainer.style.opacity = "0.5";
-        dinnerContainer.style.pointerEvents = "none"; // 클릭 방지
+        if(dinnerContainer) {
+            dinnerContainer.style.opacity = "0.5";
+            dinnerContainer.style.pointerEvents = "none";
+        }
     } else {
         skipDinnerCheckbox.disabled = false;
-        dinnerContainer.style.opacity = "1";
-        dinnerContainer.style.pointerEvents = "auto";
+        if(dinnerContainer) {
+            dinnerContainer.style.opacity = "1";
+            dinnerContainer.style.pointerEvents = "auto";
+        }
     }
+    // ------------------------------------------
 
-    // 입력폼 초기화
     selectedAdminType = 'none';
     updateAdminTypeButtons();
-    skipDinnerCheckbox.checked = false;
+    skipDinnerCheckbox.checked = false; // 팝업 열 때 초기값은 체크 해제
     document.getElementById('fullPhoneArea').style.display = 'none';
     document.getElementById('fullPhone').value = "";
 
     const uToken = localStorage.getItem('uToken');
     const dinnerRef = firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`);
     const actionRef = firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`);
-
     const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
     
     if (dinnerSnap.exists() || actionSnap.exists()) {
         document.getElementById('adminActionForm').style.display = 'none';
         document.getElementById('adminStatusArea').style.display = 'block';
-        
         let statusMsg = "";
         if(dinnerSnap.exists()) statusMsg += "🍴 오늘 저녁 식사 제외 신청됨<br>";
         if(actionSnap.exists()) {
             const data = actionSnap.val();
-            const typeNm = data.type === 'outing' ? '외출' : '외박';
-            statusMsg += `📍 ${typeNm} 신청됨 (비상연락처: ${data.phone})`;
+            statusMsg += `📍 ${data.type === 'outing' ? '외출' : '외박'} 신청됨 (${data.phone})`;
         }
         document.getElementById('adminStatusText').innerHTML = statusMsg;
     } else {
         document.getElementById('adminActionForm').style.display = 'block';
         document.getElementById('adminStatusArea').style.display = 'none';
+    }
+}
+
+// [수정] 외출/외박 버튼 눌러도 석식 자동체크 안 되게 로직 분리
+function selectAdminType(type) {
+    selectedAdminType = type;
+    updateAdminTypeButtons();
+
+    if (type === 'outing' || type === 'overnight') {
+        // 기존에 있던 skipDinner.checked = true; 코드를 삭제했습니다.
+        document.getElementById('fullPhoneArea').style.display = 'block';
+        const savedFullPhone = localStorage.getItem('kac_user_full_phone');
+        if(savedFullPhone) document.getElementById('fullPhone').value = savedFullPhone;
+    } else {
+        document.getElementById('fullPhoneArea').style.display = 'none';
     }
 }
 
