@@ -165,9 +165,23 @@ const dataMgr = {
     },
     
     loadInitialData: function() {
-        ui.initRoomSelect();
+    // 1. 마지막 접속했던 방 정보가 있는지 확인
+    const lastRoom = localStorage.getItem('kac_last_room');
+    if (lastRoom) {
+        state.room = lastRoom; // 변수에 미리 넣어줌
+    }
+
+    // 2. 목록 그리기 시작
+    ui.initRoomSelect();
+
+    // 3. 마지막 방 정보가 있으면 바로 그 방으로 입장 처리, 없으면 대기실행
+    if (lastRoom) {
+        this.forceEnterRoom(lastRoom);
+    } else {
         ui.showWaitingRoom();
-        state.quizList = DEFAULT_QUIZ_DATA; 
+    }
+
+    state.quizList = DEFAULT_QUIZ_DATA;
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { 
@@ -979,7 +993,9 @@ if (c === state.room) {
     },
     
     showWaitingRoom: function() {
+        if (!state.room) {
         state.room = null;
+        }
         const roomNameEl = document.getElementById('displayRoomName');
         if(roomNameEl) roomNameEl.innerText = "Instructor Waiting Room";
         
