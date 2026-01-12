@@ -364,20 +364,29 @@ let confirmCallback = null;
         let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
 
 
-function sendAns(idx) {
-    if (!canAnswer || !currentQuizId) return; // 클릭 가능 상태가 아니면 무시
+ffunction sendAns(idx) {
+    if (!canAnswer || !currentQuizId) return; 
 
     myLastChoiceIdx = idx; // 내가 선택한 번호 저장
-    const oxDisplay = document.getElementById('btnGroupOX').style.display;
-    myLastChoice = (oxDisplay === 'flex') ? (idx === 1 ? 'O' : 'X') : idx + '번';
+    const oxArea = document.getElementById('btnGroupOX');
+    const multArea = document.getElementById('btnGroupMultiple');
+    
+    // 현재 어떤 버튼 그룹이 화면에 보이는지 확인
+    const isOX = (oxArea.style.display === 'flex' || oxArea.offsetParent !== null);
+    myLastChoice = isOX ? (idx === 1 ? 'O' : 'X') : idx + '번';
 
-    // 1. 모든 버튼에서 'selected' 클래스 제거 후 선택한 버튼에만 추가
-    document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, i) => {
-        btn.classList.remove('selected');
-        if ((i + 1) === idx) btn.classList.add('selected');
+    // [핵심 수정] 현재 눈에 보이는 버튼 그룹 안에서만 버튼을 찾아 색을 바꿉니다.
+    const activeArea = isOX ? oxArea : multArea;
+    const buttons = activeArea.querySelectorAll('.quiz-opt-btn');
+    
+    buttons.forEach((btn, i) => {
+        btn.classList.remove('selected'); // 기존 파란색 제거
+        if ((i + 1) === idx) {
+            btn.classList.add('selected'); // 선택한 버튼만 파란색 추가
+        }
     });
 
-    // 2. Firebase 서버로 전송
+    // Firebase 서버로 데이터 전송
     const uToken = localStorage.getItem('uToken');
     if(uToken && currentQuizId) {
         dbRef.ans.child(currentQuizId).child(uToken).set({
@@ -386,7 +395,7 @@ function sendAns(idx) {
         });
     }
     
-    // 3. 피드백 메시지 표시
+    // 하단 피드백 문구 출력
     document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-check"></i> ${myLastChoice} 선택 완료!`;
 }
 
@@ -756,8 +765,8 @@ dbRef.quiz.on('value', s => {
             if(q.isOX) {
                 multArea.style.display = 'none'; oxArea.style.display = 'flex';
                 document.querySelectorAll('.ox-btn').forEach((btn, i) => {
-                    // 핵심: locked를 반드시 제거해야 클릭이 됩니다.
                     btn.classList.remove('locked', 'selected');
+                    // [추가] 내가 이미 눌렀던 버튼이면 다시 파란색 칠하기
                     if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                 });
             } else {
@@ -765,10 +774,11 @@ dbRef.quiz.on('value', s => {
                 multArea.innerHTML = ""; 
                 q.options.forEach((optText, i) => {
                     const btn = document.createElement('button');
-                    btn.className = 'quiz-opt-btn'; // locked 없이 생성
+                    btn.className = 'quiz-opt-btn';
+                    // [추가] 내가 이미 눌렀던 버튼이면 파란색 클래스 추가
+                    if((i + 1) === myLastChoiceIdx) btn.className += ' selected';
                     btn.innerText = `${i + 1}. ${optText}`; 
                     btn.onclick = () => sendAns(i + 1);
-                    if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                     multArea.appendChild(btn);
                 });
             }
