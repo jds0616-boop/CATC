@@ -1252,17 +1252,15 @@ async function saveProfile() {
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = Math.random().toString(36).substr(2); 
-        localStorage.setItem('uToken', uToken); 
-// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
-        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
-        const serverResetKey = statusSnap.val()?.resetKey || 'init';
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+    // [핵심 변경] 무작위 토큰 대신 이름+전화번호 조합 사용
+    // 이렇게 하면 PC와 폰에서 같은 이름/번호를 치면 서버 ID가 동일해집니다.
+    let uToken = name + "_" + phone; 
+    localStorage.setItem('uToken', uToken); 
 
-
-    }
+    // [유지] 리셋 확인용 키 저장 (이게 있어야 리셋 시 튕겨나갑니다)
+    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
+    const serverResetKey = statusSnap.val()?.resetKey || 'init';
+    localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
 
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
