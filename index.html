@@ -1394,21 +1394,39 @@ async function viewMealMenu() {
 
 
 
-// [신규] 공지사항 불러오기
+// [수정] 공지사항 불러오기 (함수명 확인: openNotice)
 async function openNotice() {
     document.getElementById('menuModal').style.display = 'none';
     const container = document.getElementById('noticeContainer');
-    container.innerHTML = "로드 중...";
+    
+    // 로딩 표시
+    container.innerHTML = "<div style='text-align:center; padding:20px;'>데이터를 불러오는 중...</div>";
     document.getElementById('noticeModal').style.display = 'flex';
 
     try {
+        // 1. 센터 전체 공지 (경로: system/globalNotice)
         const globalSnap = await firebase.database().ref('system/globalNotice').once('value');
+        const globalVal = globalSnap.val();
+
+        // 2. 과정별 공지 (경로: courses/방ID/notice)
         const courseSnap = await firebase.database().ref(`courses/${currentRoom}/notice`).once('value');
+        const courseVal = courseSnap.val();
+
         let html = "";
-        if (globalSnap.val()) html += `<div class="notice-card"><span class="notice-tag tag-global">센터 공지</span><div class="notice-body">${globalSnap.val()}</div></div>`;
-        if (courseSnap.val()) html += `<div class="notice-card"><span class="notice-tag tag-course">과정 공지</span><div class="notice-body">${courseSnap.val()}</div></div>`;
-        container.innerHTML = html || "<p style='text-align:center; padding:20px; color:#94a3b8;'>현재 공지사항이 없습니다.</p>";
-    } catch (e) { container.innerHTML = "오류가 발생했습니다."; }
+        if (globalVal) {
+            html += `<div class="notice-card"><span class="notice-tag tag-global" style="background:#10b981;">센터 전체 공지</span><div class="notice-body">${globalVal}</div></div>`;
+        }
+        if (courseVal) {
+            html += `<div class="notice-card"><span class="notice-tag tag-course" style="background:#3b82f6;">우리 과정 공지</span><div class="notice-body">${courseVal}</div></div>`;
+        }
+
+        // 결과 출력
+        container.innerHTML = html || "<div style='text-align:center; padding:30px; color:#94a3b8;'>현재 등록된 공지사항이 없습니다.</div>";
+        
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "<div style='text-align:center; padding:20px; color:red;'>공지사항을 불러오는 중 오류가 발생했습니다.</div>";
+    }
 }
 
 // [신규] 출결 QR 불러오기
