@@ -686,15 +686,15 @@ const ui = {
                     
                     if(isRoomActive) {
                         if (st.ownerSessionId === state.sessionId || localStorage.getItem('last_owned_room') === c) {
-                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, 수강생 ${userCount}명)`;
+                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName})`; // 수정 후
                             opt.style.color = '#3b82f6';
                             opt.style.fontWeight = 'bold';
                         } else {
-                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName}, 수강생 ${userCount}명)`;
+                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName})`; // 수정 후
                             opt.style.color = '#ef4444';
                         }
                     } else {
-                        opt.innerText = `Room ${c} (⚪ 대기, 수강생 ${userCount}명)`;
+                        opt.innerText = `Room ${c} (⚪ 대기)`; // 수정 후
                     }
                     
                     if(c === savedValue) opt.selected = true;
