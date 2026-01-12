@@ -397,12 +397,19 @@ let confirmCallback = null;
 
 
 async function enterApp() {
-    // 1. 전체화면 요청
+    // 1. 강사의 강의실 상태를 먼저 확인합니다.
+    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status/roomStatus`).once('value');
+    const roomStatus = statusSnap.val();
+
+    // 2. 'active'(사용중)가 아니면 입장을 막습니다.
+    if (roomStatus !== 'active') {
+        alert("⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.\n잠시 후 다시 시도해 주세요.");
+        return; // 여기서 함수 종료 (입장 안 됨)
+    }
+
+    // 3. 'active'일 때만 기존 입장 로직 실행
     const doc = document.documentElement;
     if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
-    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
-
-    // 2. [핵심] 입장 전 프로필 확인 (서버 대조)
     await checkProfile();
 }
 
@@ -416,7 +423,14 @@ async function enterApp() {
 
         // [수정] 완전히 나가기 (주소 초기화)
 function exitApp() {
+
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
+
+    const uToken = localStorage.getItem('uToken');
+    if (uToken && currentRoom) {
+        firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`).set(false);
+    }
+
         const ua = navigator.userAgent.toLowerCase();
         
         // 1. 카카오톡 인앱 브라우저 강제 종료 (성공 시 여기서 끝남)
@@ -524,6 +538,14 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
+
+
+    // [추가] 강사가 상태를 'active'가 아닌 다른 것으로 바꾸면 즉시 퇴장시킵니다.
+    if (st.roomStatus !== 'active') {
+        alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
+        location.reload(); // 페이지를 새로고침하여 초기 입장 화면으로 튕겨냄
+        return;
+    }
     
     // --- [리셋 로직 강화] ---
     const serverResetKey = st.resetKey || 'init';
