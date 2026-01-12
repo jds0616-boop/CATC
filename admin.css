@@ -95,7 +95,27 @@ body {
 
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 .qa-filters { display: flex; gap: 10px; padding: 20px 5px; flex-shrink: 0; background: var(--bg-color); z-index: 10; position: relative; }
-.filter-chip { padding: 6px 16px; background: var(--card-bg); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.03); color: #64748b; transition: 0.2s; }
+
+.filter-chip {
+    padding: 6px 16px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    color: #64748b;
+    transition: 0.2s;
+    
+    /* [추가/수정] 찌그러짐 방지 핵심 코드 */
+    flex-shrink: 0;        /* 공간이 부족해도 절대 버튼 크기를 줄이지 않음 */
+    white-space: nowrap;   /* 버튼 안의 글자가 아래로 줄바꿈되지 않게 함 */
+}
+
+
+
+
 .filter-chip.active { background: #eff6ff; color: var(--accent-color); border-color: var(--accent-color); font-weight: 800; }
 .qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
 .qa-list::-webkit-scrollbar { width: 6px; }
