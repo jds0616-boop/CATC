@@ -41,10 +41,13 @@ body {
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
 /* Sidebar */
-.sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; height: 100vh; border-right: 1px solid rgba(255,255,255,0.05); z-index: 50; overflow: hidden; }
-.sidebar-top { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; padding-bottom: 10px; }
+.sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; height: 100vh; border-right: 1px solid rgba(255,255,255,0.05); z-index: 50; overflow-y: auto;  overflow-x: hidden;}
+/* (선택사항) 사이드바 스크롤바를 얇고 예쁘게 */
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+.sidebar-top { display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; padding-bottom: 10px; }
 .sidebar-top::-webkit-scrollbar { display: none; }
-.sidebar-bottom { flex-shrink: 0; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+.sidebar-bottom { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;}
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 5px; }
 .setting-container { display: flex; flex-direction: column; gap: 12px; } 
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
