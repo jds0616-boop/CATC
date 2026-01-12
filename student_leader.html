@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>KAC Student Leader Platform</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Font Awesome & Pretendard Font -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy-dark: #0f172a;
+      --indigo-main: #6366f1;
+      --indigo-soft: #eef2ff;
+      --sky-light: #f0f9ff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
+      background: #f1f5f9; display: flex; justify-content: center; color: var(--text-main);
+    }
+
+    .app-container {
+      width: 100%; max-width: 600px; min-height: 100dvh;
+      background: #fff; position: relative; display: flex; flex-direction: column;
+      box-shadow: 0 0 40px rgba(0,0,0,0.08);
+    }
+
+    /* --- 인증 레이어 (산뜻한 화이트/인디고 디자인) --- */
+    #authOverlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: #fff; z-index: 2000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;
+    }
+    .auth-title { font-size: 26px; font-weight: 900; color: var(--navy-dark); margin-bottom: 10px; }
+    .auth-desc { font-size: 14px; color: var(--text-muted); text-align: center; line-height: 1.6; margin-bottom: 40px; }
+    .auth-input-group { width: 100%; margin-bottom: 24px; }
+    .auth-input {
+      width: 100%; height: 58px; border-radius: 18px; border: 2px solid #f1f5f9;
+      margin-bottom: 12px; padding: 0 20px; font-size: 16px; font-weight: 700;
+      background: #f8fafc; color: var(--navy-dark); outline: none; transition: 0.3s;
+    }
+    .auth-input:focus { border-color: var(--indigo-main); background: #fff; }
+    .auth-btn {
+      width: 100%; height: 58px; border-radius: 18px; border: none;
+      background: var(--indigo-main); color: white; font-size: 17px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
+
+    /* --- 상단바 --- */
+    .app-header {
+      position: fixed; top: 0; width: 100%; max-width: 600px; height: 64px;
+      background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 1000;
+    }
+    .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
+    .header-title { color: #fff; font-size: 16px; font-weight: 800; }
+
+    /* --- 하단바 --- */
+    .app-footer {
+      position: fixed; bottom: 0; width: 100%; max-width: 600px; height: 56px;
+      background: var(--navy-dark); color: #94a3b8;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; font-size: 11px; z-index: 1000;
+    }
+    .footer-logo img { height: 18px; display: block; filter: brightness(0) invert(1); opacity: 0.7; }
+
+    /* --- 메인 콘텐츠 영역 --- */
+    .app-content { flex: 1; margin-top: 64px; margin-bottom: 56px; padding: 20px; display: none; background: #f8fafc; }
+
+    /* 카드 스타일 */
+    .section-card {
+      background: #fff; border-radius: 24px; padding: 20px; margin-bottom: 20px;
+      border: 1px solid #f1f5f9; box-shadow: var(--card-shadow);
+    }
+    .card-label {
+      font-size: 13px; font-weight: 800; color: var(--indigo-main);
+      margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* 과정 정보 헤더 */
+    .course-header { text-align: center; padding: 10px 0; }
+    #displayCourseName { font-size: 22px; font-weight: 900; color: var(--navy-dark); display: block; }
+    #displayProfName { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-top: 4px; display: block; }
+
+    /* 명단 아이템 */
+    .list-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px; background: #fff; border-radius: 18px; 
+      border: 1.5px solid #f1f5f9; margin-bottom: 10px;
+    }
+    .user-info { display: flex; flex-direction: column; gap: 3px; }
+    .user-name { font-size: 16px; font-weight: 800; color: var(--navy-dark); }
+    .user-phone { font-size: 14px; color: var(--indigo-main); font-weight: 700; letter-spacing: 0.2px; }
+    .user-phone.muted { color: var(--text-muted); font-weight: 500; }
+    
+    .status-badge {
+      padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 800;
+    }
+    .badge-outing { background: #fff7ed; color: #ea580c; }
+    .badge-overnight { background: #fef2f2; color: #dc2626; }
+    .badge-normal { background: #f0fdf4; color: #10b981; }
+
+    .empty-msg { text-align: center; padding: 40px 0; color: #cbd5e1; font-size: 14px; font-weight: 600; }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="app-container">
+    <!-- 학생장 인증 오버레이 -->
+    <div id="authOverlay">
+        <div style="width: 70px; height: 70px; background: var(--indigo-soft); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <i class="fa-solid fa-crown" style="font-size: 32px; color: var(--indigo-main);"></i>
+        </div>
+        <div class="auth-title">학생장 본인확인</div>
+        <div class="auth-desc">담당 교수님으로부터 <b>학생장 권한</b>을<br>부여받은 교육생만 접속이 가능합니다.</div>
+        
+        <div class="auth-input-group">
+            <input type="text" id="leaderName" class="auth-input" placeholder="성함 입력">
+            <input type="number" id="leaderPhone" class="auth-input" placeholder="전화번호 뒤 4자리">
+        </div>
+        
+        <button class="auth-btn" onclick="verifyLeaderAccess()">권한 확인 및 입장</button>
+        <div id="authError" style="margin-top: 20px; color: var(--danger); font-size: 13px; font-weight: 700; display: none;"></div>
+    </div>
+
+    <!-- 상단바 -->
+    <header class="app-header">
+      <button class="header-btn" onclick="location.reload()"><i class="fa-solid fa-power-off"></i></button>
+      <div class="header-title">Student Leader Dashboard</div>
+      <button class="header-btn"><i class="fa-solid fa-bars"></i></button>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main id="mainContent" class="app-content">
+      
+      <!-- 1. 과정 정보 -->
+      <div class="section-card" style="border-top: 5px solid var(--indigo-main);">
+          <div class="course-header">
+              <span id="displayCourseName">과정명을 불러오는 중...</span>
+              <span id="displayProfName">담당교수 로드 중</span>
+          </div>
+      </div>
+
+      <!-- 2. 외출/외박 현황 (연락처 필수 노출) -->
+      <div class="section-card">
+          <div class="card-label"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박 신청자 (연락처 포함)</div>
+          <div id="actionList">
+              <div class="empty-msg">데이터를 불러오고 있습니다.</div>
+          </div>
+      </div>
+
+      <!-- 3. 수강생 입실 현황 -->
+      <div class="section-card">
+          <div class="card-label"><i class="fa-solid fa-users"></i> 우리 과정 수강생 입실 명부</div>
+          <div id="studentList">
+              <!-- 명단 삽입 -->
+          </div>
+      </div>
+
+    </main>
+
+    <!-- 하단바 -->
+    <footer class="app-footer">
+      <div id="footer-date">0000년 00월 00일 (요일) 00:00</div>
+      <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    let myRoomID = null;
+
+    // --- 시계 설정 ---
+    function runClock() {
+        const now = new Date();
+        const week = ['일','월','화','수','목','금','토'];
+        document.getElementById('footer-date').innerText = 
+            `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    }
+    setInterval(runClock, 1000); runClock();
+
+    // --- [중요] 학생장 권한 검증 로직 ---
+    async function verifyLeaderAccess() {
+        const name = document.getElementById('leaderName').value.trim();
+        const phone = document.getElementById('leaderPhone').value.trim();
+        const errorEl = document.getElementById('authError');
+
+        if(!name || !phone) return alert("정보를 모두 입력해주세요.");
+
+        errorEl.style.display = "none";
+        const btn = document.querySelector('.auth-btn');
+        btn.innerText = "권한 검증 중...";
+        btn.disabled = true;
+
+        try {
+            const snap = await firebase.database().ref('courses').once('value');
+            const courses = snap.val() || {};
+            let isLeaderFound = false;
+
+            // 모든 운영 중인 과정을 뒤져서 학생장 여부 확인
+            for (const rid in courses) {
+                const room = courses[rid];
+                if (room.status && room.status.roomStatus === 'active' && room.students) {
+                    const studentKeys = Object.keys(room.students);
+                    for (const sKey of studentKeys) {
+                        const student = room.students[sKey];
+                        // 이름과 번호가 맞고, isLeader 권한이 있는지 체크
+                        if (student.name === name && student.phone === phone) {
+                            if (student.isLeader === true) {
+                                myRoomID = rid;
+                                isLeaderFound = true;
+                                break;
+                            } else {
+                                // 정보는 맞지만 권한이 없는 경우
+                                alert("교수님에 의해 학생장으로 지정되지 않았습니다.\n권한 부여 후 다시 시도해 주세요.");
+                                resetBtn(btn);
+                                return;
+                            }
+                        }
+                    }
+                }
+                if(isLeaderFound) break;
+            }
+
+            if(isLeaderFound) {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                loadLeaderData();
+            } else {
+                errorEl.innerText = "일치하는 교육생 정보가 없습니다.";
+                errorEl.style.display = "block";
+                resetBtn(btn);
+            }
+        } catch(e) {
+            alert("연결 오류가 발생했습니다.");
+            resetBtn(btn);
+        }
+    }
+
+    function resetBtn(btn) {
+        btn.innerText = "권한 확인 및 입장";
+        btn.disabled = false;
+    }
+
+    // --- 데이터 바인딩 ---
+    function loadLeaderData() {
+        if(!myRoomID) return;
+
+        // 과정 기본 정보
+        firebase.database().ref(`courses/${myRoomID}`).on('value', snap => {
+            const data = snap.val() || {};
+            document.getElementById('displayCourseName').innerText = data.settings?.courseName || `과정명 미지정`;
+            document.getElementById('displayProfName').innerText = `담당교수: ${data.status?.professorName || '미지정'}`;
+            
+            // 전체 수강생 명부
+            const sContainer = document.getElementById('studentList');
+            sContainer.innerHTML = "";
+            if(data.students) {
+                Object.values(data.students).sort((a,b) => a.name.localeCompare(b.name)).forEach(s => {
+                    sContainer.innerHTML += `
+                        <div class="list-item">
+                            <div class="user-info">
+                                <span class="user-name">${s.name} ${s.isLeader ? '👑' : ''}</span>
+                                <span class="user-phone muted">뒷번호: ${s.phone}</span>
+                            </div>
+                            <span class="status-badge badge-normal">입실 중</span>
+                        </div>
+                    `;
+                });
+            }
+        });
+
+        // 실시간 외출/외박 명단
+        const today = getTodayString();
+        firebase.database().ref(`courses/${myRoomID}/admin_actions/${today}`).on('value', snap => {
+            const aContainer = document.getElementById('actionList');
+            aContainer.innerHTML = "";
+            const data = snap.val() || {};
+            const items = Object.values(data);
+
+            if(items.length === 0) {
+                aContainer.innerHTML = `<div class="empty-msg">현재 신청자가 없습니다.</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                const isOut = item.type === 'outing';
+                aContainer.innerHTML += `
+                    <div class="list-item">
+                        <div class="user-info">
+                            <span class="user-name">${item.name}</span>
+                            <span class="user-phone">${item.phone}</span>
+                        </div>
+                        <span class="status-badge ${isOut ? 'badge-outing' : 'badge-overnight'}">${isOut ? '외출' : '외박'}</span>
+                    </div>
+                `;
+            });
+        });
+    }
+  </script>
+</body>
+</html>
