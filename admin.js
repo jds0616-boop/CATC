@@ -165,11 +165,25 @@ const dataMgr = {
     },
     
     loadInitialData: function() {
-    // 1. 마지막 접속했던 방 정보가 있는지 확인
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        state.room = lastRoom; // 변수에 미리 넣어줌
-    }
+        ui.initRoomSelect();
+        // [수정] 변수 정의를 확실히 하고 조건문 실행
+        const lastRoom = localStorage.getItem('kac_last_room');
+        if (lastRoom && lastRoom !== "null") {
+            this.forceEnterRoom(lastRoom);
+        } else {
+            ui.showWaitingRoom();
+        }
+
+        state.quizList = DEFAULT_QUIZ_DATA;
+        state.isExternalFileLoaded = false;
+        quizMgr.renderMiniList();
+        document.getElementById('roomSelect').onchange = (e) => { 
+            if(e.target.value) this.switchRoomAttempt(e.target.value); 
+        };
+        document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
+        const qrEl = document.getElementById('qrcode'); 
+        if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
+    },
 
     // 2. 목록 그리기 시작
     ui.initRoomSelect();
@@ -916,6 +930,14 @@ if (c === state.room) {
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
             if (mode === 'shuttle') ui.loadShuttleData();
+        if (mode === 'notice') {
+            dataMgr.openNoticeManage();
+            return; // 아래의 화면 전환 로직을 타지 않고 여기서 멈춤
+        }
+        if (mode === 'qr') {
+            dataMgr.openAttendanceQr();
+            return; // 아래의 화면 전환 로직을 타지 않고 여기서 멈춤
+        }
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
@@ -1845,15 +1867,4 @@ window.onload = function() {
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
     profMgr.init(); 
-
-    // [추가] 새로고침해도 마지막에 선택한 방으로 자동 입장
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        // 약간의 시간을 두고 실행하여 Firebase 연결을 기다립니다.
-        setTimeout(() => {
-            if (firebase.auth().currentUser) {
-                dataMgr.forceEnterRoom(lastRoom);
-            }
-        }, 1000);
-    }
 };
