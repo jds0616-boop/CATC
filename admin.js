@@ -992,7 +992,7 @@ const ui = {
             const totalEl = document.getElementById('studentTotalCount');
             
             tbody.innerHTML = "";
-            const students = Object.values(data);
+            const students = Object.values(data).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
             if(totalEl) totalEl.innerText = students.length;
 
             students.forEach((s, idx) => {
