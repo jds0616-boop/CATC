@@ -437,6 +437,10 @@ resetCourse: function() {
     }
 }; // 이 괄호가 dataMgr 상자를 완전히 닫는 뚜껑입니다.
 
+
+
+
+
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
     list: [],
@@ -515,7 +519,7 @@ const subjectMgr = {
     list: [],
     selectedFilter: 'all', 
     
-init: function() {
+    init: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
             const data = s.val() || {};
@@ -589,7 +593,6 @@ init: function() {
         }
     }
 };
-
 
 
 
