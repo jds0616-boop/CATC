@@ -1144,14 +1144,8 @@ function updateAdminTypeButtons() {
 async function submitAdminAction() {
     const today = getTodayString();
     const now = new Date();
-    
-    // 시간 제한 체크 (16시)
-    if (now.getHours() >= DINNER_DEADLINE_HOUR) {
-        alert("⚠️ 오후 4시가 지나 금일 행정 신청이 마감되었습니다.");
-        return;
-    }
+    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR; // 16시 경과 여부
 
-    // [보완] 토큰이 없으면 여기서 생성해줍니다.
     let uToken = localStorage.getItem('uToken');
     if (!uToken) { 
         uToken = Math.random().toString(36).substr(2); 
@@ -1163,25 +1157,31 @@ async function submitAdminAction() {
     const skipDinner = document.getElementById('skipDinner').checked;
     const fullPhone = document.getElementById('fullPhone').value.trim();
 
-    // 외출/외박 시 전화번호 필수 체크
+    // 1. 외출/외박 관련 체크 (시간제한 없음)
     if ((selectedAdminType === 'outing' || selectedAdminType === 'overnight') && !fullPhone) {
         alert("외출/외박 신청 시 비상 연락처를 입력해주세요.");
         return;
     }
     
-    // 비상 연락처 저장 (다음 신청 때 자동완성용)
     if (selectedAdminType !== 'none') localStorage.setItem('kac_user_full_phone', fullPhone);
 
     try {
-        // (1) 석식 제외 저장
+        // (A) 석식 제외 저장 (16시 이전일 때만 작동)
         if (skipDinner) {
-            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
+            if (isAfterDeadline) {
+                // 이미 16시가 지났는데 체크한 경우 경고만 띄우고 저장은 안 함
+                alert("⚠️ 석식 신청/취소는 16시에 마감되었습니다.\n외출·외박 신청만 진행됩니다.");
+            } else {
+                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
+            }
         } else {
-            // 체크 해제 시 삭제
-            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+            // 체크 해제 시 삭제 (이것도 16시 이전만 가능)
+            if (!isAfterDeadline) {
+                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+            }
         }
 
-        // (2) 외출/외박 저장
+        // (B) 외출/외박 저장 (시간제한 없이 항상 저장)
         if (selectedAdminType !== 'none') {
             await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
                 name: name,
@@ -1190,15 +1190,10 @@ async function submitAdminAction() {
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         } else {
-            // '해당 없음' 선택 시 기록 삭제
             await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
         }
         
-        if (!skipDinner && selectedAdminType === 'none') {
-            alert("신청할 항목을 선택해주세요."); return;
-        }
-
-        alert("✅ 신청이 완료되었습니다.");
+        alert("✅ 행정 신청이 처리되었습니다.");
         document.getElementById('adminActionModal').style.display = 'none';
     } catch (e) {
         alert("저장 중 오류 발생");
@@ -1208,31 +1203,26 @@ async function submitAdminAction() {
 // 5. 신청 취소 로직
 async function cancelAdminAction() {
     const now = new Date();
-    if (now.getHours() >= DINNER_DEADLINE_HOUR) {
-        alert("⚠️ 오후 4시 이후에는 취소가 불가능합니다.");
-        return;
-    }
-showKacConfirm("정말로 신청을 취소하시겠습니까?", async function() {
-        // 이 아래는 기존 취소 로직을 그대로 두세요
+    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR;
+
+    showKacConfirm("신청된 내역을 취소하시겠습니까?", async function() {
         const today = getTodayString();
         const uToken = localStorage.getItem('uToken');
-        await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+
+        // 1. 외출·외박 내역은 시간 상관없이 무조건 삭제
         await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-        alert("취소되었습니다.");
-        openAdminAction();
+
+        // 2. 석식 제외 내역은 16시 이전일 때만 삭제
+        if (isAfterDeadline) {
+            alert("✅ 외출·외박 신청은 취소되었습니다.\n⚠️ 석식 제외는 16시가 지나 취소되지 않았습니다.");
+        } else {
+            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+            alert("✅ 모든 신청이 취소되었습니다.");
+        }
+
+        openAdminAction(); // 화면 새로고침
     });
-    return; // 팝업이 뜨는 동안 아래 로직이 실행되지 않게 막음
-
-    const today = getTodayString();
-    const uToken = localStorage.getItem('uToken');
-    
-    await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
-    await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-    
-    alert("취소되었습니다.");
-    openAdminAction(); // 다시 로드해서 폼 보여주기
 }
-
 
 
 
