@@ -225,6 +225,14 @@
 
   <script src="config.js"></script>
   <script>
+
+  if(sessionStorage.getItem('kac_portal_auth') !== 'meal') {
+      alert("정상적인 접근이 아닙니다. 포털에서 인증 후 접속해주세요.");
+      location.replace('portal.html');
+  }
+
+
+
     // --- 실시간 시스템 상태 및 마감 체크 ---
     function updateSystem() {
         const now = new Date();

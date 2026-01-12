@@ -215,6 +215,14 @@
 
   <script src="config.js"></script>
   <script>
+
+  if(sessionStorage.getItem('kac_portal_auth') !== 'driver') {
+      alert("정상적인 접근이 아닙니다. 포털에서 인증 후 접속해주세요.");
+      location.replace('portal.html'); // 포털 파일명에 맞게 수정
+  }
+
+
+
     // --- 실시간 시계 설정 ---
     function runClock() {
         const now = new Date();

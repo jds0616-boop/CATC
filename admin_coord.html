@@ -198,6 +198,14 @@
 
   <script src="config.js"></script>
   <script>
+
+  if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
+      alert("정상적인 접근이 아닙니다. 포털에서 인증 후 접속해주세요.");
+      location.replace('portal.html');
+  }
+
+
+
     function runClock() {
         const now = new Date();
         const week = ['일','월','화','수','목','금','토'];
