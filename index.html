@@ -175,11 +175,10 @@
 
 <!-- [신규] 질문 대상(과목) 선택창 -->
 <div style="padding: 0 15px 8px 15px;">
-    <select id="subjectSelect" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
-        <option value="일반">질문 대상 선택 (기본: 일반)</option>
+    <select id="subjectSelect" onchange="checkCooldown()" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
+        <option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>
     </select>
 </div>
-
             <div class="input-box">
                 <textarea id="qInput" class="real-input" rows="1" 
           placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" 
@@ -362,7 +361,7 @@ let confirmCallback = null;
 
 
 
-        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
+        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
         
         (async function init() {
             const params = new URLSearchParams(window.location.search);
@@ -556,7 +555,7 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         const sel = document.getElementById('subjectSelect');
         if(!sel) return;
         
-        let html = '<option value="일반">질문 대상 선택 (기본: 일반)</option>';
+        let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
         Object.values(data).forEach(name => {
             html += `<option value="${name}">${name}</option>`;
         });
@@ -782,42 +781,40 @@ function submitQ() {
     const txt = document.getElementById('qInput').value.trim();
     if(!txt) return;
 
-    // [추가] 선택된 과목(교수님) 가져오기
     const subject = document.getElementById('subjectSelect').value;
+    const now = Date.now();
+    
+    // [수정] 선택한 강사(대상)에 대한 마지막 질문 시간 체크
+    const lastTimeForSubject = lastPostTimeMap[subject] || 0;
 
-    // 수정 모드일 때
     if(editingKey) {
-        dbRef.qa.child(editingKey).update({ 
-            text: txt, 
-            subject: subject // 수정 시에도 과목 반영
-        }).then(() => { 
+        dbRef.qa.child(editingKey).update({ text: txt, subject: subject }).then(() => { 
             alert("수정 완료"); 
             resetInput(); 
         });
         return;
     }
 
-    // 도배 방지 체크
-    const now = Date.now();
-    if(now - lastPostTime < 120000) { 
-        alert("잠시 후 질문해주세요."); 
+    // [수정] 해당 강사에게 2분이 지났는지 확인
+    if(now - lastTimeForSubject < 120000) { 
+        alert(`'${subject}'님께는 잠시 후 다시 질문해주세요.`); 
         return; 
     }
 
-    // 새 질문 등록
     const ref = dbRef.qa.push();
     ref.set({
         text: txt,
-        subject: subject, // 과목명 저장
+        subject: subject,
         likes: 0,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
 
-    // 로컬 데이터 업데이트
     myQs[ref.key] = now;
     localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-    lastPostTime = now;
-    localStorage.setItem(`lastTime_${currentRoom}`, now);
+    
+    // [수정] 해당 강사에 대한 질문 시간만 업데이트하여 저장
+    lastPostTimeMap[subject] = now;
+    localStorage.setItem(`lastTimeMap_${currentRoom}`, JSON.stringify(lastPostTimeMap));
     
     resetInput();
     checkCooldown();
@@ -837,27 +834,51 @@ function submitQ() {
         }
         function deleteQ(key) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(key).remove(); }
         function resetInput() { const el = document.getElementById('qInput'); el.value = ""; el.style.height = '24px'; el.focus(); document.getElementById('charCount').innerText = "0 / 100"; document.getElementById('charCount').classList.remove('limit'); document.getElementById('submitBtn').classList.remove('editing'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>'; editingKey = null; checkCooldown(); }
+
+
+
         function checkCooldown() {
-            const btn = document.getElementById('submitBtn'); const input = document.getElementById('qInput');
-            if(editingKey) { document.getElementById('coolTimer').innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "내용을 수정하세요."; return; }
-            const diff = Date.now() - lastPostTime; const timerEl = document.getElementById('coolTimer');
-            if(diff < 120000) {
-                const remain = Math.ceil((120000 - diff) / 1000); const mm = Math.floor(remain / 60); const ss = remain % 60;
-                timerEl.innerText = `⏳ 질문 제한: ${mm}:${ss.toString().padStart(2, '0')} 남음`;
-                btn.disabled = true; btn.style.opacity = 0.5; input.disabled = true; input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
-                setTimeout(checkCooldown, 1000);
-            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "익명으로 작성되며, 강의장에 공개됩니다. 예의 있는 표현을 부탁드립니다."; }
-        }
-        function formatTime(ts) { const d = new Date(ts); return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
-        function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
-        async function sendAns(c) {
-            if(!canAnswer) return;
-            const qSnap = await dbRef.quiz.once('value'); const qData = qSnap.val() || {}; myLastChoiceIdx = c; const choiceLabel = (qData.type === 'OX') ? (c === 1 ? 'O' : 'X') : `${c}번`; myLastChoice = choiceLabel; 
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected')); event.target.classList.add('selected');
-            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-hand-pointer"></i> ${choiceLabel} 선택 중...`;
-            let t = localStorage.getItem('uToken'); if(!t) { t=Math.random().toString(36).substr(2); localStorage.setItem('uToken',t); }
-            dbRef.ans.child(currentQuizId).child(t).set({choice:c});
-        }
+    const btn = document.getElementById('submitBtn');
+    const input = document.getElementById('qInput');
+    const timerEl = document.getElementById('coolTimer');
+    const subject = document.getElementById('subjectSelect').value;
+
+    if(editingKey) { 
+        timerEl.innerText = ""; 
+        btn.disabled = false; 
+        btn.style.opacity = 1; 
+        input.disabled = false; 
+        input.placeholder = "내용을 수정하세요."; 
+        return; 
+    }
+
+    const now = Date.now();
+    const lastTimeForSubject = lastPostTimeMap[subject] || 0;
+    const diff = now - lastTimeForSubject;
+
+    if(diff < 120000) {
+        const remain = Math.ceil((120000 - diff) / 1000);
+        const mm = Math.floor(remain / 60);
+        const ss = remain % 60;
+        timerEl.innerText = `⏳ [${subject}] 질문 대기: ${mm}:${ss.toString().padStart(2, '0')}`;
+        btn.disabled = true;
+        btn.style.opacity = 0.5;
+        input.disabled = true;
+        input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
+        // 1초마다 다시 체크 (이전에 돌던 타이머와 겹치지 않게 주의)
+        setTimeout(checkCooldown, 1000);
+    } else {
+        timerEl.innerText = "";
+        btn.disabled = false;
+        btn.style.opacity = 1;
+        input.disabled = false;
+        input.placeholder = "강의장 공개, 예의있는 질문";
+    }
+}
+
+
+
+
         function showFinalRanking() {
             const myToken = localStorage.getItem('uToken'); if(!myToken) return; if(rankingListener) return;
             document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
