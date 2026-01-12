@@ -240,6 +240,10 @@ const dataMgr = {
     forceEnterRoom: async function(room) {
     firebase.database().ref(`courses/${room}/status`).update({ 
         lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
+        // [추가] 이전 감시자들 제거 (데이터 꼬임 방지)
+        if(dbRef.status) dbRef.status.off();
+        if(dbRef.qa) dbRef.qa.off();
+        if(dbRef.connections) dbRef.connections.off();
     });
     document.querySelector('.mode-tabs').style.display = 'flex'; 
     document.getElementById('floatingQR').style.display = 'none';
