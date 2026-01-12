@@ -148,6 +148,14 @@
     overflow-y: auto;   /* 내용이 넘치면 세로 스크롤바 생성 */
 }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
+/* [추가] 학생장 왕관 및 공지사항 디자인 */
+        .leader-crown { color: #facc15; display: none; margin-right: 8px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+        .notice-card { background: #f8fafc; border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; text-align: left; }
+        .notice-tag { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; margin-bottom: 8px; display: inline-block; color: white; }
+        .tag-global { background: #10b981; } /* 센터공지 - 녹색 */
+        .tag-course { background: #3b82f6; } /* 과정공지 - 파란색 */
+        .notice-body { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; font-weight: 500; }
+        .qr-img-full { width: 100%; border-radius: 15px; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -175,7 +183,11 @@
         <div class="header">
             <!-- [수정] 나가기 버튼 기능 변경 (완전 퇴장) -->
             <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
-            <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
+            <div class="header-title" style="display: flex; align-items: center; justify-content: center;">
+    <i class="fa-solid fa-crown leader-crown" id="leaderCrownIcon"></i>
+    <span id="roomTitle">Course Name</span>
+</div>
+<div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
             <div class="header-btn" onclick="openMainMenu()">
     <i class="fa-solid fa-bars"></i>
 </div>
@@ -231,12 +243,12 @@
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
     <div class="menu-box">
         <h3>Menu</h3>
-        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-bullhorn"></i> 공지사항(준비중)</div>
+        <div class="menu-item" onclick="openNotice()"><i class="fa-solid fa-bullhorn" style="color: #facc15;"></i> 공지사항 확인</div>
         <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
         <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
         <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
         <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
-        <div class="menu-item" onclick="openRoomMove()"><i class="fa-solid fa-door-open"></i> 강의실 이동</div>
+        <div class="menu-item" onclick="openAttendanceQR()"><i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i> 출결 QR 확인</div>
         <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
     </div>
 </div>
@@ -332,6 +344,29 @@
            <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 20px; font-weight: 900; cursor: pointer;">나가기</button>
     </div>
 </div>
+
+
+<!-- [신규] 공지사항 팝업 -->
+<div id="noticeModal" class="menu-overlay" style="display:none; z-index: 9000;" onclick="if(event.target==this)this.style.display='none'">
+    <div class="menu-box" style="text-align:left;">
+        <h3 style="text-align:center; margin-bottom: 20px;">📢 중요 공지사항</h3>
+        <div id="noticeContainer">
+            <!-- 공지 내용이 여기에 들어감 -->
+        </div>
+        <button onclick="document.getElementById('noticeModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
+    </div>
+</div>
+
+<!-- [신규] 출결 QR 확인 팝업 -->
+<div id="qrModal" class="menu-overlay" style="display:none; z-index: 9001;" onclick="if(event.target==this)this.style.display='none'">
+    <div class="menu-box">
+        <h3 style="margin-bottom: 15px;">출결 QR (고용노동부)</h3>
+        <img id="qrImage" src="" class="qr-img-full" style="display:none;" alt="QR 로딩 실패">
+        <div id="qrEmptyMsg" style="padding:40px 0; color:#94a3b8; font-weight:bold; display:none;">등록된 QR 이미지가 없습니다.</div>
+        <button onclick="document.getElementById('qrModal').style.display='none'" style="margin-top:20px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
+    </div>
+</div>
+
 
 
 
@@ -1288,7 +1323,7 @@ async function saveProfile() {
 
         // 프로필 저장 후 실시간 감지 함수 실행
         startPresence();
-
+        startLeaderCheck();
         document.getElementById('profileOverlay').style.display = 'none';
         alert(`${name}님, 환영합니다!`);
         
@@ -1319,6 +1354,7 @@ async function checkProfile() {
         } else {
             // 접속이 확인되면 실시간 감지 시작
             startPresence();
+            startLeaderCheck();
             showMainDashboard();
         }
     } catch (e) {
@@ -1334,6 +1370,7 @@ function showMainDashboard() {
     document.getElementById('landingPage').style.display = 'none';
     document.getElementById('mainApp').style.display = 'flex';
     startPresence();
+    startLeaderCheck();
 }
 
 
@@ -1356,6 +1393,76 @@ async function viewMealMenu() {
     document.getElementById('mealMenuImage').src = imageUrl;
     document.getElementById('mealMenuModal').style.display = 'flex';
 }
+
+
+
+
+// [신규] 공지사항 보기 기능
+async function openNotice() {
+    document.getElementById('menuModal').style.display = 'none';
+    const container = document.getElementById('noticeContainer');
+    container.innerHTML = "로드 중...";
+    document.getElementById('noticeModal').style.display = 'flex';
+
+    try {
+        // 1. 센터 전체 공지 가져오기
+        const globalSnap = await firebase.database().ref('system/globalNotice').once('value');
+        // 2. 과정별 공지 가져오기
+        const courseSnap = await firebase.database().ref(`courses/${currentRoom}/notice`).once('value');
+
+        let html = "";
+        if (globalSnap.exists() && globalSnap.val()) {
+            html += `<div class="notice-card"><span class="notice-tag tag-global">센터 전체 공지</span><div class="notice-body">${globalSnap.val()}</div></div>`;
+        }
+        if (courseSnap.exists() && courseSnap.val()) {
+            html += `<div class="notice-card"><span class="notice-tag tag-course">우리 과정 공지</span><div class="notice-body">${courseSnap.val()}</div></div>`;
+        }
+
+        container.innerHTML = html || "<div style='text-align:center; padding:30px; color:#94a3b8;'>표시할 공지사항이 없습니다.</div>";
+    } catch (e) {
+        container.innerHTML = "공지사항을 불러오지 못했습니다.";
+    }
+}
+
+// [신규] 출결 QR 보기 기능
+async function openAttendanceQR() {
+    document.getElementById('menuModal').style.display = 'none';
+    const img = document.getElementById('qrImage');
+    const msg = document.getElementById('qrEmptyMsg');
+    
+    img.style.display = 'none';
+    msg.style.display = 'none';
+    document.getElementById('qrModal').style.display = 'flex';
+
+    try {
+        const snap = await firebase.database().ref(`courses/${currentRoom}/attendanceQR`).once('value');
+        if (snap.exists() && snap.val()) {
+            img.src = snap.val();
+            img.style.display = 'block';
+        } else {
+            msg.style.display = 'block';
+        }
+    } catch (e) {
+        msg.innerText = "데이터 연결 오류";
+        msg.style.display = 'block';
+    }
+}
+
+// [신규] 학생장 왕관 실시간 감지
+function startLeaderCheck() {
+    const uToken = localStorage.getItem('uToken');
+    if (!uToken || !currentRoom) return;
+
+    firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isLeader`).on('value', snap => {
+        const isLeader = snap.val();
+        const crown = document.getElementById('leaderCrownIcon');
+        if (crown) {
+            crown.style.display = isLeader === true ? 'inline-block' : 'none';
+        }
+    });
+}
+
+
 
 
 
