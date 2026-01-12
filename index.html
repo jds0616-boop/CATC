@@ -162,7 +162,7 @@
             <!-- [수정] 나가기 버튼 기능 변경 (완전 퇴장) -->
             <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
             <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
-            <div class="header-btn" onclick="document.getElementById('menuModal').style.display='flex'">
+            <div class="header-btn" onclick="openMainMenu()">
     <i class="fa-solid fa-bars"></i>
 </div>
         </div>
@@ -422,7 +422,11 @@ async function enterApp() {
 }
 
 
-
+function openMainMenu() {
+    // 모든 잠금 클래스 제거 후 메뉴 열기
+    document.querySelectorAll('.locked').forEach(el => el.classList.remove('locked'));
+    document.getElementById('menuModal').style.display = 'flex';
+}
 
 
 
@@ -663,7 +667,7 @@ dbRef.quiz.on('value', s => {
                 sTimerText.style.color = "#f59e0b";
             }
             // 기존 버튼들에 'locked'를 걸고 내가 눌렀던 버튼에 'selected' 유지
-            document.querySelectorAll('.quiz-opt-btn').forEach((btn, idx) => {
+            document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, idx) => {
                 btn.classList.add('locked');
                 if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
             });
@@ -739,7 +743,7 @@ dbRef.quiz.on('value', s => {
         }
         else if(q.status === 'close') {
             canAnswer = false;
-            document.querySelectorAll('.quiz-opt-btn').forEach((btn, idx) => {
+            document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, idx) => {
                 btn.classList.add('locked');
                 if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
             });
@@ -893,11 +897,19 @@ function submitQ() {
                 }
             });
         }
-        function forceCloseQuiz() {
-            hasClosedSummary = false; canAnswer = false;
-            if (rankingListener) { const myToken = localStorage.getItem('uToken'); firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off(); rankingListener = null; }
-            document.getElementById('quizResultBox').style.display = 'none'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizOverlay').style.display = 'none'; document.getElementById('quizKingStamp').style.display = 'none';
-        }
+
+
+function forceCloseQuiz() {
+    hasClosedSummary = false; canAnswer = false;
+    if (rankingListener) { const myToken = localStorage.getItem('uToken'); firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off(); rankingListener = null; }
+    document.getElementById('quizResultBox').style.display = 'none'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizOverlay').style.display = 'none'; document.getElementById('quizKingStamp').style.display = 'none';
+
+    // [추가] 퀴즈 종료 시 모든 버튼의 잠금 클래스(locked)를 강제로 제거
+    document.querySelectorAll('.locked').forEach(el => el.classList.remove('locked'));
+}
+
+
+
         function closeResultOverlay() { hasClosedSummary = true; document.getElementById('quizOverlay').style.display = 'none'; }
         function openMenu() {
             const box = document.getElementById('roomList'); box.innerHTML = "";
