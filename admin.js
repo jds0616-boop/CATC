@@ -1193,7 +1193,7 @@ if (c === state.room) {
         });
     },
 
-    loadStudentList: function() {
+  loadStudentList: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
             const data = snap.val() || {};
@@ -1201,7 +1201,21 @@ if (c === state.room) {
             if(!tbody) return;
             const totalEl = document.getElementById('studentTotalCount');
             
-           tbody.innerHTML += `
+            // 1. 데이터 가공 (이름 없는 데이터 제외)
+            const studentList = Object.keys(data).map(key => ({
+                token: key,
+                ...data[key]
+            })).filter(s => s.name && s.name !== "undefined");
+
+            if(totalEl) totalEl.innerText = studentList.length;
+            tbody.innerHTML = ""; // 기존 목록 싹 지우기
+
+            // 2. [가장 중요] 반복문 시작: 학생 한 명당 한 줄씩 그리기
+            studentList.forEach((s, idx) => {
+                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+                const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+
+                tbody.innerHTML += `
                     <tr style="${s.isLeader ? 'background-color:#f5f3ff;' : ''}">
                         <td>${idx + 1}</td>
                         <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
@@ -1209,18 +1223,18 @@ if (c === state.room) {
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
                             <div style="display:flex; gap:5px; justify-content:center;">
-                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px;">
+                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px; cursor:pointer;">
                                     ${s.isLeader ? '해제' : '학생장지정'}
                                 </button>
-                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px;">
+                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
                                     삭제
                                 </button>
                             </div>
                         </td>
                     </tr>
                 `;
-            });
-        });
+            }); // 반복문 끝
+        }); // Firebase 리스너 끝
     }
 }; // <--- ui 상자 닫기 완료 (로그인 에러 해결 지점)
 
