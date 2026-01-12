@@ -480,21 +480,22 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const isNowLeader = !student.isLeader; 
 
             if(isNowLeader) {
-                // 학생장으로 임명할 때 전체 전화번호를 물어봄 (포털 연동용)
-                const phone = prompt(`[${currentName}] 학생을 학생장으로 지정합니다.\n포털 인증 및 연락망 관리를 위해 전체 연락처를 입력하세요.`, "010-0000-0000");
-                if(!phone) { alert("취소되었습니다. 연락처가 있어야 학생장 지정이 가능합니다."); return; }
+                const phone = prompt(`[${currentName}] 학생을 학생장으로 지정합니다.\n비상 연락망 관리를 위해 전체 전화번호를 입력하세요.`, "010-0000-0000");
+                if(!phone) return;
                 
                 firebase.database().ref(`courses/${state.room}/students/${token}`).update({
                     isLeader: true,
-                    phone: phone // 학생장 플랫폼 본인인증 및 운영자 확인용
+                    phone: phone 
                 });
             } else {
                 if(confirm(`[${currentName}] 학생의 학생장 권한을 해제할까요?`)) {
-                    firebase.database().ref(`courses/${state.room}/students/${token}`).update({ isLeader: false });
+                    firebase.database().ref(`courses/${state.room}/students/${token}`).update({
+                        isLeader: false
+                    });
                 }
             }
         });
-    },
+    }
 
 
 
@@ -1212,19 +1213,24 @@ loadDinnerSkipData: function() {
             studentList.forEach((s, idx) => {
                 const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
                 const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+                const rowStyle = s.isLeader ? 'style="background-color: #f5f3ff;"' : '';
 
                 tbody.innerHTML += `
-                    <tr style="${s.isLeader ? 'background-color:#f5f3ff;' : ''}">
+                    <tr ${rowStyle}>
                         <td>${idx + 1}</td>
                         <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
                         <td>${s.phone || "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
                             <div style="display:flex; gap:5px; justify-content:center;">
-                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px; cursor:pointer;">
+                                <!-- 학생장 버튼 (지정/해제에 따라 색상 변경) -->
+                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
+                                        style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px; cursor:pointer;">
                                     ${s.isLeader ? '해제' : '학생장지정'}
                                 </button>
-                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
+                                <!-- 기존 삭제 버튼 -->
+                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
+                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
                                     삭제
                                 </button>
                             </div>
