@@ -362,6 +362,38 @@ let confirmCallback = null;
 
 
         let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
+
+
+function sendAns(idx) {
+    if (!canAnswer || !currentQuizId) return; // 클릭 가능 상태가 아니면 무시
+
+    myLastChoiceIdx = idx; // 내가 선택한 번호 저장
+    const oxDisplay = document.getElementById('btnGroupOX').style.display;
+    myLastChoice = (oxDisplay === 'flex') ? (idx === 1 ? 'O' : 'X') : idx + '번';
+
+    // 1. 모든 버튼에서 'selected' 클래스 제거 후 선택한 버튼에만 추가
+    document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, i) => {
+        btn.classList.remove('selected');
+        if ((i + 1) === idx) btn.classList.add('selected');
+    });
+
+    // 2. Firebase 서버로 전송
+    const uToken = localStorage.getItem('uToken');
+    if(uToken && currentQuizId) {
+        dbRef.ans.child(currentQuizId).child(uToken).set({
+            choice: idx,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+    
+    // 3. 피드백 메시지 표시
+    document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-check"></i> ${myLastChoice} 선택 완료!`;
+}
+
+
+
+
+
         
         (async function init() {
             const params = new URLSearchParams(window.location.search);
@@ -705,10 +737,11 @@ dbRef.quiz.on('value', s => {
         } 
         // [5] 퀴즈 진행 상태 (다시 시작했을 때 여기를 탑니다)
         else if(q.status === 'open') {
-            canAnswer = true;
+            canAnswer = true; // 클릭 가능하게 변경
             msgBox.innerText = "정답을 선택하세요!";
             msgBox.style.color = "#1e293b";
             
+            // 타이머 로직 (기존 유지)
             if(q.endTime && sTimerBox && sTimerText) {
                 sTimerBox.style.display = 'flex';
                 studentTimerInterval = setInterval(() => {
@@ -723,8 +756,8 @@ dbRef.quiz.on('value', s => {
             if(q.isOX) {
                 multArea.style.display = 'none'; oxArea.style.display = 'flex';
                 document.querySelectorAll('.ox-btn').forEach((btn, i) => {
+                    // 핵심: locked를 반드시 제거해야 클릭이 됩니다.
                     btn.classList.remove('locked', 'selected');
-                    // [핵심 2] OX 버튼의 경우 상태를 다시 체크해서 selected 부여
                     if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                 });
             } else {
@@ -732,10 +765,9 @@ dbRef.quiz.on('value', s => {
                 multArea.innerHTML = ""; 
                 q.options.forEach((optText, i) => {
                     const btn = document.createElement('button');
-                    btn.className = 'quiz-opt-btn';
+                    btn.className = 'quiz-opt-btn'; // locked 없이 생성
                     btn.innerText = `${i + 1}. ${optText}`; 
                     btn.onclick = () => sendAns(i + 1);
-                    // [핵심 3] 다시 그릴 때 내가 이전에 눌렀던 번호라면 selected 클래스 강제 주입
                     if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
                     multArea.appendChild(btn);
                 });
