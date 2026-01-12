@@ -307,7 +307,7 @@
                         <input type="checkbox" id="skipDinner" style="width:20px; height:20px;">
                         <span style="font-size:15px; font-weight:600;">오늘 저녁은 먹지 않습니다. (동의)</span>
                     </label>
-                    <p style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px;">※ 16:00 이후에는 신청/취소 불가</p>
+                    <p id="dinnerDeadlineMsg" style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px; font-weight: bold;"> ※ 석식 신청 및 취소는 매일 16:00에 자동 마감됩니다.</p>
                 </div>
             </div>
 
@@ -1084,18 +1084,32 @@ async function openAdminAction() {
     const modal = document.getElementById('adminActionModal');
     modal.style.display = 'flex';
     
-    // 오늘 날짜 표시 (config.js의 함수 사용)
     const today = getTodayString();
     document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
+
+    // 시간 체크 (16시 마감)
+    const now = new Date();
+    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR;
+    const skipDinnerCheckbox = document.getElementById('skipDinner');
+    const dinnerContainer = skipDinnerCheckbox.parentElement.parentElement; // 회색 박스 영역
+
+    if (isAfterDeadline) {
+        skipDinnerCheckbox.disabled = true;
+        dinnerContainer.style.opacity = "0.5";
+        dinnerContainer.style.pointerEvents = "none"; // 클릭 방지
+    } else {
+        skipDinnerCheckbox.disabled = false;
+        dinnerContainer.style.opacity = "1";
+        dinnerContainer.style.pointerEvents = "auto";
+    }
 
     // 입력폼 초기화
     selectedAdminType = 'none';
     updateAdminTypeButtons();
-    document.getElementById('skipDinner').checked = false;
+    skipDinnerCheckbox.checked = false;
     document.getElementById('fullPhoneArea').style.display = 'none';
     document.getElementById('fullPhone').value = "";
 
-    // 기존 신청 내역이 있는지 서버에서 조회
     const uToken = localStorage.getItem('uToken');
     const dinnerRef = firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`);
     const actionRef = firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`);
@@ -1103,7 +1117,6 @@ async function openAdminAction() {
     const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
     
     if (dinnerSnap.exists() || actionSnap.exists()) {
-        // 신청 내역이 있으면 현황창 보여주기
         document.getElementById('adminActionForm').style.display = 'none';
         document.getElementById('adminStatusArea').style.display = 'block';
         
@@ -1126,18 +1139,18 @@ function selectAdminType(type) {
     selectedAdminType = type;
     updateAdminTypeButtons();
 
-    // 외출이나 외박을 선택하면 석식 제외를 자동으로 체크해줌 (아이디어 반영)
+    // 외출이나 외박을 선택해도 석식 제외는 건드리지 않음 (요청사항 반영)
     if (type === 'outing' || type === 'overnight') {
-        document.getElementById('skipDinner').checked = true;
         document.getElementById('fullPhoneArea').style.display = 'block';
         
-        // 이전에 저장된 전체 번호가 있으면 미리 채워줌
         const savedFullPhone = localStorage.getItem('kac_user_full_phone');
         if(savedFullPhone) document.getElementById('fullPhone').value = savedFullPhone;
     } else {
         document.getElementById('fullPhoneArea').style.display = 'none';
     }
 }
+
+
 
 // 3. 버튼 선택 디자인 업데이트
 function updateAdminTypeButtons() {
@@ -1154,11 +1167,11 @@ function updateAdminTypeButtons() {
     });
 }
 
-// 4. 최종 신청 제출
+// [수정] 제출 로직 (비활성화 상태일 때는 석식 데이터 무시)
 async function submitAdminAction() {
     const today = getTodayString();
     const now = new Date();
-    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR; // 16시 경과 여부
+    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR;
 
     let uToken = localStorage.getItem('uToken');
     if (!uToken) { 
@@ -1171,7 +1184,6 @@ async function submitAdminAction() {
     const skipDinner = document.getElementById('skipDinner').checked;
     const fullPhone = document.getElementById('fullPhone').value.trim();
 
-    // 1. 외출/외박 관련 체크 (시간제한 없음)
     if ((selectedAdminType === 'outing' || selectedAdminType === 'overnight') && !fullPhone) {
         alert("외출/외박 신청 시 비상 연락처를 입력해주세요.");
         return;
@@ -1180,22 +1192,16 @@ async function submitAdminAction() {
     if (selectedAdminType !== 'none') localStorage.setItem('kac_user_full_phone', fullPhone);
 
     try {
-        // (A) 석식 제외 저장 (16시 이전일 때만 작동)
-        if (skipDinner) {
-            if (isAfterDeadline) {
-                // 이미 16시가 지났는데 체크한 경우 경고만 띄우고 저장은 안 함
-                alert("⚠️ 석식 신청/취소는 16시에 마감되었습니다.\n외출·외박 신청만 진행됩니다.");
-            } else {
+        // 석식 제외 저장 (16시 이전일 때만 변경사항 적용)
+        if (!isAfterDeadline) {
+            if (skipDinner) {
                 await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
-            }
-        } else {
-            // 체크 해제 시 삭제 (이것도 16시 이전만 가능)
-            if (!isAfterDeadline) {
+            } else {
                 await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
             }
         }
 
-        // (B) 외출/외박 저장 (시간제한 없이 항상 저장)
+        // 외출/외박 저장은 항상 가능
         if (selectedAdminType !== 'none') {
             await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
                 name: name,
@@ -1213,6 +1219,8 @@ async function submitAdminAction() {
         alert("저장 중 오류 발생");
     }
 }
+
+
 
 // 5. 신청 취소 로직
 async function cancelAdminAction() {
