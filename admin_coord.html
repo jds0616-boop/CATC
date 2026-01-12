@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>KAC Coordinator Dashboard</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Font Awesome & Pretendard Font -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy-dark: #0f172a;   /* 상/하단바 */
+      --blue-main: #0ea5e9;   /* 메인 쿨 블루 */
+      --blue-deep: #0369a1;   /* 짙은 블루 */
+      --green-save: #10b981;  /* 전체공지용 그린 */
+      --bg-cool: #f0f9ff;     /* 아이스 블루 배경 */
+      --card-white: #ffffff;
+      --text-dark: #1e293b;
+      --border-blue: #e0f2fe;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Pretendard', sans-serif;
+      background: #e2e8f0; 
+      display: flex; justify-content: center;
+      color: var(--text-dark);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 600px; 
+      min-height: 100dvh;
+      background: var(--bg-cool);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 30px rgba(0,0,0,0.1);
+    }
+
+    /* --- 상단바 (고정) --- */
+    .app-header {
+      position: fixed; top: 0; width: 100%; max-width: 600px; height: 60px;
+      background: var(--navy-dark);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 1000;
+    }
+    .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
+    .header-title { color: #fff; font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+
+    /* --- 하단바 (고정) --- */
+    .app-footer {
+      position: fixed; bottom: 0; width: 100%; max-width: 600px; height: 54px;
+      background: var(--navy-dark); color: #94a3b8;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; font-size: 11px; z-index: 1000;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .footer-logo img { height: 18px; display: block; filter: brightness(0) invert(1); opacity: 0.8; }
+
+    /* --- 콘텐츠 영역 --- */
+    .app-content {
+      flex: 1;
+      margin-top: 60px; margin-bottom: 54px;
+      padding: 16px;
+    }
+
+    /* 섹션 카드 */
+    .section-card {
+      background: var(--card-white);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 14px;
+      border: 1.5px solid var(--border-blue);
+    }
+
+    .section-title {
+      font-size: 13px; font-weight: 800; color: var(--blue-deep);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-title i { font-size: 14px; }
+
+    /* 1라인: 담당 과정 선택 (Active만) */
+    .navy-select {
+      width: 100%; height: 52px; border-radius: 12px;
+      border: 1.5px solid var(--border-blue); background: #f8fafc;
+      padding: 0 15px; font-size: 15px; font-weight: 800; color: var(--navy-dark);
+      outline: none;
+    }
+
+    /* 2라인: 훈련원 출발 셔틀 현황 */
+    .shuttle-info { font-size: 11px; color: #64748b; margin-bottom: 8px; font-weight: 600; }
+    .shuttle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .mini-stat-box { background: #f0f9ff; border-radius: 12px; padding: 12px 5px; text-align: center; }
+    .mini-stat-box span { font-size: 11px; color: var(--blue-deep); font-weight: 700; display: block; }
+    .mini-stat-box strong { font-size: 18px; font-weight: 900; color: var(--navy-dark); }
+
+    /* 3라인: 외출/외박 */
+    .action-row { display: flex; gap: 10px; }
+    .action-box { 
+        flex: 1; padding: 14px; border-radius: 12px; 
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .outing { background: #fff7ed; color: #9a3412; }
+    .overnight { background: #fef2f2; color: #991b1b; }
+
+    /* 공지사항 텍스트박스 */
+    .notice-area {
+      width: 100%; min-height: 70px; border-radius: 12px;
+      border: 1.5px solid #e2e8f0; padding: 12px;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      resize: none; outline: none; margin-bottom: 10px; background: #fafafa;
+    }
+    .navy-btn {
+      width: 100%; height: 48px; border-radius: 12px;
+      background: var(--blue-main); color: white;
+      border: none; font-weight: 800; font-size: 15px; cursor: pointer;
+    }
+    .navy-btn.green { background: var(--green-save); }
+    .navy-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+    /* 출결 QR 업로드 스타일 */
+    .qr-upload-box {
+      border: 2px dashed var(--blue-main); border-radius: 12px;
+      padding: 15px; text-align: center; background: #f0f9ff;
+    }
+    .qr-preview {
+      width: 100px; height: 100px; object-fit: contain; margin-top: 10px;
+      border: 1px solid #ddd; display: none; margin-left: auto; margin-right: auto;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="app-container">
+    <!-- 상단바 -->
+    <header class="app-header">
+      <button class="header-btn" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+      <div class="header-title">KAC Coordinator Dashboard</div>
+      <button class="header-btn"><i class="fa-solid fa-bars"></i></button>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="app-content">
+      
+      <!-- 1라인: 담당 과정 선택 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> 담당 과정</div>
+          <select id="roomSelect" class="navy-select" onchange="loadRoomSpecificData()">
+              <option value="">현재 운영 중인 과정을 선택하세요</option>
+              <!-- JS에서 Active 과정만 주입 -->
+          </select>
+      </div>
+
+      <!-- 2라인: 셔틀 수요조사 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-bus"></i> 훈련원 출발 셔틀 수요조사</div>
+          <div class="shuttle-info">항공기술훈련원 → 목적지별 탑승 인원</div>
+          <div class="shuttle-stats">
+              <div class="mini-stat-box"><span>오송역</span><strong id="s-osong">0</strong></div>
+              <div class="mini-stat-box"><span>터미널</span><strong id="s-term">0</strong></div>
+              <div class="mini-stat-box"><span>공항</span><strong id="s-air">0</strong></div>
+          </div>
+      </div>
+
+      <!-- 3라인: 외출/외박 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-user-clock"></i> 외출/외박 현황</div>
+          <div class="action-row">
+              <div class="action-box outing">
+                  <span style="font-weight: 800;">외출</span>
+                  <strong style="font-size: 18px;"><span id="o-cnt">0</span>명</strong>
+              </div>
+              <div class="action-box overnight">
+                  <span style="font-weight: 800;">외박</span>
+                  <strong style="font-size: 18px;"><span id="n-cnt">0</span>명</strong>
+              </div>
+          </div>
+      </div>
+
+      <!-- 4라인: 과정별 공지사항 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 과정 공지사항</div>
+          <textarea id="courseNotice" class="notice-area" placeholder="해당 과정 강사 및 교육생에게 실시간 전달됩니다."></textarea>
+          <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+      </div>
+
+      <!-- 5라인: 센터 전체 공지사항 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지사항</div>
+          <textarea id="globalNotice" class="notice-area" placeholder="모든 과정 교육생들에게 공통으로 전달됩니다."></textarea>
+          <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+      </div>
+
+      <!-- 6라인: 출결 QR 코드 등록 -->
+      <div class="section-card">
+          <div class="section-title"><i class="fa-solid fa-qrcode"></i> 출결 QR 코드 관리 (고용노동부)</div>
+          <div class="qr-upload-box">
+              <input type="file" id="qrFile" accept="image/*" style="display:none;" onchange="handleQRUpload(this)">
+              <button class="navy-btn" style="background: #64748b; height: 40px; font-size: 13px;" onclick="document.getElementById('qrFile').click()">
+                  <i class="fa-solid fa-camera"></i> QR 이미지 업로드
+              </button>
+              <img id="qrPreview" class="qr-preview" alt="QR미리보기">
+              <div id="qrStatus" style="font-size: 11px; color: var(--blue-main); margin-top: 8px; font-weight: 700;"></div>
+          </div>
+      </div>
+
+    </main>
+
+    <!-- 하단바 -->
+    <footer class="app-footer">
+      <div id="footer-date">0000년 00월 00일 (요일) 00:00</div>
+      <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // --- 실시간 시계 ---
+    function runClock() {
+        const now = new Date();
+        const week = ['일','월','화','수','목','금','토'];
+        document.getElementById('footer-date').innerText = 
+            `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    }
+    setInterval(runClock, 1000); runClock();
+
+    // --- 운영중인 과정만 리스트에 주입 ---
+    function initActiveRoomList() {
+        firebase.database().ref('courses').on('value', snap => {
+            const data = snap.val() || {};
+            const select = document.getElementById('roomSelect');
+            const savedVal = select.value;
+            select.innerHTML = '<option value="">운영 중인 과정을 선택하세요</option>';
+            
+            Object.keys(data).forEach(rid => {
+                const room = data[rid];
+                // 'active' 상태인 과정만 노출
+                if (room.status && room.status.roomStatus === 'active') {
+                    const cName = room.settings?.courseName || `미지정 과정(Room ${rid})`;
+                    const opt = document.createElement('option');
+                    opt.value = rid;
+                    opt.innerText = cName;
+                    if(rid === savedVal) opt.selected = true;
+                    select.appendChild(opt);
+                }
+            });
+        });
+    }
+
+    // --- 과정별 데이터 로드 ---
+    function loadRoomSpecificData() {
+        const rid = document.getElementById('roomSelect').value;
+        if(!rid) { resetDashboard(); return; }
+
+        const today = getTodayString();
+
+        // 1. 셔틀
+        firebase.database().ref(`courses/${rid}/shuttle`).on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('s-osong').innerText = d.osong ? Object.keys(d.osong).length : 0;
+            document.getElementById('s-term').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+            document.getElementById('s-air').innerText = d.airport ? Object.keys(d.airport).length : 0;
+        });
+
+        // 2. 외출/외박
+        firebase.database().ref(`courses/${rid}/admin_actions/${today}`).on('value', s => {
+            const d = s.val() || {};
+            let o = 0, n = 0;
+            Object.values(d).forEach(v => { if(v.type==='outing') o++; if(v.type==='overnight') n++; });
+            document.getElementById('o-cnt').innerText = o;
+            document.getElementById('n-cnt').innerText = n;
+        });
+
+        // 3. 공지사항 & 출결 QR
+        firebase.database().ref(`courses/${rid}`).on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('courseNotice').value = d.notice || "";
+            if (d.attendanceQR) {
+                document.getElementById('qrPreview').src = d.attendanceQR;
+                document.getElementById('qrPreview').style.display = "block";
+                document.getElementById('qrStatus').innerText = "등록된 QR이 있습니다.";
+            } else {
+                document.getElementById('qrPreview').style.display = "none";
+                document.getElementById('qrStatus').innerText = "등록된 QR이 없습니다.";
+            }
+        });
+    }
+
+    function resetDashboard() {
+        document.getElementById('s-osong').innerText = '0';
+        document.getElementById('s-term').innerText = '0';
+        document.getElementById('s-air').innerText = '0';
+        document.getElementById('o-cnt').innerText = '0';
+        document.getElementById('n-cnt').innerText = '0';
+        document.getElementById('courseNotice').value = "";
+        document.getElementById('qrPreview').style.display = "none";
+        document.getElementById('qrStatus').innerText = "";
+    }
+
+    // --- 저장 로직 ---
+    function saveCourseNotice() {
+        const rid = document.getElementById('roomSelect').value;
+        const msg = document.getElementById('courseNotice').value;
+        if(!rid) return alert("과정을 선택하세요.");
+        firebase.database().ref(`courses/${rid}/notice`).set(msg);
+        alert("과정 공지가 게시되었습니다.");
+    }
+
+    function saveGlobalNotice() {
+        const msg = document.getElementById('globalNotice').value;
+        firebase.database().ref(`system/globalNotice`).set(msg);
+        alert("센터 전체 공지가 업데이트되었습니다.");
+    }
+
+    // QR 업로드 (Base64)
+    async function handleQRUpload(input) {
+        const rid = document.getElementById('roomSelect').value;
+        if(!rid) return alert("과정을 먼저 선택하세요.");
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const base64 = e.target.result;
+            await firebase.database().ref(`courses/${rid}/attendanceQR`).set(base64);
+            alert("출결 QR 코드가 등록되었습니다.");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 초기 로드
+    initActiveRoomList();
+    firebase.database().ref(`system/globalNotice`).once('value', s => {
+        document.getElementById('globalNotice').value = s.val() || "";
+    });
+
+  </script>
+</body>
+</html>
