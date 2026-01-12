@@ -98,51 +98,58 @@ body {
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 
 
+/* Q&A 필터 전체 컨테이너 */
 .qa-filters { 
     display: flex; 
-    flex-direction: column; /* 위아래 2단 구성으로 변경 */
-    gap: 12px; 
+    flex-direction: column; /* 상단 기본버튼 / 하단 강사버튼 2단 구성 */
+    gap: 15px; 
     padding: 20px; 
-    flex-shrink: 0; 
     background: var(--card-bg); 
     border-radius: 15px;
     margin-bottom: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    z-index: 10; 
 }
 
-/* 필터 칩들을 감싸는 영역 (과목들) */
+/* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
+.basic-filters {
+    display: flex;
+    flex-wrap: wrap; /* 화면이 아주 작아지면 다음줄로 넘어가게 */
+    gap: 10px;
+    padding-bottom: 5px;
+}
+
+/* 하단 강사 필터 바 */
 #subjectFilterBar {
     display: flex; 
-    flex-wrap: wrap; /* 핵심: 자리가 없으면 다음 줄로 넘김 */
+    flex-wrap: wrap; /* 강사가 많아지면 다음 줄로 자동 줄바꿈 (핵심) */
     gap: 8px; 
     margin: 0; 
-    padding: 10px 0 0 0; 
-    border-top: 1px solid #f1f5f9; /* 구분선 */
-    overflow: visible; 
+    padding: 15px 0 0 0; 
+    border-top: 1px solid #f1f5f9; /* 상단과 구분선 */
 }
 
-/* 개별 필터 칩 디자인 강화 */
+/* 공통 필터 칩 디자인 (예전 디자인 복구 및 세련미 추가) */
 .filter-chip {
-    padding: 8px 18px;
+    display: inline-block;
+    padding: 7px 16px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 20px; /* 다시 둥글게 복구 */
     font-size: 13px;
     font-weight: 600;
     color: #64748b;
+    cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    width: auto; /* 세로로 늘어나는 것 방지 */
 }
 
 .filter-chip.active {
     background: #3b82f6 !important;
     color: white !important;
     border-color: #3b82f6 !important;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
-
-
 
 
 

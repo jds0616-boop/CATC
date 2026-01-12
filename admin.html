@@ -220,17 +220,19 @@
 
         <div class="content-area">
             <div id="view-qa">
-                <div class="qa-filters">
-                    <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
-                    <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
-                    <div class="filter-chip" onclick="ui.filterQa('later')">Answer Later</div>
-                   <div id="subjectFilterBar"></div>
-    <!-- 과목 필터 버튼들이 여기에 생성됨 -->
-
-    <!-- 과목 필터 버튼들이 여기에 생성됨 -->
-                </div>
-                <div class="qa-list" id="qaList"></div>
-            </div>
+    <div class="qa-filters">
+        <!-- 상단 기본 버튼들을 basic-filters로 감쌉니다 -->
+        <div class="basic-filters">
+            <div class="filter-chip active" onclick="ui.filterQa('all', event)">All Questions</div>
+            <div class="filter-chip" onclick="ui.filterQa('pin', event)">Pinned</div>
+            <div class="filter-chip" onclick="ui.filterQa('later', event)">Answer Later</div>
+        </div>
+        
+        <!-- 하단 강사 필터 바 (기존 유지) -->
+        <div id="subjectFilterBar"></div>
+    </div>
+    <div class="qa-list" id="qaList"></div>
+</div>
 
  
 <!-- 강사 대기실 (현황판) 섹션 -->
