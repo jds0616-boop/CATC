@@ -515,12 +515,17 @@ function startPresence() {
         }
     });
 
-    // 접속자 수 업데이트 로직은 그대로 유지
-    dbRef.connections.on("value", (snap) => {
-        const count = snap.numChildren();
-        const countEl = document.getElementById('realUserCount');
-        if(countEl) countEl.innerText = `${count}명 접속`;
-    });
+// 수강생 명부를 감시하여 실제 온라인인 사람만 카운트
+firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
+    const data = snap.val() || {};
+    const activeUsers = Object.values(data).filter(user => 
+        user.name && user.name !== "undefined" && user.isOnline === true
+    );
+    
+    const count = activeUsers.length;
+    const countEl = document.getElementById('realUserCount');
+    if(countEl) countEl.innerText = `${count}명 접속`;
+});
 }
 
 

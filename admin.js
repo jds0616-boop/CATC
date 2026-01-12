@@ -287,11 +287,22 @@ const dataMgr = {
             }
         });
         
-        dbRef.connections.on('value', s => {
-            const count = s.numChildren();
-            const el = document.getElementById('currentJoinCount');
-            if(el) el.innerText = count;
-        });
+// 수강생 명부(students)를 실시간으로 감시하여 진짜 온라인인 사람만 셉니다.
+firebase.database().ref(`courses/${room}/students`).on('value', s => {
+    const data = s.val() || {};
+    // 1. 이름이 있고 + 2. 온라인(isOnline)인 사람만 필터링
+    const activeUsers = Object.values(data).filter(user => 
+        user.name && user.name !== "undefined" && user.isOnline === true
+    );
+    
+    const count = activeUsers.length;
+    
+    // 퀴즈 화면의 숫자 업데이트
+    const quizEl = document.getElementById('currentJoinCount');
+    if(quizEl) quizEl.innerText = count;
+
+    // 대기실 현황판의 '대기' 인원 등 계산을 위해 필요 시 활용 가능
+});
         
         this.fetchCodeAndRenderQr(room);
         
