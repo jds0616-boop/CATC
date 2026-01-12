@@ -499,8 +499,6 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
 
 
 
-
-
     // [수정완료] 수강생 삭제 기능 함수 추가
     deleteStudent: function(token) {
         if(!state.room) return;
