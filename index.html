@@ -244,6 +244,7 @@
             <button class="quiz-opt-btn shuttle-btn" id="btn-osong" onclick="selectShuttle('osong', '오송역')" style="justify-content: center;">오송역</button>
             <button class="quiz-opt-btn shuttle-btn" id="btn-terminal" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center;">청주터미널</button>
             <button class="quiz-opt-btn shuttle-btn" id="btn-airport" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center;">청주공항</button>
+            <button class="quiz-opt-btn shuttle-btn" id="btn-car" onclick="selectShuttle('car', '자차')" style="justify-content: center;">자차 (개별 이동)</button>
         </div>
 
         <!-- 2단계: 이름 입력 영역 (색상으로 확실히 구분) -->
@@ -853,7 +854,7 @@ async function openShuttleApply() {
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
     const snap = await shuttleRef.once('value');
     const data = snap.val() || {};
-    const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항' };
+    const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차' };
     let foundLoc = null;
     for (const locId in data) { if (data[locId][uToken]) { foundLoc = locId; break; } }
 
