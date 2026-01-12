@@ -399,46 +399,30 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
         }
     },
 
-resetCourse: function() {
-        if (!state.room) {
-            ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
-            return;
-        }
-        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-            const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
-            
-            // 1. 해당 강의실의 모든 데이터를 삭제
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-                // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
-                firebase.database().ref(`courses/${state.room}/status`).set({
-                    resetKey: newResetKey,
-                    roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
-                    mode: 'qa'
-                }).then(() => {
-                    ui.showAlert("강의실이 초기화되었습니다.");
-                    // 강사 화면도 새로고침하여 상태 동기화
-                    setTimeout(() => location.reload(), 1000);
-                });
+    resetCourse: function() {
+if (!state.room) {
+    ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
+    return;
+}
+    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
+        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
+        
+        // 1. 해당 강의실의 모든 데이터를 삭제
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
+            firebase.database().ref(`courses/${state.room}/status`).set({
+                resetKey: newResetKey,
+                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
+                mode: 'qa'
+            }).then(() => {
+                ui.showAlert("강의실이 초기화되었습니다.");
+                // 강사 화면도 새로고침하여 상태 동기화
+                setTimeout(() => location.reload(), 1000);
             });
-        }
-    }, // <--- 여기에 콤마(,)가 꼭 있어야 합니다!
-
-    // [신규 추가] 교육생 개별 삭제 기능
-    deleteStudent: function(studentId, studentName) {
-        if(confirm(`'${studentName}' 교육생을 명부에서 삭제하시겠습니까?\n삭제 시 해당 기기에서는 재로그인이 필요합니다.`)) {
-            firebase.database().ref(`courses/${state.room}/students/${studentId}`).remove()
-                .then(() => {
-                    ui.showAlert("삭제되었습니다.");
-                })
-                .catch(err => {
-                    alert("삭제 실패: " + err.message);
-                });
-        }
+        });
     }
-}; // 이 괄호가 dataMgr 상자를 완전히 닫는 뚜껑입니다.
-
-
-
+}
+};
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -518,7 +502,7 @@ const subjectMgr = {
     list: [],
     selectedFilter: 'all', 
     
-    init: function() {
+init: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
             const data = s.val() || {};
@@ -527,6 +511,7 @@ const subjectMgr = {
             this.renderFilters(); 
         });
 
+        // [추가] 마우스 휠을 굴리면 가로로 스크롤 되게 설정
         const filterBar = document.getElementById('subjectFilterBar');
         if(filterBar) {
             filterBar.addEventListener('wheel', (evt) => {
@@ -591,10 +576,6 @@ const subjectMgr = {
         }
     }
 };
-
-
-
-
 
 
 
@@ -1119,7 +1100,7 @@ const ui = {
         });
     },
 
-loadStudentList: function() {
+    loadStudentList: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
             const data = snap.val() || {};
@@ -1128,15 +1109,11 @@ loadStudentList: function() {
             const totalEl = document.getElementById('studentTotalCount');
             
             tbody.innerHTML = "";
-            // [수정] 고유 키(ID)를 포함하여 리스트를 만듭니다.
-            const students = Object.keys(data).map(key => ({
-                id: key, 
-                ...data[key]
-            })).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
-
+            const students = Object.values(data).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
             if(totalEl) totalEl.innerText = students.length;
 
             students.forEach((s, idx) => {
+                if (!s.name || s.name === "undefined" || s.name === undefined) return;
                 const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const statusDot = s.isOnline 
                     ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
@@ -1148,17 +1125,12 @@ loadStudentList: function() {
                         <td style="font-weight:bold;">${statusDot}${s.name}</td>
                         <td>${s.phone}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                        <td>
-                            <button onclick="dataMgr.deleteStudent('${s.id}', '${s.name}')" 
-                                    style="padding:5px 10px; background:#ef4444; color:white; border:none; border-radius:4px; font-size:12px; cursor:pointer;">
-                                삭제
-                            </button>
-                        </td>
                     </tr>
                 `;
             });
         });
-    },
+    }
+};
 
 
 // --- 4. Quiz Logic ---
