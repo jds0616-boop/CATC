@@ -440,6 +440,66 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
         }
     },
 
+
+// [추가] 공지사항 관리창 열기
+    openNoticeManage: async function() {
+        if(!state.room) return ui.showAlert("강의실을 선택하세요.");
+        const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
+        document.getElementById('instNoticeInput').value = snap.val() || ""; 
+        document.getElementById('noticeManageModal').style.display = 'flex';
+    },
+
+    // [추가] 강사 공지사항 저장
+    saveInstructorNotice: function() {
+        const msg = document.getElementById('instNoticeInput').value;
+        firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
+            ui.showAlert("✅ 공지사항이 게시되었습니다.");
+            document.getElementById('noticeManageModal').style.display = 'none';
+        });
+    },
+
+    // [추가] 출결 QR 보기
+    openAttendanceQr: async function() {
+        if(!state.room) return ui.showAlert("강의실을 선택하세요.");
+        const snap = await firebase.database().ref(`courses/${state.room}/attendanceQR`).once('value');
+        const img = document.getElementById('attendanceQrImg');
+        const msg = document.getElementById('noAttendanceQrMsg');
+        if(snap.exists()) {
+            img.src = snap.val(); img.style.display = 'block'; msg.style.display = 'none';
+        } else {
+            img.style.display = 'none'; msg.style.display = 'block';
+        }
+        document.getElementById('attendanceQrModal').style.display = 'flex';
+    },
+
+    // [추가] 학생장 지정 기능 (연락처 팝업 포함)
+    toggleLeader: function(token, currentName) {
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
+            const student = snap.val();
+            const isNowLeader = !student.isLeader; 
+
+            if(isNowLeader) {
+                // 학생장으로 임명할 때 전체 전화번호를 물어봄 (포털 연동용)
+                const phone = prompt(`[${currentName}] 학생을 학생장으로 지정합니다.\n포털 인증 및 연락망 관리를 위해 전체 연락처를 입력하세요.`, "010-0000-0000");
+                if(!phone) { alert("취소되었습니다. 연락처가 있어야 학생장 지정이 가능합니다."); return; }
+                
+                firebase.database().ref(`courses/${state.room}/students/${token}`).update({
+                    isLeader: true,
+                    phone: phone // 학생장 플랫폼 본인인증 및 운영자 확인용
+                });
+            } else {
+                if(confirm(`[${currentName}] 학생의 학생장 권한을 해제할까요?`)) {
+                    firebase.database().ref(`courses/${state.room}/students/${token}`).update({ isLeader: false });
+                }
+            }
+        });
+    },
+
+
+
+
+
     // [수정완료] 수강생 삭제 기능 함수 추가
     deleteStudent: function(token) {
         if(!state.room) return;
@@ -1141,33 +1201,21 @@ if (c === state.room) {
             if(!tbody) return;
             const totalEl = document.getElementById('studentTotalCount');
             
-            tbody.innerHTML = "";
-
-            // [수정완료] 데이터를 가져올 때 학생 고유의 키(token)를 포함하도록 배열 생성 (데이터 증발 문제 해결)
-            const studentList = Object.keys(data).map(key => ({
-                token: key,
-                ...data[key]
-            })).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
-
-            if(totalEl) totalEl.innerText = studentList.length;
-
-            studentList.forEach((s, idx) => {
-                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-                const statusDot = s.isOnline 
-                    ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
-                    : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-
-                tbody.innerHTML += `
-                    <tr>
+           tbody.innerHTML += `
+                    <tr style="${s.isLeader ? 'background-color:#f5f3ff;' : ''}">
                         <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                        <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
                         <td>${s.phone || "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
-                            <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-                                    style="background-color:#ef4444; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:12px;">
-                                <i class="fa-solid fa-user-minus"></i> 삭제
-                            </button>
+                            <div style="display:flex; gap:5px; justify-content:center;">
+                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px;">
+                                    ${s.isLeader ? '해제' : '학생장지정'}
+                                </button>
+                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px;">
+                                    삭제
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
