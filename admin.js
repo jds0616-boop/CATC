@@ -179,6 +179,11 @@ const dataMgr = {
     },
     
     switchRoomAttempt: async function(newRoom) {
+    // [추가] 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
+    if (localStorage.getItem('last_owned_room') === newRoom) {
+        this.forceEnterRoom(newRoom);
+        return;
+    }
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
@@ -345,6 +350,7 @@ const dataMgr = {
             ownerSessionId: (statusVal === 'active' ? state.sessionId : null),
             professorName: (statusVal === 'active' ? selectedProf : null) 
         }).then(() => {
+            localStorage.setItem('last_owned_room', state.room);
             ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
         });
 
@@ -540,7 +546,8 @@ const ui = {
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
                 const studentObj = roomData.students || {};
-                const userCount = Object.keys(studentObj).length;
+                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
+                const userCount = validStudents.length;
                 const isRoomActive = (st.roomStatus === 'active');
                 
                 const courseName = settings.courseName ? settings.courseName : "-";
@@ -557,7 +564,7 @@ const ui = {
                     opt.value = c;
                     
                     if(isRoomActive) {
-                        if (st.ownerSessionId === state.sessionId) {
+                        if (st.ownerSessionId === state.sessionId || localStorage.getItem('last_owned_room') === c) {
                             opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#3b82f6';
                             opt.style.fontWeight = 'bold';
