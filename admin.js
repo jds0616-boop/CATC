@@ -238,27 +238,34 @@ const dataMgr = {
     },
 
     forceEnterRoom: async function(room) {
-        firebase.database().ref(`courses/${room}/status`).update({ 
-            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
-        });
-        document.querySelector('.mode-tabs').style.display = 'flex'; 
-        document.getElementById('floatingQR').style.display = 'none';
+    firebase.database().ref(`courses/${room}/status`).update({ 
+        lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
+    });
+    document.querySelector('.mode-tabs').style.display = 'flex'; 
+    document.getElementById('floatingQR').style.display = 'none';
 
-        if (state.room) {
-            const oldPath = `courses/${state.room}`;
-            firebase.database().ref(`${oldPath}/questions`).off();
-            firebase.database().ref(`${oldPath}/activeQuiz`).off();
-            firebase.database().ref(`${oldPath}/status`).off();
-            firebase.database().ref(`${oldPath}/settings`).off();
-            firebase.database().ref(`${oldPath}/connections`).off();
+    // --- [추가 코드 시작] ---
+    state.room = room; // 방 번호 업데이트
+
+    // 현황판 테이블 하이라이트 즉시 갱신
+    const rows = document.querySelectorAll('#statusTableBody tr');
+    rows.forEach(row => {
+        const roomCell = row.querySelector('td:nth-child(2)'); // Room 이름이 적힌 두 번째 칸
+        if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
+            row.classList.add('is-my-room'); // 강조 클래스 추가
+            // MY 배지가 없으면 추가
+            if (!roomCell.querySelector('.my-room-badge')) {
+                roomCell.innerHTML += '<span class="my-room-badge">MY</span>';
+            }
+        } else {
+            row.classList.remove('is-my-room'); // 강조 클래스 제거
+            // 다른 방의 MY 배지는 삭제
+            const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
+            if (badge) badge.remove();
         }
-        
-        await firebase.database().ref(`courses/${room}/activeQuiz`).set(null);
-        await firebase.database().ref(`courses/${room}/quizAnswers`).set(null);
-        await firebase.database().ref(`courses/${room}/quizFinalResults`).set(null);
-        await firebase.database().ref(`courses/${room}/status/quizStep`).set('none');
-        
-        state.room = room;
+    });
+
+
         const btnReset = document.getElementById('btnReset');
         if(btnReset) {
             btnReset.disabled = false; // 버튼 클릭 허용
