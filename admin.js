@@ -996,6 +996,7 @@ const ui = {
             if(totalEl) totalEl.innerText = students.length;
 
             students.forEach((s, idx) => {
+                if (!s.name || s.name === "undefined" || s.name === undefined) return;
                 const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const statusDot = s.isOnline 
                     ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 

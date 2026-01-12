@@ -490,36 +490,38 @@ function exitApp() {
 // [수정] 실시간 상태 감지 및 수강생 명부 연동
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
-    if (!uToken || !currentRoom) return;
+    const name = localStorage.getItem('kac_user_name');
+    const phone = localStorage.getItem('kac_user_phone');
+    
+    if (!uToken || !currentRoom || !name) return;
 
-    // Firebase 서버와의 연결 상태를 감시하는 특수 경로
     const connectedRef = firebase.database().ref(".info/connected");
-    // 내 상태 값 (isOnline)
-    const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
+    // [중요] 경로를 isOnline이 아니라 학생 전체 노드로 잡습니다.
+    const myFullStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
 
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
-            // 접속되면 'isOnline'을 true로 변경 (녹색불)
-            myStatusRef.set(true);
+            // [수정] 온라인이 될 때 이름과 번호를 세트로 함께 저장합니다. 
+            // 이렇게 하면 리셋 직후에도 undefined가 아니라 이름이 바로 다시 채워집니다.
+            myFullStatusRef.update({
+                name: name,
+                phone: phone,
+                isOnline: true,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
 
-            // 브라우저를 닫거나 연결이 끊기면 자동으로 false로 변경 (회색불 예약)
-            myStatusRef.onDisconnect().set(false);
-
-            // 전체 접속자 카운트용 (퀴즈 모드 등에서 사용)
-            const con = dbRef.connections.push();
-            con.onDisconnect().remove();
-            con.set(true);
+            // 연결이 끊기면 온라인 표시만 false로 바꿉니다.
+            myFullStatusRef.child('isOnline').onDisconnect().set(false);
         }
     });
 
-    // 접속자 수 실시간 업데이트
+    // 접속자 수 업데이트 로직은 그대로 유지
     dbRef.connections.on("value", (snap) => {
         const count = snap.numChildren();
         const countEl = document.getElementById('realUserCount');
         if(countEl) countEl.innerText = `${count}명 접속`;
     });
 }
-
 
 
 
