@@ -240,6 +240,12 @@ const dataMgr = {
         await firebase.database().ref(`courses/${room}/status/quizStep`).set('none');
         
         state.room = room;
+        const btnReset = document.getElementById('btnReset');
+        if(btnReset) {
+            btnReset.disabled = false; // 버튼 클릭 허용
+            btnReset.style.opacity = '1'; // 다시 진하게
+            btnReset.style.cursor = 'pointer'; // 다시 손가락 모양으로
+        }
         localStorage.setItem('kac_last_room', room);
         document.getElementById('roomSelect').value = room;
         document.getElementById('roomStatusSelect').disabled = false;
@@ -376,6 +382,10 @@ const dataMgr = {
     },
 
     resetCourse: function() {
+if (!state.room) {
+    ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
+    return;
+}
     if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
         const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
         
@@ -874,6 +884,14 @@ const ui = {
         if(statusSel) {
             statusSel.value = 'waiting';
             statusSel.disabled = true;
+
+        const btnReset = document.getElementById('btnReset');
+        if(btnReset) {
+            btnReset.disabled = true; // 버튼 클릭 차단
+            btnReset.style.opacity = '0.5'; // 반투명하게 (잠긴 것처럼 보이게)
+            btnReset.style.cursor = 'not-allowed'; // 마우스 올리면 금지 표시
+        }
+
         }
     },
 
