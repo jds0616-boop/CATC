@@ -680,6 +680,11 @@ const ui = {
 
                 if(tableBody) {
                     const row = document.createElement('tr');
+
+// 현재 내가 제어 중인 방인 경우 클래스 추가
+if (c === state.room) {
+    row.classList.add('is-my-room');
+}
                     
                     const statusBadge = isRoomActive 
                         ? '<span class="badge-status badge-active">🟢 사용 중</span>' 
@@ -687,7 +692,10 @@ const ui = {
 
                     row.innerHTML = `
                         <td>${count++}</td>
-                        <td style="font-weight:900; color:#3b82f6;">Room ${c}</td>
+                        <td style="font-weight:900; color:#3b82f6;">
+    Room ${c}
+    ${c === state.room ? '<span class="my-room-badge">MY</span>' : ''}
+</td>
                         <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
