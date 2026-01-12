@@ -759,7 +759,7 @@ const ui = {
             const locations = [
                 { id: 'osong', name: '오송역' }, 
                 { id: 'terminal', name: '청주터미널' }, 
-                { id: 'airport', name: '청주공항' }
+                { id: 'airport', name: '청주공항' },
                 { id: 'car', name: '자차' } // 추가
             ];
             
