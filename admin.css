@@ -97,15 +97,15 @@ body {
 
 #view-qa {
     width: 100%;
-    height: calc(100vh - 70px) !important; /* 상단 헤더를 제외한 전체 높이 */
+    height: calc(100vh - 70px) !important; 
     display: flex;
     flex-direction: column;
-    max-width: 1100px; /* 필터바보다 살짝 넓게 설정 */
+    max-width: 1100px;
     overflow-y: auto !important; 
     overflow-x: hidden;
     position: relative;
-    /* 필터바가 상단에 밀착될 수 있도록 상단 패딩을 제거하거나 최소화 */
-    padding: 0 20px 100px 20px !important; 
+    /* 상단에 제목이 보일 수 있도록 여백을 줍니다 */
+    padding: 30px 20px 100px 20px !important; 
 }
 
 
@@ -114,25 +114,31 @@ body {
     flex-direction: column; 
     gap: 15px; 
     padding: 20px; 
-    background: var(--bg-color) !important; /* 배경색으로 꽉 채움 */
+    background: var(--card-bg) !important; /* 여기는 카드 색상 */
     border-radius: 15px;
     margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 
-    /* [핵심] 상단 밀착 및 고정 */
+    /* 상단 밀착 고정 */
     position: -webkit-sticky;
     position: sticky;
-    top: 0;        /* 0으로 설정하여 최상단에 딱 붙임 */
-    z-index: 2000; /* 질문 카드(z-index:1)보다 훨씬 높게 설정 */
+    top: 0; 
+    z-index: 2000;
+}
 
-    /* [핵심] 가림막(Masking) 효과 */
-    /* 1. 첫번째 값: 위쪽으로 500px만큼 거대한 벽을 만듦 (날아가는 질문 차단) */
-    /* 2. 두번째 값: 좌우로 100px만큼 벽을 확장 (옆으로 삐져나오는 질문 차단) */
-    box-shadow: 
-        0 -500px 0 500px var(--bg-color), 
-        0 4px 15px rgba(0,0,0,0.05); /* 아래쪽엔 살짝 그림자 효과 */
-    
-    /* 가림막이 주변 버튼을 가리지 않게 위쪽 여백 강제 확보 */
-    margin-top: 50px; 
+/* [신규] 제목을 가리지 않고, 올라오는 질문만 지우는 '마법 가림막' */
+.qa-filters::before {
+    content: "";
+    position: absolute;
+    /* 필터바 위쪽으로만 배경색 벽을 세웁니다 */
+    top: -1000px; 
+    left: -50px;
+    right: -50px;
+    height: 1000px;
+    background: var(--bg-color); /* 전체 바탕색과 똑같이 */
+    z-index: -1;
+    /* 이 벽은 필터바가 천장에 붙었을 때만 질문들을 가려줍니다 */
 }
 
 
