@@ -1673,7 +1673,10 @@ const quizMgr = {
         }
     },
     
-    showFinalSummary: async function() {
+showFinalSummary: async function() {
+        if(!state.room) return;
+        
+        // 1. 서버에서 모든 정답 데이터 가져오기
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
         const totalParticipants = new Set();
@@ -1683,6 +1686,7 @@ const quizMgr = {
         let questionStats = []; 
         const userScoreMap = {};
         
+        // 2. 점수 계산 로직
         state.quizList.forEach((q, idx) => {
             if(!q.checked || q.isSurvey) return; 
             const id = `Q${idx}`; 
@@ -1707,6 +1711,51 @@ const quizMgr = {
                 }); 
             }
         });
+        
+        // 3. 순위 정렬 및 서버 전송
+        const sortedUsers = Object.keys(userScoreMap)
+            .map(t => ({ token: t, ...userScoreMap[t] }))
+            .sort((a, b) => b.score - a.score);
+        
+        const finalRankingData = {}; 
+        let rank = 1;
+        sortedUsers.forEach((u, i) => { 
+            if (i > 0 && u.score < sortedUsers[i - 1].score) rank = i + 1; 
+            finalRankingData[u.token] = { 
+                score: u.score, 
+                rank: rank, 
+                total: sortedUsers.length 
+            }; 
+        });
+        
+        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
+        await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
+        
+        // 4. 관리자 화면에 결과 리포트 띄우기
+        const grid = document.getElementById('summaryStats');
+        if(grid) {
+            const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
+            grid.innerHTML = `
+                <div class="summary-card"><span>참여 인원</span><b>${totalParticipants.size}명</b></div>
+                <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
+                <div class="summary-card"><span>총 문항 수</span><b>${totalQuestions}개</b></div>
+                <div class="summary-card"><span>전체 제출건</span><b>${totalAnswerCount}건</b></div>
+            `;
+        }
+        
+        // 오답률 높은 문제 표시
+        if(questionStats.length > 0) { 
+            questionStats.sort((a,b) => a.accuracy - b.accuracy); 
+            const missArea = document.getElementById('mostMissedArea');
+            const missTxt = document.getElementById('mostMissedText');
+            if(missArea) missArea.style.display = 'block'; 
+            if(missTxt) missTxt.innerText = `"${questionStats[0].title.substring(0,30)}..." (${Math.round(questionStats[0].accuracy)}%)`; 
+        }
+        
+        // [중요] 리포트 팝업창 보이기
+        const summaryOverlay = document.getElementById('quizSummaryOverlay');
+        if(summaryOverlay) summaryOverlay.style.display = 'flex';
+    },
         
         const sortedUsers = Object.keys(userScoreMap)
             .map(t => ({ token: t, ...userScoreMap[t] }))
