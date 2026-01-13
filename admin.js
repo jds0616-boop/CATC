@@ -299,12 +299,23 @@ const dataMgr = {
         });
 
         dbRef.status.on('value', s => {
-            if(state.room !== room) return;
-            const st = s.val() || {};
-            ui.renderRoomStatus(st.roomStatus || 'idle'); 
-            ui.checkLockStatus(st);
-            if(st.professorName) document.getElementById('profSelect').value = st.professorName;
-        });
+    if(state.room !== room) return;
+    const st = s.val() || {};
+    ui.renderRoomStatus(st.roomStatus || 'idle'); 
+    ui.checkLockStatus(st);
+
+    // [핵심] 교수님 성함이 DB에 있다면 사이드바와 대시보드 모두 즉시 업데이트
+    const dashProf = document.getElementById('dashProfName'); // 대시보드의 성함 엘리먼트
+    const sidebarProf = document.getElementById('profSelect'); // 사이드바의 선택창
+
+    if(st.professorName) {
+        if(sidebarProf) sidebarProf.value = st.professorName; // 사이드바 동기화
+        if(dashProf) dashProf.innerText = st.professorName + " 교수님"; // 대시보드 동기화
+    } else {
+        if(sidebarProf) sidebarProf.value = "";
+        if(dashProf) dashProf.innerText = "담당 교수 미지정";
+    }
+});
 
         firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const data = s.val() || {};
