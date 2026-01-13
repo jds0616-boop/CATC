@@ -287,28 +287,19 @@
         <div class="content-area">
 
 
-<!-- 입교안내 가이드 최종 (직각 & 사이드 버튼) -->
+<!-- [개선] 입교안내 가이드 Cinematic View (텍스트/번호 제거) -->
 <div id="view-guide">
-    <div class="view-header" style="margin-bottom:30px; text-align:center;">
-        <i class="fa-solid fa-book-open" style="color: #6366f1; font-size: 40px;"></i>
-        <h1 style="font-size:32px; font-weight:900; margin:10px 0;">입교안내 가이드</h1>
-        <p style="color:#64748b;">좌클릭: 다음 페이지 / 우클릭: 이전 페이지</p>
-    </div>
-
     <div class="guide-main-container">
-        <!-- 왼쪽: PDF 화면 -->
+        <!-- PDF 화면 구역 -->
         <div id="pdfWrapper" onclick="guideMgr.changePage(1)" oncontextmenu="event.preventDefault(); guideMgr.changePage(-1);">
             <canvas id="guideCanvas"></canvas>
+            
+            <!-- 전체화면 버튼 (PDF 화면 위에 플로팅) -->
+            <button class="btn-guide-fullscreen" onclick="guideMgr.toggleFullScreen()" title="전체화면 모드">
+                <i class="fa-solid fa-expand"></i>
+            </button>
         </div>
-
-        <!-- 오른쪽: 버튼 -->
-        <button class="btn-guide-fullscreen" onclick="guideMgr.toggleFullScreen()">
-            <i class="fa-solid fa-expand"></i> 전체화면 보기
-        </button>
     </div>
-
-    <!-- 하단 페이지 표시 -->
-    <div id="pageIndicator">Page: 0 / 0</div>
 </div>
 
 
