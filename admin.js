@@ -128,6 +128,19 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
+
+
+// 공지사항 관리 화면에서 [게시하기] 버튼을 눌렀을 때 실행되는 함수
+    saveInstructorNoticeMain: function() {
+        if(!state.room) return;
+        const msg = document.getElementById('instNoticeInputMain').value;
+        firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
+            ui.showAlert("✅ 공지사항이 게시되었습니다.");
+        });
+    },
+
+
+
     checkAdminSecret: async function(input) {
         const snap = await firebase.database().ref('system/adminSecret').get();
         const dbSecret = snap.val() || btoa("kac123!@#"); 
@@ -164,22 +177,20 @@ const dataMgr = {
         });
     },
     
-    loadInitialData: function() {
-    // 1. 마지막 접속했던 방 정보가 있는지 확인
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        state.room = lastRoom; // 변수에 미리 넣어줌
-    }
+loadInitialData: function() {
+        // 1. 마지막으로 내가 관리하던 방 번호가 있는지 확인합니다.
+        const lastRoom = localStorage.getItem('kac_last_room');
+        
+        // 2. 강의실 목록(A~Z)을 그립니다.
+        ui.initRoomSelect();
 
-    // 2. 목록 그리기 시작
-    ui.initRoomSelect();
-
-    // 3. 마지막 방 정보가 있으면 바로 그 방으로 입장 처리, 없으면 대기실행
-    if (lastRoom) {
-        this.forceEnterRoom(lastRoom);
-    } else {
-        ui.showWaitingRoom();
-    }
+        // 3. 만약 마지막 방 정보가 있다면, 밖으로 나가지 말고 바로 그 방으로 들어갑니다.
+        if (lastRoom) {
+            this.forceEnterRoom(lastRoom);
+        } else {
+            // 정보가 아예 없으면 처음 접속한 것이므로 대기실(현황판)을 보여줍니다.
+            ui.showWaitingRoom();
+        }
 
     state.quizList = DEFAULT_QUIZ_DATA;
         state.isExternalFileLoaded = false;
@@ -353,6 +364,10 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
                 }
             });
         }, 5000); 
+// 입장 시 마지막으로 보던 탭(모드)을 기억해서 열어줍니다. 없으면 대시보드를 엽니다.
+        const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
+        this.setMode(lastMode);
+
     },
     
     fetchCodeAndRenderQr: function(room) {
@@ -675,6 +690,64 @@ init: function() {
 
 // --- 3. UI ---
 const ui = {
+
+// 대시보드 통계 실시간 로드
+    loadDashboardStats: function() {
+        if(!state.room) return;
+        
+        // 1. 과정명 및 교수명 세팅
+        dbRef.status.once('value', s => {
+            const st = s.val() || {};
+            const courseTitle = document.getElementById('displayCourseTitle').innerText;
+            document.getElementById('dashCourseTitle').innerText = courseTitle || "과정명 미설정";
+            document.getElementById('dashProfName').innerText = st.professorName ? st.professorName + " 교수님" : "담당 교수 미지정";
+        });
+
+        // 2. 수강생 수 로드
+        firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
+            const data = s.val() || {};
+            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
+            document.getElementById('dashStudentCount').innerText = count + "명";
+        });
+
+        // 3. 외출/외박 수 로드
+        const today = getTodayString();
+        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
+            const count = Object.keys(s.val() || {}).length;
+            document.getElementById('dashActionCount').innerText = count + "명";
+        });
+
+        // 4. 셔틀(오송역) 수 로드
+        firebase.database().ref(`courses/${state.room}/shuttle/osong`).on('value', s => {
+            const count = Object.keys(s.val() || {}).length;
+            document.getElementById('dashShuttleCount').innerText = count + "명";
+        });
+    },
+
+    // 공지사항 뷰 로드
+    loadNoticeView: async function() {
+        if(!state.room) return;
+        const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
+        document.getElementById('instNoticeInputMain').value = snap.val() || "";
+    },
+
+    // 출결 QR 뷰 로드
+    loadAttendanceView: async function() {
+        if(!state.room) return;
+        const snap = await firebase.database().ref(`courses/${state.room}/attendanceQR`).once('value');
+        const img = document.getElementById('attendanceQrImgMain');
+        const msg = document.getElementById('noAttendanceQrMsgMain');
+        if(snap.exists()) {
+            img.src = snap.val(); img.style.display = 'block'; msg.style.display = 'none';
+        } else {
+            img.style.display = 'none'; msg.style.display = 'block';
+        }
+    },
+
+
+
+
+
     showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
@@ -903,7 +976,7 @@ if (c === state.room) {
     },
 
     setMode: function(mode) {
-        const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip', 'view-students']; 
+        const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip', 'view-students', 'view-dashboard', 'view-notice', 'view-attendance']; 
         views.forEach(v => { 
             const el = document.getElementById(v); 
             if(el) el.style.display = 'none'; 
@@ -1846,20 +1919,19 @@ const printMgr = {
     }
 };
 
-// 기존 window.onload를 아래 내용으로 덮어쓰기 하세요.
 window.onload = function() { 
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
     profMgr.init(); 
 
-    // [추가] 새로고침해도 마지막에 선택한 방으로 자동 입장
+    // [중요] 이 코드가 있어야 새로고침 시 자동으로 방을 찾아 들어갑니다.
     const lastRoom = localStorage.getItem('kac_last_room');
     if (lastRoom) {
-        // 약간의 시간을 두고 실행하여 Firebase 연결을 기다립니다.
+        // Firebase가 연결될 때까지 0.5초만 기다렸다가 실행합니다.
         setTimeout(() => {
             if (firebase.auth().currentUser) {
                 dataMgr.forceEnterRoom(lastRoom);
             }
-        }, 1000);
+        }, 500);
     }
 };

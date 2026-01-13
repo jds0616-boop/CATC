@@ -227,9 +227,10 @@
 
         <div class="mode-tabs">
             <button class="mode-btn" id="tab-waiting" onclick="ui.setMode('waiting')"><i class="fa-solid fa-chart-line"></i> 강의 현황</button>
+            <button class="mode-btn active" id="tab-dashboard" onclick="ui.setMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> 종합 현황</button>
             <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i>수강생 현황</button>
-            <button class="mode-btn" onclick="dataMgr.openNoticeManage()"><i class="fa-solid fa-bullhorn"></i> 공지 관리</button>
-            <button class="mode-btn" onclick="dataMgr.openAttendanceQr()"><i class="fa-solid fa-qrcode"></i> 출결 QR</button>
+            <button class="mode-btn" id="tab-notice" onclick="ui.setMode('notice')"><i class="fa-solid fa-bullhorn"></i> 공지 관리</button>
+            <button class="mode-btn" id="tab-attendance" onclick="ui.setMode('attendance')"><i class="fa-solid fa-qrcode"></i> 출결 QR</button>
             <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
             <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
             <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
@@ -254,6 +255,76 @@
         </div>
 
         <div class="content-area">
+
+
+<!-- [추가] 1. 과정 종합 현황 (대시보드) -->
+            <div id="view-dashboard" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+                <div class="dashboard-header-box" style="margin-bottom: 30px; text-align: center;">
+                    <h2 id="dashCourseTitle" style="font-size: 32px; font-weight: 900; color: #1e293b; margin-bottom: 10px;">과정 종합 현황</h2>
+                    <div id="dashProfName" style="font-size: 45px; font-weight: 900; color: #3b82f6; background: #eff6ff; padding: 10px 40px; border-radius: 50px; display: inline-block;">교수님 이름</div>
+                </div>
+                
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%;">
+                    <div class="stat-item" style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.05);">
+                        <span style="font-weight:800; color:#64748b;">현재 수강생</span>
+                        <b id="dashStudentCount" style="font-size:40px; display:block; color:#1e293b;">0명</b>
+                    </div>
+                    <div class="stat-item" style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.05);">
+                        <span style="font-weight:800; color:#64748b;">외출/외박 신청</span>
+                        <b id="dashActionCount" style="font-size:40px; display:block; color:#ef4444;">0명</b>
+                    </div>
+                    <div class="stat-item" style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.05);">
+                        <span style="font-weight:800; color:#64748b;">셔틀 이용(오송)</span>
+                        <b id="dashShuttleCount" style="font-size:40px; display:block; color:#3b82f6;">0명</b>
+                    </div>
+                </div>
+                <div style="margin-top:40px;">
+                    <button class="btn-action btn-primary" onclick="ui.setMode('qa')" style="width:250px; height:60px; font-size:20px;">Q&A 시작하기</button>
+                </div>
+            </div>
+
+            <!-- [추가] 2. 공지사항 관리 화면 -->
+            <div id="view-notice" style="display:none; width:100%; max-width:800px; flex-direction:column;">
+                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h2>
+                <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+                    <p style="font-weight:800; color:#64748b; margin-bottom:10px;">수강생 앱에 실시간으로 표시될 공지 내용을 입력하세요.</p>
+                    <textarea id="instNoticeInputMain" style="width: 100%; min-height: 300px; border-radius: 12px; border: 2px solid #e2e8f0; padding: 20px; font-size: 18px; margin-bottom: 20px;"></textarea>
+                    <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px;">공지사항 게시하기</button>
+                </div>
+            </div>
+
+            <!-- [추가] 3. 출결 QR 화면 -->
+            <div id="view-attendance" style="display:none; width:100%; max-width:800px; flex-direction:column; align-items: center;">
+                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-qrcode"></i> 출결 QR 코드</h2>
+                <div style="background: white; border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <img id="attendanceQrImgMain" style="width: 400px; height: 400px; object-fit: contain; margin-bottom: 30px; border: 1px solid #eee; display:none;">
+                    <div id="noAttendanceQrMsgMain" style="padding:100px 0; color:#cbd5e1; font-size:20px; font-weight:bold;">등록된 QR 이미지가 없습니다.</div>
+                    <div style="font-size: 28px; font-weight: 900; color: #1e293b; line-height: 1.4;">
+                        <span style="color:#3b82f6;">E-HRD 어플</span>을 활용하여<br>출결 처리를 진행해 주세요.
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <div id="view-qa">
     <div class="qa-filters">
         <!-- 상단 기본 버튼들을 basic-filters로 감쌉니다 -->
