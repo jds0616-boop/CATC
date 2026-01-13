@@ -310,86 +310,100 @@
     </div>
 </div>
 
-            <!-- [추가] 2. 공지사항 관리 화면 -->
-            <div id="view-notice" style="display:none; width:100%; max-width:800px; flex-direction:column;">
-                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h2>
-                <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
-                    <p style="font-weight:800; color:#64748b; margin-bottom:10px;">수강생 앱에 실시간으로 표시될 공지 내용을 입력하세요.</p>
-                    <textarea id="instNoticeInputMain" style="width: 100%; min-height: 300px; border-radius: 12px; border: 2px solid #e2e8f0; padding: 20px; font-size: 18px; margin-bottom: 20px;"></textarea>
-                    <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px;">공지사항 게시하기</button>
-                </div>
-            </div>
-
-            <!-- [추가] 3. 출결 QR 화면 -->
-            <div id="view-attendance" style="display:none; width:100%; max-width:800px; flex-direction:column; align-items: center;">
-                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-qrcode"></i> 출결 QR 코드</h2>
-                <div style="background: white; border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                    <img id="attendanceQrImgMain" style="width: 400px; height: 400px; object-fit: contain; margin-bottom: 30px; border: 1px solid #eee; display:none;">
-                    <div id="noAttendanceQrMsgMain" style="padding:100px 0; color:#cbd5e1; font-size:20px; font-weight:bold;">등록된 QR 이미지가 없습니다.</div>
-                    <div style="font-size: 20px; font-weight: 900; color: #1e293b; line-height: 1.4;">
-                        <span style="color:#3b82f6;">E-HRD 어플</span>을 활용하여<br>출결 처리를 진행해 주세요.
-                    </div>
-                </div>
-            </div>
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <div id="view-qa">
-    <div class="qa-filters">
-        <!-- 상단 기본 버튼들을 basic-filters로 감쌉니다 -->
-        <div class="basic-filters">
-            <div class="filter-chip active" onclick="ui.filterQa('all', event)">All Questions</div>
-            <div class="filter-chip" onclick="ui.filterQa('pin', event)">Pinned</div>
-            <div class="filter-chip" onclick="ui.filterQa('later', event)">Answer Later</div>
-        </div>
-        
-        <!-- 하단 강사 필터 바 (기존 유지) -->
-        <div id="subjectFilterBar"></div>
+<div id="view-notice" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    <div class="view-header">
+        <i class="fa-solid fa-bullhorn" style="color: #facc15;"></i>
+        <h1>과정 공지사항 관리</h1>
+        <p>수강생 앱의 공지사항 탭에 실시간으로 게시될 내용을 작성하세요.</p>
     </div>
-    <div class="qa-list" id="qaList"></div>
+    <div class="modern-white-card" style="text-align: center;">
+        <p style="font-weight:800; color:#64748b; margin-bottom:20px;">공지 내용 입력</p>
+        <textarea id="instNoticeInputMain" 
+                  style="width: 100%; min-height: 250px; border-radius: 15px; border: 2px solid #f1f5f9; padding: 20px; font-size: 18px; margin-bottom: 20px; outline:none; background:#fcfdfe;" 
+                  placeholder="여기에 공지사항 입력 후 하단 버튼을 눌러주세요."></textarea>
+        <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px; width:100%; border-radius:15px;">공지사항 게시하기</button>
+    </div>
 </div>
+
+
+
+
+
+
+<div id="view-attendance" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    <div class="view-header">
+        <i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i>
+        <h1>출결 QR 코드</h1>
+        <p>E-HRD 출결 처리를 위한 QR 코드입니다. 화면에 크게 띄워주세요.</p>
+    </div>
+    <div class="modern-white-card" style="text-align: center; max-width: 600px;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 20px; border: 1px dashed #cbd5e1;">
+            <img id="attendanceQrImgMain" style="width: 100%; max-width: 400px; border-radius: 12px; display:none; margin: 0 auto;">
+            <div id="noAttendanceQrMsgMain" style="padding:100px 0; color:#cbd5e1; font-size:18px; font-weight:bold;">등록된 QR 이미지가 없습니다.</div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<div id="view-qa" style="display:flex; flex-direction:column; align-items:center;">
+    <div class="view-header">
+        <i class="fa-regular fa-comments" style="color: #6366f1;"></i>
+        <h1>질문 및 답변 (Q&A)</h1>
+        <p>교육생들의 질문을 실시간으로 확인하고 관리할 수 있습니다.</p>
+    </div>
+    <!-- 필터 부분은 이미 잘 되어있으므로, 감싸는 카드 느낌만 살짝 조정 -->
+    <div id="qa-container" style="width:100%; max-width:1000px;">
+        <div class="qa-filters">
+            <div class="basic-filters">
+                <div class="filter-chip active" onclick="ui.filterQa('all', event)">All Questions</div>
+                <div class="filter-chip" onclick="ui.filterQa('pin', event)">Pinned</div>
+                <div class="filter-chip" onclick="ui.filterQa('later', event)">Answer Later</div>
+            </div>
+            <div id="subjectFilterBar"></div>
+        </div>
+        <div class="qa-list" id="qaList"></div>
+    </div>
+</div>
+
+
 
  
 <!-- 강사 대기실 (현황판) 섹션 -->
-<div id="view-waiting" class="full-dashboard" style="display:none;">
+<div id="view-waiting" class="full-dashboard" style="display:none; flex-direction:column; align-items:center;">
     
-    <!-- (1) 제목 영역: 표 위에 직접 배치 -->
-    <div class="dashboard-header-box" style="margin-bottom: 30px;">
-        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">📊 강의실 실시간 현황판</h1>
+    <!-- (1) 표준 헤더: 아이콘과 제목 -->
+    <div class="view-header">
+        <i class="fa-solid fa-chart-simple" style="color: #64748b;"></i>
+        <h1>강의실 실시간 현황판</h1>
+        <p>KAC 교육단지의 모든 강의실 운영 상태를 실시간으로 모니터링합니다.</p>
     </div>
 
-    <!-- (2) 표 영역: 감싸는 박스를 없애고 표를 직접 배치 (중요!) -->
-    <table class="status-table">
-        <thead>
-            <tr>
-                <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>교육생</th><th>마지막 활동</th><th>관리</th>
-            </tr>
-        </thead>
-        <tbody id="statusTableBody">
-            <!-- JS가 채움 -->
-        </tbody>
-    </table>
+    <!-- (2) 모던 화이트 카드: 이 안에 표가 들어갑니다 -->
+    <div class="modern-white-card">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>교육생</th><th>마지막 활동</th><th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="statusTableBody">
+                <!-- JS가 내용을 채웁니다 -->
+            </tbody>
+        </table>
+    </div>
 
-    <!-- (3) 바닥 여백용 박스: Z룸까지 내렸을 때 가려지지 않게 함 -->
-    <div style="height: 200px; width: 100%; flex-shrink: 0;"></div>
+    <!-- (3) 바닥 여백용 박스 -->
+    <div style="height: 150px; width: 100%; flex-shrink: 0;"></div>
 
 </div> <!-- view-waiting 끝 -->
 

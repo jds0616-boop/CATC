@@ -1018,3 +1018,55 @@ body.night-mode .badge-idle {
 .modern-white-card tr:hover td {
     background-color: #fcfdfe;
 }
+
+
+
+/* --- 내 강의실(강조) 스타일 --- */
+.modern-table tr.is-my-room td {
+    background-color: #eff6ff !important; /* 연한 파란색 배경 */
+    border-top: 2px solid #3b82f6 !important; /* 위쪽 파란 선 */
+    border-bottom: 2px solid #3b82f6 !important; /* 아래쪽 파란 선 */
+}
+
+/* 첫 번째 칸과 마지막 칸의 옆면 테두리까지 둘러서 '파란 네모' 완성 */
+.modern-table tr.is-my-room td:first-child {
+    border-left: 2px solid #3b82f6 !important;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.modern-table tr.is-my-room td:last-child {
+    border-right: 2px solid #3b82f6 !important;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* "관리 중" 뱃지 디자인 */
+.my-room-badge {
+    background: #3b82f6;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+
+
+/* 게시판 아이콘 테마 색상 정의 */
+#view-students .view-header i { color: #3b82f6; }        /* 수강생 - 파랑 */
+#view-dashboard .view-header i { color: #6366f1; }       /* 대시보드 - 인디고 */
+#view-shuttle .view-header i { color: #f59e0b; }         /* 셔틀 - 주황 */
+#view-admin-action .view-header i { color: #ef4444; }    /* 외출 - 빨강 */
+#view-dinner-skip .view-header i { color: #10b981; }      /* 석식 - 초록 */
+#view-notice .view-header i { color: #facc15; }           /* 공지 - 노랑 */
+
+/* 테이블 내 글자 굵기 등 미세조정 */
+.modern-white-card strong {
+    color: #1e293b;
+}
+
+/* 룸 이름 강조 (실시간 현황판용) */
+.modern-white-card td[style*="font-weight:900"] {
+    color: #3b82f6 !important;
+}
