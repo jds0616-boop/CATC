@@ -248,56 +248,55 @@ loadInitialData: function() {
         state.pendingRoom = null;
     },
 
+
+*************************************************************************************************
+
 forceEnterRoom: async function(room) {
-    // 1. [중요] 새 방에 들어가기 전, 기존 방의 감시(on)를 먼저 끕니다.
-    if(dbRef.status) dbRef.status.off();
-    if(dbRef.qa) dbRef.qa.off();
-    if(dbRef.connections) dbRef.connections.off();
+        // 1. [중요] 새 방에 들어가기 전, 기존 방의 감시(on)를 먼저 끕니다. (데이터 꼬임 방지)
+        if(dbRef.status) dbRef.status.off();
+        if(dbRef.qa) dbRef.qa.off();
+        if(dbRef.connections) dbRef.connections.off();
 
-    // 2. 방 정보 업데이트
-    firebase.database().ref(`courses/${room}/status`).update({
-        lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
-    });
-    
-    document.querySelector('.mode-tabs').style.display = 'flex';
-    document.getElementById('floatingQR').style.display = 'none';
+        // 2. 방 정보 업데이트 (서버에 관리자 입장 기록)
+        firebase.database().ref(`courses/${room}/status`).update({
+            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        // 3. 내부 상태 및 로컬 저장소 업데이트 (새로고침 시 방 유지 핵심)
+        state.room = room; 
+        localStorage.setItem('kac_last_room', room); 
+        
+        // 드롭다운 메뉴를 현재 방으로 즉시 변경 (Select Room으로 돌아가는 것 방지)
+        const roomSelect = document.getElementById('roomSelect');
+        if(roomSelect) roomSelect.value = room;
 
-    state.room = room; // 방 번호 업데이트
-
-    // 현황판 테이블 하이라이트 즉시 갱신
-    const rows = document.querySelectorAll('#statusTableBody tr');
-    rows.forEach(row => {
-        const roomCell = row.querySelector('td:nth-child(2)'); // Room 이름이 적힌 두 번째 칸
-        if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
-            row.classList.add('is-my-room'); // 강조 클래스 추가
-            // MY 배지가 없으면 추가
-            if (!roomCell.querySelector('.my-room-badge')) {
-                roomCell.innerHTML += '<span class="my-room-badge">MY</span>';
-            }
-        } else {
-            row.classList.remove('is-my-room'); // 강조 클래스 제거
-            // 다른 방의 MY 배지는 삭제
-            const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
-            if (badge) badge.remove();
-        }
-    });
-
-
+        // 4. UI 기본 설정
+        document.querySelector('.mode-tabs').style.display = 'flex';
+        document.getElementById('floatingQR').style.display = 'none';
         const btnReset = document.getElementById('btnReset');
         if(btnReset) {
-            btnReset.disabled = false; // 버튼 클릭 허용
-            btnReset.style.opacity = '1'; // 다시 진하게
-            btnReset.style.cursor = 'pointer'; // 다시 손가락 모양으로
+            btnReset.disabled = false;
+            btnReset.style.opacity = '1';
+            btnReset.style.cursor = 'pointer';
         }
-        localStorage.setItem('kac_last_room', room);
-        document.getElementById('roomSelect').value = room;
-        document.getElementById('roomStatusSelect').disabled = false;
-        ui.updateHeaderRoom(room);
-        subjectMgr.init();
-        ui.setMode('qa');
-        document.getElementById('qaList').innerHTML = "";
-        state.qaData = {};
-        
+
+        // 5. 현황판(대기실) 테이블 하이라이트 갱신
+        const rows = document.querySelectorAll('#statusTableBody tr');
+        rows.forEach(row => {
+            const roomCell = row.querySelector('td:nth-child(2)');
+            if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
+                row.classList.add('is-my-room');
+                if (!roomCell.querySelector('.my-room-badge')) {
+                    row.querySelector('td:nth-child(2)').innerHTML += '<span class="my-room-badge">MY</span>';
+                }
+            } else {
+                row.classList.remove('is-my-room');
+                const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
+                if (badge) badge.remove();
+            }
+        });
+
+        // 6. 실시간 데이터 경로(DB) 연결
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
@@ -305,53 +304,66 @@ forceEnterRoom: async function(room) {
         dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
         dbRef.connections = firebase.database().ref(`${rPath}/connections`);
+
+        // 7. 데이터 초기화 및 상단바 업데이트
+        ui.updateHeaderRoom(room);
+        subjectMgr.init(); // 과목(세션) 관리 초기화
+        state.qaData = {};
+        document.getElementById('qaList').innerHTML = "";
         
-        dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
-        
+        // 8. 설정 데이터 로드 (사이드바 정보와 대시보드 연동)
+        dbRef.settings.on('value', s => {
+            const val = s.val() || {};
+            ui.renderSettings(val);
+            // 데이터가 들어온 후 대시보드 통계 숫자/이름 갱신
+            if(localStorage.getItem('kac_last_mode') === 'dashboard') {
+                ui.loadDashboardStats();
+            }
+        });
+
+        // 9. 방 상태 감시 리스너 (잠금 체크 + 교수명 로드)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
+            // 타 관리자 제어권 확인
             if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
                 if (localStorage.getItem(`last_owned_room`) === room) { 
                     dbRef.status.update({ ownerSessionId: state.sessionId }); 
-                    return; 
                 }
             }
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
-            if(st.professorName) {
-                document.getElementById('profSelect').value = st.professorName;
-            } else {
-                document.getElementById('profSelect').value = "";
-            }
+            // 사이드바 교수 선택창 업데이트
+            if(st.professorName) document.getElementById('profSelect').value = st.professorName;
         });
-        
-// 수강생 명부(students)를 실시간으로 감시하여 진짜 온라인인 사람만 셉니다.
-firebase.database().ref(`courses/${room}/students`).on('value', s => {
-    const data = s.val() || {};
-    // 1. 이름이 있고 + 2. 온라인(isOnline)인 사람만 필터링
-    const activeUsers = Object.values(data).filter(user => 
-        user.name && user.name !== "undefined" && user.isOnline === true
-    );
-    
-    const count = activeUsers.length;
-    
-    // 퀴즈 화면의 숫자 업데이트
-    const quizEl = document.getElementById('currentJoinCount');
-    if(quizEl) quizEl.innerText = count;
 
-    // 대기실 현황판의 '대기' 인원 등 계산을 위해 필요 시 활용 가능
-});
-        
-        this.fetchCodeAndRenderQr(room);
-        
+        // 10. 수강생 접속 감시 (실시간 카운트)
+        firebase.database().ref(`courses/${room}/students`).on('value', s => {
+            const data = s.val() || {};
+            const activeUsers = Object.values(data).filter(user => 
+                user.name && user.name !== "undefined" && user.isOnline === true
+            );
+            const count = activeUsers.length;
+            // 퀴즈 화면 인원수 업데이트
+            const quizEl = document.getElementById('currentJoinCount');
+            if(quizEl) quizEl.innerText = count;
+            // 대시보드 인원수 업데이트
+            const dashCount = document.getElementById('dashStudentCount');
+            if(dashCount) dashCount.innerText = count + "명";
+        });
+
+        // 11. 질문(Q&A) 실시간 감시
         dbRef.qa.on('value', s => { 
             if(state.room === room) { 
                 state.qaData = s.val() || {}; 
                 ui.renderQaList('all'); 
             }
         });
-        
+
+        // 12. Join QR 생성 (오타 수정됨: dataMgr 추가)
+        dataMgr.fetchCodeAndRenderQr(room);
+
+        // 13. [NEW] 뱃지 타이머 처리
         if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
         state.newBadgeTimer = setInterval(() => {
             const cards = document.querySelectorAll('.q-card.is-new');
@@ -363,13 +375,15 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
                     if(badge) badge.remove();
                 }
             });
-        }, 5000); 
-// 입장 시 마지막으로 보던 탭(모드)을 기억해서 열어줍니다. 없으면 대시보드를 엽니다.
-        const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
-        this.setMode(lastMode);
+        }, 5000);
 
+        // 14. [핵심] 마지막으로 보던 탭으로 이동 (없으면 대시보드)
+        const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
+        ui.setMode(lastMode);
     },
-    
+
+
+
     fetchCodeAndRenderQr: function(room) {
         const pathArr = window.location.pathname.split('/'); 
         pathArr.pop(); 
@@ -692,32 +706,31 @@ init: function() {
 const ui = {
 
 // 대시보드 통계 실시간 로드
-    loadDashboardStats: function() {
+loadDashboardStats: function() {
         if(!state.room) return;
         
-        // 1. 과정명 및 교수명 세팅
-        dbRef.status.once('value', s => {
-            const st = s.val() || {};
-            const courseTitle = document.getElementById('displayCourseTitle').innerText;
-            document.getElementById('dashCourseTitle').innerText = courseTitle || "과정명 미설정";
-            document.getElementById('dashProfName').innerText = st.professorName ? st.professorName + " 교수님" : "담당 교수 미지정";
-        });
+        // 왼쪽 사이드바에 입력된 값을 그대로 대시보드에 표시
+        const courseName = document.getElementById('courseNameInput').value;
+        const profName = document.getElementById('profSelect').value;
 
-        // 2. 수강생 수 로드
+        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
+        document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
+
+        // 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const data = s.val() || {};
             const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
             document.getElementById('dashStudentCount').innerText = count + "명";
         });
 
-        // 3. 외출/외박 수 로드
+        // 외출/외박 수 업데이트
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             document.getElementById('dashActionCount').innerText = count + "명";
         });
 
-        // 4. 셔틀(오송역) 수 로드
+        // 셔틀 수 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle/osong`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             document.getElementById('dashShuttleCount').innerText = count + "명";
@@ -975,37 +988,49 @@ if (c === state.room) {
         }
     },
 
-    setMode: function(mode) {
-        const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip', 'view-students', 'view-dashboard', 'view-notice', 'view-attendance']; 
+setMode: function(mode) {
+        // 1. 모든 뷰 ID 리스트 (여기 있는 것들이 전부 숨겨져야 겹치지 않습니다)
+        const views = [
+            'view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 
+            'view-admin-action', 'view-dinner-skip', 'view-students', 
+            'view-dashboard', 'view-notice', 'view-attendance'
+        ]; 
+        
         views.forEach(v => { 
             const el = document.getElementById(v); 
             if(el) el.style.display = 'none'; 
         });
         
+        // 2. 선택한 메뉴만 보여주기
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
-        if(targetEl) targetEl.style.display = (mode === 'waiting') ? 'block' : 'flex';
+        
+        if(targetEl) {
+            // 대시보드나 강의현황은 block, 나머지는 flex로 설정
+            targetEl.style.display = (mode === 'waiting' || mode === 'dashboard') ? 'block' : 'flex';
+        }
 
+        // 3. 상단 탭 버튼 활성화 색상 변경
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
+        // 4. 모드 저장 (새로고침 대비)
+        localStorage.setItem('kac_last_mode', mode);
+
         if (state.room) {
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students'].includes(mode)) ? 'qa' : mode;
+            // 학생용 화면 모드 변경 (QA/Quiz 외에는 학생에겐 QA를 보여줌)
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
+            // 각 모드별 데이터 로드
+            if (mode === 'dashboard') ui.loadDashboardStats(); 
+            if (mode === 'notice') ui.loadNoticeView(); 
+            if (mode === 'attendance') ui.loadAttendanceView();
             if (mode === 'shuttle') ui.loadShuttleData();
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
-            if (mode === 'quiz') {
-                if (state.isExternalFileLoaded && state.quizList.length > 0) {
-                    quizMgr.showQuiz();
-                } else { 
-                    document.getElementById('quizSelectModal').style.display = 'flex'; 
-                    quizMgr.loadSavedQuizList(); 
-                }
-            }
         }
     },
 
