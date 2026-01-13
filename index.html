@@ -47,48 +47,6 @@
         .input-dock { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--input-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200; display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 80px; }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
-
-
-/* 커스텀 팝업 디자인 (시인성 강화) */
-        .kac-confirm-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 20000;
-            display: none; align-items: center; justify-content: center; padding: 20px;
-        }
-        .kac-confirm-box {
-            background: white; width: 100%; max-width: 320px;
-            border-radius: 20px; overflow: hidden; border: 3px solid #3b82f6;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .kac-confirm-msg {
-            padding: 30px 20px; text-align: center; font-size: 18px;
-            font-weight: 800; color: #1e293b; line-height: 1.5; white-space: pre-wrap;
-        }
-        .kac-confirm-btns { display: flex; border-top: 1px solid #e2e8f0; }
-        .kac-btn-no {
-            flex: 1; padding: 18px; background: #f1f5f9; border: none;
-            font-size: 16px; font-weight: 700; color: #64748b; cursor: pointer;
-        }
-        .kac-btn-yes {
-            flex: 1; padding: 18px; background: #3b82f6; border: none;
-            font-size: 16px; font-weight: 700; color: white; cursor: pointer;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* 입력창 가이드 문구 디자인 개선 */
 .real-input::placeholder {
     color: rgba(239, 68, 68, 0.6); /* 투명도가 있는 빨간색 (부드러운 경고) */
@@ -123,16 +81,7 @@
         .quiz-king-stamp { position: absolute; top: 5px; right: 5px; width: 95px; height: 95px; border: 4px double #facc15; border-radius: 50%; color: #facc15; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; transform: rotate(15deg); background: rgba(250, 204, 21, 0.1); z-index: 10; animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes stampIn { from { transform: scale(3) rotate(45deg); opacity: 0; } to { transform: scale(1) rotate(15deg); opacity: 1; } }
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
-        .menu-box { 
-    background: white; 
-    width: 80%; 
-    max-width: 350px; 
-    border-radius: 16px; 
-    padding: 20px; 
-    text-align: center; 
-    max-height: 85vh;    /* 화면 높이의 85%까지만 커지게 제한 */
-    overflow-y: auto;   /* 내용이 넘치면 세로 스크롤바 생성 */
-}
+        .menu-box { background: white; width: 80%; max-width: 300px; border-radius: 16px; padding: 20px; text-align: center; }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
     </style>
 </head>
@@ -257,7 +206,7 @@
             </button>
         </div>
 
-        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 20px; font-weight: 900; cursor: pointer;">나가기</button>
+        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline;">취소하기</button>
     </div>
 </div>
 
@@ -299,15 +248,15 @@
             </div>
 
             <!-- 외출/외박 선택 시에만 나타나는 전화번호 입력 -->
-            <div id="fullPhoneArea" style="display:none; text-align: left; margin-bottom: 25px; background: #fff1f2; padding: 12px; border-radius: 12px;">
+            <div id="fullPhoneArea" style="display:none; text-align: left; margin-bottom: 25px; background: #fff1f2; padding: 15px; border-radius: 12px;">
                 <label style="font-weight: 800; font-size: 13px; color: #e11d48;">비상 연락처 (전체 번호 입력)</label>
                 <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; margin-top:8px; padding:12px; border:1px solid #fda4af; border-radius:8px; font-size:16px; text-align:center;">
             </div>
 
-            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">신청 완료</button>
+            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">신청 완료</button>
         </div>
 
-           <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 20px; font-weight: 900; cursor: pointer;">나가기</button>
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:10px; border:none; border-radius:8px; background:transparent; color: #94a3b8; text-decoration: underline;">닫기</button>
     </div>
 </div>
 
@@ -339,20 +288,6 @@
     <script src="config.js"></script>
     <script>
         let serverTimeOffset = 0; // 추가
-let confirmCallback = null;
-        function showKacConfirm(msg, callback) {
-            document.getElementById('kacConfirmMsg').innerText = msg;
-            document.getElementById('kacConfirm').style.display = 'flex';
-            confirmCallback = callback;
-        }
-        function closeKacConfirm(result) {
-            document.getElementById('kacConfirm').style.display = 'none';
-            if(result && confirmCallback) confirmCallback();
-            confirmCallback = null;
-        }
-
-
-
         let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTime = 0; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
         
         (async function init() {
@@ -381,6 +316,7 @@ let confirmCallback = null;
             const db = firebase.database(); const rPath = `courses/${currentRoom}`;
             dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
 
+            checkProfile(); // <--- 이 줄을 추가하세요! (입장 시 이름 체크)
 
             setupListeners(); checkCooldown();
 
@@ -393,27 +329,12 @@ let confirmCallback = null;
             });
         })();
 
-
-
-
-async function enterApp() {
-    // 1. 전체화면 요청
-    const doc = document.documentElement;
-    if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
-    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
-
-    // 2. [핵심] 입장 전 프로필 확인 (서버 대조)
-    await checkProfile();
-}
-
-
-
-
-
-
-
-
-
+        function enterApp() {
+            const doc = document.documentElement;
+            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{}); else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
+            document.getElementById('landingPage').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; startPresence();
+        }
+        
         // [수정] 완전히 나가기 (주소 초기화)
 function exitApp() {
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
@@ -457,7 +378,6 @@ function exitApp() {
                     <p>정상적으로 퇴장되었습니다.<br>이 브라우저 창(탭)을 닫아주세요.</p>
                     <button class="btn-close" onclick="window.close()">창 닫기 시도</button>
                 </div>
-
             </body>
         `;
 
@@ -470,48 +390,11 @@ function exitApp() {
     }
 }
 
-
-
-
-// [수정] 실시간 상태 감지 및 수강생 명부 연동
-function startPresence() {
-    const uToken = localStorage.getItem('uToken');
-    if (!uToken || !currentRoom) return;
-
-    // Firebase 서버와의 연결 상태를 감시하는 특수 경로
-    const connectedRef = firebase.database().ref(".info/connected");
-    // 내 상태 값 (isOnline)
-    const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
-
-    connectedRef.on("value", (snap) => {
-        if (snap.val() === true) {
-            // 접속되면 'isOnline'을 true로 변경 (녹색불)
-            myStatusRef.set(true);
-
-            // 브라우저를 닫거나 연결이 끊기면 자동으로 false로 변경 (회색불 예약)
-            myStatusRef.onDisconnect().set(false);
-
-            // 전체 접속자 카운트용 (퀴즈 모드 등에서 사용)
-            const con = dbRef.connections.push();
-            con.onDisconnect().remove();
-            con.set(true);
+        function startPresence() {
+            const connectedRef = firebase.database().ref(".info/connected");
+            connectedRef.on("value", (snap) => { if (snap.val() === true) { const con = dbRef.connections.push(); con.onDisconnect().remove(); con.set(true); } });
+            dbRef.connections.on("value", (snap) => { const count = snap.numChildren(); document.getElementById('realUserCount').innerText = `${count}명 접속`; });
         }
-    });
-
-    // 접속자 수 실시간 업데이트
-    dbRef.connections.on("value", (snap) => {
-        const count = snap.numChildren();
-        const countEl = document.getElementById('realUserCount');
-        if(countEl) countEl.innerText = `${count}명 접속`;
-    });
-}
-
-
-
-
-
-
-
         function setupListeners() {
 firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
         serverTimeOffset = snap.val() || 0;
@@ -524,23 +407,6 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
-
-
-// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
-        const serverResetKey = st.resetKey || 'init';
-        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-        if (myKey && myKey !== serverResetKey) {
-            localStorage.clear(); 
-            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
-            location.reload(); 
-            return;
-        }
-
-
-
-
-
 
     // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
@@ -861,14 +727,13 @@ async function cancelShuttleRequest() {
 function selectShuttle(locId, locName) {
     const savedName = localStorage.getItem('kac_user_name');
     const savedPhone = localStorage.getItem('kac_user_phone');
-    const msg = `${savedName}(${savedPhone})님,\n${locName}행 셔틀을 신청하시겠습니까?`;
     
-    // 이 부분이 핵심! confirm 대신 showKacConfirm을 써야 합니다.
-    showKacConfirm(msg, function() {
-        tempSelectedLoc = { id: locId, name: locName };
-        submitShuttleRequest();
-    });
+    if(!confirm(`${savedName}(${savedPhone})님,\n${locName}행 셔틀을 신청하시겠습니까?`)) return;
+    
+    tempSelectedLoc = { id: locId, name: locName };
+    submitShuttleRequest(); // 바로 신청 함수 호출
 }
+
 
 
 // 3. 최종 [차량 신청 완료하기] 버튼 클릭 시
@@ -1049,16 +914,7 @@ async function cancelAdminAction() {
         alert("⚠️ 오후 4시 이후에는 취소가 불가능합니다.");
         return;
     }
-showKacConfirm("정말로 신청을 취소하시겠습니까?", async function() {
-        // 이 아래는 기존 취소 로직을 그대로 두세요
-        const today = getTodayString();
-        const uToken = localStorage.getItem('uToken');
-        await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
-        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-        alert("취소되었습니다.");
-        openAdminAction();
-    });
-    return; // 팝업이 뜨는 동안 아래 로직이 실행되지 않게 막음
+    if (!confirm("정말로 신청을 취소하시겠습니까?")) return;
 
     const today = getTodayString();
     const uToken = localStorage.getItem('uToken');
@@ -1081,13 +937,8 @@ function openRoomMove() {
     if(typeof openMenu === 'function') openMenu(); 
 }
 
-
-
-
-
-
-// [수정] 프로필 저장 및 온라인 상태 연동 시작
-async function saveProfile() {
+// [추가] 프로필 저장 함수
+function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
     
@@ -1096,85 +947,23 @@ async function saveProfile() {
         return;
     }
     
+    // 로컬 스토리지에 저장 (한 번 저장하면 계속 유지됨)
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = Math.random().toString(36).substr(2); 
-        localStorage.setItem('uToken', uToken); 
-// [추가] 입장할 때 서버의 현재 열쇠를 내 폰에 저장
-        const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
-        const serverResetKey = statusSnap.val()?.resetKey || 'init';
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-
-
-    }
-
-    try {
-        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
-        await studentRef.update({
-            name: name,
-            phone: phone,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        // 프로필 저장 후 실시간 감지 함수 실행
-        startPresence();
-
-        document.getElementById('profileOverlay').style.display = 'none';
-        alert(`${name}님, 환영합니다!`);
-        
-        // 메인 화면 표시
-        showMainDashboard();
-    } catch (e) {
-        console.error("등록 오류:", e);
-        alert("등록 중 오류가 발생했습니다.");
-    }
+    document.getElementById('profileOverlay').style.display = 'none';
+    alert(`${name}님, 환영합니다!`);
 }
 
-
-// [최종] 서버 명부 대조 방식의 프로필 체크
-async function checkProfile() {
+// [수정] 앱 시작 시 프로필 체크 (기존 init 함수 등에 추가)
+function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
-    const uToken = localStorage.getItem('uToken');
-
-    if (!uToken || !savedName) {
-        document.getElementById('profileOverlay').style.display = 'flex';
-        return;
-    }
-
-    try {
-        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
-        
-        if (!snap.exists()) {
-            document.getElementById('profileOverlay').style.display = 'flex';
-        } else {
-            // 접속이 확인되면 실시간 감지 시작
-            startPresence();
-            showMainDashboard();
-        }
-    } catch (e) {
+    const savedPhone = localStorage.getItem('kac_user_phone');
+    
+    if (!savedName || !savedPhone) {
         document.getElementById('profileOverlay').style.display = 'flex';
     }
 }
-
-
-
-
-// 메인 화면 전환 함수 (중복 제거용)
-function showMainDashboard() {
-    document.getElementById('landingPage').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'flex';
-    startPresence();
-}
-
-
-
-
-
 
 
 // [신규] 식단표 보기 기능
@@ -1196,18 +985,5 @@ async function viewMealMenu() {
 
 
     </script>
-
-<!-- 커스텀 컨펌 창 (여기가 진짜 자리입니다) -->
-<div id="kacConfirm" class="kac-confirm-overlay">
-    <div class="kac-confirm-box">
-        <div id="kacConfirmMsg" class="kac-confirm-msg">메시지 내용</div>
-        <div class="kac-confirm-btns">
-            <button id="kacBtnNo" class="kac-btn-no" onclick="closeKacConfirm(false)">취소</button>
-            <button id="kacBtnYes" class="kac-btn-yes" onclick="closeKacConfirm(true)">확인</button>
-        </div>
-    </div>
-</div>
-
-
 </body>
 </html>
