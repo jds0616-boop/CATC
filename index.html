@@ -172,14 +172,6 @@
         </div>
         <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
         <div class="input-dock" id="inputDock">
-
-<!-- [신규] 질문 대상(과목) 선택창 -->
-<div style="padding: 0 15px 8px 15px;">
-    <select id="subjectSelect" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
-        <option value="일반">질문 대상 선택 (기본: 일반)</option>
-    </select>
-</div>
-
             <div class="input-box">
                 <textarea id="qInput" class="real-input" rows="1" 
           placeholder="✎ 질문 입력 (무례한 표현은 삼가주세요)" 
@@ -252,7 +244,6 @@
             <button class="quiz-opt-btn shuttle-btn" id="btn-osong" onclick="selectShuttle('osong', '오송역')" style="justify-content: center;">오송역</button>
             <button class="quiz-opt-btn shuttle-btn" id="btn-terminal" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center;">청주터미널</button>
             <button class="quiz-opt-btn shuttle-btn" id="btn-airport" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center;">청주공항</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-car" onclick="selectShuttle('car', '자차')" style="justify-content: center;">자차 (개별 이동)</button>
         </div>
 
         <!-- 2단계: 이름 입력 영역 (색상으로 확실히 구분) -->
@@ -406,19 +397,12 @@ let confirmCallback = null;
 
 
 async function enterApp() {
-    // 1. 강사의 강의실 상태를 먼저 확인합니다.
-    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status/roomStatus`).once('value');
-    const roomStatus = statusSnap.val();
-
-    // 2. 'active'(사용중)가 아니면 입장을 막습니다.
-    if (roomStatus !== 'active') {
-        alert("⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.\n잠시 후 다시 시도해 주세요.");
-        return; // 여기서 함수 종료 (입장 안 됨)
-    }
-
-    // 3. 'active'일 때만 기존 입장 로직 실행
+    // 1. 전체화면 요청
     const doc = document.documentElement;
     if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
+    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen().catch(e=>{});
+
+    // 2. [핵심] 입장 전 프로필 확인 (서버 대조)
     await checkProfile();
 }
 
@@ -432,14 +416,7 @@ async function enterApp() {
 
         // [수정] 완전히 나가기 (주소 초기화)
 function exitApp() {
-
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
-
-    const uToken = localStorage.getItem('uToken');
-    if (uToken && currentRoom) {
-        firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`).set(false);
-    }
-
         const ua = navigator.userAgent.toLowerCase();
         
         // 1. 카카오톡 인앱 브라우저 강제 종료 (성공 시 여기서 끝남)
@@ -499,43 +476,36 @@ function exitApp() {
 // [수정] 실시간 상태 감지 및 수강생 명부 연동
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
-    const name = localStorage.getItem('kac_user_name');
-    const phone = localStorage.getItem('kac_user_phone');
-    
-    if (!uToken || !currentRoom || !name) return;
+    if (!uToken || !currentRoom) return;
 
+    // Firebase 서버와의 연결 상태를 감시하는 특수 경로
     const connectedRef = firebase.database().ref(".info/connected");
-    // [중요] 경로를 isOnline이 아니라 학생 전체 노드로 잡습니다.
-    const myFullStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+    // 내 상태 값 (isOnline)
+    const myStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`);
 
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
-            // [수정] 온라인이 될 때 이름과 번호를 세트로 함께 저장합니다. 
-            // 이렇게 하면 리셋 직후에도 undefined가 아니라 이름이 바로 다시 채워집니다.
-            myFullStatusRef.update({
-                name: name,
-                phone: phone,
-                isOnline: true,
-                lastSeen: firebase.database.ServerValue.TIMESTAMP
-            });
+            // 접속되면 'isOnline'을 true로 변경 (녹색불)
+            myStatusRef.set(true);
 
-            // 연결이 끊기면 온라인 표시만 false로 바꿉니다.
-            myFullStatusRef.child('isOnline').onDisconnect().set(false);
+            // 브라우저를 닫거나 연결이 끊기면 자동으로 false로 변경 (회색불 예약)
+            myStatusRef.onDisconnect().set(false);
+
+            // 전체 접속자 카운트용 (퀴즈 모드 등에서 사용)
+            const con = dbRef.connections.push();
+            con.onDisconnect().remove();
+            con.set(true);
         }
     });
 
-// 수강생 명부를 감시하여 실제 온라인인 사람만 카운트
-firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
-    const data = snap.val() || {};
-    const activeUsers = Object.values(data).filter(user => 
-        user.name && user.name !== "undefined" && user.isOnline === true
-    );
-    
-    const count = activeUsers.length;
-    const countEl = document.getElementById('realUserCount');
-    if(countEl) countEl.innerText = `${count}명 접속`;
-});
+    // 접속자 수 실시간 업데이트
+    dbRef.connections.on("value", (snap) => {
+        const count = snap.numChildren();
+        const countEl = document.getElementById('realUserCount');
+        if(countEl) countEl.innerText = `${count}명 접속`;
+    });
 }
+
 
 
 
@@ -550,45 +520,27 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
             dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
-// [추가] 과목 리스트 실시간 로드
-    firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
-        const data = s.val() || {};
-        const sel = document.getElementById('subjectSelect');
-        if(!sel) return;
-        
-        let html = '<option value="일반">질문 대상 선택 (기본: 일반)</option>';
-        Object.values(data).forEach(name => {
-            html += `<option value="${name}">${name}</option>`;
-        });
-        sel.innerHTML = html;
-    });
 
 
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
 
 
-    // [추가] 강사가 상태를 'active'가 아닌 다른 것으로 바꾸면 즉시 퇴장시킵니다.
-    if (st.roomStatus !== 'active') {
-        alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
-        location.reload(); // 페이지를 새로고침하여 초기 입장 화면으로 튕겨냄
-        return;
-    }
-    
-    // --- [리셋 로직 강화] ---
-    const serverResetKey = st.resetKey || 'init';
-    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+// [추가] 리셋 열쇠 검사 (강사가 리셋하면 쫓겨남)
+        const serverResetKey = st.resetKey || 'init';
+        const myKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
 
-    if (!myLocalKey) {
-        // 처음 접속한 경우 현재 서버의 키를 내 저장소에 저장
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-    } else if (myLocalKey !== serverResetKey) {
-        // 내 키와 서버의 키가 다르다면 (강사가 리셋을 눌렀다면)
-        localStorage.clear(); // 모든 로컬 데이터 삭제 (이름, 토큰, 좋아요 등)
-        alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
-        location.replace(location.pathname + location.search); // 페이지 완전히 새로고침 (파라미터 유지)
-        return;
-    }
+        if (myKey && myKey !== serverResetKey) {
+            localStorage.clear(); 
+            alert("강의실이 초기화되었습니다. 다시 입장해주세요.");
+            location.reload(); 
+            return;
+        }
+
+
+
+
+
 
     // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
     if (st.mode === 'qa') { 
@@ -776,55 +728,15 @@ dbRef.quiz.on('value', s => {
                 list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${escapeHtml(item.text)}</div>${metaHtml}</div><div class="q-like-area"><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
             });
         }
-
-
-function submitQ() {
-    const txt = document.getElementById('qInput').value.trim();
-    if(!txt) return;
-
-    // [추가] 선택된 과목(교수님) 가져오기
-    const subject = document.getElementById('subjectSelect').value;
-
-    // 수정 모드일 때
-    if(editingKey) {
-        dbRef.qa.child(editingKey).update({ 
-            text: txt, 
-            subject: subject // 수정 시에도 과목 반영
-        }).then(() => { 
-            alert("수정 완료"); 
-            resetInput(); 
-        });
-        return;
-    }
-
-    // 도배 방지 체크
-    const now = Date.now();
-    if(now - lastPostTime < 120000) { 
-        alert("잠시 후 질문해주세요."); 
-        return; 
-    }
-
-    // 새 질문 등록
-    const ref = dbRef.qa.push();
-    ref.set({
-        text: txt,
-        subject: subject, // 과목명 저장
-        likes: 0,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    // 로컬 데이터 업데이트
-    myQs[ref.key] = now;
-    localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-    lastPostTime = now;
-    localStorage.setItem(`lastTime_${currentRoom}`, now);
-    
-    resetInput();
-    checkCooldown();
-}
-
-
-
+        function submitQ() {
+            const txt = document.getElementById('qInput').value.trim(); if(!txt) return;
+            if(editingKey) { dbRef.qa.child(editingKey).update({ text: txt }).then(() => { alert("수정 완료"); resetInput(); }); return; }
+            const now = Date.now();
+            if(now - lastPostTime < 120000) { alert("잠시 후 질문해주세요."); return; }
+            const ref = dbRef.qa.push(); ref.set({ text: txt, likes: 0, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            myQs[ref.key] = now; localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs)); lastPostTime = now; localStorage.setItem(`lastTime_${currentRoom}`, now);
+            resetInput(); checkCooldown();
+        }
         function toggleLike(key) { if(myLikes[key]) { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; }); delete myLikes[key]; } else { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; }); myLikes[key] = true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
         function editQ(key) {
             dbRef.qa.child(key).once('value', s => {
@@ -846,7 +758,7 @@ function submitQ() {
                 timerEl.innerText = `⏳ 질문 제한: ${mm}:${ss.toString().padStart(2, '0')} 남음`;
                 btn.disabled = true; btn.style.opacity = 0.5; input.disabled = true; input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
                 setTimeout(checkCooldown, 1000);
-            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "익명으로 작성되며, 강의장에 공개됩니다. 예의 있는 표현을 부탁드립니다."; }
+            } else { timerEl.innerText = ""; btn.disabled = false; btn.style.opacity = 1; input.disabled = false; input.placeholder = "강의장 공개, 예의있는 질문"; }
         }
         function formatTime(ts) { const d = new Date(ts); return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
         function escapeHtml(t) { return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;") : ""; }
@@ -914,7 +826,7 @@ async function openShuttleApply() {
     const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
     const snap = await shuttleRef.once('value');
     const data = snap.val() || {};
-    const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차' };
+    const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항' };
     let foundLoc = null;
     for (const locId in data) { if (data[locId][uToken]) { foundLoc = locId; break; } }
 

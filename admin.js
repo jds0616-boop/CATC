@@ -179,11 +179,6 @@ const dataMgr = {
     },
     
     switchRoomAttempt: async function(newRoom) {
-    // [추가] 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
-    if (localStorage.getItem('last_owned_room') === newRoom) {
-        this.forceEnterRoom(newRoom);
-        return;
-    }
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
@@ -245,17 +240,10 @@ const dataMgr = {
         await firebase.database().ref(`courses/${room}/status/quizStep`).set('none');
         
         state.room = room;
-        const btnReset = document.getElementById('btnReset');
-        if(btnReset) {
-            btnReset.disabled = false; // 버튼 클릭 허용
-            btnReset.style.opacity = '1'; // 다시 진하게
-            btnReset.style.cursor = 'pointer'; // 다시 손가락 모양으로
-        }
         localStorage.setItem('kac_last_room', room);
         document.getElementById('roomSelect').value = room;
         document.getElementById('roomStatusSelect').disabled = false;
         ui.updateHeaderRoom(room);
-        subjectMgr.init();
         ui.setMode('qa');
         document.getElementById('qaList').innerHTML = "";
         state.qaData = {};
@@ -288,22 +276,11 @@ const dataMgr = {
             }
         });
         
-// 수강생 명부(students)를 실시간으로 감시하여 진짜 온라인인 사람만 셉니다.
-firebase.database().ref(`courses/${room}/students`).on('value', s => {
-    const data = s.val() || {};
-    // 1. 이름이 있고 + 2. 온라인(isOnline)인 사람만 필터링
-    const activeUsers = Object.values(data).filter(user => 
-        user.name && user.name !== "undefined" && user.isOnline === true
-    );
-    
-    const count = activeUsers.length;
-    
-    // 퀴즈 화면의 숫자 업데이트
-    const quizEl = document.getElementById('currentJoinCount');
-    if(quizEl) quizEl.innerText = count;
-
-    // 대기실 현황판의 '대기' 인원 등 계산을 위해 필요 시 활용 가능
-});
+        dbRef.connections.on('value', s => {
+            const count = s.numChildren();
+            const el = document.getElementById('currentJoinCount');
+            if(el) el.innerText = count;
+        });
         
         this.fetchCodeAndRenderQr(room);
         
@@ -362,7 +339,6 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
             ownerSessionId: (statusVal === 'active' ? state.sessionId : null),
             professorName: (statusVal === 'active' ? selectedProf : null) 
         }).then(() => {
-            localStorage.setItem('last_owned_room', state.room);
             ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
         });
 
@@ -400,28 +376,17 @@ firebase.database().ref(`courses/${room}/students`).on('value', s => {
     },
 
     resetCourse: function() {
-if (!state.room) {
-    ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
-    return;
-}
-    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
-        
-        // 1. 해당 강의실의 모든 데이터를 삭제
-        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
-            firebase.database().ref(`courses/${state.room}/status`).set({
-                resetKey: newResetKey,
-                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
-                mode: 'qa'
-            }).then(() => {
-                ui.showAlert("강의실이 초기화되었습니다.");
-                // 강사 화면도 새로고침하여 상태 동기화
-                setTimeout(() => location.reload(), 1000);
+        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 처리됩니다.")) {
+            const newKey = "reset_" + Date.now();
+            
+            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+                firebase.database().ref(`courses/${state.room}/status/resetKey`).set(newKey).then(() => {
+                    ui.showAlert("강의실이 완전히 초기화되었습니다.");
+                    location.reload();
+                });
             });
-        });
+        }
     }
-}
 };
 
 // --- [신규] 교수님 명단 관리 ---
@@ -439,7 +404,7 @@ const profMgr = {
             }
         });
     },
-
+    
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
         if(!sel) return;
@@ -496,83 +461,6 @@ const profMgr = {
         }
     }
 };
-
-// --- [신규] 과목(세션) 관리 로직 ---
-const subjectMgr = {
-    list: [],
-    selectedFilter: 'all', 
-    
-    init: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
-            const data = s.val() || {};
-            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-            this.renderList();
-            this.renderFilters(); 
-        });
-    },
-
-    renderFilters: function() {
-        const bar = document.getElementById('subjectFilterBar');
-        if(!bar) return;
-        
-        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
-        
-        this.list.forEach(item => {
-            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
-        });
-        bar.innerHTML = html;
-    },
-
-    setFilter: function(subName) {
-        this.selectedFilter = subName;
-        this.renderFilters();
-        ui.renderQaList('all'); 
-    },
-    
-    renderList: function() {
-        const container = document.getElementById('subjectListContainer');
-        if(!container) return;
-        container.innerHTML = "";
-        
-        if(this.list.length === 0) {
-            container.innerHTML = '<div style="color: #64748b; font-size: 11px; text-align: center; padding: 10px;">등록된 과목이 없습니다.</div>';
-            return;
-        }
-
-        this.list.forEach(item => {
-            container.innerHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: #1e293b; margin-bottom: 3px; border-radius: 4px; font-size: 12px; color: white;">
-                    <span>${item.name}</span>
-                    <i class="fa-solid fa-xmark" onclick="subjectMgr.deleteSubject('${item.key}')" style="cursor: pointer; color: #ef4444;"></i>
-                </div>
-            `;
-        });
-    },
-    
-    addSubject: function() {
-        const input = document.getElementById('newSubjectInput');
-        const name = input.value.trim();
-        if(!name) return;
-        
-        firebase.database().ref(`courses/${state.room}/settings/subjects`).push(name).then(() => {
-            input.value = "";
-            input.focus();
-        });
-    },
-    
-    deleteSubject: function(key) {
-        if(confirm("이 과목을 삭제하시겠습니까?")) {
-            firebase.database().ref(`courses/${state.room}/settings/subjects/${key}`).remove();
-        }
-    }
-};
-
-
-
-
-
-
 
 // --- 3. UI ---
 const ui = {
@@ -635,8 +523,7 @@ const ui = {
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
                 const studentObj = roomData.students || {};
-                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
-                const userCount = validStudents.length;
+                const userCount = Object.keys(studentObj).length;
                 const isRoomActive = (st.roomStatus === 'active');
                 
                 const courseName = settings.courseName ? settings.courseName : "-";
@@ -653,7 +540,7 @@ const ui = {
                     opt.value = c;
                     
                     if(isRoomActive) {
-                        if (st.ownerSessionId === state.sessionId || localStorage.getItem('last_owned_room') === c) {
+                        if (st.ownerSessionId === state.sessionId) {
                             opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#3b82f6';
                             opt.style.fontWeight = 'bold';
@@ -837,8 +724,7 @@ const ui = {
             const locations = [
                 { id: 'osong', name: '오송역' }, 
                 { id: 'terminal', name: '청주터미널' }, 
-                { id: 'airport', name: '청주공항' },
-                { id: 'car', name: '자차' } // 추가
+                { id: 'airport', name: '청주공항' }
             ];
             
             tbody.innerHTML = "";
@@ -871,11 +757,6 @@ const ui = {
         if(!list) return;
         list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
-
-        // [추가] 과목 필터링 로직
-        if(subjectMgr.selectedFilter !== 'all') {
-            items = items.filter(x => x.subject === subjectMgr.selectedFilter);
-        }
         
         if(f==='pin') items=items.filter(x=>x.status==='pin'); 
         else if(f==='later') items=items.filter(x=>x.status==='later');
@@ -904,13 +785,7 @@ const ui = {
             
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
-                <div class="q-content">
-
-        <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-            ${i.subject || '일반'}
-        </span>
-
-                    ${newBadge}${icon}${i.text}
+                <div class="q-content">${newBadge}${icon}${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
                 </div>
                 <div class="q-meta">
@@ -992,14 +867,6 @@ const ui = {
         if(statusSel) {
             statusSel.value = 'waiting';
             statusSel.disabled = true;
-
-        const btnReset = document.getElementById('btnReset');
-        if(btnReset) {
-            btnReset.disabled = true; // 버튼 클릭 차단
-            btnReset.style.opacity = '0.5'; // 반투명하게 (잠긴 것처럼 보이게)
-            btnReset.style.cursor = 'not-allowed'; // 마우스 올리면 금지 표시
-        }
-
         }
     },
 
@@ -1100,11 +967,10 @@ const ui = {
             const totalEl = document.getElementById('studentTotalCount');
             
             tbody.innerHTML = "";
-            const students = Object.values(data).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
+            const students = Object.values(data);
             if(totalEl) totalEl.innerText = students.length;
 
             students.forEach((s, idx) => {
-                if (!s.name || s.name === "undefined" || s.name === undefined) return;
                 const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const statusDot = s.isOnline 
                     ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 

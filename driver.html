@@ -23,7 +23,6 @@
       --osong:#2563eb;      /* blue */
       --terminal:#f59e0b;   /* amber */
       --airport:#10b981;    /* emerald */
-      --car: #8b5cf6; /* Purple */
     }
 
     *{box-sizing:border-box}
@@ -295,25 +294,6 @@
       </div>
     </div>
 
-
-
-<div class="stat-card">
-    <div class="stat-left">
-        <div class="pill" style="background: var(--car)"></div>
-        <div class="stat-meta">
-            <span>자차</span>
-            <strong id="total-car">0</strong>
-        </div>
-    </div>
-    <i class="fa-solid fa-car" style="opacity:.35"></i>
-</div>
-
-
-
-
-
-
-
     <!-- 메인 콘텐츠 그리드 -->
     <div class="main-grid">
 
@@ -344,21 +324,6 @@
         <div id="list-airport" class="dest-content"></div>
       </div>
 
-<div class="destination-block">
-    <div class="dest-header" style="background: var(--car)">
-        <h2><i class="fa-solid fa-car"></i> 자차 이동</h2>
-        <span class="total-badge" id="badge-car">0명</span>
-    </div>
-    <div id="list-car" class="dest-content"></div>
-</div>
-
-
-
-
-
-
-
-
     </div>
   </div>
 
@@ -370,14 +335,14 @@
   <script>
     firebase.database().ref('courses').on('value', snap => {
       const allRooms = snap.val() || {};
-      const totals = { osong: 0, terminal: 0, airport: 0, car: 0 };
-      const details = { osong: {}, terminal: {}, airport: {}, car: {} };
+      const totals = { osong: 0, terminal: 0, airport: 0 };
+      const details = { osong: {}, terminal: {}, airport: {} };
 
       Object.keys(allRooms).forEach(roomId => {
         const shuttle = allRooms[roomId].shuttle;
         if(!shuttle) return;
 
-        ['osong', 'terminal', 'airport', 'car'].forEach(loc => {
+        ['osong', 'terminal', 'airport'].forEach(loc => {
           if(shuttle[loc]) {
             const names = Object.values(shuttle[loc]);
             if(names.length > 0) {
@@ -400,7 +365,6 @@
       renderSection('osong', details.osong);
       renderSection('terminal', details.terminal);
       renderSection('airport', details.airport);
-      renderSection('car', details.car);
 
       document.getElementById('updateTimeText').innerText =
         "최근 업데이트: " + new Date().toLocaleTimeString();
