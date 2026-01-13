@@ -998,7 +998,6 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        // 1. 모든 뷰 ID 리스트 (여기 있는 것들이 전부 숨겨져야 겹치지 않습니다)
         const views = [
             'view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 
             'view-admin-action', 'view-dinner-skip', 'view-students', 
@@ -1010,35 +1009,28 @@ setMode: function(mode) {
             if(el) el.style.display = 'none'; 
         });
         
-        // 2. 선택한 메뉴만 보여주기
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
         
         if(targetEl) {
-            // 대시보드나 강의현황은 block, 나머지는 flex로 설정
             targetEl.style.display = (mode === 'waiting' || mode === 'dashboard') ? 'block' : 'flex';
         }
 
-        // 3. 상단 탭 버튼 활성화 색상 변경
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
-        // 4. 모드 저장 (새로고침 대비)
         localStorage.setItem('kac_last_mode', mode);
 
         if (state.room) {
-// 퀴즈 모드일 때 팝업창(보관함)을 띄워주는 로직
-        if (mode === 'quiz') {
-            document.getElementById('quizSelectModal').style.display = 'flex'; 
-            quizMgr.loadSavedQuizList(); 
-        }
+            if (mode === 'quiz') {
+                document.getElementById('quizSelectModal').style.display = 'flex'; 
+                quizMgr.loadSavedQuizList(); 
+            }
 
-            // 학생용 화면 모드 변경 (QA/Quiz 외에는 학생에겐 QA를 보여줌)
             let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
-            // 각 모드별 데이터 로드
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
