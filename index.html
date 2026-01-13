@@ -44,21 +44,7 @@
         .like-count { font-size: 12px; font-weight: 700; color: #64748b; }
         .like-btn.active + .like-count { color: #ef4444; }
         
-        .input-dock { 
-    position: fixed; /* absolute에서 fixed로 변경 */
-    bottom: 0; 
-    left: 0; 
-    width: 100%; 
-    background: var(--input-bg); 
-    border-top-left-radius: 20px; 
-    border-top-right-radius: 20px; 
-    padding: 10px 15px calc(15px + var(--safe-area-bottom)) 15px; /* 패딩 살짝 증가 */
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
-    z-index: 1000; /* 레이어 순위 높임 */
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px;
-}
+        .input-dock { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--input-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200; display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 80px; }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
 
@@ -148,24 +134,6 @@
     overflow-y: auto;   /* 내용이 넘치면 세로 스크롤바 생성 */
 }
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
-
-
-/* 공지사항 및 QR 디자인 */
-        .notice-card { background: #f8fafc; border-radius: 14px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; text-align: left; }
-        .notice-tag { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; color: white; margin-bottom: 8px; display: inline-block; }
-        .tag-global { background: #10b981; } /* 센터공지 녹색 */
-        .tag-course { background: #3b82f6; } /* 과정공지 파란색 */
-        .notice-body { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; font-weight: 500; }
-        .qr-img-full { width: 100%; border-radius: 12px; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -249,12 +217,12 @@
     <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
     <div class="menu-box">
         <h3>Menu</h3>
-        <div class="menu-item" onclick="openNotice()"><i class="fa-solid fa-bullhorn" style="color: #facc15;"></i> 공지사항 </div>
+        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-bullhorn"></i> 공지사항(준비중)</div>
         <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
         <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
         <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
         <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
-        <div class="menu-item" onclick="openAttendanceQR()"><i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i> 출결 QR 확인</div>
+        <div class="menu-item" onclick="openRoomMove()"><i class="fa-solid fa-door-open"></i> 강의실 이동</div>
         <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
     </div>
 </div>
@@ -351,24 +319,7 @@
     </div>
 </div>
 
-<!-- [신규] 공지사항 팝업 -->
-    <div id="noticeModal" class="menu-overlay" style="display:none; z-index: 9000;" onclick="if(event.target==this)this.style.display='none'">
-        <div class="menu-box">
-            <h3 style="margin-bottom:20px;">📢 중요 공지사항</h3>
-            <div id="noticeContainer"></div>
-            <button onclick="document.getElementById('noticeModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
-        </div>
-    </div>
 
-    <!-- [신규] 출결 QR 확인 팝업 -->
-    <div id="qrModal" class="menu-overlay" style="display:none; z-index: 9001;" onclick="if(event.target==this)this.style.display='none'">
-        <div class="menu-box">
-            <h3 style="margin-bottom:15px;">출결 QR (고용노동부)</h3>
-            <img id="qrImage" src="" class="qr-img-full" style="display:none;">
-            <div id="qrEmptyMsg" style="padding:40px 0; color:#94a3b8; font-weight:bold; display:none;">등록된 QR이 없습니다.</div>
-            <button onclick="document.getElementById('qrModal').style.display='none'" style="margin-top:20px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
-        </div>
-    </div>
 
 
 <!-- [신규] 식단표 이미지 팝업 -->
@@ -1303,7 +1254,7 @@ async function saveProfile() {
     
     // [핵심 변경] 무작위 토큰 대신 이름+전화번호 조합 사용
     // 이렇게 하면 PC와 폰에서 같은 이름/번호를 치면 서버 ID가 동일해집니다.
-    uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
+    let uToken = name + "_" + phone; 
     localStorage.setItem('uToken', uToken); 
 
     // [유지] 리셋 확인용 키 저장 (이게 있어야 리셋 시 튕겨나갑니다)
@@ -1390,58 +1341,6 @@ async function viewMealMenu() {
     
     document.getElementById('mealMenuImage').src = imageUrl;
     document.getElementById('mealMenuModal').style.display = 'flex';
-}
-
-
-
-// [수정] 공지사항 불러오기 (함수명 확인: openNotice)
-async function openNotice() {
-    document.getElementById('menuModal').style.display = 'none';
-    const container = document.getElementById('noticeContainer');
-    
-    // 로딩 표시
-    container.innerHTML = "<div style='text-align:center; padding:20px;'>데이터를 불러오는 중...</div>";
-    document.getElementById('noticeModal').style.display = 'flex';
-
-    try {
-        // 1. 센터 전체 공지 (경로: system/globalNotice)
-        const globalSnap = await firebase.database().ref('system/globalNotice').once('value');
-        const globalVal = globalSnap.val();
-
-        // 2. 과정별 공지 (경로: courses/방ID/notice)
-        const courseSnap = await firebase.database().ref(`courses/${currentRoom}/notice`).once('value');
-        const courseVal = courseSnap.val();
-
-        let html = "";
-        if (globalVal) {
-            html += `<div class="notice-card"><span class="notice-tag tag-global" style="background:#10b981;">센터 전체 공지</span><div class="notice-body">${globalVal}</div></div>`;
-        }
-        if (courseVal) {
-            html += `<div class="notice-card"><span class="notice-tag tag-course" style="background:#3b82f6;">우리 과정 공지</span><div class="notice-body">${courseVal}</div></div>`;
-        }
-
-        // 결과 출력
-        container.innerHTML = html || "<div style='text-align:center; padding:30px; color:#94a3b8;'>현재 등록된 공지사항이 없습니다.</div>";
-        
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = "<div style='text-align:center; padding:20px; color:red;'>공지사항을 불러오는 중 오류가 발생했습니다.</div>";
-    }
-}
-
-// [신규] 출결 QR 불러오기
-async function openAttendanceQR() {
-    document.getElementById('menuModal').style.display = 'none';
-    const img = document.getElementById('qrImage');
-    const msg = document.getElementById('qrEmptyMsg');
-    img.style.display = 'none'; msg.style.display = 'none';
-    document.getElementById('qrModal').style.display = 'flex';
-
-    try {
-        const snap = await firebase.database().ref(`courses/${currentRoom}/attendanceQR`).once('value');
-        if (snap.val()) { img.src = snap.val(); img.style.display = 'block'; }
-        else { msg.style.display = 'block'; }
-    } catch (e) { msg.innerText = "연결 오류"; msg.style.display = 'block'; }
 }
 
 

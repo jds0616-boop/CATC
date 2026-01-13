@@ -128,14 +128,6 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
-    saveInstructorNoticeMain: function() {
-        if(!state.room) return;
-        const msg = document.getElementById('instNoticeInputMain').value;
-        firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
-            ui.showAlert("✅ 공지사항이 게시되었습니다.");
-        });
-    },
-
     checkAdminSecret: async function(input) {
         const snap = await firebase.database().ref('system/adminSecret').get();
         const dbSecret = snap.val() || btoa("kac123!@#"); 
@@ -173,16 +165,9 @@ const dataMgr = {
     },
     
     loadInitialData: function() {
-        const lastRoom = localStorage.getItem('kac_last_room');
         ui.initRoomSelect();
-
-        if (lastRoom) {
-            this.forceEnterRoom(lastRoom);
-        } else {
-            ui.showWaitingRoom();
-        }
-
-        state.quizList = DEFAULT_QUIZ_DATA;
+        ui.showWaitingRoom();
+        state.quizList = DEFAULT_QUIZ_DATA; 
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { 
@@ -194,11 +179,11 @@ const dataMgr = {
     },
     
     switchRoomAttempt: async function(newRoom) {
-        localStorage.setItem('kac_last_mode', 'dashboard');
-        if (localStorage.getItem('last_owned_room') === newRoom) {
-            this.forceEnterRoom(newRoom);
-            return;
-        }
+    // [추가] 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
+    if (localStorage.getItem('last_owned_room') === newRoom) {
+        this.forceEnterRoom(newRoom);
+        return;
+    }
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
@@ -239,44 +224,42 @@ const dataMgr = {
     },
 
     forceEnterRoom: async function(room) {
-        if(dbRef.status) dbRef.status.off();
-        if(dbRef.qa) dbRef.qa.off();
-        if(dbRef.connections) dbRef.connections.off();
-
-        firebase.database().ref(`courses/${room}/status`).update({
-            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
+        firebase.database().ref(`courses/${room}/status`).update({ 
+            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
         });
-        
-        state.room = room; 
-        localStorage.setItem('kac_last_room', room); 
-        
-        const roomSelect = document.getElementById('roomSelect');
-        if(roomSelect) roomSelect.value = room;
-
-        document.querySelector('.mode-tabs').style.display = 'flex';
+        document.querySelector('.mode-tabs').style.display = 'flex'; 
         document.getElementById('floatingQR').style.display = 'none';
+
+        if (state.room) {
+            const oldPath = `courses/${state.room}`;
+            firebase.database().ref(`${oldPath}/questions`).off();
+            firebase.database().ref(`${oldPath}/activeQuiz`).off();
+            firebase.database().ref(`${oldPath}/status`).off();
+            firebase.database().ref(`${oldPath}/settings`).off();
+            firebase.database().ref(`${oldPath}/connections`).off();
+        }
+        
+        await firebase.database().ref(`courses/${room}/activeQuiz`).set(null);
+        await firebase.database().ref(`courses/${room}/quizAnswers`).set(null);
+        await firebase.database().ref(`courses/${room}/quizFinalResults`).set(null);
+        await firebase.database().ref(`courses/${room}/status/quizStep`).set('none');
+        
+        state.room = room;
         const btnReset = document.getElementById('btnReset');
         if(btnReset) {
-            btnReset.disabled = false;
-            btnReset.style.opacity = '1';
-            btnReset.style.cursor = 'pointer';
+            btnReset.disabled = false; // 버튼 클릭 허용
+            btnReset.style.opacity = '1'; // 다시 진하게
+            btnReset.style.cursor = 'pointer'; // 다시 손가락 모양으로
         }
-
-        const rows = document.querySelectorAll('#statusTableBody tr');
-        rows.forEach(row => {
-            const roomCell = row.querySelector('td:nth-child(2)');
-            if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
-                row.classList.add('is-my-room');
-                if (!roomCell.querySelector('.my-room-badge')) {
-                    row.querySelector('td:nth-child(2)').innerHTML += '<span class="my-room-badge">MY</span>';
-                }
-            } else {
-                row.classList.remove('is-my-room');
-                const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
-                if (badge) badge.remove();
-            }
-        });
-
+        localStorage.setItem('kac_last_room', room);
+        document.getElementById('roomSelect').value = room;
+        document.getElementById('roomStatusSelect').disabled = false;
+        ui.updateHeaderRoom(room);
+        subjectMgr.init();
+        ui.setMode('qa');
+        document.getElementById('qaList').innerHTML = "";
+        state.qaData = {};
+        
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
@@ -284,49 +267,53 @@ const dataMgr = {
         dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
         dbRef.connections = firebase.database().ref(`${rPath}/connections`);
-
-        ui.updateHeaderRoom(room);
-        subjectMgr.init();
-        state.qaData = {};
-        document.getElementById('qaList').innerHTML = "";
         
-        dbRef.settings.on('value', s => {
-            const val = s.val() || {};
-            ui.renderSettings(val);
-            if(localStorage.getItem('kac_last_mode') === 'dashboard') {
-                ui.loadDashboardStats();
-            }
-        });
-
+        dbRef.settings.once('value', s => ui.renderSettings(s.val() || {}));
+        
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                if (localStorage.getItem(`last_owned_room`) === room) { 
+                    dbRef.status.update({ ownerSessionId: state.sessionId }); 
+                    return; 
+                }
+            }
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
-            if(st.professorName) document.getElementById('profSelect').value = st.professorName;
+            if(st.professorName) {
+                document.getElementById('profSelect').value = st.professorName;
+            } else {
+                document.getElementById('profSelect').value = "";
+            }
         });
+        
+// 수강생 명부(students)를 실시간으로 감시하여 진짜 온라인인 사람만 셉니다.
+firebase.database().ref(`courses/${room}/students`).on('value', s => {
+    const data = s.val() || {};
+    // 1. 이름이 있고 + 2. 온라인(isOnline)인 사람만 필터링
+    const activeUsers = Object.values(data).filter(user => 
+        user.name && user.name !== "undefined" && user.isOnline === true
+    );
+    
+    const count = activeUsers.length;
+    
+    // 퀴즈 화면의 숫자 업데이트
+    const quizEl = document.getElementById('currentJoinCount');
+    if(quizEl) quizEl.innerText = count;
 
-        firebase.database().ref(`courses/${room}/students`).on('value', s => {
-            const data = s.val() || {};
-            const activeUsers = Object.values(data).filter(user => 
-                user.name && user.name !== "undefined" && user.isOnline === true
-            );
-            const count = activeUsers.length;
-            const quizEl = document.getElementById('currentJoinCount');
-            if(quizEl) quizEl.innerText = count;
-            const dashCount = document.getElementById('dashStudentCount');
-            if(dashCount) dashCount.innerText = count + "명";
-        });
-
+    // 대기실 현황판의 '대기' 인원 등 계산을 위해 필요 시 활용 가능
+});
+        
+        this.fetchCodeAndRenderQr(room);
+        
         dbRef.qa.on('value', s => { 
             if(state.room === room) { 
                 state.qaData = s.val() || {}; 
                 ui.renderQaList('all'); 
             }
         });
-
-        this.fetchCodeAndRenderQr(room);
-
+        
         if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
         state.newBadgeTimer = setInterval(() => {
             const cards = document.querySelectorAll('.q-card.is-new');
@@ -338,16 +325,9 @@ const dataMgr = {
                     if(badge) badge.remove();
                 }
             });
-        }, 5000);
-
-        const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
-        if(roomSelect) {
-            setTimeout(() => { roomSelect.value = room; }, 300);
-        }
-        ui.setMode(lastMode);
+        }, 5000); 
     },
-
-
+    
     fetchCodeAndRenderQr: function(room) {
         const pathArr = window.location.pathname.split('/'); 
         pathArr.pop(); 
@@ -420,101 +400,29 @@ const dataMgr = {
     },
 
     resetCourse: function() {
-        if (!state.room) {
-            ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
-            return;
-        }
-        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-            const newResetKey = "reset_" + Date.now(); 
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-                firebase.database().ref(`courses/${state.room}/status`).set({
-                    resetKey: newResetKey,
-                    roomStatus: 'idle',
-                    mode: 'qa'
-                }).then(() => {
-                    ui.showAlert("강의실이 초기화되었습니다.");
-                    setTimeout(() => location.reload(), 1000);
-                });
+if (!state.room) {
+    ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
+    return;
+}
+    if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
+        const newResetKey = "reset_" + Date.now(); // 새로운 고유 키 생성
+        
+        // 1. 해당 강의실의 모든 데이터를 삭제
+        firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
+            // 2. 삭제 후 즉시 새로운 resetKey와 기본 상태 설정
+            firebase.database().ref(`courses/${state.room}/status`).set({
+                resetKey: newResetKey,
+                roomStatus: 'idle', // 리셋 후엔 비어있음으로 변경
+                mode: 'qa'
+            }).then(() => {
+                ui.showAlert("강의실이 초기화되었습니다.");
+                // 강사 화면도 새로고침하여 상태 동기화
+                setTimeout(() => location.reload(), 1000);
             });
-        }
-    },
-
-
-// [추가] 공지사항 관리창 열기
-    openNoticeManage: async function() {
-        if(!state.room) return ui.showAlert("강의실을 선택하세요.");
-        const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
-        document.getElementById('instNoticeInput').value = snap.val() || ""; 
-        document.getElementById('noticeManageModal').style.display = 'flex';
-    },
-
-    // [추가] 강사 공지사항 저장
-    saveInstructorNotice: function() {
-        const msg = document.getElementById('instNoticeInput').value;
-        firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
-            ui.showAlert("✅ 공지사항이 게시되었습니다.");
-            document.getElementById('noticeManageModal').style.display = 'none';
         });
-    },
-
-    // [추가] 출결 QR 보기
-    openAttendanceQr: async function() {
-        if(!state.room) return ui.showAlert("강의실을 선택하세요.");
-        const snap = await firebase.database().ref(`courses/${state.room}/attendanceQR`).once('value');
-        const img = document.getElementById('attendanceQrImg');
-        const msg = document.getElementById('noAttendanceQrMsg');
-        if(snap.exists()) {
-            img.src = snap.val(); img.style.display = 'block'; msg.style.display = 'none';
-        } else {
-            img.style.display = 'none'; msg.style.display = 'block';
-        }
-        document.getElementById('attendanceQrModal').style.display = 'flex';
-    },
-
-    // [추가] 학생장 지정 기능 (연락처 팝업 포함)
-    toggleLeader: function(token, currentName) {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
-            const student = snap.val();
-            const isNowLeader = !student.isLeader; 
-
-            if(isNowLeader) {
-                const phone = prompt(`[${currentName}] 학생을 학생장으로 지정합니다.\n비상 연락망 관리를 위해 전체 전화번호를 입력하세요.`, "010-0000-0000");
-                if(!phone) return;
-                
-                firebase.database().ref(`courses/${state.room}/students/${token}`).update({
-                    isLeader: true,
-                    phone: phone 
-                });
-            } else {
-                if(confirm(`[${currentName}] 학생의 학생장 권한을 해제할까요?`)) {
-                    firebase.database().ref(`courses/${state.room}/students/${token}`).update({
-                        isLeader: false
-                    });
-                }
-            }
-        });
-    },
-
-
-
-
-
-    // [수정완료] 수강생 삭제 기능 함수 추가
-    deleteStudent: function(token) {
-        if(!state.room) return;
-        if(confirm("해당 수강생을 명부에서 삭제하시겠습니까?\n삭제 시 해당 수강생의 화면도 초기화될 수 있습니다.")) {
-            firebase.database().ref(`courses/${state.room}/students/${token}`).remove()
-                .then(() => {
-                    ui.showAlert("수강생이 명부에서 삭제되었습니다.");
-                })
-                .catch(err => {
-                    alert("삭제 중 오류 발생: " + err.message);
-                });
-        }
     }
+}
 };
-
 
 // --- [신규] 교수님 명단 관리 ---
 const profMgr = {
@@ -602,6 +510,15 @@ init: function() {
             this.renderList();
             this.renderFilters(); 
         });
+
+        // [추가] 마우스 휠을 굴리면 가로로 스크롤 되게 설정
+        const filterBar = document.getElementById('subjectFilterBar');
+        if(filterBar) {
+            filterBar.addEventListener('wheel', (evt) => {
+                evt.preventDefault();
+                filterBar.scrollLeft += evt.deltaY;
+            });
+        }
     },
 
     renderFilters: function() {
@@ -668,64 +585,6 @@ init: function() {
 
 // --- 3. UI ---
 const ui = {
-
-// 대시보드 통계 실시간 로드
-loadDashboardStats: function() {
-        if(!state.room) return;
-        
-        const courseName = document.getElementById('courseNameInput').value;
-        const profName = document.getElementById('profSelect').value;
-        const today = getTodayString();
-
-        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
-        document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
-        document.getElementById('dashTodayDate').innerText = `금일 날짜: ${today}`;
-
-        // 수강생 수 실시간 업데이트
-        firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            document.getElementById('dashStudentCount').innerText = count + "명";
-        });
-
-        // 외출/외박 수 업데이트
-        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
-            const count = Object.keys(s.val() || {}).length;
-            document.getElementById('dashActionCount').innerText = count + "명";
-        });
-
-        // 셔틀(3종) 수 업데이트
-        firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
-            const d = s.val() || {};
-            document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-            document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-            document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
-        });
-    },
-
-    // 공지사항 뷰 로드
-    loadNoticeView: async function() {
-        if(!state.room) return;
-        const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
-        document.getElementById('instNoticeInputMain').value = snap.val() || "";
-    },
-
-    // 출결 QR 뷰 로드
-    loadAttendanceView: async function() {
-        if(!state.room) return;
-        const snap = await firebase.database().ref(`courses/${state.room}/attendanceQR`).once('value');
-        const img = document.getElementById('attendanceQrImgMain');
-        const msg = document.getElementById('noAttendanceQrMsgMain');
-        if(snap.exists()) {
-            img.src = snap.val(); img.style.display = 'block'; msg.style.display = 'none';
-        } else {
-            img.style.display = 'none'; msg.style.display = 'block';
-        }
-    },
-
-
-
-
-
     showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
@@ -804,15 +663,15 @@ loadDashboardStats: function() {
                     
                     if(isRoomActive) {
                         if (st.ownerSessionId === state.sessionId || localStorage.getItem('last_owned_room') === c) {
-                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName})`; // 수정 후
+                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#3b82f6';
                             opt.style.fontWeight = 'bold';
                         } else {
-                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName})`; // 수정 후
+                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName}, 수강생 ${userCount}명)`;
                             opt.style.color = '#ef4444';
                         }
                     } else {
-                        opt.innerText = `Room ${c} (⚪ 대기)`; // 수정 후
+                        opt.innerText = `Room ${c} (⚪ 대기, 수강생 ${userCount}명)`;
                     }
                     
                     if(c === savedValue) opt.selected = true;
@@ -821,11 +680,6 @@ loadDashboardStats: function() {
 
                 if(tableBody) {
                     const row = document.createElement('tr');
-
-// 현재 내가 제어 중인 방인 경우 클래스 추가
-if (c === state.room) {
-    row.classList.add('is-my-room');
-}
                     
                     const statusBadge = isRoomActive 
                         ? '<span class="badge-status badge-active">🟢 사용 중</span>' 
@@ -833,10 +687,7 @@ if (c === state.room) {
 
                     row.innerHTML = `
                         <td>${count++}</td>
-                        <td style="font-weight:900; color:#3b82f6;">
-    Room ${c}
-    ${c === state.room ? '<span class="my-room-badge">MY</span>' : ''}
-</td>
+                        <td style="font-weight:900; color:#3b82f6;">Room ${c}</td>
                         <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
@@ -953,13 +804,8 @@ if (c === state.room) {
         }
     },
 
-setMode: function(mode) {
-        const views = [
-            'view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 
-            'view-admin-action', 'view-dinner-skip', 'view-students', 
-            'view-dashboard', 'view-notice', 'view-attendance'
-        ]; 
-        
+    setMode: function(mode) {
+        const views = ['view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 'view-admin-action', 'view-dinner-skip', 'view-students']; 
         views.forEach(v => { 
             const el = document.getElementById(v); 
             if(el) el.style.display = 'none'; 
@@ -967,33 +813,28 @@ setMode: function(mode) {
         
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
-        
-        if(targetEl) {
-            targetEl.style.display = (mode === 'waiting' || mode === 'dashboard') ? 'block' : 'flex';
-        }
+        if(targetEl) targetEl.style.display = (mode === 'waiting') ? 'block' : 'flex';
 
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
-        localStorage.setItem('kac_last_mode', mode);
-
         if (state.room) {
-            if (mode === 'quiz') {
-                document.getElementById('quizSelectModal').style.display = 'flex'; 
-                quizMgr.loadSavedQuizList(); 
-            }
-
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance'].includes(mode)) ? 'qa' : mode;
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
-            if (mode === 'dashboard') ui.loadDashboardStats(); 
-            if (mode === 'notice') ui.loadNoticeView(); 
-            if (mode === 'attendance') ui.loadAttendanceView();
             if (mode === 'shuttle') ui.loadShuttleData();
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
+            if (mode === 'quiz') {
+                if (state.isExternalFileLoaded && state.quizList.length > 0) {
+                    quizMgr.showQuiz();
+                } else { 
+                    document.getElementById('quizSelectModal').style.display = 'flex'; 
+                    quizMgr.loadSavedQuizList(); 
+                }
+            }
         }
     },
 
@@ -1139,9 +980,7 @@ setMode: function(mode) {
     },
     
     showWaitingRoom: function() {
-        if (!state.room) {
         state.room = null;
-        }
         const roomNameEl = document.getElementById('displayRoomName');
         if(roomNameEl) roomNameEl.innerText = "Instructor Waiting Room";
         
@@ -1239,7 +1078,7 @@ setMode: function(mode) {
         }
     },
 
-loadDinnerSkipData: function() {
+    loadDinnerSkipData: function() {
         if(!state.room) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
@@ -1259,7 +1098,7 @@ loadDinnerSkipData: function() {
                 `).join('') : 
                 "<tr><td colspan='3' style='padding:50px; color:#94a3b8;'>제외 신청자가 없습니다.</td></tr>";
         });
-    }, // <--- 1. 여기 콤마(,)가 반드시 있어야 합니다!
+    },
 
     loadStudentList: function() {
         if(!state.room) return;
@@ -1269,47 +1108,29 @@ loadDinnerSkipData: function() {
             if(!tbody) return;
             const totalEl = document.getElementById('studentTotalCount');
             
-            // 1. 데이터를 배열로 변환
-            const studentList = Object.keys(data).map(key => ({
-                token: key,
-                ...data[key]
-            })).filter(s => s.name && s.name !== "undefined");
+            tbody.innerHTML = "";
+            const students = Object.values(data).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
+            if(totalEl) totalEl.innerText = students.length;
 
-            if(totalEl) totalEl.innerText = studentList.length;
-            tbody.innerHTML = ""; // 2. 기존 목록 비우기
-
-            // 3. 반복문 시작 (이 부분이 누락되어 있었습니다)
-            studentList.forEach((s, idx) => {
-                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-                const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-                
-                // 학생장 줄 배경색
-                const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
+            students.forEach((s, idx) => {
+                if (!s.name || s.name === "undefined" || s.name === undefined) return;
+                const joinTime = new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const statusDot = s.isOnline 
+                    ? '<span style="color:#22c55e; margin-right:5px;">●</span>' 
+                    : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
 
                 tbody.innerHTML += `
-                    <tr ${rowStyle}>
+                    <tr>
                         <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
-                        <td>${s.phone || "-"}</td>
+                        <td style="font-weight:bold;">${statusDot}${s.name}</td>
+                        <td>${s.phone}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                        <td>
-                            <div style="display:flex; gap:5px; justify-content:center;">
-                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
-                                        style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    ${s.isLeader ? '해제' : '학생장지정'}
-                                </button>
-                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    삭제
-                                </button>
-                            </div>
-                        </td>
                     </tr>
                 `;
-            }); // 반복문 닫기
+            });
         });
     }
-}; // <--- 4. 최종적으로 ui 객체 닫기
+};
 
 
 // --- 4. Quiz Logic ---
@@ -1782,8 +1603,8 @@ const quizMgr = {
         if(exitModal) exitModal.style.display = 'flex'; 
     },
     
-confirmExitQuiz: function(type) {
-        const exitModal = document.getElementById('quizExitModal'); // 'I'로 수정
+    confirmExitQuiz: function(type) {
+        const exitModal = document.getElementById('quizExitModal');
         if(exitModal) exitModal.style.display = 'none';
         if(type === 'reset') {
             state.currentQuizIdx = 0; 
@@ -1794,14 +1615,14 @@ confirmExitQuiz: function(type) {
             firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
             firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
             quizMgr.renderMiniList();
-            const qTxt = document.getElementById('d-qtext'); // 'I'로 수정
-            const oDiv = document.getElementById('d-options'); // 'I'로 수정
+            const qTxt = document.getElementById('d-qtext');
+            const oDiv = document.getElementById('d-options');
             if(qTxt) qTxt.innerText = "Ready?"; 
             if(oDiv) oDiv.innerHTML = "";
         }
-        ui.setMode('qa'); // 이 줄이 반드시 있어야 Q&A로 돌아갑니다.
+        ui.setMode('qa');
     }
-}; // quizMgr 객체를 닫는 중괄호
+};
 
 // --- 5. Print & Report ---
 const printMgr = {
@@ -1911,15 +1732,4 @@ window.onload = function() {
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
     profMgr.init(); 
-
-    // [중요] 이 코드가 있어야 새로고침 시 자동으로 방을 찾아 들어갑니다.
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        // Firebase가 연결될 때까지 0.5초만 기다렸다가 실행합니다.
-        setTimeout(() => {
-            if (firebase.auth().currentUser) {
-                dataMgr.forceEnterRoom(lastRoom);
-            }
-        }, 500);
-    }
 };

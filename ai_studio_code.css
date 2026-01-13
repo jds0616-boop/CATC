@@ -1,0 +1,14 @@
+/* 과목 필터 바 전용 스크롤바 디자인 */
+#subjectFilterBar::-webkit-scrollbar {
+    height: 4px; /* 스크롤바 두께를 아주 얇게 */
+}
+#subjectFilterBar::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05); /* 바닥 배경색 */
+}
+#subjectFilterBar::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* 스크롤바 색상 (회색) */
+    border-radius: 10px;
+}
+#subjectFilterBar::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6; /* 마우스 올리면 파란색으로 변경 */
+}
