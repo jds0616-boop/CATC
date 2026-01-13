@@ -1165,61 +1165,68 @@ body.night-mode .badge-idle {
 
 
 /* ============================================================
-   [개선] 입교안내 가이드 Cinematic View (슬라이드 중심)
+   [최종] 입교안내 가이드 Cinematic View (제목 복구 및 정렬 표준화)
    ============================================================ */
 
-/* 1. 전체 컨테이너: 상하좌우 정중앙 배치 */
+/* 1. 전체 구역: 다른 페이지와 제목 위치를 맞추기 위해 상단 정렬 */
 #view-guide {
     width: 100%;
     height: 100%;
-    display: none; /* 기본 숨김 */
+    display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* 상하 중앙 추가 */
+    justify-content: flex-start; 
     padding: 0;
     background-color: transparent;
     position: relative;
 }
 
-/* 2. 가로 배치 레이아웃 제거 및 래퍼 정렬 */
+/* 2. 제목 영역: 수강생 명부 등과 통일된 여백 설정 */
+#view-guide .view-header {
+    margin-top: 20px;   /* 계단 현상 방지를 위한 상단 고정 여백 */
+    margin-bottom: 35px; /* 제목과 슬라이드 사이의 간격 */
+    text-align: center;
+}
+
+/* 3. 래퍼 정렬: 슬라이드가 제목 아래에 예쁘게 배치됨 */
 .guide-main-container {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 1100px;
-    position: relative; /* 버튼 배치를 위해 */
+    max-width: 1050px; /* 슬라이드 가시성 확보를 위한 적정 너비 */
+    position: relative;
 }
 
-/* 3. PDF 래퍼: 깨끗한 슬라이드 느낌 (테두리/그림자 제거) */
+/* 4. PDF 래퍼: 깨끗하고 세련된 슬라이드 (테두리 없음) */
 #pdfWrapper {
     flex: none;
     width: 100%;
     height: auto;
     background: #fff;
-    border: none; /* 테두리 제거 */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* 부드러운 그림자로 변경 */
+    border: none; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* 부드러운 깊이감만 추가 */
     line-height: 0;
     cursor: pointer;
     position: relative;
     overflow: hidden;
 }
 
-/* 4. 캔버스: 해상도 유지 */
+/* 5. 캔버스 */
 #guideCanvas {
     width: 100% !important;
     height: auto !important;
     border-radius: 0;
 }
 
-/* 5. 전체화면 버튼: 작고 세련된 플로팅 아이콘 */
+/* 6. 전체화면 버튼: 작고 투명한 플로팅 아이콘 */
 .btn-guide-fullscreen {
     position: absolute;
     top: 15px;
     right: 15px;
     width: 40px;
     height: 40px;
-    background: rgba(15, 23, 42, 0.5); /* 반투명 다크 */
+    background: rgba(15, 23, 42, 0.4); /* 반투명 다크 */
     color: white;
     border: none;
     border-radius: 8px;
@@ -1233,10 +1240,9 @@ body.night-mode .badge-idle {
     opacity: 0; /* 평소엔 숨김 */
 }
 
-/* 슬라이드에 마우스 올리면 버튼 노출 */
+/* 마우스를 슬라이드에 올렸을 때만 아이콘 노출 */
 .guide-main-container:hover .btn-guide-fullscreen {
     opacity: 1;
-    background: rgba(15, 23, 42, 0.8);
 }
 
 .btn-guide-fullscreen:hover {
@@ -1244,33 +1250,31 @@ body.night-mode .badge-idle {
     transform: scale(1.1);
 }
 
-/* 6. [중요] 진짜 전체화면 모드 스타일 (Presentation) */
+/* 7. [핵심] 진짜 몰입형 전체화면 모드 (Presentation) */
 #view-guide:fullscreen {
-    background-color: #000 !important; /* 배경 블랙 고정 */
+    background-color: #000 !important; /* 전체화면 시 배경은 완전한 블랙 */
     padding: 0;
     display: flex !important;
-    justify-content: center;
+    justify-content: center; /* 전체화면 시엔 상하좌우 정중앙 */
     align-items: center;
 }
 
+/* 전체화면 시 제목 영역 자동 숨김 */
+#view-guide:fullscreen .view-header {
+    display: none !important;
+}
+
+/* 전체화면 시 슬라이드 크기를 화면에 꽉 맞춤 */
 #view-guide:fullscreen .guide-main-container {
-    max-width: 100vw; /* 전체 너비 사용 */
+    max-width: 100vw;
     height: 100vh;
 }
 
 #view-guide:fullscreen #pdfWrapper {
-    box-shadow: none; /* 전체화면 시 그림자 불필요 */
+    box-shadow: none; /* 전체화면 시 그림자 제거 */
 }
 
-#view-guide:fullscreen .view-header {
-    display: none; /* 전체화면 시 제목 숨김 */
-}
-
-/* 7. 페이지 표시바 제거 (삭제 요청 반영) */
+/* 8. 기타 불필요 요소 제거 */
 #pageIndicator {
     display: none !important;
 }
-
-
-
-
