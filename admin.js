@@ -1834,16 +1834,22 @@ const guideMgr = {
     pageNum: 1,
     isRendering: false,
 
-    // Firebase에서 PDF 불러오기 및 설정
+    // 1. 초기화 및 실시간 감시
     init: function() {
         if(!state.room) return;
-        // 등록된 가이드가 있는지 실시간 감시
+        
+        // PDF.js 워커 설정 (이게 없으면 로딩이 안 될 수 있음)
+        if (window['pdfjs-dist/build/pdf']) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+
         firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
             const data = snap.val();
             const badge = document.getElementById('guideStatusBadge');
             if(data) {
                 badge.innerText = "✅ 가이드 등록 완료";
                 badge.style.color = "#10b981";
+                // 데이터가 있을 때만 로드
                 this.loadPDF(data);
             } else {
                 badge.innerText = "❌ 등록된 파일 없음";
@@ -1851,22 +1857,18 @@ const guideMgr = {
             }
         });
 
-        // 클릭 이벤트 (좌클릭 다음, 우클릭 이전)
         const wrapper = document.getElementById('pdfWrapper');
         if(wrapper) {
-            wrapper.onclick = (e) => { this.changePage(1); };
-            wrapper.oncontextmenu = (e) => {
-                e.preventDefault();
-                this.changePage(-1);
-            };
+            wrapper.onclick = () => this.changePage(1);
+            wrapper.oncontextmenu = (e) => { e.preventDefault(); this.changePage(-1); };
         }
     },
 
-    // PDF 업로드 로직
+    // 2. PDF 업로드
     uploadGuide: function(input) {
         const file = input.files[0];
         if(!file) return;
-        if(file.size > 15 * 1024 * 1024) return alert("파일이 너무 큽니다. (15MB 이하만 가능)");
+        if(file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1877,47 +1879,54 @@ const guideMgr = {
         reader.readAsDataURL(file);
     },
 
+    // 3. PDF 로드 (Uint8Array 방식 - 가장 확실함)
     loadPDF: async function(base64) {
         try {
-            // 데이터 형식이 제대로 왔는지 확인
-            if (!base64 || !base64.includes('application/pdf')) {
-                console.error("올바른 PDF 데이터가 아닙니다.");
-                return;
+            const raw = atob(base64.split(',')[1]);
+            const rawLength = raw.length;
+            const array = new Uint8Array(new ArrayBuffer(rawLength));
+
+            for (let i = 0; i < rawLength; i++) {
+                array[i] = raw.charCodeAt(i);
             }
 
-            const pdfData = atob(base64.split(',')[1]);
-            const uint8Array = new Uint8Array(pdfData.length);
-            for (let i = 0; i < pdfData.length; i++) {
-                uint8Array[i] = pdfData.charCodeAt(i);
-            }
-
-            // PDFJS 라이브러리 로드 대기 및 로딩
-            const loadingTask = pdfjsLib.getDocument({data: uint8Array});
+            const loadingTask = pdfjsLib.getDocument({data: array});
             this.pdfDoc = await loadingTask.promise;
             
-            // 페이지 초기화 및 렌더링
-            this.pageNum = 1;
+            // 파일이 바뀌면 1페이지부터 다시 보여줌
             this.renderPage(this.pageNum);
         } catch (err) {
-            console.error("PDF 로딩 에러:", err);
-            alert("PDF를 화면에 그리는 중 오류가 발생했습니다. 파일 용량을 확인해 주세요.");
+            console.error("PDF 로딩 실패:", err);
         }
     },
 
+    // 4. 페이지 렌더링 (화면 크기에 맞게 자동 조절)
     renderPage: async function(num) {
         if(!this.pdfDoc || this.isRendering) return;
         this.isRendering = true;
-        const page = await this.pdfDoc.getPage(num);
-        const canvas = document.getElementById('guideCanvas');
-        const ctx = canvas.getContext('2d');
-        const viewport = page.getViewport({scale: 2}); // 2배 고화질
 
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+        try {
+            const page = await this.pdfDoc.getPage(num);
+            const canvas = document.getElementById('guideCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 화면 너비에 맞춰서 배율 조정 (기본 1.5배 고화질)
+            const viewport = page.getViewport({scale: 1.5});
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-        await page.render({canvasContext: ctx, viewport: viewport}).promise;
-        this.isRendering = false;
-        document.getElementById('pageIndicator').innerText = `Page: ${num} / ${this.pdfDoc.numPages}`;
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+            this.isRendering = false;
+            document.getElementById('pageIndicator').innerText = `Page: ${num} / ${this.pdfDoc.numPages}`;
+        } catch (err) {
+            console.error("페이지 렌더링 실패:", err);
+            this.isRendering = false;
+        }
     },
 
     changePage: function(offset) {
@@ -1925,14 +1934,14 @@ const guideMgr = {
         let newPage = this.pageNum + offset;
         if(newPage > 0 && newPage <= this.pdfDoc.numPages) {
             this.pageNum = newPage;
-            this.renderPage(newPage);
+            this.renderPage(this.pageNum);
         }
     },
 
     toggleFullScreen: function() {
         const elem = document.getElementById('view-guide');
         if (!document.fullscreenElement) {
-            elem.requestFullscreen().catch(err => console.log(err));
+            elem.requestFullscreen().catch(err => alert("전체화면 모드를 사용할 수 없습니다."));
         } else {
             document.exitFullscreen();
         }
