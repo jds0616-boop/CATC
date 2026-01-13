@@ -623,7 +623,6 @@ renderFilters: function() {
     const bar = document.getElementById('subjectFilterBar');
     if(!bar) return;
     
-    // 강사 목록 생성
     let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" 
                      onclick="subjectMgr.setFilter('all')">전체</div>`;
     
@@ -632,8 +631,11 @@ renderFilters: function() {
                       onclick="subjectMgr.setFilter('${item.name}')">
                       ${item.name}
                  </div>`;
+    });
     bar.innerHTML = html;
-}
+};
+
+
 
     setFilter: function(subName) {
         this.selectedFilter = subName;
