@@ -1598,104 +1598,96 @@ const quizMgr = {
     
 
 
-// [수정된 종료 함수] 안정적인 .once('value') 방식으로 복구
-    showFinalSummary: function() {
-        if (!state.room) {
-            ui.showAlert("강의실 정보가 없습니다.");
-            return;
-        }
+showFinalSummary: function() {
+        if (!state.room) return;
 
-        // 1. 응답 데이터 가져오기
+        // 1. 과거 방식인 once('value')로 데이터를 안전하게 가져옵니다.
         firebase.database().ref(`courses/${state.room}/quizAnswers`).once('value', async (snap) => {
             try {
                 const allAns = snap.val() || {};
                 const totalParticipants = new Set();
-                let totalQuestions = 0;
-                let totalCorrect = 0;
+                let totalQuestions = 0; 
+                let totalCorrect = 0; 
                 let totalAnswerCount = 0;
-                let questionStats = [];
+                let questionStats = []; 
                 const userScoreMap = {};
-
-                // 2. 점수 계산 로직 (체크된 문항만 계산)
+                
+                // 2. 기존 로직 그대로 문항별 점수 계산
                 state.quizList.forEach((q, idx) => {
-                    if (!q.checked || q.isSurvey) return; 
-                    
-                    const id = `Q${idx}`;
-                    const answers = allAns[id] || {};
+                    if(!q.checked || q.isSurvey) return; 
+                    const id = `Q${idx}`; 
+                    const answers = allAns[id] || {}; 
                     const keys = Object.keys(answers);
                     
-                    if (keys.length > 0) totalQuestions++;
-
+                    if(keys.length > 0) totalQuestions++;
+                    
                     keys.forEach(k => {
-                        totalParticipants.add(k);
+                        totalParticipants.add(k); 
                         totalAnswerCount++;
-                        
-                        if (!userScoreMap[k]) userScoreMap[k] = { score: 0, pCount: 0 };
-                        userScoreMap[k].pCount++;
-                        
-                        if (answers[k].choice === q.correct) {
-                            totalCorrect++;
-                            userScoreMap[k].score++;
+                        if(!userScoreMap[k]) userScoreMap[k] = { score: 0, pCount: 0 };
+                        userScoreMap[k].pCount++; 
+                        if(answers[k].choice === q.correct) { 
+                            totalCorrect++; 
+                            userScoreMap[k].score++; 
                         }
                     });
 
-                    // 오답률 통계를 위해 데이터 수집
-                    if (keys.length > 0) {
-                        const corrCnt = keys.filter(k => answers[k].choice === q.correct).length;
-                        questionStats.push({
-                            title: q.text,
-                            accuracy: (corrCnt / keys.length) * 100
-                        });
+                    if(keys.length > 0) { 
+                        const corrCnt = keys.filter(k => answers[k].choice === q.correct).length; 
+                        questionStats.push({ 
+                            title: q.text, 
+                            accuracy: (corrCnt / keys.length) * 100 
+                        }); 
                     }
                 });
-
-                // 3. 랭킹 데이터 생성
+                
+                // 3. 랭킹 데이터 생성 (가장 잘 되던 방식 유지)
                 const sortedUsers = Object.keys(userScoreMap)
                     .map(t => ({ token: t, ...userScoreMap[t] }))
                     .sort((a, b) => b.score - a.score);
-
-                const finalRankingData = {};
+                
+                const finalRankingData = {}; 
                 let rank = 1;
-                sortedUsers.forEach((u, i) => {
-                    // 공동 순위 처리
-                    if (i > 0 && u.score < sortedUsers[i - 1].score) rank = i + 1;
-                    finalRankingData[u.token] = {
-                        score: u.score,
-                        rank: rank,
-                        total: sortedUsers.length
-                    };
+                sortedUsers.forEach((u, i) => { 
+                    if (i > 0 && u.score < sortedUsers[i - 1].score) rank = i + 1; 
+                    finalRankingData[u.token] = { 
+                        score: u.score, 
+                        rank: rank, 
+                        total: sortedUsers.length 
+                    }; 
                 });
-
-                // 4. DB 업데이트 (학생 화면에 결과 표시 및 강사 모드 전환)
+                
+                // 4. DB에 결과 저장 및 상태 업데이트
                 await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
                 await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
-
-                // 5. 강사 화면 리포트 UI 업데이트
-                const grid = document.getElementById('summaryStats');
-                const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
                 
-                grid.innerHTML = `
-                    <div class="summary-card"><span>참여 인원</span><b>${totalParticipants.size}명</b></div>
-                    <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
-                    <div class="summary-card"><span>문항 수</span><b>${totalQuestions}개</b></div>
-                    <div class="summary-card"><span>전체 제출</span><b>${totalAnswerCount}건</b></div>
-                `;
-
-                const mostMissedArea = document.getElementById('mostMissedArea');
-                if (questionStats.length > 0) {
-                    questionStats.sort((a, b) => a.accuracy - b.accuracy);
-                    mostMissedArea.style.display = 'block';
-                    document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0, 30)}..." (${Math.round(questionStats[0].accuracy)}%)`;
-                } else {
-                    mostMissedArea.style.display = 'none';
+                // 5. 화면(UI) 업데이트
+                const grid = document.getElementById('summaryStats');
+                if(grid) {
+                    const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
+                    grid.innerHTML = `
+                        <div class="summary-card"><span>참여 인원</span><b>${totalParticipants.size}명</b></div>
+                        <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
+                        <div class="summary-card"><span>문항 수</span><b>${totalQuestions}개</b></div>
+                        <div class="summary-card"><span>전체 제출</span><b>${totalAnswerCount}건</b></div>
+                    `;
                 }
-
-                // 6. 리포트 오버레이 표시
+                
+                // 6. 오답률 높은 문제 표시
+                const missArea = document.getElementById('mostMissedArea');
+                if(missArea && questionStats.length > 0) { 
+                    questionStats.sort((a,b) => a.accuracy - b.accuracy); 
+                    missArea.style.display = 'block'; 
+                    document.getElementById('mostMissedText').innerText = `"${questionStats[0].title.substring(0,30)}..." (${Math.round(questionStats[0].accuracy)}%)`; 
+                }
+                
+                // 7. 결과창 열기
                 document.getElementById('quizSummaryOverlay').style.display = 'flex';
 
-            } catch (e) {
-                console.error("Summary Generation Error:", e);
-                ui.showAlert("결과 집계 중 오류가 발생했습니다.");
+            } catch (err) {
+                // 에러 발생 시 로그만 찍고 멈추지 않게 함
+                console.error("Aggregation Error:", err);
+                alert("결과 집계 중 오류가 발생했습니다. 데이터를 확인해 주세요.");
             }
         });
     },
