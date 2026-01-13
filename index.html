@@ -660,27 +660,31 @@ firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
 dbRef.status.on('value', snap => {
     const st = snap.val() || {};
 
-    // [유지] 강사가 강의실 닫으면 퇴장
+
+    // [추가] 강사가 상태를 'active'가 아닌 다른 것으로 바꾸면 즉시 퇴장시킵니다.
     if (st.roomStatus !== 'active') {
-        alert("📴 강사님이 강의를 종료했습니다.");
-        location.reload();
+        alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
+        location.reload(); // 페이지를 새로고침하여 초기 입장 화면으로 튕겨냄
         return;
     }
     
-    // [유지] 강사가 리셋하면 초기화
+    // --- [리셋 로직 강화] ---
     const serverResetKey = st.resetKey || 'init';
     const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
     if (!myLocalKey) {
+        // 처음 접속한 경우 현재 서버의 키를 내 저장소에 저장
         localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
     } else if (myLocalKey !== serverResetKey) {
-        localStorage.clear();
-        alert("강의실이 초기화되었습니다.");
-        location.replace(location.pathname + location.search);
+        // 내 키와 서버의 키가 다르다면 (강사가 리셋을 눌렀다면)
+        localStorage.clear(); // 모든 로컬 데이터 삭제 (이름, 토큰, 좋아요 등)
+        alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
+        location.replace(location.pathname + location.search); // 페이지 완전히 새로고침 (파라미터 유지)
         return;
     }
 
-    // [보강된 부분] 퀴즈 모드가 아니면 무조건 퀴즈 창 닫기
-    if (st.mode !== 'quiz') { 
+    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
+    if (st.mode === 'qa') { 
         forceCloseQuiz(); 
         return; 
     }
@@ -1294,20 +1298,15 @@ async function saveProfile() {
         return;
     }
     
-    // 1. 기본 정보 저장
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    // 2. [중요] 중복 방지 핵심 로직: 기존 토큰이 있는지 확인
-    let uToken = localStorage.getItem('uToken');
+    // [핵심 변경] 무작위 토큰 대신 이름+전화번호 조합 사용
+    // 이렇게 하면 PC와 폰에서 같은 이름/번호를 치면 서버 ID가 동일해집니다.
+    uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
+    localStorage.setItem('uToken', uToken); 
 
-    // 3. 토큰이 없거나, 기존 정보와 다르다면 새로 생성 (고유성 유지)
-    if (!uToken || !uToken.startsWith(name + "_" + phone)) {
-        uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
-        localStorage.setItem('uToken', uToken);
-    }
-
-    // [유지] 리셋 확인용 키 저장
+    // [유지] 리셋 확인용 키 저장 (이게 있어야 리셋 시 튕겨나갑니다)
     const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
     const serverResetKey = statusSnap.val()?.resetKey || 'init';
     localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
@@ -1315,15 +1314,14 @@ async function saveProfile() {
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
         
-        // 정보 업로드 (동일한 uToken을 사용하므로 기존 줄을 업데이트함)
+        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
         await studentRef.update({
             name: name,
             phone: phone,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP,
-            isOnline: true // 온라인 상태 추가
+            joinedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 실시간 감지 함수 실행
+        // 프로필 저장 후 실시간 감지 함수 실행
         startPresence();
 
         document.getElementById('profileOverlay').style.display = 'none';
@@ -1447,25 +1445,7 @@ async function openAttendanceQR() {
 }
 
 
-/* --- [추가] 모바일 자판이 올라올 때 입력창 가려짐 방지 코드 --- */
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-        const dock = document.getElementById('inputDock'); // 하단 입력창 영역
-        if (!dock) return;
 
-        // 화면이 자판에 의해 가려진 높이를 계산합니다.
-        const offset = window.innerHeight - window.visualViewport.height;
-
-        if (offset > 100) { 
-            // 자판이 올라왔을 때: 자판 높이만큼 입력창을 위로 올림
-            dock.style.bottom = offset + 'px';
-        } else {
-            // 자판이 내려갔을 때: 다시 바닥에 붙임
-            dock.style.bottom = '0';
-        }
-    });
-}
-/* ------------------------------------------------------- */
 
     </script>
 
