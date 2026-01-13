@@ -127,18 +127,16 @@ body {
     z-index: 2000;
 }
 
-/* [신규] 제목을 가리지 않고, 올라오는 질문만 지우는 '마법 가림막' */
+/* 필터바 위로 날아가는 질문 가리는 막 (제목은 안 가림) */
 .qa-filters::before {
     content: "";
     position: absolute;
-    /* 필터바 위쪽으로만 배경색 벽을 세웁니다 */
     top: -1000px; 
-    left: -50px;
-    right: -50px;
+    left: -100px;
+    right: -100px;
     height: 1000px;
-    background: var(--bg-color); /* 전체 바탕색과 똑같이 */
+    background: var(--bg-color); 
     z-index: -1;
-    /* 이 벽은 필터바가 천장에 붙었을 때만 질문들을 가려줍니다 */
 }
 
 
@@ -194,7 +192,14 @@ body {
 
 
 
-.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
+.qa-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    padding-bottom: 300px; 
+    /* 내부 스크롤을 끄고 전체 스크롤을 따라가게 함 */
+    overflow-y: visible !important; 
+}
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
@@ -210,17 +215,23 @@ body {
 
 /* [복구] 핀 고정 카드 (심플한 초기 버전) */
 .q-card.status-pin {
-    /* sticky를 삭제하고 일반 위치로 변경 (2중 겹침 해결) */
-    position: relative !important; 
-    top: 0 !important;
+    /* [고정] 필터바 밑에 고정 */
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    
+    /* 필터바 높이가 약 150px이므로 그 아래에 붙도록 설정 */
+    /* 만약 필터바와 겹치면 이 숫자를 160, 170 식으로 키우세요 */
+    top: 165px; 
+    
+    z-index: 1000; /* 필터바(2000)보다는 낮고 일반질문(1)보다는 높게 */
     
     border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
-    z-index: 1;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1) !important;
+    margin-bottom: 20px;
 }
 
-/* 핀 아이콘 강조 */
+/* 핀 카드 내용 색상 */
 .q-card.status-pin .q-content {
     color: #b91c1c;
 }
