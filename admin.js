@@ -618,17 +618,22 @@ init: function() {
         });
     },
 
-    renderFilters: function() {
-        const bar = document.getElementById('subjectFilterBar');
-        if(!bar) return;
-        
-        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
-        
-        this.list.forEach(item => {
-            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
-        });
-        bar.innerHTML = html;
-    },
+// subjectMgr.renderFilters 함수를 아래 스타일로 보강
+renderFilters: function() {
+    const bar = document.getElementById('subjectFilterBar');
+    if(!bar) return;
+    
+    // 강사 목록 생성
+    let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" 
+                     onclick="subjectMgr.setFilter('all')">전체</div>`;
+    
+    this.list.forEach(item => {
+        html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" 
+                      onclick="subjectMgr.setFilter('${item.name}')">
+                      ${item.name}
+                 </div>`;
+    bar.innerHTML = html;
+}
 
     setFilter: function(subName) {
         this.selectedFilter = subName;
@@ -1318,7 +1323,7 @@ loadDinnerSkipData: function() {
                                     ${s.isLeader ? '해제' : '학생장지정'}
                                 </button>
                                 <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-        style="background-color:#ef4444; font-size:11px; padding:5px 12px; color:white; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; min-width:45px;">
+        style="background-color:#ef4444; font-size:11px; padding:5px 10px; color:white; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; height:auto; width:auto; line-height:1;">
     삭제
 </button>
                             </div>

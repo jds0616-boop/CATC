@@ -98,57 +98,80 @@ body {
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 
 
-/* Q&A 필터 전체 컨테이너 */
-.qa-filters { 
-    display: flex; 
-    flex-direction: column; /* 상단 기본버튼 / 하단 강사버튼 2단 구성 */
-    gap: 15px; 
-    padding: 20px; 
-    background: var(--card-bg); 
-    border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+/* Q&A 필터 컨테이너 전체 구조 개선 */
+.qa-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* 간격을 0으로 하고 내부 패딩으로 조절 */
+    padding: 15px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f6;
 }
 
-/* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
+/* 상단 기본 필터 (상태 필터) */
 .basic-filters {
     display: flex;
-    flex-wrap: wrap; /* 화면이 아주 작아지면 다음줄로 넘어가게 */
     gap: 10px;
-    padding-bottom: 5px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8fafc; /* 상하 필터 구분선 */
+    margin-bottom: 15px;
 }
 
-/* 하단 강사 필터 바 */
+/* ★ 강사 선택 필터바 (신규 디자인) ★ */
 #subjectFilterBar {
-    display: flex; 
-    flex-wrap: wrap; /* 강사가 많아지면 다음 줄로 자동 줄바꿈 (핵심) */
-    gap: 8px; 
-    margin: 0; 
-    padding: 15px 0 0 0; 
-    border-top: 1px solid #f1f5f9; /* 상단과 구분선 */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 5px 0;
 }
 
-/* 공통 필터 칩 디자인 (예전 디자인 복구 및 세련미 추가) */
-.filter-chip {
-    display: inline-block;
-    padding: 7px 16px;
-    background: #f8fafc;
+/* 강사 필터 칩 기본 디자인 */
+#subjectFilterBar .filter-chip {
+    background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 20px; /* 다시 둥글게 복구 */
-    font-size: 13px;
+    color: #475569;
+    padding: 8px 18px;
+    border-radius: 12px; /* 둥근 사각형으로 변경하여 위 필터와 차별화 */
+    font-size: 14px;
     font-weight: 600;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    width: auto; /* 세로로 늘어나는 것 방지 */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.filter-chip.active {
-    background: #3b82f6 !important;
-    color: white !important;
-    border-color: #3b82f6 !important;
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+/* 강사 필터 칩에 아이콘 추가 (JS에서 추가 가능) */
+#subjectFilterBar .filter-chip::before {
+    content: '\f508'; /* FontAwesome User icon */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+/* 강사 필터 활성화 상태 (색상 차별화: 인디고/다크블루 계열) */
+#subjectFilterBar .filter-chip.active {
+    background: #1e293b !important; /* 위쪽 파란색과 다른 진회색/남색 사용 */
+    color: #ffffff !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Q&A 카드 내부의 강사 뱃지 디자인 개선 */
+.q-card .subject-badge {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    margin-right: 12px;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
 }
 
 
