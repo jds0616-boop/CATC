@@ -252,8 +252,6 @@ switchRoomAttempt: async function(newRoom) {
     },
 
 
-*************************************************************************************************
-
 forceEnterRoom: async function(room) {
         // 1. [중요] 새 방에 들어가기 전, 기존 방의 감시(on)를 먼저 끕니다. (데이터 꼬임 방지)
         if(dbRef.status) dbRef.status.off();
@@ -364,7 +362,7 @@ forceEnterRoom: async function(room) {
         });
 
         // 12. Join QR 생성 (오타 수정됨: dataMgr 추가)
-        dataMgr.fetchCodeAndRenderQr(room);
+        this.fetchCodeAndRenderQr(room);
 
         // 13. [NEW] 뱃지 타이머 처리
         if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
@@ -1822,8 +1820,8 @@ const quizMgr = {
         if(exitModal) exitModal.style.display = 'flex'; 
     },
     
-    confirmExitQuiz: function(type) {
-        const exitModal = document.getElementById('quizExitModal');
+confirmExitQuiz: function(type) {
+        const exitModal = document.getElementById('quizExitModal'); // 'I'로 수정
         if(exitModal) exitModal.style.display = 'none';
         if(type === 'reset') {
             state.currentQuizIdx = 0; 
@@ -1834,13 +1832,14 @@ const quizMgr = {
             firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
             firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
             quizMgr.renderMiniList();
-            const qTxt = document.getElementById('d-qtext');
-            const oDiv = document.getElementById('d-options');
+            const qTxt = document.getElementById('d-qtext'); // 'I'로 수정
+            const oDiv = document.getElementById('d-options'); // 'I'로 수정
             if(qTxt) qTxt.innerText = "Ready?"; 
             if(oDiv) oDiv.innerHTML = "";
         }
+        ui.setMode('qa'); // 이 줄이 반드시 있어야 Q&A로 돌아갑니다.
     }
-};
+}; // quizMgr 객체를 닫는 중괄호
 
 // --- 5. Print & Report ---
 const printMgr = {
