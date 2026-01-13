@@ -287,32 +287,28 @@
         <div class="content-area">
 
 
-<!-- 입교안내 가이드 (직각 & 사이드 버튼 버전) -->
-<div id="view-guide" style="display:none; padding: 20px;">
-    <div class="view-header" style="text-align:center; margin-bottom:20px;">
-        <i class="fa-solid fa-book-open" style="color: #6366f1; font-size:30px;"></i>
-        <h1 style="margin:10px 0;">입교안내 가이드</h1>
-        <p style="color:#64748b;">좌클릭: 다음 / 우클릭: 이전</p>
+<!-- 입교안내 가이드 최종 (직각 & 사이드 버튼) -->
+<div id="view-guide">
+    <div class="view-header" style="margin-bottom:30px; text-align:center;">
+        <i class="fa-solid fa-book-open" style="color: #6366f1; font-size: 40px;"></i>
+        <h1 style="font-size:32px; font-weight:900; margin:10px 0;">입교안내 가이드</h1>
+        <p style="color:#64748b;">좌클릭: 다음 페이지 / 우클릭: 이전 페이지</p>
     </div>
 
-    <!-- 사진과 버튼 가로 배치 프레임 -->
-    <div style="display: flex; align-items: flex-start; justify-content: center; gap: 20px; width: 100%;">
-        
-        <!-- 왼쪽: PDF (라운딩 없음) -->
-        <div id="pdfWrapper" style="border: 1px solid #ddd; background:#fff; line-height:0; cursor:pointer;" 
-             onclick="guideMgr.changePage(1)" oncontextmenu="event.preventDefault(); guideMgr.changePage(-1);">
-            <canvas id="guideCanvas" style="max-width: 900px; width:100%; height:auto; border-radius:0 !important;"></canvas>
+    <div class="guide-main-container">
+        <!-- 왼쪽: PDF 화면 -->
+        <div id="pdfWrapper" onclick="guideMgr.changePage(1)" oncontextmenu="event.preventDefault(); guideMgr.changePage(-1);">
+            <canvas id="guideCanvas"></canvas>
         </div>
 
-        <!-- 오른쪽: 전체화면 버튼 (직각) -->
-        <button onclick="guideMgr.toggleFullScreen()" 
-                style="padding: 12px 18px; background: #334155; color: white; border: none; border-radius: 0; cursor: pointer; font-weight: bold; white-space: nowrap; display: flex; align-items: center; gap: 8px;">
+        <!-- 오른쪽: 버튼 -->
+        <button class="btn-guide-fullscreen" onclick="guideMgr.toggleFullScreen()">
             <i class="fa-solid fa-expand"></i> 전체화면 보기
         </button>
     </div>
 
     <!-- 하단 페이지 표시 -->
-    <div id="pageIndicator" style="margin-top:20px; font-weight:bold; background:#000; color:#fff; padding:5px 15px;">Page: 0 / 0</div>
+    <div id="pageIndicator">Page: 0 / 0</div>
 </div>
 
 
