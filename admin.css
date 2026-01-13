@@ -97,36 +97,51 @@ body {
 
 #view-qa {
     width: 100%;
-    /* 화면 높이에서 상단 메뉴바들을 제외한 나머지 높이 설정 */
-    height: calc(100vh - 150px) !important; 
+    height: calc(100vh - 70px) !important; /* 상단 헤더를 제외한 전체 높이 */
     display: flex;
     flex-direction: column;
-    max-width: 1000px;
-    /* ★ 마우스 휠을 작동하게 만드는 핵심 코드 */
+    max-width: 1100px; /* 필터바보다 살짝 넓게 설정 */
     overflow-y: auto !important; 
+    overflow-x: hidden;
     position: relative;
-    padding-right: 10px; /* 스크롤바와 카드 사이 간격 */
+    /* 필터바가 상단에 밀착될 수 있도록 상단 패딩을 제거하거나 최소화 */
+    padding: 0 20px 100px 20px !important; 
 }
 
 
-/* Q&A 필터 전체 컨테이너 */
 .qa-filters { 
     display: flex; 
     flex-direction: column; 
     gap: 15px; 
     padding: 20px; 
-    background: var(--card-bg); 
+    background: var(--bg-color) !important; /* 배경색으로 꽉 채움 */
     border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
 
-    /* ★ 상단에 딱 붙게 만드는 틀고정 핵심 코드 */
+    /* [핵심] 상단 밀착 및 고정 */
     position: -webkit-sticky;
     position: sticky;
-    top: 60px;       /* 스크롤 시 이 위치에서 멈춤 */
-    z-index: 100; /* 질문들이 이 밑으로 지나가게 함 */
-    border: 1px solid #e2e8f0;
+    top: 0;        /* 0으로 설정하여 최상단에 딱 붙임 */
+    z-index: 2000; /* 질문 카드(z-index:1)보다 훨씬 높게 설정 */
+
+    /* [핵심] 가림막(Masking) 효과 */
+    /* 1. 첫번째 값: 위쪽으로 500px만큼 거대한 벽을 만듦 (날아가는 질문 차단) */
+    /* 2. 두번째 값: 좌우로 100px만큼 벽을 확장 (옆으로 삐져나오는 질문 차단) */
+    box-shadow: 
+        0 -500px 0 500px var(--bg-color), 
+        0 4px 15px rgba(0,0,0,0.05); /* 아래쪽엔 살짝 그림자 효과 */
+    
+    /* 가림막이 주변 버튼을 가리지 않게 위쪽 여백 강제 확보 */
+    margin-top: 50px; 
 }
+
+
+
+
+
+
+
+
 
 /* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
 .basic-filters {
@@ -189,15 +204,19 @@ body {
 
 /* [복구] 핀 고정 카드 (심플한 초기 버전) */
 .q-card.status-pin {
-    /* 핀 고정 질문도 상단에 틀고정되어야 하므로 sticky 추가 */
-    position: -webkit-sticky;
-    position: sticky;
-    top: 100px;  /* 필터 바(top:0) 바로 아래에 붙도록 설정 */
-    z-index: 90; 
+    /* sticky를 삭제하고 일반 위치로 변경 (2중 겹침 해결) */
+    position: relative !important; 
+    top: 0 !important;
     
-    border-left: 6px solid #ef4444 !important; 
+    border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
+    z-index: 1;
+}
+
+/* 핀 아이콘 강조 */
+.q-card.status-pin .q-content {
+    color: #b91c1c;
 }
 
 /* 핀 카드 마우스 올렸을 때 효과 (원래대로) */
