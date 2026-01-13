@@ -110,6 +110,19 @@
             </div>
 
             <div class="setting-group"><label class="setting-label">Course Name</label><input type="text" id="courseNameInput" class="setting-input"></div>
+<!-- [신규] 과목(세션) 관리 섹션 -->
+<div class="setting-group" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+    <label class="setting-label">과목(세션) 관리</label>
+    <div id="subjectListContainer" style="max-height: 120px; overflow-y: auto; background: #0f172a; border-radius: 6px; padding: 5px; margin-bottom: 8px; border: 1px solid #334155;">
+        <!-- 과목 리스트가 여기에 생성됨 -->
+    </div>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="newSubjectInput" class="setting-input" placeholder="과목 또는 강사명 입력" style="flex: 1;">
+        <button class="btn-action btn-primary btn-small" onclick="subjectMgr.addSubject()" style="width: 50px;">추가</button>
+    </div>
+</div>
+
+
                 <div class="setting-group"><label class="setting-label">Student Room PW</label><input type="password" id="roomPw" class="setting-input" maxlength="4"></div>
                 <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings</button>
                 <div class="divider"></div>
@@ -131,7 +144,7 @@
         <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
         <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Report</button>
         <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('idle')" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Idle</button>
-        <button class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
+        <button id="btnReset" class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
     </div>
     <div style="text-align: center; margin-top: 15px;">
         <span onclick="ui.openSecretModal()" style="font-size:10px; color:#475569; cursor:pointer; text-decoration:underline;">시스템 보안 설정 (Admin PW 변경)</span>
@@ -142,6 +155,41 @@
 
     <!-- Main Content -->
     <div class="main-stage">
+
+<!-- [추가] 출결 QR 보기 팝업 (강사 확인용) -->
+    <div id="attendanceQrModal" class="modal-overlay" onclick="if(event.target==this)this.style.display='none'">
+        <div class="modal-box" style="width: 400px; text-align: center;">
+            <h3 style="margin-top:0;">출결 QR (고용노동부)</h3>
+            <img id="attendanceQrImg" style="width:100%; border-radius:12px; display:none;">
+            <div id="noAttendanceQrMsg" style="padding:40px 0; color:#94a3b8; font-weight:bold;">등록된 QR이 없습니다.</div>
+            <button class="btn-action btn-secondary" style="margin-top:15px;" onclick="document.getElementById('attendanceQrModal').style.display='none'">닫기</button>
+        </div>
+    </div>
+
+    <!-- [추가] 공지사항 관리 팝업 -->
+    <div id="noticeManageModal" class="modal-overlay" onclick="if(event.target==this)this.style.display='none'">
+        <div class="modal-box" style="width: 500px;">
+            <div class="modal-header"><h3><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h3></div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                <span style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 8px; display: block;">우리 과정 공지내용 (수정 시 교육생 앱 즉시 반영)</span>
+                <textarea id="instNoticeInput" style="width: 100%; min-height: 120px; border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px; font-size: 14px; resize: vertical;"></textarea>
+            </div>
+            <div class="modal-actions" style="justify-content:center; gap:10px;">
+                <button class="m-btn m-btn-later" onclick="document.getElementById('noticeManageModal').style.display='none'" style="background:#64748b; color:white;">취소</button>
+                <button class="m-btn m-btn-done" onclick="dataMgr.saveInstructorNotice()">공지사항 저장</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
     <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
         <div id="statusOverlay" class="status-overlay">
             <div class="lock-message"><i class="fa-solid fa-lock"></i><h3>강의 대기 중 (Room Idle)</h3><p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">Save Settings</span>를 눌러주세요.</p></div>
@@ -177,19 +225,29 @@
     <div class="qr-close" onclick="ui.toggleMiniQR()"><i class="fa-solid fa-xmark"></i></div>
 </div>
 
-        <div class="mode-tabs">
-<button class="mode-btn" id="tab-waiting" onclick="ui.setMode('waiting')">
-    <i class="fa-solid fa-chart-line"></i> 강의 현황
-</button>
-            <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
-            <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
-            <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
-           <button class="mode-btn" id="tab-admin-action" onclick="ui.setMode('admin-action')"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박</button>
-           <button class="mode-btn" id="tab-dinner-skip" onclick="ui.setMode('dinner-skip')"><i class="fa-solid fa-utensils"></i> 석식 제외</button>
+<!-- [수정] 상단 탭: 핵심 메뉴 노출 + 나머지 더보기 드롭다운 -->
+<div class="mode-tabs">
+    <!-- 핵심 메뉴 4개 -->
+    <button class="mode-btn active" id="tab-dashboard" onclick="ui.setMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> 과정 현황</button>
+    <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i> 수강생 현황</button>
+    <button class="mode-btn" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
+    <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
 
-
-
+    <!-- 행정 메뉴 드롭다운 -->
+    <div class="mode-dropdown">
+        <button class="mode-btn dropdown-trigger" onclick="ui.toggleMenuDropdown()">
+            <i class="fa-solid fa-ellipsis-vertical"></i> 행정 관리 <i class="fa-solid fa-caret-down"></i>
+        </button>
+        <div class="dropdown-content" id="menuDropdown">
+            <a onclick="ui.setMode('waiting')"><i class="fa-solid fa-chart-line"></i> 항기원 교육 현황</a>
+            <a onclick="ui.setMode('notice')"><i class="fa-solid fa-bullhorn"></i> 공지 관리</a>
+            <a onclick="ui.setMode('attendance')"><i class="fa-solid fa-qrcode"></i> 출결 QR</a>
+            <a onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</a>
+            <a onclick="ui.setMode('admin-action')"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박</a>
+            <a onclick="ui.setMode('dinner-skip')"><i class="fa-solid fa-utensils"></i> 석식 제외</a>
         </div>
+    </div>
+</div>
 
 
         
@@ -205,14 +263,113 @@
         </div>
 
         <div class="content-area">
-            <div id="view-qa">
-                <div class="qa-filters">
-                    <div class="filter-chip active" onclick="ui.filterQa('all')">All Questions</div>
-                    <div class="filter-chip" onclick="ui.filterQa('pin')">Pinned</div>
-                    <div class="filter-chip" onclick="ui.filterQa('later')">Answer Later</div>
+
+
+<!-- [수정] 1. 현재과정 현황 (야간모드 무시 디자인) -->
+<div id="view-dashboard" style="display:none; width:100%;">
+    <div class="dashboard-wrapper">
+        <div class="dash-main-card">
+            <div class="dash-header-section">
+                <div id="dashTodayDate" class="dash-badge">202X-XX-XX</div>
+                <h2 id="dashCourseTitle">과정명 로드 중...</h2>
+                <div class="dash-prof-info">
+                    <span class="p-label">담당 교수</span>
+                    <strong id="dashProfName">교수님 성함</strong>
                 </div>
-                <div class="qa-list" id="qaList"></div>
             </div>
+            
+            <div class="dash-grid">
+                <div class="dash-item student">
+                    <div class="dash-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="dash-text">
+                        <span>현재 수강생</span>
+                        <b id="dashStudentCount">0명</b>
+                    </div>
+                </div>
+                <div class="dash-item action">
+                    <div class="dash-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                    <div class="dash-text">
+                        <span>금일 외출/외박</span>
+                        <b id="dashActionCount">0명</b>
+                    </div>
+                </div>
+                <div class="dash-item shuttle">
+                    <div class="dash-icon"><i class="fa-solid fa-bus"></i></div>
+                    <div class="dash-text">
+                        <span>셔틀 수요(항기원 출발)</span>
+                        <div class="shuttle-mini-stats">
+                            <div>오송 <b id="s-osong-cnt">0</b></div>
+                            <div>터미널 <b id="s-term-cnt">0</b></div>
+                            <div>공항 <b id="s-air-cnt">0</b></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <!-- [수정] 공지사항 입력창에 안내 문구(placeholder) 추가 -->
+<div id="view-notice" style="display:none; width:100%; max-width:800px; flex-direction:column;">
+    <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h2>
+    <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+        <p style="font-weight:800; color:#64748b; margin-bottom:10px;">수강생 앱에 실시간으로 표시될 공지 내용을 입력하세요.</p>
+        
+        <!-- 이 부분의 placeholder 내용을 수정합니다 -->
+        <textarea id="instNoticeInputMain" 
+                  style="width: 100%; min-height: 300px; border-radius: 12px; border: 2px solid #e2e8f0; padding: 20px; font-size: 18px; margin-bottom: 20px;" 
+                  placeholder="여기에 공지사항 입력 후 하단에 [공지사항 게시하기] 버튼을 눌러주세요. 수강생 앱에 실시간으로 게시됩니다."></textarea>
+        
+        <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px;">공지사항 게시하기</button>
+    </div>
+</div>
+
+            <!-- [추가] 3. 출결 QR 화면 -->
+            <div id="view-attendance" style="display:none; width:100%; max-width:800px; flex-direction:column; align-items: center;">
+                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-qrcode"></i> 출결 QR 코드</h2>
+                <div style="background: white; border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <img id="attendanceQrImgMain" style="width: 400px; height: 400px; object-fit: contain; margin-bottom: 30px; border: 1px solid #eee; display:none;">
+                    <div id="noAttendanceQrMsgMain" style="padding:100px 0; color:#cbd5e1; font-size:20px; font-weight:bold;">등록된 QR 이미지가 없습니다.</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #1e293b; line-height: 1.4;">
+                        <span style="color:#3b82f6;">E-HRD 어플</span>을 활용하여<br>출결 처리를 진행해 주세요.
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            <div id="view-qa">
+    <div class="qa-filters">
+        <!-- 상단 기본 버튼들을 basic-filters로 감쌉니다 -->
+        <div class="basic-filters">
+            <div class="filter-chip active" onclick="ui.filterQa('all', event)">All Questions</div>
+            <div class="filter-chip" onclick="ui.filterQa('pin', event)">Pinned</div>
+            <div class="filter-chip" onclick="ui.filterQa('later', event)">Answer Later</div>
+        </div>
+        
+        <!-- 하단 강사 필터 바 (기존 유지) -->
+        <div id="subjectFilterBar"></div>
+    </div>
+    <div class="qa-list" id="qaList"></div>
+</div>
 
  
 <!-- 강사 대기실 (현황판) 섹션 -->
@@ -227,7 +384,7 @@
     <table class="status-table">
         <thead>
             <tr>
-                <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>접속</th><th>마지막 활동</th><th>관리</th>
+                <th>연번</th><th>Room</th><th>과정명</th><th>교수명</th><th>상태</th><th>교육생</th><th>마지막 활동</th><th>관리</th>
             </tr>
         </thead>
         <tbody id="statusTableBody">
@@ -243,24 +400,15 @@
 
 
 
-<div id="view-shuttle" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
-    <div class="dashboard-header-box" style="margin-bottom: 25px;">
-        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">🚌 차량 탑승 수요조사 (셔틀)</h1>
+<!-- [수정] 2. 차량 수요조사 디자인 개선 -->
+<div id="view-shuttle" style="display:none; width:100%; max-width:1100px; flex-direction:column;">
+    <div class="shuttle-top-info">
+        <h1><i class="fa-solid fa-bus-simple"></i> 차량 탑승 수요조사</h1>
+        <p>교육생들이 앱을 통해 직접 신청한 실시간 명단입니다.</p>
     </div>
-    <table class="status-table">
-        <thead>
-            <tr>
-                <th style="width:60px;">연번</th>
-                <th style="width:150px;">장소</th>
-                <th style="width:120px;">신청자 총원</th>
-                <th>신청자 성함</th>
-                <th style="width:100px;">비고</th>
-            </tr>
-        </thead>
-        <tbody id="shuttleTableBody">
-            <!-- 데이터가 여기에 들어옵니다 -->
-        </tbody>
-    </table>
+    <div class="shuttle-card-container" id="shuttleTableBody">
+        <!-- JS가 이 안에 카드를 생성하게 됩니다 -->
+    </div>
 </div>
 
 
@@ -309,6 +457,38 @@
         </tbody>
     </table>
 </div>
+
+
+
+<!-- [신규] 수강생 현황 섹션 -->
+<div id="view-students" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+    <div class="dashboard-header-box" style="margin-bottom: 25px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">👥 수강생 명부</h1>
+        <p style="color: #64748b; margin-top:5px;">현재 이 강의실에 입장한 모든 교육생 명단입니다.</p>
+    </div>
+    <div style="margin-bottom:20px; font-size:18px; font-weight:bold;">
+        등록 인원: <span id="studentTotalCount" style="color:#3b82f6;">0</span>명
+    </div>
+    <table class="status-table">
+        <thead>
+            <tr>
+                <th style="width:80px;">연번</th>
+                <th>성명</th>
+                <th>전화번호(뒤4자리)</th>
+                <th>최초 입장시간</th>
+                <th style="width:100px;">관리</th> <!-- 이 줄을 추가하세요 -->
+            </tr>
+        </thead>
+        <tbody id="studentListTableBody">
+            <!-- 데이터 자동 삽입 -->
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
 
 
 
