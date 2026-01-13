@@ -858,6 +858,18 @@ dbRef.quiz.on('value', s => {
             });
         }
         function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
+
+
+// [추가] 누락된 유틸리티 함수 (이게 없으면 목록이 안 뜹니다)
+        function formatTime(ts) {
+            if(!ts) return "";
+            const d = new Date(ts);
+            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+        function escapeHtml(text) {
+            const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
         function renderList(data) {
             const list = document.getElementById('qList'); list.innerHTML = ""; let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
             if(currentSort === 'like') items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); else items.sort((a,b) => b.timestamp - a.timestamp);
