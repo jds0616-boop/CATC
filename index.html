@@ -44,20 +44,23 @@
         .like-count { font-size: 12px; font-weight: 700; color: #64748b; }
         .like-btn.active + .like-count { color: #ef4444; }
         
-        .input-dock { 
-    position: fixed; /* absolute에서 fixed로 변경 */
+.input-dock { 
+    position: fixed;
     bottom: 0; 
     left: 0; 
     width: 100%; 
     background: var(--input-bg); 
     border-top-left-radius: 20px; 
     border-top-right-radius: 20px; 
-    padding: 10px 15px calc(15px + var(--safe-area-bottom)) 15px; /* 패딩 살짝 증가 */
+    padding: 10px 15px calc(15px + var(--safe-area-bottom)) 15px;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
-    z-index: 1000; /* 레이어 순위 높임 */
+    z-index: 1000;
     display: flex; 
     flex-direction: column; 
     gap: 4px;
+    /* ▼ 아래 두 줄이 키보드 가림 방지를 도와줍니다 */
+    transform: translateZ(0);
+    will-change: bottom;
 }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
@@ -501,7 +504,7 @@ async function enterApp() {
 
     // 2. 'active'(사용중)가 아니면 입장을 막습니다.
     if (roomStatus !== 'active') {
-        alert("⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.\n잠시 후 다시 시도해 주세요.");
+        alert(⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.\n잠시 후 다시 시도해 주세요.");
         return; // 여기서 함수 종료 (입장 안 됨)
     }
 
@@ -847,6 +850,18 @@ dbRef.quiz.on('value', s => {
         }
     });
 });
+
+
+
+// [추가] 키보드가 입력창을 가리는 현상 방지 로직
+            const qInputForScroll = document.getElementById('qInput');
+            qInputForScroll.addEventListener('focus', function() {
+                setTimeout(function() {
+                    // 입력창이 화면 중앙에 오도록 강제로 스크롤을 이동시킵니다.
+                    qInputForScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300); // 키보드가 올라오는 시간을 기다려줍니다 (0.3초)
+            });
+
 
 
 
