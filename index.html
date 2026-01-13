@@ -1303,7 +1303,7 @@ async function saveProfile() {
     
     // [핵심 변경] 무작위 토큰 대신 이름+전화번호 조합 사용
     // 이렇게 하면 PC와 폰에서 같은 이름/번호를 치면 서버 ID가 동일해집니다.
-    let uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
+    uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
     localStorage.setItem('uToken', uToken); 
 
     // [유지] 리셋 확인용 키 저장 (이게 있어야 리셋 시 튕겨나갑니다)

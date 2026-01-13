@@ -237,18 +237,20 @@ const dataMgr = {
         state.pendingRoom = null;
     },
 
-    forceEnterRoom: async function(room) {
-    firebase.database().ref(`courses/${room}/status`).update({ 
-        lastAdminEntry: firebase.database.ServerValue.TIMESTAMP 
-        // [추가] 이전 감시자들 제거 (데이터 꼬임 방지)
-        if(dbRef.status) dbRef.status.off();
-        if(dbRef.qa) dbRef.qa.off();
-        if(dbRef.connections) dbRef.connections.off();
+forceEnterRoom: async function(room) {
+    // 1. [중요] 새 방에 들어가기 전, 기존 방의 감시(on)를 먼저 끕니다.
+    if(dbRef.status) dbRef.status.off();
+    if(dbRef.qa) dbRef.qa.off();
+    if(dbRef.connections) dbRef.connections.off();
+
+    // 2. 방 정보 업데이트
+    firebase.database().ref(`courses/${room}/status`).update({
+        lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
     });
-    document.querySelector('.mode-tabs').style.display = 'flex'; 
+    
+    document.querySelector('.mode-tabs').style.display = 'flex';
     document.getElementById('floatingQR').style.display = 'none';
 
-    // --- [추가 코드 시작] ---
     state.room = room; // 방 번호 업데이트
 
     // 현황판 테이블 하이라이트 즉시 갱신
