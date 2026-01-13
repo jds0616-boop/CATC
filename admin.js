@@ -1470,20 +1470,34 @@ const quizMgr = {
         this.showQuiz();
     },
     
+// --- 퀴즈 시작 및 화면 표시 부분 ---
     showQuiz: function() {
-        const card = document.querySelector('.quiz-card'); if(card) card.classList.remove('result-mode');
+        const card = document.querySelector('.quiz-card'); 
+        if(card) card.classList.remove('result-mode');
+        
         const q = state.quizList[state.currentQuizIdx];
-        this.resetTimerUI(); this.renderScreen(q);
-        const pauseBtn = document.getElementById('btnPause'); if(pauseBtn) pauseBtn.style.display = 'none';
-        const smartBtn = document.getElementById('btnSmartNext');
-        if(smartBtn) {
-            smartBtn.style.display = 'flex';
-            smartBtn.innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
+        this.resetTimerUI(); 
+        this.renderScreen(q);
+
+        // [핵심 해결 코드] 숨겨져 있던 버튼 컨테이너를 보이게 합니다.
+        const ctrlBar = document.getElementById('quizControls');
+        if(ctrlBar) ctrlBar.style.display = 'flex'; 
+
+        // 일시정지 버튼은 일단 숨기고 '시작' 버튼만 보이게 초기화
+        if(document.getElementById('btnPause')) document.getElementById('btnPause').style.display = 'none';
+        if(document.getElementById('btnSmartNext')) {
+            document.getElementById('btnSmartNext').style.display = 'flex';
+            document.getElementById('btnSmartNext').innerHTML = '현재 퀴즈 시작 <i class="fa-solid fa-play" style="margin-left:10px;"></i>';
         }
+
         firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'none' });
         firebase.database().ref(`courses/${state.room}/activeQuiz`).set({ 
-            id: `Q${state.currentQuizIdx}`, status: 'ready', type: q.isOX?'OX':'MULTIPLE', ...q 
+            id: `Q${state.currentQuizIdx}`, 
+            status: 'ready', 
+            type: q.isOX ? 'OX' : 'MULTIPLE', 
+            ...q 
         });
+
         state.remainingTime = 8;
         this.startAnswerMonitor();
     },
