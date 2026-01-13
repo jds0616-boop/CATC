@@ -1445,7 +1445,25 @@ async function openAttendanceQR() {
 }
 
 
+/* --- [추가] 모바일 자판이 올라올 때 입력창 가려짐 방지 코드 --- */
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        const dock = document.getElementById('inputDock'); // 하단 입력창 영역
+        if (!dock) return;
 
+        // 화면이 자판에 의해 가려진 높이를 계산합니다.
+        const offset = window.innerHeight - window.visualViewport.height;
+
+        if (offset > 100) { 
+            // 자판이 올라왔을 때: 자판 높이만큼 입력창을 위로 올림
+            dock.style.bottom = offset + 'px';
+        } else {
+            // 자판이 내려갔을 때: 다시 바닥에 붙임
+            dock.style.bottom = '0';
+        }
+    });
+}
+/* ------------------------------------------------------- */
 
     </script>
 
