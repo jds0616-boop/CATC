@@ -93,7 +93,7 @@ body {
 
 .content-area {
     flex-grow: 1;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 20px 30px; /* 상단 여백 20px로 모든 뷰 통일 */
     display: flex;
     flex-direction: column;
@@ -102,7 +102,7 @@ body {
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; }
 
-#view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
+#view-qa { width: 100%; height: calc(100vh - 150px);  display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 
 
 /* Q&A 필터 전체 컨테이너 */
@@ -162,7 +162,7 @@ body {
 
 
 
-.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
+.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 150px; }
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
