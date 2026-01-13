@@ -98,80 +98,57 @@ body {
 #view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 
 
-/* Q&A 필터 컨테이너 전체 구조 */
-.qa-filters {
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    background: var(--card-bg);
-    border-radius: 18px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-    border: 1px solid #eef2f6;
+/* Q&A 필터 전체 컨테이너 */
+.qa-filters { 
+    display: flex; 
+    flex-direction: column; /* 상단 기본버튼 / 하단 강사버튼 2단 구성 */
+    gap: 15px; 
+    padding: 20px; 
+    background: var(--card-bg); 
+    border-radius: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* 상단 기본 상태 필터 (All, Pinned...) */
+/* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
 .basic-filters {
     display: flex;
+    flex-wrap: wrap; /* 화면이 아주 작아지면 다음줄로 넘어가게 */
     gap: 10px;
-    padding-bottom: 18px;
-    border-bottom: 2px solid #f1f5f9; /* 연한 구분선 */
-    margin-bottom: 18px;
+    padding-bottom: 5px;
 }
 
-/* ★ 강사 선택 필터바 (하단) ★ */
+/* 하단 강사 필터 바 */
 #subjectFilterBar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    display: flex; 
+    flex-wrap: wrap; /* 강사가 많아지면 다음 줄로 자동 줄바꿈 (핵심) */
+    gap: 8px; 
+    margin: 0; 
+    padding: 15px 0 0 0; 
+    border-top: 1px solid #f1f5f9; /* 상단과 구분선 */
 }
 
-/* 강사 필터 칩: 상단과 다르게 '둥근 사각형' 형태 */
-#subjectFilterBar .filter-chip {
+/* 공통 필터 칩 디자인 (예전 디자인 복구 및 세련미 추가) */
+.filter-chip {
+    display: inline-block;
+    padding: 7px 16px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    color: #64748b;
-    padding: 9px 16px;
-    border-radius: 10px; /* 각진 느낌을 살려 위 버튼과 차별화 */
+    border-radius: 20px; /* 다시 둥글게 복구 */
     font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    color: #64748b;
     cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    width: auto; /* 세로로 늘어나는 것 방지 */
 }
 
-/* 강사 이름 앞에 사람 아이콘 자동 추가 */
-#subjectFilterBar .filter-chip::before {
-    content: '\f508'; /* FontAwesome User icon */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    font-size: 11px;
-    opacity: 0.6;
-}
-
-/* 강사 필터 활성화: 진한 남색(Dark Navy)으로 시선 집중 */
-#subjectFilterBar .filter-chip.active {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border-color: #1e293b !important;
-    box-shadow: 0 4px 10px rgba(30, 41, 59, 0.25);
-    transform: translateY(-2px);
-}
-
-/* Q&A 카드 내부에 표시되는 강사 이름 뱃지 */
-.q-card .q-content span:first-child {
-    display: inline-block;
-    background: #eff6ff;
-    color: #3b82f6;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 5px;
-    margin-right: 10px;
-    border: 1px solid #dbeafe;
-    font-weight: 800;
-    vertical-align: middle;
+.filter-chip.active {
+    background: #3b82f6 !important;
+    color: white !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
 
@@ -883,63 +860,3 @@ body.night-mode .badge-idle {
     margin-left: 5px;
     vertical-align: middle;
 }
-
-
-/* --- 메뉴 드롭다운 스타일 --- */
-.mode-dropdown { position: relative; display: inline-block; }
-.dropdown-trigger { background: #f8fafc !important; color: #475569 !important; border: 2px solid #e2e8f0 !important; }
-.dropdown-content {
-    display: none; position: absolute; right: 0; background-color: white;
-    min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    border-radius: 12px; z-index: 1000; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 5px;
-}
-.dropdown-content a {
-    color: #1e293b; padding: 12px 16px; text-decoration: none;
-    display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.dropdown-content a:hover { background-color: #f1f5f9; color: var(--accent-color); }
-.dropdown-content i { width: 20px; color: #94a3b8; }
-.mode-dropdown:hover .dropdown-content { display: block; }
-
-/* --- 현재과정 현황 (야간모드 무시 강제 라이트 테마) --- */
-.dashboard-wrapper { padding: 20px; display: flex; justify-content: center; }
-.dash-main-card {
-    background: #ffffff !important; /* 야간모드에서도 흰색 고정 */
-    border-radius: 30px; padding: 50px; width: 100%; max-width: 1000px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.08); border: 1px solid #f1f5f9;
-}
-/* 대시보드 내부 텍스트 색상 강제 고정 */
-.dash-main-card h2, .dash-main-card b, .dash-main-card .p-label, .dash-main-card .dash-text span { color: #0f172a !important; }
-
-.dash-header-section { text-align: center; margin-bottom: 50px; }
-.dash-badge {
-    display: inline-block; background: #eff6ff; color: #3b82f6 !important;
-    padding: 6px 15px; border-radius: 50px; font-weight: 800; font-size: 14px; margin-bottom: 15px;
-}
-#dashCourseTitle { font-size: 36px; font-weight: 900; letter-spacing: -1.5px; margin: 0 0 10px 0; }
-.dash-prof-info { font-size: 20px; }
-.dash-prof-info .p-label { color: #64748b !important; margin-right: 8px; font-weight: 400; }
-.dash-prof-info strong { color: #3b82f6 !important; font-weight: 800; }
-
-.dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.dash-item { background: #f8fafc; border-radius: 20px; padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; }
-.dash-item:hover { transform: translateY(-5px); background: #f1f5f9; }
-.dash-icon { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; }
-.student .dash-icon { background: #e0f2fe; color: #0ea5e9; }
-.action .dash-icon { background: #fee2e2; color: #ef4444; }
-.shuttle .dash-icon { background: #f0fdf4; color: #10b981; }
-.dash-text span { font-size: 15px; font-weight: 700; display: block; margin-bottom: 5px; }
-.dash-text b { font-size: 38px; font-weight: 900; }
-.shuttle-mini-stats { display: flex; gap: 12px; margin-top: 10px; background: white; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.shuttle-mini-stats div { font-size: 12px; color: #64748b; }
-.shuttle-mini-stats b { font-size: 16px !important; color: #3b82f6 !important; }
-
-/* --- 차량 수요조사 디자인 고도화 --- */
-.shuttle-top-info { text-align: center; margin-bottom: 30px; }
-.shuttle-top-info h1 { font-size: 30px; font-weight: 900; margin: 0; }
-.shuttle-top-info p { color: #64748b; margin-top: 5px; }
-.shuttle-card-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 10px; }
-.shuttle-dest-card { background: var(--card-bg); border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 6px solid var(--accent-color); }
-.dest-name { font-size: 18px; font-weight: 800; margin-bottom: 15px; display: flex; justify-content: space-between; }
-.dest-count { background: #eff6ff; color: #3b82f6; padding: 2px 10px; border-radius: 8px; }
-.dest-members { font-size: 14px; color: #64748b; line-height: 1.6; min-height: 50px; background: #f8fafc; padding: 10px; border-radius: 10px; }

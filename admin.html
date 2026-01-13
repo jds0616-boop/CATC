@@ -225,29 +225,21 @@
     <div class="qr-close" onclick="ui.toggleMiniQR()"><i class="fa-solid fa-xmark"></i></div>
 </div>
 
-<!-- [수정] 상단 탭: 핵심 메뉴 노출 + 나머지 더보기 드롭다운 -->
-<div class="mode-tabs">
-    <!-- 핵심 메뉴 4개 -->
-    <button class="mode-btn active" id="tab-dashboard" onclick="ui.setMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> 과정 현황</button>
-    <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i> 수강생 현황</button>
-    <button class="mode-btn" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
-    <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
+        <div class="mode-tabs">
+            <button class="mode-btn" id="tab-waiting" onclick="ui.setMode('waiting')"><i class="fa-solid fa-chart-line"></i> 강의 현황</button>
+            <button class="mode-btn active" id="tab-dashboard" onclick="ui.setMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> 종합 현황</button>
+            <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i>수강생 현황</button>
+            <button class="mode-btn" id="tab-notice" onclick="ui.setMode('notice')"><i class="fa-solid fa-bullhorn"></i> 공지 관리</button>
+            <button class="mode-btn" id="tab-attendance" onclick="ui.setMode('attendance')"><i class="fa-solid fa-qrcode"></i> 출결 QR</button>
+            <button class="mode-btn active" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
+            <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
+            <button class="mode-btn" id="tab-shuttle" onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</button>
+           <button class="mode-btn" id="tab-admin-action" onclick="ui.setMode('admin-action')"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박</button>
+           <button class="mode-btn" id="tab-dinner-skip" onclick="ui.setMode('dinner-skip')"><i class="fa-solid fa-utensils"></i> 석식 제외</button>
 
-    <!-- 행정 메뉴 드롭다운 -->
-    <div class="mode-dropdown">
-        <button class="mode-btn dropdown-trigger" onclick="ui.toggleMenuDropdown()">
-            <i class="fa-solid fa-ellipsis-vertical"></i> 행정 관리 <i class="fa-solid fa-caret-down"></i>
-        </button>
-        <div class="dropdown-content" id="menuDropdown">
-            <a onclick="ui.setMode('waiting')"><i class="fa-solid fa-chart-line"></i> 항기원 교육 현황</a>
-            <a onclick="ui.setMode('notice')"><i class="fa-solid fa-bullhorn"></i> 공지 관리</a>
-            <a onclick="ui.setMode('attendance')"><i class="fa-solid fa-qrcode"></i> 출결 QR</a>
-            <a onclick="ui.setMode('shuttle')"><i class="fa-solid fa-bus"></i> 차량 수요조사</a>
-            <a onclick="ui.setMode('admin-action')"><i class="fa-solid fa-person-walking-arrow-right"></i> 외출/외박</a>
-            <a onclick="ui.setMode('dinner-skip')"><i class="fa-solid fa-utensils"></i> 석식 제외</a>
+
+
         </div>
-    </div>
-</div>
 
 
         
@@ -265,64 +257,51 @@
         <div class="content-area">
 
 
-<!-- [수정] 1. 현재과정 현황 (야간모드 무시 디자인) -->
-<div id="view-dashboard" style="display:none; width:100%;">
-    <div class="dashboard-wrapper">
-        <div class="dash-main-card">
-            <div class="dash-header-section">
-                <div id="dashTodayDate" class="dash-badge">202X-XX-XX</div>
-                <h2 id="dashCourseTitle">과정명 로드 중...</h2>
-                <div class="dash-prof-info">
-                    <span class="p-label">담당 교수</span>
-                    <strong id="dashProfName">교수님 성함</strong>
+<!-- [교체] 1. 과정 종합 현황 (고도화 버전) -->
+            <div id="view-dashboard" style="display:none; width:100%; max-width:1100px; flex-direction:column; align-items: center;">
+                <div class="dashboard-header-box" style="margin-bottom: 40px; text-align: center; background: white; padding: 30px; border-radius: 25px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
+                    <h2 id="dashCourseTitle" style="font-size: 24px; font-weight: 700; color: #64748b; margin-bottom: 10px;">과정명 로드 중...</h2>
+                    <div id="dashProfName" style="font-size: 40px; font-weight: 900; color: #1e293b; letter-spacing: -1px;">교수님 이름</div>
+                    <div id="dashTodayDate" style="margin-top: 15px; font-size: 16px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 6px 20px; border-radius: 50px; display: inline-block;">202X-XX-XX</div>
                 </div>
-            </div>
-            
-            <div class="dash-grid">
-                <div class="dash-item student">
-                    <div class="dash-icon"><i class="fa-solid fa-users"></i></div>
-                    <div class="dash-text">
-                        <span>현재 수강생</span>
-                        <b id="dashStudentCount">0명</b>
+                
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; width: 100%;">
+                    <!-- 수강생 카드 -->
+                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #e2e8f0; box-shadow: 0 15px 35px rgba(0,0,0,0.03);">
+                        <div style="font-size: 40px; margin-bottom: 15px;">👥</div>
+                        <span style="font-weight: 800; color: #64748b; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">현재 수강생</span>
+                        <b id="dashStudentCount" style="font-size: 48px; display: block; color: #0f172a; margin-top: 10px;">0명</b>
                     </div>
-                </div>
-                <div class="dash-item action">
-                    <div class="dash-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                    <div class="dash-text">
-                        <span>금일 외출/외박</span>
-                        <b id="dashActionCount">0명</b>
+                    <!-- 외출외박 카드 -->
+                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #fecaca; box-shadow: 0 15px 35px rgba(239, 68, 68, 0.05);">
+                        <div style="font-size: 40px; margin-bottom: 15px;">📍</div>
+                        <span style="font-weight: 800; color: #be123c; font-size: 15px; letter-spacing: 1px;">금일 외출/외박</span>
+                        <b id="dashActionCount" style="font-size: 48px; display: block; color: #9f1239; margin-top: 10px;">0명</b>
                     </div>
-                </div>
-                <div class="dash-item shuttle">
-                    <div class="dash-icon"><i class="fa-solid fa-bus"></i></div>
-                    <div class="dash-text">
-                        <span>셔틀 수요(항기원 출발)</span>
-                        <div class="shuttle-mini-stats">
-                            <div>오송 <b id="s-osong-cnt">0</b></div>
-                            <div>터미널 <b id="s-term-cnt">0</b></div>
-                            <div>공항 <b id="s-air-cnt">0</b></div>
+                    <!-- 셔틀 통합 카드 -->
+                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); padding: 25px 20px; border-radius: 25px; text-align:center; border: 1px solid #bae6fd; box-shadow: 0 15px 35px rgba(59, 130, 246, 0.05);">
+                        <div style="font-size: 30px; margin-bottom: 10px;">🚌</div>
+                        <span style="font-weight: 800; color: #0369a1; font-size: 14px; letter-spacing: 0.5px;">셔틀 수요 (항기원 출발)</span>
+                        <div style="display: flex; justify-content: space-around; margin-top: 15px; background: white; padding: 15px; border-radius: 15px; border: 1px solid #e0f2fe;">
+                            <div><small style="color:#64748b; font-weight:800;">오송</small><br><b id="s-osong-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
+                            <div style="border-left:1px solid #f1f5f9;"></div>
+                            <div><small style="color:#64748b; font-weight:800;">터미널</small><br><b id="s-term-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
+                            <div style="border-left:1px solid #f1f5f9;"></div>
+                            <div><small style="color:#64748b; font-weight:800;">공항</small><br><b id="s-air-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-            <!-- [수정] 공지사항 입력창에 안내 문구(placeholder) 추가 -->
-<div id="view-notice" style="display:none; width:100%; max-width:800px; flex-direction:column;">
-    <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h2>
-    <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
-        <p style="font-weight:800; color:#64748b; margin-bottom:10px;">수강생 앱에 실시간으로 표시될 공지 내용을 입력하세요.</p>
-        
-        <!-- 이 부분의 placeholder 내용을 수정합니다 -->
-        <textarea id="instNoticeInputMain" 
-                  style="width: 100%; min-height: 300px; border-radius: 12px; border: 2px solid #e2e8f0; padding: 20px; font-size: 18px; margin-bottom: 20px;" 
-                  placeholder="여기에 공지사항 입력 후 하단에 [공지사항 게시하기] 버튼을 눌러주세요. 수강생 앱에 실시간으로 게시됩니다."></textarea>
-        
-        <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px;">공지사항 게시하기</button>
-    </div>
-</div>
+            <!-- [추가] 2. 공지사항 관리 화면 -->
+            <div id="view-notice" style="display:none; width:100%; max-width:800px; flex-direction:column;">
+                <h2 style="font-size:24px; font-weight:800; margin-bottom:20px;"><i class="fa-solid fa-bullhorn"></i> 과정 공지사항 관리</h2>
+                <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+                    <p style="font-weight:800; color:#64748b; margin-bottom:10px;">수강생 앱에 실시간으로 표시될 공지 내용을 입력하세요.</p>
+                    <textarea id="instNoticeInputMain" style="width: 100%; min-height: 300px; border-radius: 12px; border: 2px solid #e2e8f0; padding: 20px; font-size: 18px; margin-bottom: 20px;"></textarea>
+                    <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:60px; font-size:20px;">공지사항 게시하기</button>
+                </div>
+            </div>
 
             <!-- [추가] 3. 출결 QR 화면 -->
             <div id="view-attendance" style="display:none; width:100%; max-width:800px; flex-direction:column; align-items: center;">
@@ -400,15 +379,24 @@
 
 
 
-<!-- [수정] 2. 차량 수요조사 디자인 개선 -->
-<div id="view-shuttle" style="display:none; width:100%; max-width:1100px; flex-direction:column;">
-    <div class="shuttle-top-info">
-        <h1><i class="fa-solid fa-bus-simple"></i> 차량 탑승 수요조사</h1>
-        <p>교육생들이 앱을 통해 직접 신청한 실시간 명단입니다.</p>
+<div id="view-shuttle" style="display:none; width:100%; max-width:1000px; flex-direction:column; align-items: center;">
+    <div class="dashboard-header-box" style="margin-bottom: 25px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: var(--text-color); margin: 0;">🚌 차량 탑승 수요조사 (셔틀)</h1>
     </div>
-    <div class="shuttle-card-container" id="shuttleTableBody">
-        <!-- JS가 이 안에 카드를 생성하게 됩니다 -->
-    </div>
+    <table class="status-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">연번</th>
+                <th style="width:150px;">장소</th>
+                <th style="width:120px;">신청자 총원</th>
+                <th>신청자 성함</th>
+                <th style="width:100px;">비고</th>
+            </tr>
+        </thead>
+        <tbody id="shuttleTableBody">
+            <!-- 데이터가 여기에 들어옵니다 -->
+        </tbody>
+    </table>
 </div>
 
 
