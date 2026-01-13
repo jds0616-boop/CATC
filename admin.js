@@ -177,22 +177,22 @@ const dataMgr = {
         });
     },
     
+
+
+
+
 loadInitialData: function() {
-        // 1. 마지막으로 내가 관리하던 방 번호가 있는지 확인합니다.
         const lastRoom = localStorage.getItem('kac_last_room');
-        
-        // 2. 강의실 목록(A~Z)을 그립니다.
         ui.initRoomSelect();
 
-        // 3. 만약 마지막 방 정보가 있다면, 밖으로 나가지 말고 바로 그 방으로 들어갑니다.
         if (lastRoom) {
             this.forceEnterRoom(lastRoom);
         } else {
-            // 정보가 아예 없으면 처음 접속한 것이므로 대기실(현황판)을 보여줍니다.
             ui.showWaitingRoom();
         }
 
-    state.quizList = DEFAULT_QUIZ_DATA;
+        // 아래 코드들이 함수 내부(} 안쪽)에 있어야 합니다.
+        state.quizList = DEFAULT_QUIZ_DATA;
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
         document.getElementById('roomSelect').onchange = (e) => { 
@@ -201,7 +201,13 @@ loadInitialData: function() {
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
         const qrEl = document.getElementById('qrcode'); 
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
-    },
+    }, // 함수 끝
+
+
+
+
+
+
     
 switchRoomAttempt: async function(newRoom) {
         // [추가] 사이드바에서 직접 선택했을 때는 무조건 대시보드가 먼저 나오도록 설정
@@ -381,15 +387,14 @@ forceEnterRoom: async function(room) {
         // 14. [핵심] 마지막으로 보던 탭으로 이동 (없으면 대시보드)
         const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
 
-// 새로고침 시 사이드바 드롭다운 메뉴를 현재 방으로 강제 세팅
-    const roomSelect = document.getElementById('roomSelect');
-    if(roomSelect) {
-        // 드롭다운 메뉴가 다 그려질 때까지 0.3초 대기 후 값 변경
-        setTimeout(() => { roomSelect.value = room; }, 300);
-    }
         ui.setMode(lastMode);
-    },
 
+        // [수정] 함수 내부 마지막에 배치
+        const roomSelect = document.getElementById('roomSelect');
+        if(roomSelect) {
+            setTimeout(() => { roomSelect.value = room; }, 300);
+        }
+    }, // forceEnterRoom 끝
 
 
     fetchCodeAndRenderQr: function(room) {
