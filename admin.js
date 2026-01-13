@@ -1878,11 +1878,30 @@ const guideMgr = {
     },
 
     loadPDF: async function(base64) {
-        const pdfData = atob(base64.split(',')[1]);
-        const loadingTask = pdfjsLib.getDocument({data: pdfData});
-        this.pdfDoc = await loadingTask.promise;
-        this.pageNum = 1; // 새 파일 로드 시 1페이지부터
-        this.renderPage(this.pageNum);
+        try {
+            // 데이터 형식이 제대로 왔는지 확인
+            if (!base64 || !base64.includes('application/pdf')) {
+                console.error("올바른 PDF 데이터가 아닙니다.");
+                return;
+            }
+
+            const pdfData = atob(base64.split(',')[1]);
+            const uint8Array = new Uint8Array(pdfData.length);
+            for (let i = 0; i < pdfData.length; i++) {
+                uint8Array[i] = pdfData.charCodeAt(i);
+            }
+
+            // PDFJS 라이브러리 로드 대기 및 로딩
+            const loadingTask = pdfjsLib.getDocument({data: uint8Array});
+            this.pdfDoc = await loadingTask.promise;
+            
+            // 페이지 초기화 및 렌더링
+            this.pageNum = 1;
+            this.renderPage(this.pageNum);
+        } catch (err) {
+            console.error("PDF 로딩 에러:", err);
+            alert("PDF를 화면에 그리는 중 오류가 발생했습니다. 파일 용량을 확인해 주세요.");
+        }
     },
 
     renderPage: async function(num) {
