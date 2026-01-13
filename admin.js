@@ -128,9 +128,6 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
-
-
-// 공지사항 관리 화면에서 [게시하기] 버튼을 눌렀을 때 실행되는 함수
     saveInstructorNoticeMain: function() {
         if(!state.room) return;
         const msg = document.getElementById('instNoticeInputMain').value;
@@ -138,8 +135,6 @@ const dataMgr = {
             ui.showAlert("✅ 공지사항이 게시되었습니다.");
         });
     },
-
-
 
     checkAdminSecret: async function(input) {
         const snap = await firebase.database().ref('system/adminSecret').get();
@@ -177,11 +172,7 @@ const dataMgr = {
         });
     },
     
-
-
-
-
-loadInitialData: function() {
+    loadInitialData: function() {
         const lastRoom = localStorage.getItem('kac_last_room');
         ui.initRoomSelect();
 
@@ -191,7 +182,6 @@ loadInitialData: function() {
             ui.showWaitingRoom();
         }
 
-        // 아래 코드들이 함수 내부(} 안쪽)에 있어야 합니다.
         state.quizList = DEFAULT_QUIZ_DATA;
         state.isExternalFileLoaded = false;
         quizMgr.renderMiniList();
@@ -201,19 +191,10 @@ loadInitialData: function() {
         document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
         const qrEl = document.getElementById('qrcode'); 
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
-    }, // 함수 끝
-
-
-
-
-
-
+    },
     
-switchRoomAttempt: async function(newRoom) {
-        // [추가] 사이드바에서 직접 선택했을 때는 무조건 대시보드가 먼저 나오도록 설정
+    switchRoomAttempt: async function(newRoom) {
         localStorage.setItem('kac_last_mode', 'dashboard');
-
-        // 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
         if (localStorage.getItem('last_owned_room') === newRoom) {
             this.forceEnterRoom(newRoom);
             return;
@@ -257,27 +238,21 @@ switchRoomAttempt: async function(newRoom) {
         state.pendingRoom = null;
     },
 
-
-forceEnterRoom: async function(room) {
-        // 1. [중요] 새 방에 들어가기 전, 기존 방의 감시(on)를 먼저 끕니다. (데이터 꼬임 방지)
+    forceEnterRoom: async function(room) {
         if(dbRef.status) dbRef.status.off();
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // 2. 방 정보 업데이트 (서버에 관리자 입장 기록)
         firebase.database().ref(`courses/${room}/status`).update({
             lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
         });
         
-        // 3. 내부 상태 및 로컬 저장소 업데이트 (새로고침 시 방 유지 핵심)
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         
-        // 드롭다운 메뉴를 현재 방으로 즉시 변경 (Select Room으로 돌아가는 것 방지)
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
 
-        // 4. UI 기본 설정
         document.querySelector('.mode-tabs').style.display = 'flex';
         document.getElementById('floatingQR').style.display = 'none';
         const btnReset = document.getElementById('btnReset');
@@ -287,7 +262,6 @@ forceEnterRoom: async function(room) {
             btnReset.style.cursor = 'pointer';
         }
 
-        // 5. 현황판(대기실) 테이블 하이라이트 갱신
         const rows = document.querySelectorAll('#statusTableBody tr');
         rows.forEach(row => {
             const roomCell = row.querySelector('td:nth-child(2)');
@@ -303,7 +277,6 @@ forceEnterRoom: async function(room) {
             }
         });
 
-        // 6. 실시간 데이터 경로(DB) 연결
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
@@ -312,54 +285,39 @@ forceEnterRoom: async function(room) {
         dbRef.status = firebase.database().ref(`${rPath}/status`);
         dbRef.connections = firebase.database().ref(`${rPath}/connections`);
 
-        // 7. 데이터 초기화 및 상단바 업데이트
         ui.updateHeaderRoom(room);
-        subjectMgr.init(); // 과목(세션) 관리 초기화
+        subjectMgr.init();
         state.qaData = {};
         document.getElementById('qaList').innerHTML = "";
         
-        // 8. 설정 데이터 로드 (사이드바 정보와 대시보드 연동)
         dbRef.settings.on('value', s => {
             const val = s.val() || {};
             ui.renderSettings(val);
-            // 데이터가 들어온 후 대시보드 통계 숫자/이름 갱신
             if(localStorage.getItem('kac_last_mode') === 'dashboard') {
                 ui.loadDashboardStats();
             }
         });
 
-        // 9. 방 상태 감시 리스너 (잠금 체크 + 교수명 로드)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const st = s.val() || {};
-            // 타 관리자 제어권 확인
-            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                if (localStorage.getItem(`last_owned_room`) === room) { 
-                    dbRef.status.update({ ownerSessionId: state.sessionId }); 
-                }
-            }
             ui.renderRoomStatus(st.roomStatus || 'idle'); 
             ui.checkLockStatus(st);
-            // 사이드바 교수 선택창 업데이트
             if(st.professorName) document.getElementById('profSelect').value = st.professorName;
         });
 
-        // 10. 수강생 접속 감시 (실시간 카운트)
         firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const data = s.val() || {};
             const activeUsers = Object.values(data).filter(user => 
                 user.name && user.name !== "undefined" && user.isOnline === true
             );
             const count = activeUsers.length;
-            // 퀴즈 화면 인원수 업데이트
             const quizEl = document.getElementById('currentJoinCount');
             if(quizEl) quizEl.innerText = count;
-            // 대시보드 인원수 업데이트
             const dashCount = document.getElementById('dashStudentCount');
             if(dashCount) dashCount.innerText = count + "명";
         });
 
-        // 11. 질문(Q&A) 실시간 감시
         dbRef.qa.on('value', s => { 
             if(state.room === room) { 
                 state.qaData = s.val() || {}; 
@@ -367,10 +325,8 @@ forceEnterRoom: async function(room) {
             }
         });
 
-        // 12. Join QR 생성 (오타 수정됨: dataMgr 추가)
         this.fetchCodeAndRenderQr(room);
 
-        // 13. [NEW] 뱃지 타이머 처리
         if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
         state.newBadgeTimer = setInterval(() => {
             const cards = document.querySelectorAll('.q-card.is-new');
@@ -384,17 +340,12 @@ forceEnterRoom: async function(room) {
             });
         }, 5000);
 
-        // 14. [핵심] 마지막으로 보던 탭으로 이동 (없으면 대시보드)
         const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
-
-        ui.setMode(lastMode);
-
-        // [수정] 함수 내부 마지막에 배치
-        const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) {
             setTimeout(() => { roomSelect.value = room; }, 300);
         }
-    }, // forceEnterRoom 끝
+        ui.setMode(lastMode);
+    },
 
 
     fetchCodeAndRenderQr: function(room) {
