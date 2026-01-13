@@ -10,11 +10,6 @@
     --sidebar-bg: #1e293b;
 }
 
-body.night-mode {
-    --bg-color: #0f172a;
-    --card-bg: #1e293b;
-    --text-color: #e2e8f0;
-}
 
 * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
 body { 
@@ -92,29 +87,38 @@ body {
 .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3); }
 
 .content-area {
-    flex-grow: 1;
-    overflow: hidden;
-    padding: 20px 30px; /* 상단 여백 20px로 모든 뷰 통일 */
+    height: calc(100vh - 65px); /* 헤더 제외한 높이 */
+    overflow-y: auto !important; /* ★ 스크롤 차단(hidden)을 풀고 활성화 ★ */
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding-top: 20px;
 }
+
+
+
+
+
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; }
 
-#view-qa { width: 100%; height: calc(100vh - 150px);  display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
-
+#view-qa { 
+    width: 100%; 
+    max-width: 1000px; 
+    height: auto;      /* ★ 고정 높이 해제: 내용만큼 길어짐 ★ */
+    display: flex; 
+    flex-direction: column; 
+    overflow: visible; /* 내부에서 자르지 않음 */
+}
 
 /* Q&A 필터 전체 컨테이너 */
-.qa-filters { 
-    display: flex; 
-    flex-direction: column; /* 상단 기본버튼 / 하단 강사버튼 2단 구성 */
-    gap: 15px; 
-    padding: 20px; 
-    background: var(--card-bg); 
-    border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+.qa-filters {
+    position: sticky;
+    top: 0;           /* 최상단에 딱 붙음 */
+    z-index: 1000;    /* 질문 카드보다 위에 표시 */
+    background: var(--bg-color) !important; /* 배경색과 똑같이 맞춰서 뒤가 안 보이게 함 */
+    padding-top: 20px;
+    padding-bottom: 20px;
 }
 
 /* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
@@ -161,10 +165,28 @@ body {
 
 
 
+.qa-list { 
+    flex-grow: 1; 
+    /* overflow-y: auto; -> 삭제 (내부 스크롤 끔) */
+    /* min-height: 0; -> 삭제 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    padding: 10px 10px 300px 10px; /* 하단 여백을 더 늘려서 입력창 가림 방지 */
+}
 
-.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 150px; }
-.qa-list::-webkit-scrollbar { width: 6px; }
-.qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+.qa-list::-webkit-scrollbar {
+    width: 8px; /* 스크롤바 두께 */
+    display: block !important;
+}
+.qa-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* 스크롤바 색상 */
+    border-radius: 10px;
+}
+.qa-list::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6; /* 마우스 올리면 파란색 */
+}
 
 /* Q&A 카드 공통 */
 .q-card { background: var(--card-bg); padding: 20px 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #0f172a; cursor: pointer; transition: all 0.1s ease; position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; user-select: none; }
