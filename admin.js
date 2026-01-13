@@ -356,6 +356,7 @@ const dataMgr = {
             setTimeout(() => { roomSelect.value = room; }, 300);
         }
         ui.setMode(lastMode);
+        guideMgr.init();
     },
 
 
@@ -531,17 +532,48 @@ const dataMgr = {
 const profMgr = {
     list: [],
     
-    init: function() {
-        firebase.database().ref('system/professors').on('value', s => {
-            const data = s.val() || {};
-            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-            this.renderSelect();
-            const modal = document.getElementById('profManageModal');
-            if (modal && modal.style.display === 'flex') {
-                this.renderManageList();
+init: function() {
+    if(!state.room) return;
+    ... (중략) ...
+    firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
+    ...
+},
+
+// [수정 후]
+init: function() {
+    if(!state.room) return;
+    
+    // PDF.js 워커 설정
+    if (window['pdfjs-dist/build/pdf']) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+
+    // [추가] 기존에 감시하던 게 있다면 끄고 새로 시작 (방 이동 시 꼬임 방지)
+    firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
+
+    firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
+        const data = snap.val();
+        const badge = document.getElementById('guideStatusBadge');
+        if(data) {
+            if(badge) {
+                badge.innerText = "✅ 가이드 등록 완료";
+                badge.style.color = "#10b981";
             }
-        });
-    },
+            this.loadPDF(data); // 데이터가 있으면 PDF를 그립니다.
+        } else {
+            if(badge) {
+                badge.innerText = "❌ 등록된 파일 없음";
+                badge.style.color = "#ef4444";
+            }
+        }
+    });
+
+    const wrapper = document.getElementById('pdfWrapper');
+    if(wrapper) {
+        wrapper.onclick = () => this.changePage(1);
+        wrapper.oncontextmenu = (e) => { e.preventDefault(); this.changePage(-1); };
+    }
+},
 
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
