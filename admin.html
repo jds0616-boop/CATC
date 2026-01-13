@@ -257,37 +257,53 @@
         <div class="content-area">
 
 
-<!-- [교체] 1. 과정 종합 현황 (고도화 버전) -->
+<!-- [교체] 1. 과정 종합 현황 (고도화 디자인 버전) -->
             <div id="view-dashboard" style="display:none; width:100%; max-width:1100px; flex-direction:column; align-items: center;">
-                <div class="dashboard-header-box" style="margin-bottom: 40px; text-align: center; background: white; padding: 30px; border-radius: 25px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
-                    <h2 id="dashCourseTitle" style="font-size: 24px; font-weight: 700; color: #64748b; margin-bottom: 10px;">과정명 로드 중...</h2>
-                    <div id="dashProfName" style="font-size: 40px; font-weight: 900; color: #1e293b; letter-spacing: -1px;">교수님 이름</div>
-                    <div id="dashTodayDate" style="margin-top: 15px; font-size: 16px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 6px 20px; border-radius: 50px; display: inline-block;">202X-XX-XX</div>
+                <div class="dashboard-header-box" style="margin-bottom: 40px; text-align: center; background: white; padding: 40px 30px; border-radius: 30px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; position: relative; overflow: hidden;">
+                    <!-- 배경 장식용 효과 -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
+                    
+                    <h2 id="dashCourseTitle" style="font-size: 42px; font-weight: 900; color: #0f172a; margin-bottom: 15px; letter-spacing: -1.5px; line-height: 1.2;">과정명 로드 중...</h2>
+                    
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <span style="font-size: 20px; font-weight: 600; color: #64748b;">담당 교수</span>
+                        <div id="dashProfName" style="font-size: 26px; font-weight: 800; color: #3b82f6;">교수님 이름</div>
+                    </div>
+
+                    <div id="dashTodayDate" style="margin-top: 25px; font-size: 14px; font-weight: 700; color: #94a3b8; background: #f8fafc; padding: 8px 20px; border-radius: 50px; display: inline-block; border: 1px solid #e2e8f0;">
+                        <i class="fa-regular fa-calendar-check" style="margin-right: 5px;"></i> 금일 날짜: 202X-XX-XX
+                    </div>
                 </div>
                 
                 <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; width: 100%;">
                     <!-- 수강생 카드 -->
-                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #e2e8f0; box-shadow: 0 15px 35px rgba(0,0,0,0.03);">
-                        <div style="font-size: 40px; margin-bottom: 15px;">👥</div>
-                        <span style="font-weight: 800; color: #64748b; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">현재 수강생</span>
-                        <b id="dashStudentCount" style="font-size: 48px; display: block; color: #0f172a; margin-top: 10px;">0명</b>
+                    <div class="stat-item" style="background: white; padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.02); transition: transform 0.3s;">
+                        <div style="width: 60px; height: 60px; background: #eff6ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                            <i class="fa-solid fa-users" style="font-size: 24px; color: #3b82f6;"></i>
+                        </div>
+                        <span style="font-weight: 800; color: #64748b; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">현재 수강생</span>
+                        <b id="dashStudentCount" style="font-size: 48px; display: block; color: #0f172a; margin-top: 10px; font-weight: 900;">0명</b>
                     </div>
                     <!-- 외출외박 카드 -->
-                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #fecaca; box-shadow: 0 15px 35px rgba(239, 68, 68, 0.05);">
-                        <div style="font-size: 40px; margin-bottom: 15px;">📍</div>
-                        <span style="font-weight: 800; color: #be123c; font-size: 15px; letter-spacing: 1px;">금일 외출/외박</span>
-                        <b id="dashActionCount" style="font-size: 48px; display: block; color: #9f1239; margin-top: 10px;">0명</b>
+                    <div class="stat-item" style="background: white; padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.02);">
+                        <div style="width: 60px; height: 60px; background: #fff1f2; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                            <i class="fa-solid fa-person-walking-arrow-right" style="font-size: 24px; color: #f43f5e;"></i>
+                        </div>
+                        <span style="font-weight: 800; color: #be123c; font-size: 14px; letter-spacing: 1px;">금일 외출/외박</span>
+                        <b id="dashActionCount" style="font-size: 48px; display: block; color: #9f1239; margin-top: 10px; font-weight: 900;">0명</b>
                     </div>
                     <!-- 셔틀 통합 카드 -->
-                    <div class="stat-item" style="background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); padding: 25px 20px; border-radius: 25px; text-align:center; border: 1px solid #bae6fd; box-shadow: 0 15px 35px rgba(59, 130, 246, 0.05);">
-                        <div style="font-size: 30px; margin-bottom: 10px;">🚌</div>
+                    <div class="stat-item" style="background: white; padding: 35px 20px; border-radius: 25px; text-align:center; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.02);">
+                        <div style="width: 60px; height: 60px; background: #f0f9ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                            <i class="fa-solid fa-bus" style="font-size: 24px; color: #0ea5e9;"></i>
+                        </div>
                         <span style="font-weight: 800; color: #0369a1; font-size: 14px; letter-spacing: 0.5px;">셔틀 수요 (항기원 출발)</span>
-                        <div style="display: flex; justify-content: space-around; margin-top: 15px; background: white; padding: 15px; border-radius: 15px; border: 1px solid #e0f2fe;">
-                            <div><small style="color:#64748b; font-weight:800;">오송</small><br><b id="s-osong-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
-                            <div style="border-left:1px solid #f1f5f9;"></div>
-                            <div><small style="color:#64748b; font-weight:800;">터미널</small><br><b id="s-term-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
-                            <div style="border-left:1px solid #f1f5f9;"></div>
-                            <div><small style="color:#64748b; font-weight:800;">공항</small><br><b id="s-air-cnt" style="color:#3b82f6; font-size:20px;">0</b></div>
+                        <div style="display: flex; justify-content: space-around; margin-top: 15px; background: #f8fafc; padding: 15px; border-radius: 15px; border: 1px solid #f1f5f9;">
+                            <div><small style="color:#64748b; font-weight:800; font-size:11px;">오송</small><br><b id="s-osong-cnt" style="color:#0ea5e9; font-size:22px;">0</b></div>
+                            <div style="border-left:1px solid #e2e8f0; height: 30px; margin-top: 5px;"></div>
+                            <div><small style="color:#64748b; font-weight:800; font-size:11px;">터미널</small><br><b id="s-term-cnt" style="color:#0ea5e9; font-size:22px;">0</b></div>
+                            <div style="border-left:1px solid #e2e8f0; height: 30px; margin-top: 5px;"></div>
+                            <div><small style="color:#64748b; font-weight:800; font-size:11px;">공항</small><br><b id="s-air-cnt" style="color:#0ea5e9; font-size:22px;">0</b></div>
                         </div>
                     </div>
                 </div>

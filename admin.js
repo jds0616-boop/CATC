@@ -250,8 +250,11 @@ const dataMgr = {
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         
-        const roomSelect = document.getElementById('roomSelect');
-        if(roomSelect) roomSelect.value = room;
+// [수정] 사이드바 드롭다운 강제 동기화 (새로고침 시 Select Room 방지)
+    const roomSelect = document.getElementById('roomSelect');
+    if(roomSelect) {
+        roomSelect.value = room; // 현재 방으로 즉시 값 변경
+    }
 
         document.querySelector('.mode-tabs').style.display = 'flex';
         document.getElementById('floatingQR').style.display = 'none';
@@ -387,6 +390,7 @@ const dataMgr = {
         });
 
         document.getElementById('displayCourseTitle').innerText = newName;
+        ui.loadDashboardStats();
     },
 
     deactivateAllRooms: async function() {
@@ -673,27 +677,30 @@ const ui = {
 loadDashboardStats: function() {
         if(!state.room) return;
         
-        const courseName = document.getElementById('courseNameInput').value;
-        const profName = document.getElementById('profSelect').value;
+        // 1. 사이드바 입력창 및 선택창에서 값 가져오기
+        const courseInput = document.getElementById('courseNameInput').value;
+        const profSelect = document.getElementById('profSelect').value;
         const today = getTodayString();
 
-        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
-        document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
-        document.getElementById('dashTodayDate').innerText = `금일 날짜: ${today}`;
+        // 2. 대시보드 텍스트 업데이트 (과정명 크게, 교수명 연동)
+        document.getElementById('dashCourseTitle').innerText = courseInput || "과정명 미설정";
+        document.getElementById('dashProfName').innerText = profSelect ? profSelect + " 교수" : "담당 교수 미지정";
+        document.getElementById('dashTodayDate').innerHTML = `<i class="fa-regular fa-calendar-check" style="margin-right: 5px;"></i> 금일 날짜: ${today}`;
 
-        // 수강생 수 실시간 업데이트
+        // 3. 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
+            const data = s.val() || {};
+            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
             document.getElementById('dashStudentCount').innerText = count + "명";
         });
 
-        // 외출/외박 수 업데이트
+        // 4. 외출/외박 수 업데이트
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             document.getElementById('dashActionCount').innerText = count + "명";
         });
 
-        // 셔틀(3종) 수 업데이트
+        // 5. 셔틀(3종) 수 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
             document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -701,6 +708,8 @@ loadDashboardStats: function() {
             document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
+
+
 
     // 공지사항 뷰 로드
     loadNoticeView: async function() {
