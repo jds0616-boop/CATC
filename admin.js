@@ -356,7 +356,6 @@ const dataMgr = {
             setTimeout(() => { roomSelect.value = room; }, 300);
         }
         ui.setMode(lastMode);
-        guideMgr.init(); 
     },
 
 
@@ -607,39 +606,14 @@ const subjectMgr = {
     selectedFilter: 'all', 
     
 init: function() {
-    if(!state.room) return;
-    
-    // PDF.js 워커 설정
-    if (window['pdfjs-dist/build/pdf']) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-
-    // [추가] 기존에 감시하던 게 있다면 끄고 새로 시작 (방 이동 시 꼬임 방지)
-    firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
-
-    firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
-        const data = snap.val();
-        const badge = document.getElementById('guideStatusBadge');
-        if(data) {
-            if(badge) {
-                badge.innerText = "✅ 가이드 등록 완료";
-                badge.style.color = "#10b981";
-            }
-            this.loadPDF(data); // 데이터가 있으면 PDF를 그립니다.
-        } else {
-            if(badge) {
-                badge.innerText = "❌ 등록된 파일 없음";
-                badge.style.color = "#ef4444";
-            }
-        }
-    });
-
-    const wrapper = document.getElementById('pdfWrapper');
-    if(wrapper) {
-        wrapper.onclick = () => this.changePage(1);
-        wrapper.oncontextmenu = (e) => { e.preventDefault(); this.changePage(-1); };
-    }
-},
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
+            const data = s.val() || {};
+            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+            this.renderList();
+            this.renderFilters(); 
+        });
+    },
 
     renderFilters: function() {
         const bar = document.getElementById('subjectFilterBar');
@@ -1853,50 +1827,36 @@ confirmExitQuiz: function(type) {
 
 
 
+// ▼ 여기서부터 아래 내용을 복사해서 붙여넣으세요 ▼
+
 const guideMgr = {
     pdfDoc: null,
     pageNum: 1,
     isRendering: false,
 
-    // 1. 초기화 및 데이터 감시
+    // 1. 초기화 및 실시간 감시
     init: function() {
         if(!state.room) return;
         
-        // PDF.js 워커 설정
+        // PDF.js 워커 설정 (이게 없으면 로딩이 안 될 수 있음)
         if (window['pdfjs-dist/build/pdf']) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         }
 
-        // 기존 감시 해제 후 새로 연결
-        firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
         firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
             const data = snap.val();
             const badge = document.getElementById('guideStatusBadge');
-            
             if(data) {
-                if(badge) {
-                    badge.innerText = "✅ 가이드 등록 완료";
-                    badge.style.color = "#10b981";
-                }
-                // [수정] 새로운 파일을 불러올 때는 페이지를 1페이지로 리셋합니다.
-                this.pageNum = 1;
-                this.loadPDF(data); 
+                badge.innerText = "✅ 가이드 등록 완료";
+                badge.style.color = "#10b981";
+                // 데이터가 있을 때만 로드
+                this.loadPDF(data);
             } else {
-                if(badge) {
-                    badge.innerText = "❌ 등록된 파일 없음";
-                    badge.style.color = "#ef4444";
-                }
-                // 데이터가 없으면 캔버스 비우기
-                const canvas = document.getElementById('guideCanvas');
-                if(canvas) {
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
-                document.getElementById('pageIndicator').innerText = "Page: 0 / 0";
+                badge.innerText = "❌ 등록된 파일 없음";
+                badge.style.color = "#ef4444";
             }
         });
 
-        // 클릭 이벤트 (다음/이전 페이지)
         const wrapper = document.getElementById('pdfWrapper');
         if(wrapper) {
             wrapper.onclick = () => this.changePage(1);
@@ -1904,7 +1864,7 @@ const guideMgr = {
         }
     },
 
-    // 2. PDF 업로드 (Base64 변환)
+    // 2. PDF 업로드
     uploadGuide: function(input) {
         const file = input.files[0];
         if(!file) return;
@@ -1914,17 +1874,14 @@ const guideMgr = {
         reader.onload = (e) => {
             const base64Data = e.target.result;
             firebase.database().ref(`courses/${state.room}/entranceGuide`).set(base64Data)
-                .then(() => {
-                    ui.showAlert("✅ 입교안내 가이드가 서버에 저장되었습니다.");
-                });
+                .then(() => ui.showAlert("입교안내 가이드가 업로드되었습니다."));
         };
         reader.readAsDataURL(file);
     },
 
-    // 3. PDF 로드 및 문서 생성
+    // 3. PDF 로드 (Uint8Array 방식 - 가장 확실함)
     loadPDF: async function(base64) {
         try {
-            console.log("PDF 로딩 시작...");
             const raw = atob(base64.split(',')[1]);
             const rawLength = raw.length;
             const array = new Uint8Array(new ArrayBuffer(rawLength));
@@ -1936,16 +1893,15 @@ const guideMgr = {
             const loadingTask = pdfjsLib.getDocument({data: array});
             this.pdfDoc = await loadingTask.promise;
             
-            console.log("PDF 문서 생성 완료, 1페이지를 렌더링합니다.");
+            // 파일이 바뀌면 1페이지부터 다시 보여줌
             this.renderPage(this.pageNum);
         } catch (err) {
             console.error("PDF 로딩 실패:", err);
-            alert("PDF를 불러오는 중 오류가 발생했습니다.");
         }
     },
 
-    // 4. 화면에 그리기 (Canvas)
-    renderPage: async function(num) {
+    // 4. 페이지 렌더링 (화면 크기에 맞게 자동 조절)
+renderPage: async function(num) {
         if(!this.pdfDoc || this.isRendering) return;
         this.isRendering = true;
 
@@ -1954,29 +1910,25 @@ const guideMgr = {
             const canvas = document.getElementById('guideCanvas');
             const ctx = canvas.getContext('2d');
             
-            // 화면 너비에 맞춰 배율 자동 조정 (1.5배로 고화질 설정)
-            const viewport = page.getViewport({scale: 1.5});
+            // 고해상도 설정 (2.0)
+            const viewport = page.getViewport({scale: 2.0});
+            
+            // [핵심] 렌더링 전 캔버스를 깨끗하게 비웁니다.
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            const renderContext = {
-                canvasContext: ctx,
-                viewport: viewport
-            };
-
-            await page.render(renderContext).promise;
+            await page.render({canvasContext: ctx, viewport: viewport}).promise;
             this.isRendering = false;
             
-            // 페이지 번호 업데이트
             const indicator = document.getElementById('pageIndicator');
             if(indicator) indicator.innerText = `Page: ${num} / ${this.pdfDoc.numPages}`;
         } catch (err) {
-            console.error("페이지 렌더링 실패:", err);
             this.isRendering = false;
         }
     },
 
-    // 5. 페이지 변경
     changePage: function(offset) {
         if(!this.pdfDoc || this.isRendering) return;
         let newPage = this.pageNum + offset;
@@ -1986,16 +1938,16 @@ const guideMgr = {
         }
     },
 
-    // 6. 전체화면 모드
     toggleFullScreen: function() {
         const elem = document.getElementById('view-guide');
         if (!document.fullscreenElement) {
-            elem.requestFullscreen().catch(err => console.log(err));
+            elem.requestFullscreen().catch(err => alert("전체화면 모드를 사용할 수 없습니다."));
         } else {
             document.exitFullscreen();
         }
     }
 };
+
 
 
 // --- 5. Print & Report ---
