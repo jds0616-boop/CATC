@@ -81,7 +81,19 @@ body {
 .theme-toggle i.active { background: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 .kac-logo { height: 24px; opacity: 0.9; margin-left: 10px; }
 
-.mode-tabs { display: flex; gap: 15px; padding: 15px 30px; border-bottom: 1px solid #e2e8f0; background: var(--card-bg); flex-shrink: 0; justify-content: center; flex-wrap: nowrap; white-space: nowrap; }
+.mode-tabs {
+    display: flex;
+    gap: 15px;
+    padding: 15px 30px;
+    border-bottom: 1px solid #e2e8f0;
+    background: var(--card-bg);
+    flex-shrink: 0;
+    justify-content: center;
+    
+    /* ★ 핵심 추가: 필터바(1000)보다 높게 설정 ★ */
+    position: relative; 
+    z-index: 2000 !important; 
+}
 .mode-btn { padding: 8px 25px; border-radius: 50px; border: 2px solid #cbd5e1; font-weight: 700; color: #64748b; cursor: pointer; background: transparent; font-size: 14px; transition: 0.2s; display: flex; gap: 8px; align-items: center; }
 .mode-btn:hover { border-color: #94a3b8; color: #475569; }
 .mode-btn.active { border-color: var(--accent-color); background: var(--accent-color); color: white; box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3); }
@@ -122,11 +134,13 @@ body {
 .qa-filters { 
     position: -webkit-sticky;
     position: sticky;
-    top: 0;             /* 스크롤 시 현황바(상단)에 딱 붙음 */
-    z-index: 1000;      /* 질문 카드들보다 위에 오도록 설정 */
+    top: 0;             
     
-    background: var(--bg-color) !important; /* ★ 중요: 배경색과 일치시켜 뒤로 지나가는 글자 차단 ★ */
-    padding: 20px 0;    /* 상하 여백을 주어 고정되었을 때 답답하지 않게 함 */
+    /* ★ 핵심 수정: 탭 메뉴(2000)보다 낮게 조정 ★ */
+    z-index: 1000;      
+    
+    background: var(--bg-color) !important; 
+    padding: 20px 0;    
     margin-bottom: 15px;
     width: 100%;
 }
@@ -905,21 +919,37 @@ body.night-mode .badge-idle {
 }
 
 
-/* 현황판에서 현재 내 방 강조 스타일 */
-.status-table tr.is-my-room {
-    background-color: #eff6ff !important; /* 연한 파란색 배경 */
-    outline: 2px solid #3b82f6; /* 파란색 테두리 */
-    outline-offset: -2px;
+/* --- [수정] 현황판 현재 내 방 강조 (테두리 짤림 방지 완성본) --- */
+
+/* 1. 줄 전체의 outline을 삭제하고 각 칸(td)에 border를 줍니다 */
+.status-table tr.is-my-room td {
+    background-color: #eff6ff !important; 
+    border-top: 2px solid #3b82f6 !important;    /* 위쪽 선 */
+    border-bottom: 2px solid #3b82f6 !important; /* 아래쪽 선 */
     position: relative;
-    z-index: 5;
 }
 
+/* 2. 첫 번째 칸(연번)의 왼쪽면 테두리 */
+.status-table tr.is-my-room td:first-child {
+    border-left: 2px solid #3b82f6 !important;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+/* 3. 마지막 칸(관리 버튼)의 오른쪽면 테두리 */
+.status-table tr.is-my-room td:last-child {
+    border-right: 2px solid #3b82f6 !important;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* 4. 방 이름 글자 강조 (유지) */
 .status-table tr.is-my-room td:nth-child(2) {
-    color: #1d4ed8 !important; /* 방 이름 글자색 더 진하게 */
+    color: #1d4ed8 !important; 
     font-weight: 900 !important;
 }
 
-/* "관리 중" 표시 배지 */
+/* 5. "관리 중" 표시 배지 (유지) */
 .my-room-badge {
     background: #3b82f6;
     color: white;
@@ -930,29 +960,27 @@ body.night-mode .badge-idle {
     vertical-align: middle;
 }
 
-
 /* --- 메뉴 드롭다운 스타일 --- */
 .mode-dropdown { position: relative; display: inline-block; }
 .dropdown-trigger { background: #f8fafc !important; color: #475569 !important; border: 2px solid #e2e8f0 !important; }
 
 
+/* .dropdown-content 구역을 수정하세요 */
 .dropdown-content {
-    display: none; 
-    position: absolute; 
-    
-    /* ▼ 여기서부터 중앙 정렬을 위한 3줄입니다 ▼ */
-    left: 50%;           /* 1. 메뉴의 왼쪽 시작점을 버튼의 50% 지점으로 옮깁니다. */
-    transform: translateX(-50%); /* 2. 메뉴 너비의 절반만큼 왼쪽으로 다시 밀어서 '완벽한 중앙'을 맞춥니다. */
-    right: auto;         /* 3. 혹시 남아있을지 모를 오른쪽 정렬을 해제합니다. */
-    
+    display: none;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     top: 110%;
     background-color: white;
-    min-width: 180px; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    border-radius: 12px; 
-    z-index: 1000; 
-    border: 1px solid #e2e8f0; 
-    overflow: hidden; 
+    min-width: 180px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2); /* 그림자 조금 더 진하게 */
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    
+    /* ★ 핵심 수정: 가장 높은 숫자 부여 ★ */
+    z-index: 3000 !important; 
 }
 
 /* 메뉴 내부 아이템들 정렬 */
