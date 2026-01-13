@@ -690,7 +690,7 @@ loadDashboardStats: function() {
 
         document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
         document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
-        document.getElementById('dashTodayDate').innerText = `금일 날짜: ${today}`;
+        document.getElementById('dashTodayDateDisplay').innerText = "금일 날짜: " + today;
 
         // 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
