@@ -1835,22 +1835,20 @@ confirmExitQuiz: function(type) {
 
 
 
-/* --- [입교안내 가이드 관리 로직 - 최종 안정화 버전] --- */
+/* --- [입교안내 가이드 관리 로직 - 시네마틱 버전] --- */
 const guideMgr = {
     pdfDoc: null,
     pageNum: 1,
     isRendering: false,
 
-    // 1. 초기화 및 실시간 데이터 감시
+    // 1. 초기화
     init: function() {
         if(!state.room) return;
         
-        // PDF.js 워커 설정
         if (window['pdfjs-dist/build/pdf']) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         }
 
-        // 기존 연결 끄고 새로 연결 (중복 방지)
         firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
         firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
             const data = snap.val();
@@ -1861,8 +1859,8 @@ const guideMgr = {
                     badge.innerText = "✅ 가이드 등록 완료";
                     badge.style.color = "#10b981";
                 }
-                guideMgr.pageNum = 1; // 페이지 초기화
-                guideMgr.loadPDF(data); // ★ this 대신 guideMgr 사용
+                guideMgr.pageNum = 1;
+                guideMgr.loadPDF(data);
             } else {
                 if(badge) {
                     badge.innerText = "❌ 등록된 파일 없음";
@@ -1872,7 +1870,7 @@ const guideMgr = {
         });
     },
 
-    // 2. PDF 업로드 함수
+    // 2. PDF 업로드 (기존 유지)
     uploadGuide: function(input) {
         const file = input.files[0];
         if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
@@ -1884,7 +1882,7 @@ const guideMgr = {
         reader.readAsDataURL(file);
     },
 
-    // 3. PDF 데이터를 문서 객체로 로드
+    // 3. PDF 로드
     loadPDF: async function(base64) {
         try {
             const raw = atob(base64.split(',')[1]);
@@ -1893,13 +1891,13 @@ const guideMgr = {
             
             const loadingTask = pdfjsLib.getDocument({data: array});
             guideMgr.pdfDoc = await loadingTask.promise;
-            guideMgr.renderPage(guideMgr.pageNum); // ★ guideMgr 명시
+            guideMgr.renderPage(guideMgr.pageNum);
         } catch (err) {
             console.error("PDF 로딩 실패:", err);
         }
     },
 
-    // 4. 화면에 실제 그림 그리기
+    // 4. 화면 렌더링 (페이지 번호 업데이트 에러 방지 처리됨)
     renderPage: async function(num) {
         if(!guideMgr.pdfDoc || guideMgr.isRendering) return;
         guideMgr.isRendering = true;
@@ -1910,8 +1908,9 @@ const guideMgr = {
             if(!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            const viewport = page.getViewport({scale: 1.5});
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // 이전 화면 지우기
+            // 시네마틱 뷰를 위해 스케일을 약간 높임 (품질 향상)
+            const viewport = page.getViewport({scale: 2.0}); 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             canvas.height = viewport.height;
             canvas.width = viewport.width;
@@ -1919,8 +1918,11 @@ const guideMgr = {
             await page.render({canvasContext: ctx, viewport: viewport}).promise;
             guideMgr.isRendering = false;
             
+            // [중요] 페이지 번호 요소가 HTML에서 삭제되었으므로, 존재할 때만 업데이트 하도록 보정
             const indicator = document.getElementById('pageIndicator');
-            if(indicator) indicator.innerText = `Page: ${num} / ${guideMgr.pdfDoc.numPages}`;
+            if(indicator) {
+                indicator.innerText = `Page: ${num} / ${guideMgr.pdfDoc.numPages}`;
+            }
         } catch (err) {
             guideMgr.isRendering = false;
         }
@@ -1936,13 +1938,21 @@ const guideMgr = {
         }
     },
 
-    // 6. 전체화면 (직각 디자인 유지)
+    // 6. 진짜 전체화면 모드 (Cinematic View용 보정)
     toggleFullScreen: function() {
         const elem = document.getElementById('view-guide');
-        if (!document.fullscreenElement) elem.requestFullscreen();
-        else document.exitFullscreen();
+        if (!document.fullscreenElement) {
+            elem.requestFullscreen().catch(err => {
+                alert(`전체화면 모드를 실행할 수 없습니다: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
     }
 };
+
+
+
 
 
 // --- 5. Print & Report ---
