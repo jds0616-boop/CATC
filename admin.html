@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Admin - KAC Platform</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -96,6 +97,25 @@
                         <option value="waiting" disabled hidden>🟡 대기중</option>
                     </select>
                 </div>
+
+
+
+<div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+    <label class="setting-label">입교안내 가이드 관리</label>
+    <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
+    <div class="file-row">
+        <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
+        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
+        </label>
+    </div>
+</div>
+
+
+
+
+
+
 <!-- [추가] 담당 교수 선택 및 관리 버튼 -->
             <div class="setting-group">
                 <label class="setting-label">담임교수</label>
@@ -230,6 +250,7 @@
     <!-- 핵심 메뉴 4개 -->
 
     <button class="mode-btn active" id="tab-dashboard" onclick="ui.setMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> 과정 현황</button>
+    <button class="mode-btn" id="tab-guide" onclick="ui.setMode('guide')"><i class="fa-solid fa-file-pdf"></i> 입교안내</button>
     <button class="mode-btn" id="tab-students" onclick="ui.setMode('students')"><i class="fa-solid fa-users-viewfinder"></i> 수강생 현황</button>
     <button class="mode-btn" id="tab-qa" onclick="ui.setMode('qa')"><i class="fa-regular fa-comments"></i> Q&A Mode</button>
     <button class="mode-btn" id="tab-quiz" onclick="ui.setMode('quiz')"><i class="fa-solid fa-clipboard-question"></i> Quiz Mode</button>
@@ -264,6 +285,28 @@
         </div>
 
         <div class="content-area">
+
+
+<div id="view-guide" style="display:none; width:100%; flex-direction:column; align-items:center; position:relative;">
+    <div class="view-header">
+        <i class="fa-solid fa-book-open" style="color: #6366f1;"></i>
+        <h1>입교안내 가이드</h1>
+        <p>마우스 좌클릭: 다음 페이지 / 우클릭: 이전 페이지</p>
+        <!-- 전체화면 버튼 -->
+        <button class="btn-action btn-primary" onclick="guideMgr.toggleFullScreen()" style="width:auto; padding: 10px 20px; margin-top:10px; border-radius:10px;">
+            <i class="fa-solid fa-expand"></i> 전체화면 보기
+        </button>
+    </div>
+    <!-- PDF가 실제로 보이는 하얀 카드 -->
+    <div id="pdfWrapper" class="modern-white-card" style="padding:0; overflow:hidden; cursor:pointer; line-height:0;">
+        <canvas id="guideCanvas" style="width:100%; height:auto;"></canvas>
+    </div>
+    <!-- 페이지 번호 표시 -->
+    <div id="pageIndicator" style="margin-top:15px; font-weight:bold; color:#64748b; background: #fff; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">Page: 0 / 0</div>
+</div>
+
+
+
 
 
 <!-- [수정] 현재과정 현황 (대시보드) 디자인 통일 -->

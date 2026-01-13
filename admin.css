@@ -1161,3 +1161,29 @@ body.night-mode .badge-idle {
     font-size: 14px;
     color: #3b82f6;
 }
+
+
+/* 입교안내 PDF 뷰어 전용 스타일 */
+#pdfWrapper {
+    max-width: 900px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+/* 전체화면 모드일 때 */
+#view-guide:fullscreen {
+    background-color: #000;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+}
+#view-guide:fullscreen #pdfWrapper {
+    max-width: 100%;
+    border: none;
+    border-radius: 0;
+}
+#view-guide:fullscreen .view-header, 
+#view-guide:fullscreen #pageIndicator {
+    display: none; /* 전체화면 시 제목 숨김 */
+}

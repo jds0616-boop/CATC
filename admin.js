@@ -968,7 +968,7 @@ setMode: function(mode) {
         const views = [
             'view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 
             'view-admin-action', 'view-dinner-skip', 'view-students', 
-            'view-dashboard', 'view-notice', 'view-attendance'
+            'view-dashboard', 'view-notice', 'view-attendance', 'view-guide'
         ]; 
         
         views.forEach(v => { 
@@ -995,7 +995,7 @@ setMode: function(mode) {
                 quizMgr.loadSavedQuizList(); 
             }
 
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance'].includes(mode)) ? 'qa' : mode;
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
             if (mode === 'dashboard') ui.loadDashboardStats(); 
@@ -1823,6 +1823,105 @@ confirmExitQuiz: function(type) {
     }
 }; // quizMgr 객체를 닫는 중괄호
 
+
+
+
+
+// ▼ 여기서부터 아래 내용을 복사해서 붙여넣으세요 ▼
+
+const guideMgr = {
+    pdfDoc: null,
+    pageNum: 1,
+    isRendering: false,
+
+    // Firebase에서 PDF 불러오기 및 설정
+    init: function() {
+        if(!state.room) return;
+        // 등록된 가이드가 있는지 실시간 감시
+        firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
+            const data = snap.val();
+            const badge = document.getElementById('guideStatusBadge');
+            if(data) {
+                badge.innerText = "✅ 가이드 등록 완료";
+                badge.style.color = "#10b981";
+                this.loadPDF(data);
+            } else {
+                badge.innerText = "❌ 등록된 파일 없음";
+                badge.style.color = "#ef4444";
+            }
+        });
+
+        // 클릭 이벤트 (좌클릭 다음, 우클릭 이전)
+        const wrapper = document.getElementById('pdfWrapper');
+        if(wrapper) {
+            wrapper.onclick = (e) => { this.changePage(1); };
+            wrapper.oncontextmenu = (e) => {
+                e.preventDefault();
+                this.changePage(-1);
+            };
+        }
+    },
+
+    // PDF 업로드 로직
+    uploadGuide: function(input) {
+        const file = input.files[0];
+        if(!file) return;
+        if(file.size > 15 * 1024 * 1024) return alert("파일이 너무 큽니다. (15MB 이하만 가능)");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64Data = e.target.result;
+            firebase.database().ref(`courses/${state.room}/entranceGuide`).set(base64Data)
+                .then(() => ui.showAlert("입교안내 가이드가 업로드되었습니다."));
+        };
+        reader.readAsDataURL(file);
+    },
+
+    loadPDF: async function(base64) {
+        const pdfData = atob(base64.split(',')[1]);
+        const loadingTask = pdfjsLib.getDocument({data: pdfData});
+        this.pdfDoc = await loadingTask.promise;
+        this.pageNum = 1; // 새 파일 로드 시 1페이지부터
+        this.renderPage(this.pageNum);
+    },
+
+    renderPage: async function(num) {
+        if(!this.pdfDoc || this.isRendering) return;
+        this.isRendering = true;
+        const page = await this.pdfDoc.getPage(num);
+        const canvas = document.getElementById('guideCanvas');
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({scale: 2}); // 2배 고화질
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({canvasContext: ctx, viewport: viewport}).promise;
+        this.isRendering = false;
+        document.getElementById('pageIndicator').innerText = `Page: ${num} / ${this.pdfDoc.numPages}`;
+    },
+
+    changePage: function(offset) {
+        if(!this.pdfDoc || this.isRendering) return;
+        let newPage = this.pageNum + offset;
+        if(newPage > 0 && newPage <= this.pdfDoc.numPages) {
+            this.pageNum = newPage;
+            this.renderPage(newPage);
+        }
+    },
+
+    toggleFullScreen: function() {
+        const elem = document.getElementById('view-guide');
+        if (!document.fullscreenElement) {
+            elem.requestFullscreen().catch(err => console.log(err));
+        } else {
+            document.exitFullscreen();
+        }
+    }
+};
+
+
+
 // --- 5. Print & Report ---
 const printMgr = {
     openInputModal: function() { 
@@ -1931,6 +2030,7 @@ window.onload = function() {
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
     profMgr.init(); 
+    guideMgr.init();
 
     // [중요] 이 코드가 있어야 새로고침 시 자동으로 방을 찾아 들어갑니다.
     const lastRoom = localStorage.getItem('kac_last_room');
