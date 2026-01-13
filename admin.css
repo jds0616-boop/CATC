@@ -41,12 +41,10 @@ body {
 .login-footer { margin-top: 30px; color: #94a3b8; font-size: 12px; font-weight: bold; }
 
 /* Sidebar */
-.sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; height: 100vh; border-right: 1px solid rgba(255,255,255,0.05); z-index: 50; overflow-y: auto; overflow-x: hidden; }
-.sidebar::-webkit-scrollbar { width: 6px; }
-.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-.sidebar-top {display: flex; flex-direction: column; gap: 15px; overflow-y: visible;  scrollbar-width: none; padding-bottom: 10px; }
+.sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--sidebar-bg); color: #94a3b8; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; height: 100vh; border-right: 1px solid rgba(255,255,255,0.05); z-index: 50; overflow: hidden; }
+.sidebar-top { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; scrollbar-width: none; padding-bottom: 10px; }
 .sidebar-top::-webkit-scrollbar { display: none; }
-.sidebar-bottom { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;}
+.sidebar-bottom { flex-shrink: 0; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
 .sidebar-header { font-size: 20px; font-weight: 800; color: white; text-align: center; margin-bottom: 5px; }
 .setting-container { display: flex; flex-direction: column; gap: 12px; } 
 .setting-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-left: 2px; }
@@ -782,19 +780,3 @@ body.night-mode .badge-idle {
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-
-
-/* 과목 필터 바 전용 스크롤바 디자인 */
-#subjectFilterBar::-webkit-scrollbar {
-    height: 4px; /* 스크롤바 두께를 아주 얇게 */
-}
-#subjectFilterBar::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.05); /* 바닥 배경색 */
-}
-#subjectFilterBar::-webkit-scrollbar-thumb {
-    background: #cbd5e1; /* 스크롤바 색상 (회색) */
-    border-radius: 10px;
-}
-#subjectFilterBar::-webkit-scrollbar-thumb:hover {
-    background: #3b82f6; /* 마우스 올리면 파란색으로 변경 */
-}
