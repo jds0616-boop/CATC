@@ -73,7 +73,7 @@ body {
 .dev-info { text-align: center; font-size: 10px; color: #475569; margin-top: 10px; }
 
 /* Main Stage */
-.main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; height: 100vh; background: var(--bg-color); overflow: auto !important; }
+.main-stage { flex-grow: 1; display: flex; flex-direction: column; position: relative; height: 100vh; background: var(--bg-color); overflow: hidden; }
 .header { height: 60px; background: var(--header-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 20; flex-shrink: 0; }
 .header-title { font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
 .course-sub-name { font-weight: 400; opacity: 0.8; font-size: 15px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px; }
@@ -95,13 +95,20 @@ body {
 .status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; }
 
+#view-qa { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1000px; overflow: hidden; position: relative; }
 
 
-
-
-
-
-
+/* Q&A 필터 전체 컨테이너 */
+.qa-filters { 
+    display: flex; 
+    flex-direction: column; /* 상단 기본버튼 / 하단 강사버튼 2단 구성 */
+    gap: 15px; 
+    padding: 20px; 
+    background: var(--card-bg); 
+    border-radius: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
 
 /* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
 .basic-filters {
@@ -147,6 +154,8 @@ body {
 
 
 
+
+.qa-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 5px; padding-bottom: 50vh; }
 .qa-list::-webkit-scrollbar { width: 6px; }
 .qa-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
@@ -160,6 +169,27 @@ body {
 
 
 
+/* [복구] 핀 고정 카드 (심플한 초기 버전) */
+.q-card.status-pin {
+    position: sticky;
+    top: -5px;           /* 스크롤 시 상단에 딱 붙음 */
+    z-index: 100;
+    
+    /* 왼쪽만 굵은 빨간색 (전체 테두리 아님) */
+    border-left: 5px solid #ef4444 !important; 
+    background-color: #fff1f2 !important; 
+    
+    /* 기본 그림자만 적용 (가림막 없음) */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* 핀 카드 마우스 올렸을 때 효과 (원래대로) */
+.q-card.status-pin:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15);
+    background-color: #f8fafc !important;
+    outline: 2px solid var(--accent-color);
+}
 
 /* 핀 아이콘 색상 */
 .q-card.status-pin .q-content {
@@ -1226,113 +1256,86 @@ body.night-mode .badge-idle {
     font-size: 16px;
 }
 
+/* ============================================================
+   [최종 승인본] 제목 노출 + 2mm 밀착 + 전체 휠 + 투명 휠바
+   ============================================================ */
 
-/* Q&A 메인 제목 스타일 (스크롤하면 위로 사라짐) */
-.qa-main-title {
-    font-size: 28px;
-    font-weight: 900;
-    text-align: center;
-    margin-bottom: 30px;
-    color: var(--text-color);
-}
-
-/* --- [Q&A 화면 레이아웃 완벽 보정] --- */
-
-/* 1. 전체 배경 및 메인 스테이지 설정 (휠 범위를 전체로 확대) */
-.main-stage {
-    overflow: hidden !important; /* 메인 스테이지 자체 스크롤은 막음 */
-}
+/* 1. 화면 전체에서 휠이 돌아가도록 설정 */
+.main-stage { overflow: hidden !important; }
 
 .content-area {
-    overflow-y: auto !important; /* 실제 컨텐츠 영역에서 전체 휠 작동 */
-    display: flex;
-    justify-content: center;
-    padding-top: 20px !important;
-    height: calc(100vh - 120px); /* 헤더와 탭 높이를 제외한 나머지 전체 */
-}
-
-/* 2. Q&A 뷰 박스 설정 */
-#view-qa {
-    width: 100%;
-    max-width: 1100px;
+    height: calc(100vh - 65px) !important; 
+    overflow-y: auto !important;           /* 여기서 휠 작동 */
+    padding-top: 10px !important;
     display: flex;
     flex-direction: column;
-    overflow: visible !important; /* 내부 스크롤을 끄고 부모(content-area) 스크롤 사용 */
+    align-items: center;
 }
 
-/* 3. 제목 영역 (가림막에 가려지지 않게 설정) */
+/* 2. 제목 영역: 가림막보다 앞에 오게 설정 (제목 보임 해결) */
 .view-header {
     position: relative;
-    z-index: 10; /* 가림막보다 위에 위치 */
-    margin-bottom: 40px;
-    text-align: center;
+    z-index: 10; 
+    margin-top: 20px;
+    margin-bottom: 30px;
 }
 
-/* 4. [핵심] 필터바 고정 및 가림막 (현황바 2mm 밀착) */
+/* 3. 필터바: 상단 2mm 밀착 및 가림막 */
 .qa-filters { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    padding: 20px; 
+    width: 100%;
+    max-width: 1000px;
     background: var(--card-bg) !important; 
     border-radius: 15px;
     margin-bottom: 25px;
+    padding: 20px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 
     position: -webkit-sticky;
     position: sticky;
-    top: 2px;     /* 상단 현황바와 약 2mm 간격으로 밀착 */
+    top: 2px;      /* ★ 현황바와 2mm 간격 ★ */
     z-index: 2000; 
 }
 
-/* 필터바 위로 날아가는 질문을 지워주는 투명 가림막 */
+/* 필터바 위로 날아가는 질문만 가리는 막 */
 .qa-filters::before {
     content: "";
     position: absolute;
-    top: -500px; /* 위로 길게 장벽을 침 */
-    left: -100px;
-    right: -100px;
-    height: 500px;
-    background: var(--bg-color); /* 배경색과 동일하게 */
-    z-index: -1; 
-    /* 제목이 이 영역에 있을 때는 가려지지 않도록 설정됨 */
+    top: -1000px; 
+    left: -200px;
+    right: -200px;
+    height: 1000px;
+    background: var(--bg-color); 
+    z-index: -1;   /* 제목보다는 뒤, 질문보다는 앞 */
 }
 
-/* 5. [핵심] 핀 고정 카드 (필터바 바로 밑에 고정) */
+/* 4. 핀 고정 카드: 필터바 바로 밑에 고정 */
 .q-card.status-pin {
     position: -webkit-sticky !important;
     position: sticky !important;
-    
-    /* 필터바의 높이(약 145px) + 간격 고려 */
-    top: 155px; 
-    
-    z-index: 1000; 
+    top: 155px;    /* 필터바 높이만큼 띄움 */
+    z-index: 1500; 
     border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
     box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1) !important;
     margin-bottom: 20px;
 }
 
-/* 6. 질문 리스트 및 휠 바 디자인 (아주 슬림하게) */
+/* 5. 휠 바(스크롤바) 디자인: 존재감 제로 */
+.content-area::-webkit-scrollbar { width: 4px; }
+.content-area::-webkit-scrollbar-track { background: transparent; }
+.content-area::-webkit-scrollbar-thumb { 
+    background: rgba(0, 0, 0, 0.05); /* 거의 안 보이는 회색 */
+    border-radius: 10px; 
+}
+.content-area::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.3); }
+
+/* 6. 질문 리스트 */
 .qa-list { 
+    width: 100%;
+    max-width: 1000px;
     display: flex; 
     flex-direction: column; 
     gap: 15px; 
-    padding-bottom: 300px; 
-}
-
-/* 휠 바(스크롤바) 디자인 - 존재감을 최소화 */
-.content-area::-webkit-scrollbar {
-    width: 6px; /* 아주 얇게 */
-}
-.content-area::-webkit-scrollbar-track {
-    background: transparent; /* 트랙은 투명하게 */
-}
-.content-area::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1); /* 아주 연한 회색 */
-    border-radius: 10px;
-}
-.content-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(59, 130, 246, 0.3); /* 마우스 올릴 때만 살짝 파란빛 */
+    padding-bottom: 500px; 
 }
