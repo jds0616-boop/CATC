@@ -1318,9 +1318,9 @@ loadDinnerSkipData: function() {
                                     ${s.isLeader ? '해제' : '학생장지정'}
                                 </button>
                                 <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    삭제
-                                </button>
+        style="background-color:#ef4444; font-size:11px; padding:5px 12px; color:white; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; min-width:45px;">
+    삭제
+</button>
                             </div>
                         </td>
                     </tr>
