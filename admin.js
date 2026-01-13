@@ -203,12 +203,15 @@ loadInitialData: function() {
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
     
-    switchRoomAttempt: async function(newRoom) {
-    // [추가] 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
-    if (localStorage.getItem('last_owned_room') === newRoom) {
-        this.forceEnterRoom(newRoom);
-        return;
-    }
+switchRoomAttempt: async function(newRoom) {
+        // [추가] 사이드바에서 직접 선택했을 때는 무조건 대시보드가 먼저 나오도록 설정
+        localStorage.setItem('kac_last_mode', 'dashboard');
+
+        // 내가 마지막으로 제어했던 방이라면 비밀번호 없이 즉시 입장
+        if (localStorage.getItem('last_owned_room') === newRoom) {
+            this.forceEnterRoom(newRoom);
+            return;
+        }
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
@@ -1836,7 +1839,6 @@ const quizMgr = {
             if(qTxt) qTxt.innerText = "Ready?"; 
             if(oDiv) oDiv.innerHTML = "";
         }
-        ui.setMode('qa');
     }
 };
 
