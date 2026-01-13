@@ -633,7 +633,7 @@ renderFilters: function() {
                  </div>`;
     });
     bar.innerHTML = html;
-};
+},
 
 
 
@@ -1023,7 +1023,7 @@ loadShuttleData: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
             const data = snap.val() || {};
-            const container = document.getElementById('shuttleTableBody');
+            const container = document.getElementById('shuttleCardContainer');
             const locations = [
                 { id: 'osong', name: '오송역', icon: 'fa-train' }, 
                 { id: 'terminal', name: '청주터미널', icon: 'fa-bus' }, 
