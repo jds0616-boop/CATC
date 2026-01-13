@@ -380,6 +380,13 @@ forceEnterRoom: async function(room) {
 
         // 14. [핵심] 마지막으로 보던 탭으로 이동 (없으면 대시보드)
         const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
+
+// 새로고침 시 사이드바 드롭다운 메뉴를 현재 방으로 강제 세팅
+    const roomSelect = document.getElementById('roomSelect');
+    if(roomSelect) {
+        // 드롭다운 메뉴가 다 그려질 때까지 0.3초 대기 후 값 변경
+        setTimeout(() => { roomSelect.value = room; }, 300);
+    }
         ui.setMode(lastMode);
     },
 
@@ -710,31 +717,32 @@ const ui = {
 loadDashboardStats: function() {
         if(!state.room) return;
         
-        // 왼쪽 사이드바에 입력된 값을 그대로 대시보드에 표시
         const courseName = document.getElementById('courseNameInput').value;
         const profName = document.getElementById('profSelect').value;
+        const today = getTodayString();
 
         document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
         document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
+        document.getElementById('dashTodayDate').innerText = `금일 날짜: ${today}`;
 
         // 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const data = s.val() || {};
-            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
+            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
             document.getElementById('dashStudentCount').innerText = count + "명";
         });
 
         // 외출/외박 수 업데이트
-        const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             document.getElementById('dashActionCount').innerText = count + "명";
         });
 
-        // 셔틀 수 업데이트
-        firebase.database().ref(`courses/${state.room}/shuttle/osong`).on('value', s => {
-            const count = Object.keys(s.val() || {}).length;
-            document.getElementById('dashShuttleCount').innerText = count + "명";
+        // 셔틀(3종) 수 업데이트
+        firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
+            document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+            document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
 
@@ -1020,6 +1028,12 @@ setMode: function(mode) {
         localStorage.setItem('kac_last_mode', mode);
 
         if (state.room) {
+// 퀴즈 모드일 때 팝업창(보관함)을 띄워주는 로직
+        if (mode === 'quiz') {
+            document.getElementById('quizSelectModal').style.display = 'flex'; 
+            quizMgr.loadSavedQuizList(); 
+        }
+
             // 학생용 화면 모드 변경 (QA/Quiz 외에는 학생에겐 QA를 보여줌)
             let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
