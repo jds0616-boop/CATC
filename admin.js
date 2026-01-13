@@ -528,52 +528,22 @@ const dataMgr = {
 };
 
 
-// --- [신규] 교수님 명단 관리 ---
+
+// --- [수정된 profMgr] 교수님 명단 관리 ---
 const profMgr = {
     list: [],
     
-init: function() {
-    if(!state.room) return;
-    ... (중략) ...
-    firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
-    ...
-},
-
-// [수정 후]
-init: function() {
-    if(!state.room) return;
-    
-    // PDF.js 워커 설정
-    if (window['pdfjs-dist/build/pdf']) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-
-    // [추가] 기존에 감시하던 게 있다면 끄고 새로 시작 (방 이동 시 꼬임 방지)
-    firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
-
-    firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
-        const data = snap.val();
-        const badge = document.getElementById('guideStatusBadge');
-        if(data) {
-            if(badge) {
-                badge.innerText = "✅ 가이드 등록 완료";
-                badge.style.color = "#10b981";
+    init: function() {
+        // 교수님 명단 실시간 동기화
+        firebase.database().ref('system/professors').on('value', snap => {
+            const data = snap.val() || {};
+            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+            this.renderSelect();
+            if (document.getElementById('profManageModal')?.style.display === 'flex') {
+                this.renderManageList();
             }
-            this.loadPDF(data); // 데이터가 있으면 PDF를 그립니다.
-        } else {
-            if(badge) {
-                badge.innerText = "❌ 등록된 파일 없음";
-                badge.style.color = "#ef4444";
-            }
-        }
-    });
-
-    const wrapper = document.getElementById('pdfWrapper');
-    if(wrapper) {
-        wrapper.onclick = () => this.changePage(1);
-        wrapper.oncontextmenu = (e) => { e.preventDefault(); this.changePage(-1); };
-    }
-},
+        });
+    },
 
     renderSelect: function() {
         const sel = document.getElementById('profSelect');
@@ -591,9 +561,12 @@ init: function() {
     
     openManageModal: function() {
         this.renderManageList();
-        document.getElementById('profManageModal').style.display = 'flex';
-        const input = document.getElementById('newProfInput');
-        if(input) input.focus();
+        const modal = document.getElementById('profManageModal');
+        if(modal) {
+            modal.style.display = 'flex';
+            const input = document.getElementById('newProfInput');
+            if(input) input.focus();
+        }
     },
     
     renderManageList: function() {
@@ -605,7 +578,10 @@ init: function() {
             return;
         }
         this.list.forEach(p => {
-            div.innerHTML += `<div class="prof-item"> <span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button> </div>`;
+            const item = document.createElement('div');
+            item.className = 'prof-item';
+            item.innerHTML = `<span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button>`;
+            div.appendChild(item);
         });
         div.scrollTop = div.scrollHeight;
     },
