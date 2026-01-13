@@ -1827,127 +1827,114 @@ confirmExitQuiz: function(type) {
 
 
 
-// ▼ 여기서부터 아래 내용을 복사해서 붙여넣으세요 ▼
-
+/* --- [입교안내 가이드 관리 로직 - 최종 안정화 버전] --- */
 const guideMgr = {
     pdfDoc: null,
     pageNum: 1,
     isRendering: false,
 
-    // 1. 초기화 및 실시간 감시
+    // 1. 초기화 및 실시간 데이터 감시
     init: function() {
         if(!state.room) return;
         
-        // PDF.js 워커 설정 (이게 없으면 로딩이 안 될 수 있음)
+        // PDF.js 워커 설정
         if (window['pdfjs-dist/build/pdf']) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         }
 
+        // 기존 연결 끄고 새로 연결 (중복 방지)
+        firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
         firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
             const data = snap.val();
             const badge = document.getElementById('guideStatusBadge');
+            
             if(data) {
-                badge.innerText = "✅ 가이드 등록 완료";
-                badge.style.color = "#10b981";
-                // 데이터가 있을 때만 로드
-                this.loadPDF(data);
+                if(badge) {
+                    badge.innerText = "✅ 가이드 등록 완료";
+                    badge.style.color = "#10b981";
+                }
+                guideMgr.pageNum = 1; // 페이지 초기화
+                guideMgr.loadPDF(data); // ★ this 대신 guideMgr 사용
             } else {
-                badge.innerText = "❌ 등록된 파일 없음";
-                badge.style.color = "#ef4444";
+                if(badge) {
+                    badge.innerText = "❌ 등록된 파일 없음";
+                    badge.style.color = "#ef4444";
+                }
             }
         });
-
-        const wrapper = document.getElementById('pdfWrapper');
-        if(wrapper) {
-            wrapper.onclick = () => this.changePage(1);
-            wrapper.oncontextmenu = (e) => { e.preventDefault(); this.changePage(-1); };
-        }
     },
 
-    // 2. PDF 업로드
+    // 2. PDF 업로드 함수
     uploadGuide: function(input) {
         const file = input.files[0];
-        if(!file) return;
-        if(file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
-
+        if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
         const reader = new FileReader();
         reader.onload = (e) => {
-            const base64Data = e.target.result;
-            firebase.database().ref(`courses/${state.room}/entranceGuide`).set(base64Data)
-                .then(() => ui.showAlert("입교안내 가이드가 업로드되었습니다."));
+            firebase.database().ref(`courses/${state.room}/entranceGuide`).set(e.target.result)
+                .then(() => ui.showAlert("✅ 가이드가 업로드되었습니다."));
         };
         reader.readAsDataURL(file);
     },
 
-    // 3. PDF 로드 (Uint8Array 방식 - 가장 확실함)
+    // 3. PDF 데이터를 문서 객체로 로드
     loadPDF: async function(base64) {
         try {
             const raw = atob(base64.split(',')[1]);
-            const rawLength = raw.length;
-            const array = new Uint8Array(new ArrayBuffer(rawLength));
-
-            for (let i = 0; i < rawLength; i++) {
-                array[i] = raw.charCodeAt(i);
-            }
-
-            const loadingTask = pdfjsLib.getDocument({data: array});
-            this.pdfDoc = await loadingTask.promise;
+            const array = new Uint8Array(new ArrayBuffer(raw.length));
+            for (let i = 0; i < raw.length; i++) array[i] = raw.charCodeAt(i);
             
-            // 파일이 바뀌면 1페이지부터 다시 보여줌
-            this.renderPage(this.pageNum);
+            const loadingTask = pdfjsLib.getDocument({data: array});
+            guideMgr.pdfDoc = await loadingTask.promise;
+            guideMgr.renderPage(guideMgr.pageNum); // ★ guideMgr 명시
         } catch (err) {
             console.error("PDF 로딩 실패:", err);
         }
     },
 
-    // 4. 페이지 렌더링 (화면 크기에 맞게 자동 조절)
-renderPage: async function(num) {
-        if(!this.pdfDoc || this.isRendering) return;
-        this.isRendering = true;
+    // 4. 화면에 실제 그림 그리기
+    renderPage: async function(num) {
+        if(!guideMgr.pdfDoc || guideMgr.isRendering) return;
+        guideMgr.isRendering = true;
 
         try {
-            const page = await this.pdfDoc.getPage(num);
+            const page = await guideMgr.pdfDoc.getPage(num);
             const canvas = document.getElementById('guideCanvas');
+            if(!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // 고해상도 설정 (2.0)
-            const viewport = page.getViewport({scale: 2.0});
-            
-            // [핵심] 렌더링 전 캔버스를 깨끗하게 비웁니다.
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const viewport = page.getViewport({scale: 1.5});
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // 이전 화면 지우기
             
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
             await page.render({canvasContext: ctx, viewport: viewport}).promise;
-            this.isRendering = false;
+            guideMgr.isRendering = false;
             
             const indicator = document.getElementById('pageIndicator');
-            if(indicator) indicator.innerText = `Page: ${num} / ${this.pdfDoc.numPages}`;
+            if(indicator) indicator.innerText = `Page: ${num} / ${guideMgr.pdfDoc.numPages}`;
         } catch (err) {
-            this.isRendering = false;
+            guideMgr.isRendering = false;
         }
     },
 
+    // 5. 페이지 이동
     changePage: function(offset) {
-        if(!this.pdfDoc || this.isRendering) return;
-        let newPage = this.pageNum + offset;
-        if(newPage > 0 && newPage <= this.pdfDoc.numPages) {
-            this.pageNum = newPage;
-            this.renderPage(this.pageNum);
+        if(!guideMgr.pdfDoc || guideMgr.isRendering) return;
+        let newPage = guideMgr.pageNum + offset;
+        if(newPage > 0 && newPage <= guideMgr.pdfDoc.numPages) {
+            guideMgr.pageNum = newPage;
+            guideMgr.renderPage(guideMgr.pageNum);
         }
     },
 
+    // 6. 전체화면 (직각 디자인 유지)
     toggleFullScreen: function() {
         const elem = document.getElementById('view-guide');
-        if (!document.fullscreenElement) {
-            elem.requestFullscreen().catch(err => alert("전체화면 모드를 사용할 수 없습니다."));
-        } else {
-            document.exitFullscreen();
-        }
+        if (!document.fullscreenElement) elem.requestFullscreen();
+        else document.exitFullscreen();
     }
 };
-
 
 
 // --- 5. Print & Report ---
