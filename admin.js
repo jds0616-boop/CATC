@@ -997,36 +997,41 @@ setMode: function(mode) {
         }
     },
 
-    loadShuttleData: function() {
+// admin.js 내의 ui 객체 안에서 이 부분을 찾아서 교체하세요
+loadShuttleData: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
             const data = snap.val() || {};
-            const tbody = document.getElementById('shuttleTableBody');
+            const container = document.getElementById('shuttleTableBody');
             const locations = [
-                { id: 'osong', name: '오송역' }, 
-                { id: 'terminal', name: '청주터미널' }, 
-                { id: 'airport', name: '청주공항' },
-                { id: 'car', name: '자차' } // 추가
+                { id: 'osong', name: '오송역', icon: 'fa-train' }, 
+                { id: 'terminal', name: '청주터미널', icon: 'fa-bus' }, 
+                { id: 'airport', name: '청주공항', icon: 'fa-plane' },
+                { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
             ];
             
-            tbody.innerHTML = "";
-            locations.forEach((loc, index) => {
+            container.innerHTML = "";
+            locations.forEach(loc => {
                 const applicants = data[loc.id] ? Object.values(data[loc.id]) : [];
                 const count = applicants.length;
                 const names = applicants.join(', ');
                 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td style="font-weight:bold;">${loc.name}</td>
-                        <td style="font-weight:800; color:#3b82f6;">${count}명</td>
-                        <td style="text-align:left; padding: 10px 15px;">${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}</td>
-                        <td>${count >= 100 ? '<span style="color:red;">만차</span>' : '-'}</td>
-                    </tr>
+                container.innerHTML += `
+                    <div class="shuttle-dest-card">
+                        <div class="dest-name">
+                            <span><i class="fa-solid ${loc.icon}"></i> ${loc.name}</span>
+                            <span class="dest-count">${count}명</span>
+                        </div>
+                        <div class="dest-members">
+                            ${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}
+                        </div>
+                    </div>
                 `;
             });
         });
-    },
+    }, // 콤마(,) 확인!
+
+
 
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
@@ -1308,6 +1313,10 @@ loadDinnerSkipData: function() {
                 `;
             }); // 반복문 닫기
         });
+    },
+    toggleMenuDropdown: function() {
+        const dropdown = document.getElementById('menuDropdown');
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     }
 }; // <--- 4. 최종적으로 ui 객체 닫기
 
@@ -1923,3 +1932,15 @@ window.onload = function() {
         }, 500);
     }
 };
+
+// ▼ 이 아래에 제공해드린 코드를 붙여넣으세요 ▼
+window.onclick = function(event) {
+    // 클릭한 대상이 드롭다운 버튼이 아니면 드롭다운 메뉴를 닫음
+    if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            dropdowns[i].style.display = "none";
+        }
+    }
+};
+
