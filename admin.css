@@ -920,3 +920,65 @@ body.night-mode .badge-idle {
 .dest-name { font-size: 18px; font-weight: 800; margin-bottom: 15px; display: flex; justify-content: space-between; }
 .dest-count { background: #eff6ff; color: #3b82f6; padding: 2px 10px; border-radius: 8px; }
 .dest-members { font-size: 14px; color: #64748b; line-height: 1.6; min-height: 50px; background: #f8fafc; padding: 10px; border-radius: 10px; }
+
+
+
+
+/* --- 여기서부터 게시판 통일 디자인 시작 --- */
+
+/* 1. 모든 페이지 제목(헤더) 스타일 */
+.view-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.view-header i {
+    font-size: 35px;
+    margin-bottom: 12px;
+    display: block;
+}
+.view-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+}
+.view-header p {
+    font-size: 15px;
+    color: #64748b;
+    margin-top: 10px;
+}
+
+/* 2. 내용을 담는 커다란 흰색 카드 박스 */
+.modern-white-card {
+    background: #ffffff !important;
+    border-radius: 25px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f6;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto 50px auto;
+}
+
+/* 3. 카드 내부 테이블 스타일 통일 */
+.modern-white-card table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.modern-white-card th {
+    padding: 15px;
+    color: #94a3b8;
+    font-size: 14px;
+    border-bottom: 2px solid #f1f5f9;
+    text-align: center;
+}
+.modern-white-card td {
+    padding: 18px 15px;
+    border-bottom: 1px solid #f8fafc;
+    text-align: center;
+    font-size: 16px;
+}
+/* 마우스를 올리면 줄 색상이 살짝 변함 */
+.modern-white-card tr:hover td {
+    background-color: #fcfdfe;
+}
