@@ -1294,15 +1294,20 @@ async function saveProfile() {
         return;
     }
     
+    // 1. 기본 정보 저장
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
     
-    // [핵심 변경] 무작위 토큰 대신 이름+전화번호 조합 사용
-    // 이렇게 하면 PC와 폰에서 같은 이름/번호를 치면 서버 ID가 동일해집니다.
-    uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
-    localStorage.setItem('uToken', uToken); 
+    // 2. [중요] 중복 방지 핵심 로직: 기존 토큰이 있는지 확인
+    let uToken = localStorage.getItem('uToken');
 
-    // [유지] 리셋 확인용 키 저장 (이게 있어야 리셋 시 튕겨나갑니다)
+    // 3. 토큰이 없거나, 기존 정보와 다르다면 새로 생성 (고유성 유지)
+    if (!uToken || !uToken.startsWith(name + "_" + phone)) {
+        uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4);
+        localStorage.setItem('uToken', uToken);
+    }
+
+    // [유지] 리셋 확인용 키 저장
     const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status`).once('value');
     const serverResetKey = statusSnap.val()?.resetKey || 'init';
     localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
@@ -1310,14 +1315,15 @@ async function saveProfile() {
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
         
-        // 정보 업로드 (여기에 startPresence를 넣으면 안됩니다)
+        // 정보 업로드 (동일한 uToken을 사용하므로 기존 줄을 업데이트함)
         await studentRef.update({
             name: name,
             phone: phone,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isOnline: true // 온라인 상태 추가
         });
 
-        // 프로필 저장 후 실시간 감지 함수 실행
+        // 실시간 감지 함수 실행
         startPresence();
 
         document.getElementById('profileOverlay').style.display = 'none';
