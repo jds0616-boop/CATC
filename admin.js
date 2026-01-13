@@ -250,11 +250,8 @@ const dataMgr = {
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         
-// [수정] 사이드바 드롭다운 강제 동기화 (새로고침 시 Select Room 방지)
-    const roomSelect = document.getElementById('roomSelect');
-    if(roomSelect) {
-        roomSelect.value = room; // 현재 방으로 즉시 값 변경
-    }
+        const roomSelect = document.getElementById('roomSelect');
+        if(roomSelect) roomSelect.value = room;
 
         document.querySelector('.mode-tabs').style.display = 'flex';
         document.getElementById('floatingQR').style.display = 'none';
@@ -390,7 +387,6 @@ const dataMgr = {
         });
 
         document.getElementById('displayCourseTitle').innerText = newName;
-        ui.loadDashboardStats();
     },
 
     deactivateAllRooms: async function() {
@@ -677,30 +673,27 @@ const ui = {
 loadDashboardStats: function() {
         if(!state.room) return;
         
-        // 1. 사이드바 입력창 및 선택창에서 값 가져오기
-        const courseInput = document.getElementById('courseNameInput').value;
-        const profSelect = document.getElementById('profSelect').value;
+        const courseName = document.getElementById('courseNameInput').value;
+        const profName = document.getElementById('profSelect').value;
         const today = getTodayString();
 
-        // 2. 대시보드 텍스트 업데이트 (과정명 크게, 교수명 연동)
-        document.getElementById('dashCourseTitle').innerText = courseInput || "과정명 미설정";
-        document.getElementById('dashProfName').innerText = profSelect ? profSelect + " 교수" : "담당 교수 미지정";
-        document.getElementById('dashTodayDate').innerHTML = `<i class="fa-regular fa-calendar-check" style="margin-right: 5px;"></i> 금일 날짜: ${today}`;
+        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
+        document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
+        document.getElementById('dashTodayDate').innerText = `금일 날짜: ${today}`;
 
-        // 3. 수강생 수 실시간 업데이트
+        // 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const data = s.val() || {};
-            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
+            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
             document.getElementById('dashStudentCount').innerText = count + "명";
         });
 
-        // 4. 외출/외박 수 업데이트
+        // 외출/외박 수 업데이트
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             document.getElementById('dashActionCount').innerText = count + "명";
         });
 
-        // 5. 셔틀(3종) 수 업데이트
+        // 셔틀(3종) 수 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
             document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -708,8 +701,6 @@ loadDashboardStats: function() {
             document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
-
-
 
     // 공지사항 뷰 로드
     loadNoticeView: async function() {
@@ -1673,10 +1664,7 @@ const quizMgr = {
         }
     },
     
-showFinalSummary: async function() {
-        if(!state.room) return;
-        
-        // 1. 서버에서 모든 정답 데이터 가져오기
+    showFinalSummary: async function() {
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
         const totalParticipants = new Set();
@@ -1686,7 +1674,6 @@ showFinalSummary: async function() {
         let questionStats = []; 
         const userScoreMap = {};
         
-        // 2. 점수 계산 로직
         state.quizList.forEach((q, idx) => {
             if(!q.checked || q.isSurvey) return; 
             const id = `Q${idx}`; 
@@ -1711,51 +1698,6 @@ showFinalSummary: async function() {
                 }); 
             }
         });
-        
-        // 3. 순위 정렬 및 서버 전송
-        const sortedUsers = Object.keys(userScoreMap)
-            .map(t => ({ token: t, ...userScoreMap[t] }))
-            .sort((a, b) => b.score - a.score);
-        
-        const finalRankingData = {}; 
-        let rank = 1;
-        sortedUsers.forEach((u, i) => { 
-            if (i > 0 && u.score < sortedUsers[i - 1].score) rank = i + 1; 
-            finalRankingData[u.token] = { 
-                score: u.score, 
-                rank: rank, 
-                total: sortedUsers.length 
-            }; 
-        });
-        
-        await firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(finalRankingData);
-        await firebase.database().ref(`courses/${state.room}/status`).update({ quizStep: 'summary' });
-        
-        // 4. 관리자 화면에 결과 리포트 띄우기
-        const grid = document.getElementById('summaryStats');
-        if(grid) {
-            const avgAcc = totalAnswerCount > 0 ? Math.round((totalCorrect / totalAnswerCount) * 100) : 0;
-            grid.innerHTML = `
-                <div class="summary-card"><span>참여 인원</span><b>${totalParticipants.size}명</b></div>
-                <div class="summary-card"><span>평균 정답률</span><b>${avgAcc}%</b></div>
-                <div class="summary-card"><span>총 문항 수</span><b>${totalQuestions}개</b></div>
-                <div class="summary-card"><span>전체 제출건</span><b>${totalAnswerCount}건</b></div>
-            `;
-        }
-        
-        // 오답률 높은 문제 표시
-        if(questionStats.length > 0) { 
-            questionStats.sort((a,b) => a.accuracy - b.accuracy); 
-            const missArea = document.getElementById('mostMissedArea');
-            const missTxt = document.getElementById('mostMissedText');
-            if(missArea) missArea.style.display = 'block'; 
-            if(missTxt) missTxt.innerText = `"${questionStats[0].title.substring(0,30)}..." (${Math.round(questionStats[0].accuracy)}%)`; 
-        }
-        
-        // [중요] 리포트 팝업창 보이기
-        const summaryOverlay = document.getElementById('quizSummaryOverlay');
-        if(summaryOverlay) summaryOverlay.style.display = 'flex';
-    },
         
         const sortedUsers = Object.keys(userScoreMap)
             .map(t => ({ token: t, ...userScoreMap[t] }))
