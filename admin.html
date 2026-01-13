@@ -266,44 +266,43 @@
         <div class="content-area">
 
 
-<!-- [수정] 1. 현재과정 현황 (야간모드 무시 디자인) -->
-<div id="view-dashboard" style="display:none; width:100%;">
-    <div class="dashboard-wrapper">
-        <div class="dash-main-card">
-            <div class="dash-header-section">
-                <div id="dashTodayDate" class="dash-badge">202X-XX-XX</div>
-                <h2 id="dashCourseTitle">과정명 로드 중...</h2>
-                <div class="dash-prof-info">
-                    <span class="p-label">담당 교수</span>
-                    <strong id="dashProfName">교수님 성함</strong>
-                </div>
+<!-- [수정] 현재과정 현황 (대시보드) 디자인 통일 -->
+<div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    <!-- 상단 표준 헤더 -->
+    <div class="view-header">
+        <i class="fa-solid fa-gauge-high" style="color: #6366f1;"></i>
+        <h1>현재과정 운영 현황</h1>
+        <p id="dashTodayDateDisplay">금일 날짜: 202X-XX-XX</p>
+    </div>
+
+    <!-- 메인 화이트 카드 -->
+    <div class="modern-white-card dashboard-card">
+        <div class="dash-main-info">
+            <h2 id="dashCourseTitle">과정명 로드 중...</h2>
+            <div class="dash-prof-badge">
+                <span class="p-label">담당 교수</span>
+                <strong id="dashProfName">교수님 성함</strong>
             </div>
-            
-            <div class="dash-grid">
-                <div class="dash-item student">
-                    <div class="dash-icon"><i class="fa-solid fa-users"></i></div>
-                    <div class="dash-text">
-                        <span>현재 수강생</span>
-                        <b id="dashStudentCount">0명</b>
-                    </div>
-                </div>
-                <div class="dash-item action">
-                    <div class="dash-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                    <div class="dash-text">
-                        <span>금일 외출/외박</span>
-                        <b id="dashActionCount">0명</b>
-                    </div>
-                </div>
-                <div class="dash-item shuttle">
-                    <div class="dash-icon"><i class="fa-solid fa-bus"></i></div>
-                    <div class="dash-text">
-                        <span>셔틀 수요(항기원 출발)</span>
-                        <div class="shuttle-mini-stats">
-                            <div>오송 <b id="s-osong-cnt">0</b></div>
-                            <div>터미널 <b id="s-term-cnt">0</b></div>
-                            <div>공항 <b id="s-air-cnt">0</b></div>
-                        </div>
-                    </div>
+        </div>
+
+        <div class="dash-stats-row">
+            <div class="stat-box">
+                <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
+                <span class="s-label">현재 수강생</span>
+                <b id="dashStudentCount">0명</b>
+            </div>
+            <div class="stat-box">
+                <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                <span class="s-label">금일 외출/외박</span>
+                <b id="dashActionCount">0명</b>
+            </div>
+            <div class="stat-box">
+                <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
+                <span class="s-label">셔틀 수요(항기원 발)</span>
+                <div class="shuttle-mini-stats-inner">
+                    <span>오송 <b id="s-osong-cnt">0</b></span>
+                    <span>터미널 <b id="s-term-cnt">0</b></span>
+                    <span>공항 <b id="s-air-cnt">0</b></span>
                 </div>
             </div>
         </div>
