@@ -1284,25 +1284,27 @@ body.night-mode .badge-idle {
     position: relative;
 }
 
-/* 4. PDF 래퍼: 깨끗하고 세련된 슬라이드 (테두리 없음) */
+/* [개선] 입교안내 슬라이드 프리미엄 스타일 */
 #pdfWrapper {
     flex: none;
     width: 100%;
+    max-width: 1000px; /* 슬라이드 크기 최적화 */
     height: auto;
     background: #fff;
-    border: none; 
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* 부드러운 깊이감만 추가 */
+    border-radius: 20px; /* 모서리를 둥글게 */
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1); /* 부드러운 큰 그림자 */
     line-height: 0;
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    border: 1px solid #e2e8f0; /* 연한 테두리 */
 }
 
-/* 5. 캔버스 */
+/* 캔버스(슬라이드 본체) 모서리 깎기 */
 #guideCanvas {
     width: 100% !important;
     height: auto !important;
-    border-radius: 0;
+    border-radius: 20px;
 }
 
 /* 6. 전체화면 버튼: 작고 투명한 플로팅 아이콘 */
@@ -1490,369 +1492,112 @@ body.night-mode .status-table tr.is-my-room {
 
 
 /* ============================================================
-   [개선] 뷰 영역 독립화 및 교수 프로필 프리미엄 디자인
+   [최종 정리] 뷰 영역 독립화 및 특수 레이아웃 디자인
    ============================================================ */
 
-/* 1. 모든 게시판(View) 구역이 서로 겹치지 않도록 기본 숨김 및 높이 고정 */
+/* 1. 모든 게시판 구역 독립화 (겹침 방지) */
 [id^="view-"] {
     display: none; 
     width: 100%;
     animation: fadeIn 0.3s ease-out;
 }
 
-/* 2. 교수 프로필 시네마틱 모달 (밝고 신선한 스타일) */
+/* 2. 교수 프로필 프리미엄 모달 */
 #view-prof-presentation {
     display: none;
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.85); /* 밝은 반투명 배경 */
-    backdrop-filter: blur(20px); /* 글래스모피즘 효과 */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
     z-index: 5000; 
     justify-content: center;
     align-items: center;
 }
 
 .prof-premium-card {
-    display: flex;
-    gap: 50px;
-    width: 90%;
-    max-width: 1100px;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); /* 화이트-스카이블루 그라데이션 */
-    padding: 60px;
-    border-radius: 40px;
+    display: flex; gap: 50px; width: 90%; max-width: 1100px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    padding: 60px; border-radius: 40px;
     box-shadow: 0 40px 100px rgba(59, 130, 246, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.7);
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
 }
 
-/* 장식용 배경 원형 */
-.prof-premium-card::before {
-    content: '';
-    position: absolute;
-    top: -100px; right: -100px;
-    width: 300px; height: 300px;
-    background: rgba(59, 130, 246, 0.05);
-    border-radius: 50%;
-}
-
-/* 왼쪽 사진 프레임 */
 .prof-photo-frame {
-    flex-shrink: 0;
-    width: 360px;
-    height: 460px;
-    border-radius: 30px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    border: 10px solid white;
-    background: #f8fafc;
+    flex-shrink: 0; width: 360px; height: 460px; border-radius: 30px;
+    overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border: 10px solid white; background: #f8fafc;
 }
-.prof-photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+.prof-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
 
-/* 오른쪽 정보 구역 */
-.prof-detail-info {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.prof-detail-info h1 {
-    font-size: 55px;
-    font-weight: 900;
-    color: #1e3a8a; /* 신뢰감 있는 딥블루 */
-    margin: 0 0 10px 0;
-    letter-spacing: -2px;
-}
-
-.prof-premium-slogan {
-    font-size: 22px;
-    color: #3b82f6; /* 밝은 블루 */
-    font-weight: 600;
-    margin-bottom: 35px;
-    padding-left: 15px;
-    border-left: 5px solid #3b82f6;
-}
+.prof-detail-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+.prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #1e3a8a; margin: 0 0 10px 0; letter-spacing: -2px; }
+.prof-premium-slogan { font-size: 22px; color: #3b82f6; font-weight: 600; margin-bottom: 35px; padding-left: 15px; border-left: 5px solid #3b82f6; }
 
 .prof-contact-box {
-    display: flex;
-    gap: 25px;
-    margin-bottom: 40px;
-    background: white;
-    padding: 20px 30px;
-    border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-    width: fit-content;
+    display: flex; gap: 25px; margin-bottom: 40px; background: white;
+    padding: 20px 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); width: fit-content;
 }
-
-.prof-contact-box span {
-    font-size: 18px;
-    font-weight: 700;
-    color: #475569;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
+.prof-contact-box span { font-size: 18px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 10px; }
 .prof-contact-box i { color: #3b82f6; font-size: 20px; }
 
-.prof-bio-premium {
-    padding: 30px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 25px;
-    border: 1px solid rgba(59, 130, 246, 0.1);
-}
+.prof-bio-premium { padding: 30px; background: rgba(255, 255, 255, 0.4); border-radius: 25px; border: 1px solid rgba(59, 130, 246, 0.1); }
+.prof-bio-premium h3 { margin: 0 0 15px 0; font-size: 20px; color: #1e3a8a; display: flex; align-items: center; gap: 10px; }
+.prof-bio-premium p { font-size: 18px; line-height: 1.8; color: #334155; white-space: pre-line; }
 
-.prof-bio-premium h3 {
-    margin: 0 0 15px 0;
-    font-size: 20px;
-    color: #1e3a8a;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.prof-bio-premium p {
-    font-size: 18px;
-    line-height: 1.8;
-    color: #334155;
-    white-space: pre-line;
-}
-
-/* 닫기(뒤로가기) 버튼 */
 .prof-close-btn {
-    position: absolute;
-    top: 30px; right: 30px;
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #64748b;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.prof-close-btn:hover { 
-    transform: rotate(90deg); 
-    color: #ef4444; 
+    position: absolute; top: 30px; right: 30px; width: 50px; height: 50px;
+    border-radius: 50%; background: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 20px; color: #64748b; cursor: pointer;
+    transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-
-/* --- 공지사항 관리 페이지 와이드 레이아웃 --- */
-.notice-flex-container {
-    display: flex;
-    justify-content: center;
-    gap: 30px; /* 카드 사이 간격 */
-    width: 100%;
-    max-width: 1200px; /* 전체 가로 폭 */
-    margin: 0 auto 50px auto;
-    align-items: stretch; /* 두 카드의 높이를 동일하게 */
-}
-
-.notice-card-half {
-    flex: 1; /* 5:5 비율 */
-    min-width: 0; /* 글자 넘침 방지 */
-}
-
+/* 3. 공지사항 와이드 레이아웃 */
+.notice-flex-container { display: flex; justify-content: center; gap: 30px; width: 100%; max-width: 1200px; margin: 0 auto 50px auto; align-items: stretch; }
+.notice-card-half { flex: 1; min-width: 0; }
 .global-notice-viewer {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    border: 1px solid #e2e8f0;
-    font-size: 16px;
-    line-height: 1.8;
-    color: #334155;
-    white-space: pre-line;
-    height: 355px; /* 왼쪽 입력창+버튼 높이와 맞춤 */
-    overflow-y: auto;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+    background: white; padding: 25px; border-radius: 15px; border: 1px solid #e2e8f0;
+    font-size: 16px; line-height: 1.8; color: #334155; white-space: pre-line;
+    height: 355px; overflow-y: auto; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
 }
 
-/* 스크롤바 디자인 (오른쪽 공지창용) */
-.global-notice-viewer::-webkit-scrollbar { width: 6px; }
-.global-notice-viewer::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-
-
-/* --- 차량 수요조사 시안성 개선 스타일 --- */
-.shuttle-card-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-    width: 100%;
-    max-width: 1100px;
-    margin-top: 20px;
-}
-
+/* 4. 차량 수요조사 카드 (높이 균등화 버전) */
+.shuttle-card-container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; width: 100%; max-width: 1100px; margin-top: 20px; align-items: stretch; }
 .shuttle-dest-card {
-    background: white;
-    border-radius: 20px;
-    padding: 0; /* 내부 패딩은 섹션별로 분리 */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-    transition: transform 0.2s ease;
+    background: white; border-radius: 20px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0; overflow: hidden; transition: transform 0.2s ease;
+    display: flex; flex-direction: column; height: 100%; 
 }
+.shuttle-dest-card:hover { transform: translateY(-5px); }
 
-.shuttle-dest-card:hover {
-    transform: translateY(-5px);
-}
+.dest-header { padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
+.dest-title { font-size: 20px; font-weight: 800; color: #1e293b; }
+.dest-count-badge { background: #f1f5f9; color: #475569; font-size: 18px; font-weight: 900; padding: 5px 15px; border-radius: 30px; }
 
-/* 카드 상단 헤더 구역 */
-.dest-header {
-    padding: 20px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.dest-name-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.dest-icon-box {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-}
-
-.dest-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #1e293b;
-}
-
-.dest-count-badge {
-    background: #f1f5f9;
-    color: #475569;
-    font-size: 18px;
-    font-weight: 900;
-    padding: 5px 15px;
-    border-radius: 30px;
-}
-
-/* 카드 하단 명단 구역 */
-.dest-body {
-    padding: 20px 25px;
-    background: #fafcfe;
-    min-height: 100px;
-}
-
-.member-tag-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
+.dest-body { padding: 20px 25px; background: #fafcfe; flex-grow: 1; display: flex; flex-direction: column; }
+.member-tag-container { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
 
 .member-tag {
-    background: white;
-    border: 1px solid #e2e8f0;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #475569;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; color: #475569; position: relative; padding-right: 30px;
 }
+
+.btn-del-shuttle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #cbd5e1; font-size: 12px; }
+.btn-del-shuttle:hover { color: #ef4444; }
+
+.no-member-text { color: #94a3b8; font-size: 14px; font-style: italic; flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 80px; }
 
 /* 목적지별 포인트 컬러 */
-.card-osong { border-top: 5px solid #3b82f6; }
-.card-osong .dest-icon-box { background: #eff6ff; color: #3b82f6; }
-.card-osong .dest-count-badge { background: #3b82f6; color: white; }
+.card-osong { border-top: 5px solid #3b82f6; } .card-osong .dest-count-badge { background: #3b82f6; color: white; }
+.card-terminal { border-top: 5px solid #f59e0b; } .card-terminal .dest-count-badge { background: #f59e0b; color: white; }
+.card-airport { border-top: 5px solid #10b981; } .card-airport .dest-count-badge { background: #10b981; color: white; }
+.card-car { border-top: 5px solid #6366f1; } .card-car .dest-count-badge { background: #6366f1; color: white; }
 
-.card-terminal { border-top: 5px solid #f59e0b; }
-.card-terminal .dest-icon-box { background: #fffbeb; color: #f59e0b; }
-.card-terminal .dest-count-badge { background: #f59e0b; color: white; }
+/* 5. 석식 제외 명단 버튼 디자인 */
+#view-dinner-skip .view-header div { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+#view-dinner-skip .btn-action { width: auto !important; padding: 12px 25px !important; border-radius: 50px !important; font-size: 14px !important; font-weight: 700 !important; border: none !important; }
+#view-dinner-skip .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; }
+#view-dinner-skip .btn-secondary { background: #fff !important; color: #64748b !important; border: 1px solid #e2e8f0 !important; }
 
-.card-airport { border-top: 5px solid #10b981; }
-.card-airport .dest-icon-box { background: #ecfdf5; color: #10b981; }
-.card-airport .dest-count-badge { background: #10b981; color: white; }
-
-.card-car { border-top: 5px solid #6366f1; }
-.card-car .dest-icon-box { background: #f5f3ff; color: #6366f1; }
-.card-car .dest-count-badge { background: #6366f1; color: white; }
-
-.no-member-text {
-    color: #94a3b8;
-    font-size: 14px;
-    font-style: italic;
-    width: 100%;
-    text-align: center;
-    padding: 20px 0;
-}
-
-
-/* [개선] 석식 제외 명단 버튼 디자인 */
-#view-dinner-skip .view-header div {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-#view-dinner-skip .btn-action {
-    width: auto !important;
-    padding: 12px 25px !important;
-    border-radius: 50px !important; /* 둥근 캡슐형 */
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
-    transition: all 0.2s ease !important;
-    border: none !important;
-}
-
-#view-dinner-skip .btn-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-}
-
-#view-dinner-skip .btn-secondary {
-    background: #fff !important;
-    color: #64748b !important;
-    border: 1px solid #e2e8f0 !important;
-}
-
-#view-dinner-skip .btn-action:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.12) !important;
-}
-
-/* [추가] 차량 명단 개별 취소(X) 버튼 스타일 */
-.member-tag {
-    position: relative;
-    padding-right: 30px !important; /* X 버튼 공간 확보 */
-}
-
-.btn-del-shuttle {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: #cbd5e1;
-    font-size: 12px;
-    transition: 0.2s;
-}
-
-.btn-del-shuttle:hover {
-    color: #ef4444;
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
