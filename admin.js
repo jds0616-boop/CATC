@@ -783,9 +783,14 @@ renderFilters: function() {
         let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체보기</div>`;
         
         this.list.forEach(item => {
-            // 더 현대적인 '강사 태그' 아이콘으로 교체
+            // 직함(교수, 과장, 주임, 책임, 팀장 등)이 이름 끝에 포함되어 있는지 확인하는 규칙
+            const hasTitle = /(교수|과장|주임|책임|팀장|선생님)$/.test(item.name);
+            
+            // 직함이 이미 있으면 "님"만 붙이고, 없으면 " 강사님"을 붙임
+            const finalDisplayName = hasTitle ? item.name + "님" : item.name + " 강사님";
+
             html += `<div class="filter-chip instructor-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">
-                        <i class="fa-solid fa-user-tag"></i> ${item.name} 강사님
+                        <i class="fa-solid fa-user-tag"></i> ${finalDisplayName}
                      </div>`;
         });
         bar.innerHTML = html;
@@ -1438,20 +1443,25 @@ renderQaList: function(f) {
                 newBadge = `<span class="new-badge-icon">NEW</span>`; 
             }
 
-            // --- [신규] 직급 및 호칭 자동 변환 로직 ---
+// --- [최종형] 직급 및 호칭 자동 변환 로직 ---
             const formattedSubject = (() => {
-                const sub = i.subject || '일반';
-                if (sub === '공통질문') return '📢 공통질문';
+                const sub = i.subject || '공통질문';
+                
+                // 1. 공통질문이나 일반인 경우 처리
+                if (sub === '공통질문' || sub === '일반') return '📢 공통질문';
 
-                // KAC 및 주요 기업 직급 리스트
-                const ranks = ['주임', '대리', '과장', '차장', '부장', '본부장', '단장', '실장', '처장', '공항장', '이사', '사장', '직무대행', '교수'];
+                // 2. KAC 및 현장 실정에 맞는 직급/직함 리스트
+                const ranks = ['교수', '과장', '주임', '대리', '차장', '부장', '팀장', '실장', '처장', '단장', '본부장', '이사', '사장', '직무대행', '선생님'];
+                
+                // 3. 직급 포함 여부 확인
                 const hasRank = ranks.some(rank => sub.includes(rank));
 
                 if (hasRank) {
-                    // 직급이 있으면 '님'만 붙임 (이미 '님'이 있으면 중복 방지)
-                    return `To. ${sub}${sub.endsWith('님') ? '' : '님'}`;
+                    // 직급이 있는 경우: '님'이 이미 붙어있으면 그대로, 없으면 '님' 추가
+                    const suffix = sub.endsWith('님') ? '' : '님';
+                    return `To. ${sub}${suffix}`;
                 } else {
-                    // 이름만 있으면 '강사님' 붙임
+                    // 이름만 있는 경우: '강사님' 추가
                     return `To. ${sub} 강사님`;
                 }
             })();
@@ -2293,6 +2303,19 @@ const guideMgr = {
             }
         });
     },
+
+// [추가] 업로드 전 경고창 띄우기
+    showWarning: function() {
+        const msg = "⚠️ 주의사항\n\n파일을 업로드 할 경우, 기존 입교안내 자료는 삭제됩니다.\n반드시 '최신 자료'인지 확인 후 업로드 해주세요.\n\n업로드를 진행하시겠습니까?";
+        
+        if (confirm(msg)) {
+            // "확인"을 눌렀을 때만 숨겨진 파일 선택창을 강제로 클릭함
+            document.getElementById('guideFileInput').click();
+        }
+    },
+
+
+
 
     // 2. PDF 업로드 (기존 유지)
     uploadGuide: function(input) {

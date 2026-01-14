@@ -105,9 +105,9 @@
     <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
     <div class="file-row">
         <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
-        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
-            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
-        </label>
+       <label onclick="guideMgr.showWarning()" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
+    <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
+</label>
     </div>
 </div>
 
