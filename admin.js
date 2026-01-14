@@ -1679,7 +1679,7 @@ function renderAdminList(todayData, yesterdayData) {
             `;
         }
     }
-},여기에 수정해서 줘
+},
 
 loadDinnerSkipData: function() {
         if(!state.room) return;
