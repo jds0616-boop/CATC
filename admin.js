@@ -1271,7 +1271,7 @@ loadShuttleData: function() {
             const container = document.getElementById('shuttleCardContainer');
             const locations = [
                 { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-                { id: 'terminal', name: '청주터미널', icon: 'fa-bus' }, 
+                { id: 'terminal', name: '청주터미널', icon: 'fa-bus-simple' }, 
                 { id: 'airport', name: '청주공항', icon: 'fa-plane' },
                 { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
             ];
@@ -1280,22 +1280,35 @@ loadShuttleData: function() {
             locations.forEach(loc => {
                 const applicants = data[loc.id] ? Object.values(data[loc.id]) : [];
                 const count = applicants.length;
-                const names = applicants.join(', ');
                 
+                // 명단을 하얀색 태그(칩) 형태로 생성
+                let membersHtml = "";
+                if (count > 0) {
+                    membersHtml = `<div class="member-tag-container">` + 
+                        applicants.map(name => `<div class="member-tag">${name}</div>`).join('') + 
+                        `</div>`;
+                } else {
+                    membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
+                }
+                
+                // 새로운 CSS 구조(dest-header, dest-body)에 맞춰 HTML 생성
                 container.innerHTML += `
-                    <div class="shuttle-dest-card">
-                        <div class="dest-name">
-                            <span><i class="fa-solid ${loc.icon}"></i> ${loc.name}</span>
-                            <span class="dest-count">${count}명</span>
+                    <div class="shuttle-dest-card card-${loc.id}">
+                        <div class="dest-header">
+                            <div class="dest-name-group">
+                                <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
+                                <div class="dest-title">${loc.name}</div>
+                            </div>
+                            <div class="dest-count-badge">${count}명</div>
                         </div>
-                        <div class="dest-members">
-                            ${names || '<span style="color:#cbd5e1;">신청자 없음</span>'}
+                        <div class="dest-body">
+                            ${membersHtml}
                         </div>
                     </div>
                 `;
             });
         });
-    }, // 콤마(,) 확인!
+    }, // 콤마(,) 확인 완료
 
 
 
