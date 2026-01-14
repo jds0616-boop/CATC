@@ -974,7 +974,7 @@ const ui = {
 
 
 // 대시보드 통계 실시간 로드
-// [개선] 대시보드 통계 실시간 로드 (스플릿 레이아웃 대응)
+// [개선] 대시보드 통계 실시간 로드 (스플릿 레이아웃 대응)--------------------------------------------------------
     loadDashboardStats: function() {
         if(!state.room) return;
         
@@ -1315,24 +1315,23 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        // 1. 모든 view- 구역을 일단 숨김 (화면 겹침 방지 핵심)
+        // 1. 모든 view- 구역을 일단 숨김 (겹침 방지)
         const allViews = document.querySelectorAll('[id^="view-"]');
         allViews.forEach(v => { 
             v.style.display = 'none'; 
         });
         
-        // 2. 현재 모드에 맞는 구역 ID 결정
+        // 2. 현재 선택한 모드에 맞는 구역 ID 결정
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
         
         // 3. 화면 표시 방식 결정 (모달형은 flex, 일반은 block)
         if(targetEl) {
-            if(mode === 'prof-presentation' || mode === 'quiz' || mode === 'qa') {
-                targetEl.style.display = 'flex'; // 중앙 정렬 팝업 형태
-            } else if(mode === 'waiting' || mode === 'dashboard') {
-                targetEl.style.display = 'block'; // 일반 게시판 형태
+            const flexModes = ['prof-presentation', 'quiz', 'qa', 'shuttle', 'guide', 'dormitory', 'admin-action', 'dinner-skip', 'notice', 'attendance', 'students'];
+            if(flexModes.includes(mode)) {
+                targetEl.style.display = 'flex'; 
             } else {
-                targetEl.style.display = 'block'; // 기본값 block
+                targetEl.style.display = 'block'; 
             }
         }
 
@@ -1343,17 +1342,12 @@ setMode: function(mode) {
 
         localStorage.setItem('kac_last_mode', mode);
 
-        // 5. 강의실이 선택된 상태라면 각 모드별 데이터 로딩 실행
+        // 5. 데이터 로딩 실행
         if (state.room) {
-            // 학생용 화면 모드 제어 (행정 메뉴일 땐 학생 화면을 Q&A로 고정)
             let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory', 'prof-presentation'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
 
-            // [데이터 로딩 로직 통합]
-            if (mode === 'quiz') {
-                document.getElementById('quizSelectModal').style.display = 'flex'; 
-                quizMgr.loadSavedQuizList(); 
-            }
+            if (mode === 'quiz') { document.getElementById('quizSelectModal').style.display = 'flex'; quizMgr.loadSavedQuizList(); }
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
@@ -1362,11 +1356,10 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
-            // [신규] 생활관 배치 현황 (이름/전화번호 지능형 매칭 로직)
             if (mode === 'dormitory') {
                 const tbody = document.getElementById('dormitoryTableBody');
                 if(tbody) {
-                    tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>배정 데이터를 매칭 중입니다...</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; text-align:center;'>매칭 중...</td></tr>";
                     Promise.all([
                         firebase.database().ref(`courses/${state.room}/students`).once('value'),
                         firebase.database().ref(`system/dormitory_assignments`).once('value')
@@ -1375,24 +1368,12 @@ setMode: function(mode) {
                         const dormData = dormSnap.val() || {};
                         tbody.innerHTML = "";
                         const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
-                        list.sort((a, b) => a.name.localeCompare('ko'));
-                        if(list.length === 0) {
-                            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>입실한 수강생이 없습니다.</td></tr>";
-                            return;
-                        }
+                        list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
                         list.forEach((s, idx) => {
-                            const sName = s.name;
                             const sPhone = s.phone ? s.phone.slice(-4) : "";
-                            let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null;
-                            const statusColor = assigned ? "#3b82f6" : "#94a3b8";
-                            tbody.innerHTML += `
-                                <tr>
-                                    <td>${idx + 1}</td>
-                                    <td style="font-weight:bold;">${sName}</td>
-                                    <td>${sPhone || "-"}</td>
-                                    <td style="color:${statusColor}; font-weight:800;">${assigned ? assigned.building : "-"}</td>
-                                    <td style="color:${statusColor}; font-weight:800;">${assigned ? assigned.room + "호" : "미배정"}</td>
-                                </tr>`;
+                            let assigned = dormData[sName] || dormData[`${s.name}_${sPhone}`] || null;
+                            const color = assigned ? "#3b82f6" : "#94a3b8";
+                            tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.name}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
                         });
                     });
                 }
@@ -1647,95 +1628,78 @@ renderQaList: function(f) {
         }
     },
 
-    loadAdminActionData: function() {
+loadAdminActionData: function() {
         if(!state.room) return;
         const today = getTodayString();
         const yesterday = getYesterdayString();
         const now = new Date();
         const showYesterday = now.getHours() < 9; 
-        
         const tbody = document.getElementById('adminActionTableBody');
         if(!tbody) return;
 
-        if (state.adminActionRef) {
-            state.adminActionRef.off();
-        }
-
+        if (state.adminActionRef) state.adminActionRef.off();
         state.adminActionRef = firebase.database().ref(`courses/${state.room}/admin_actions/${today}`);
         
         state.adminActionRef.on('value', snap => {
             const todayData = snap.val() || {};
-            
             if (showYesterday) {
                 firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value', ySnap => {
-                    const yesterdayData = ySnap.val() || {};
-                    renderAdminList(todayData, yesterdayData);
+                    renderAdminList(todayData, ySnap.val() || {});
                 });
             } else {
                 renderAdminList(todayData, {});
             }
         });
 
-function renderAdminList(todayData, yesterdayData) {
+        function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
             const seenUsers = new Set();
-            const sortedList = []; // 정렬을 위한 임시 배열
+            const sortedList = [];
 
-            // 1. 데이터 모으기 (중복 제거 포함)
+            // 데이터 취합 및 중복 제거
             const allData = { ...yesterdayData, ...todayData };
             Object.keys(allData).forEach(token => {
                 const item = allData[token];
                 const userKey = `${item.name}_${item.phone}`;
                 const isYesterday = yesterdayData[token] ? true : false;
-
                 if (!seenUsers.has(userKey)) {
                     seenUsers.add(userKey);
                     sortedList.push({ ...item, isYesterday, token });
                 }
             });
 
-            if (tbody.innerHTML === "") {
+            // 가나다순 정렬
+            sortedList.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+            if (sortedList.length === 0) {
                 tbody.innerHTML = "<tr><td colspan='6' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+                return;
             }
 
-            // 표에 한 줄씩 추가하는 내부 함수
-       function appendRow(item, isYesterday, token) {
-                const typeNm = item.type === 'outing' ? 
-                    '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
-                    '<span style="color:#ef4444; font-weight:bold;">외박</span>';
-                
-                const datePrefix = isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
+            // 표 그리기
+            sortedList.forEach(item => {
+                const typeNm = item.type === 'outing' ? '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : '<span style="color:#ef4444; font-weight:bold;">외박</span>';
+                const datePrefix = item.isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
                 const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                const targetDate = isYesterday ? getYesterdayString() : getTodayString();
-
-                // [추가] 복귀 상태 텍스트 생성
-                let returnStatus = "";
-                if (item.returnedAt) {
-                    const rTime = new Date(item.returnedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                    returnStatus = `<b style="color:#10b981;">✅ 복귀완료 (${rTime})</b>`;
-                } else {
-                    returnStatus = `<span style="color:#94a3b8;">미복귀</span>`;
-                }
+                const targetDate = item.isYesterday ? getYesterdayString() : getTodayString();
+                
+                let returnStatus = item.returnedAt 
+                    ? `<b style="color:#16a34a;">✅ 복귀완료 (${new Date(item.returnedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})</b>` 
+                    : `<span style="color:#94a3b8;">미복귀</span>`;
 
                 tbody.innerHTML += `
                     <tr>
                         <td>${count++}</td>
                         <td>${datePrefix}${typeNm}</td>
                         <td style="font-weight:bold;">${item.name}</td>
-                        <td style="font-size:13px;">${returnStatus}</td> <!-- 상태 칸으로 변경 -->
+                        <td style="font-size:13px;">${returnStatus}</td>
                         <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
-                        <td>
-                            <button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${token}')" 
-                                    style="background-color:#64748b; font-size:11px; padding:5px 8px;">
-                                삭제
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }
-    }
-},
+                        <td><button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${item.token}')" style="background-color:#64748b; font-size:11px; padding:5px 8px;">삭제</button></td>
+                    </tr>`;
+            });
+        }
+    },
 
 loadDinnerSkipData: function() {
         if(!state.room) return;
