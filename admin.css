@@ -1676,13 +1676,13 @@ body.night-mode .status-table tr.is-my-room {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* --- [고급화] 교수 프로필 프리미엄 명함 스타일 --- */
+/* --- [최종 개선] 교수 프로필 프리미엄 명함 스타일 --- */
 #view-prof-presentation {
     display: none;
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(241, 245, 249, 0.9); /* 부드러운 화이트 그레이 배경 */
+    background: rgba(15, 23, 42, 0.7); /* 배경을 조금 더 어둡게 하여 카드에 집중 */
     backdrop-filter: blur(15px);
     z-index: 5000; 
     justify-content: center;
@@ -1692,19 +1692,50 @@ body.night-mode .status-table tr.is-my-room {
 .prof-premium-card {
     display: flex;
     width: 1050px;
-    height: 650px; /* 고정 높이로 명함 느낌 강조 */
+    height: 650px; 
     background: #ffffff;
     border-radius: 40px;
-    box-shadow: 0 40px 80px rgba(15, 23, 42, 0.1);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
-    position: relative;
-    animation: slideUp 0.5s ease-out;
+    position: relative; /* 나가기 버튼 배치의 기준 */
+    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* 왼쪽 사진 (비율 고정) */
+/* 1. 나가기 버튼 전용 스타일 */
+.prof-top-controls {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    z-index: 100;
+}
+
+.btn-prof-exit {
+    background: rgba(241, 245, 249, 0.9);
+    border: 1px solid #e2e8f0;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.btn-prof-exit:hover {
+    background: #ef4444; /* 마우스 올리면 빨간색으로 경고성 강조 */
+    color: white;
+    border-color: #ef4444;
+    transform: translateX(-3px); /* 살짝 왼쪽으로 밀리는 효과 */
+}
+
+/* 왼쪽 사진 영역 */
 .prof-photo-frame {
-    width: 450px; /* 사진 영역 확대 */
+    width: 450px;
     height: 100%;
     background: #f8fafc;
     border-right: 1px solid #f1f5f9;
@@ -1715,7 +1746,7 @@ body.night-mode .status-table tr.is-my-room {
     object-fit: cover;
 }
 
-/* 오른쪽 콘텐츠 정렬 */
+/* 오른쪽 콘텐츠 구역 */
 .prof-detail-info {
     flex: 1;
     padding: 60px;
@@ -1725,25 +1756,27 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 .prof-header-group {
-    border-bottom: 2px solid #3b82f6;
+    border-bottom: 2.5px solid #3b82f6; /* 라인 두께 강화 */
     padding-bottom: 25px;
     margin-bottom: 30px;
 }
 
-.prof-title-sub {
-    font-size: 18px;
-    color: #64748b;
-    font-weight: 600;
-    margin-bottom: 5px;
-    display: block;
-}
-
 .prof-detail-info h1 {
-    font-size: 50px;
+    font-size: 55px; /* 한글 성함 크게 */
     font-weight: 900;
     color: #0f172a;
     margin: 0;
     letter-spacing: -2px;
+}
+
+/* 2. 영문 성함 가독성 강화 */
+.prof-eng-name {
+    font-size: 24px; /* 크기 확대 */
+    color: #94a3b8; /* 세련된 회색 */
+    font-weight: 500;
+    margin-top: -5px;
+    letter-spacing: 0.5px;
+    display: block;
 }
 
 .prof-premium-slogan {
@@ -1754,10 +1787,10 @@ body.night-mode .status-table tr.is-my-room {
     font-style: italic;
 }
 
-/* 연락처 박스 (명함 느낌) */
+/* 연락처 박스 */
 .prof-contact-box {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 40px;
 }
 .prof-contact-item {
@@ -1768,17 +1801,17 @@ body.night-mode .status-table tr.is-my-room {
     font-weight: 700;
     color: #475569;
     background: #f1f5f9;
-    padding: 8px 16px;
+    padding: 10px 18px;
     border-radius: 50px;
 }
-.prof-contact-item i { color: #3b82f6; }
+.prof-contact-item i { color: #3b82f6; font-size: 17px; }
 
-/* 주요 약력 리스트 스타일 */
+/* 주요 약력 리스트 */
 .prof-bio-premium {
     flex-grow: 1;
 }
 .prof-bio-premium h3 {
-    font-size: 18px;
+    font-size: 19px;
     color: #0f172a;
     font-weight: 800;
     margin: 0 0 15px 0;
@@ -1793,7 +1826,6 @@ body.night-mode .status-table tr.is-my-room {
     background: #e2e8f0;
 }
 
-/* 약력 리스트를 <li> 태그처럼 보이게 처리 */
 .prof-bio-list {
     list-style: none;
     padding: 0;
@@ -1801,24 +1833,24 @@ body.night-mode .status-table tr.is-my-room {
 }
 .prof-bio-list li {
     position: relative;
-    padding-left: 20px;
-    margin-bottom: 10px;
-    font-size: 16px;
+    padding-left: 22px;
+    margin-bottom: 12px;
+    font-size: 17px;
     font-weight: 600;
     color: #334155;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 .prof-bio-list li::before {
     content: '';
     position: absolute;
     left: 0; top: 10px;
-    width: 6px; height: 6px;
+    width: 7px; height: 7px;
     background: #3b82f6;
     border-radius: 50%;
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
+    from { opacity: 0; transform: translateY(50px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
