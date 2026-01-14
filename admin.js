@@ -757,14 +757,17 @@ init: function() {
         });
     },
 
-    renderFilters: function() {
+renderFilters: function() {
         const bar = document.getElementById('subjectFilterBar');
         if(!bar) return;
         
-        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
+        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체보기</div>`;
         
         this.list.forEach(item => {
-            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
+            // 강사 이름 뒤에 '강사님'을 붙이고 아이콘 추가
+            html += `<div class="filter-chip instructor-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">
+                        <i class="fa-solid fa-person-chalkboard"></i> ${item.name} 강사님
+                     </div>`;
         });
         bar.innerHTML = html;
     },
@@ -1301,16 +1304,30 @@ loadShuttleData: function() {
             
             container.innerHTML = "";
             locations.forEach(loc => {
-                // 해당 목적지의 데이터를 가져옴 (없으면 빈 객체)
                 const locData = data[loc.id] || {};
-                const entries = Object.entries(locData); // [토큰, 이름] 쌍의 배열로 변환
-                const count = entries.length;
                 
-                // [개선] 명단을 하얀색 태그(칩) 형태로 생성하고 X버튼(취소) 추가
+                // --- [중복 제거 핵심 로직 추가] ---
+                const uniqueEntries = [];
+                const seenNames = new Set();
+
+                // 서버에서 가져온 데이터를 하나씩 검사
+                Object.entries(locData).forEach(([token, name]) => {
+                    if (!seenNames.has(name)) {
+                        seenNames.add(name); // 이미 본 이름이 아니면 저장
+                        uniqueEntries.push([token, name]);
+                    } else {
+                        // 중복된 이름(파편)이 발견되면 데이터베이스에서 자동 청소 (선택 사항)
+                        firebase.database().ref(`courses/${state.room}/shuttle/${loc.id}/${token}`).remove();
+                    }
+                });
+                // ---------------------------------
+
+                const count = uniqueEntries.length;
+                
                 let membersHtml = "";
                 if (count > 0) {
                     membersHtml = `<div class="member-tag-container">`;
-                    membersHtml += entries.map(([token, name]) => `
+                    membersHtml += uniqueEntries.map(([token, name]) => `
                         <div class="member-tag">
                             ${name}
                             <i class="fa-solid fa-xmark btn-del-shuttle" 
@@ -1323,7 +1340,6 @@ loadShuttleData: function() {
                     membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
                 }
                 
-                // 새로운 CSS 구조에 맞춰 HTML 생성
                 container.innerHTML += `
                     <div class="shuttle-dest-card card-${loc.id}">
                         <div class="dest-header">
@@ -1340,7 +1356,7 @@ loadShuttleData: function() {
                 `;
             });
         });
-    }, // 콤마(,) 확인 완료
+    },
 
 
     filterQa: function(f, event) { 
@@ -1390,7 +1406,7 @@ loadShuttleData: function() {
                 <div class="q-content">
 
         <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-            ${i.subject || '일반'}
+            To. ${i.subject} 강사님
         </span>
 
                     ${newBadge}${icon}${i.text}
