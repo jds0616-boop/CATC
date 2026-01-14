@@ -1365,33 +1365,49 @@ body.night-mode .badge-idle {
 
 /* --- 대시보드 내부 정렬 디자인 --- */
 .dashboard-card {
-    text-align: center;
-    border-top: 6px solid #3b82f6 !important; /* 상단에 굵은 파란 선으로 포인트 */
+    padding: 0 !important; /* 내부 패딩 제거하고 영역별로 배분 */
+    overflow: hidden;
+    border-top: 6px solid #3b82f6 !important;
 }
 
-.dash-main-info {
-    margin-bottom: 40px;
-    padding-bottom: 30px;
-    border-bottom: 1px solid #f1f5f9;
+.dash-info-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 40px;
+    background: #f8fafc; /* 연한 배경색으로 정보 구역 강조 */
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+}
+
+.dash-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
 }
 
 #dashCourseTitle {
-    font-size: 32px;
+    font-size: 28px !important; /* 너무 크지 않게 조절 */
     font-weight: 900;
-    color: #0f172a;
-    margin-bottom: 10px;
+    color: #1e293b;
+    margin: 0 !important;
 }
 
-.dash-prof-badge {
-    font-size: 18px;
-    color: #64748b;
+.dash-prof-area {
+    text-align: right; /* 교수는 오른쪽 정렬 */
 }
 
-.dash-prof-badge strong {
-    color: #3b82f6;
-    margin-left: 8px;
-    font-weight: 800;
-}
+
+
+
+
+
+
+
+
 
 /* 통계 박스 가로 배치 */
 .dash-stats-row {
@@ -1737,10 +1753,26 @@ body.night-mode .status-table tr.is-my-room {
 .prof-detail-info { flex: 1; padding: 60px; display: flex; flex-direction: column; text-align: left; }
 
 /* 성함 정렬 (교수 + 이름 + 영문) */
-.prof-name-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
-.prof-label-top { font-size: 18px; font-weight: 700; color: #3b82f6; }
+.prof-name-row {
+    display: flex;
+    align-items: center; /* baseline에서 center로 변경하여 정렬 보정 */
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.prof-label-top {
+    font-size: 16px;
+    background: #eff6ff;
+    color: #3b82f6;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+}
 .prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -2px; }
-.prof-eng-inline { font-size: 22px; color: #94a3b8; font-weight: 500; margin-left: 5px; }
+.prof-eng-inline {
+    font-size: 20px;
+    color: #94a3b8;
+    font-weight: 400;
+}
 
 /* 포인트 바 */
 .prof-point-line { width: 60px; height: 6px; background: #3b82f6; border-radius: 10px; margin-bottom: 25px; }

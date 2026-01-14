@@ -974,50 +974,80 @@ const ui = {
 
 
 // 대시보드 통계 실시간 로드
-loadDashboardStats: function() {
+// [개선] 대시보드 통계 실시간 로드 (스플릿 레이아웃 대응)
+    loadDashboardStats: function() {
         if(!state.room) return;
         
         const courseName = document.getElementById('courseNameInput').value;
         const profName = document.getElementById('profSelect').value;
         const today = getTodayString();
 
-        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
-        // 수정된 부분: 교수님 성함을 클릭하면 발표 모드로 전환되도록 링크 처리
-        const profDisplay = document.getElementById('dashProfName');
-        if(profName) {
-            profDisplay.innerHTML = `
-                <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
-                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
-                    ${profName} 교수님
-                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
-                </span>
-            `;
-        } else {
-            profDisplay.innerText = "담당 교수 미지정";
+        // 1. 좌측 과정명 업데이트
+        const courseTitleEl = document.getElementById('dashCourseTitle');
+        if(courseTitleEl) {
+            courseTitleEl.innerText = courseName || "과정명이 설정되지 않았습니다.";
         }
-        document.getElementById('dashTodayDateDisplay').innerText = "금일 날짜: " + today;
 
-        // 수강생 수 실시간 업데이트
+        // 2. 우측 담당 교수 정보 업데이트 (디자인 강화)
+        const profDisplay = document.getElementById('dashProfName');
+        if(profDisplay) {
+            if(profName) {
+                profDisplay.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="font-size:22px; font-weight:900; color:#0f172a;">${profName} 교수님</span>
+                            <button onclick="ui.showProfPresentation('${profName}')" 
+                                    style="cursor:pointer; background:#3b82f6; color:white; border:none; padding:6px 14px; border-radius:8px; font-size:13px; font-weight:800; display:flex; align-items:center; gap:6px; transition:0.2s; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);">
+                                <i class="fa-solid fa-address-card"></i> 프로필 보기
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                profDisplay.innerHTML = `<span style="color:#94a3b8; font-weight:600;">담당 교수 미지정</span>`;
+            }
+        }
+
+        // 3. 상단 날짜 표시
+        const dateDisplayEl = document.getElementById('dashTodayDateDisplay');
+        if(dateDisplayEl) {
+            dateDisplayEl.innerText = "금일 날짜: " + today;
+        }
+
+        // --- 실시간 데이터 리스너 (서버 통계) ---
+
+        // 4. 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            document.getElementById('dashStudentCount').innerText = count + "명";
+            const data = s.val() || {};
+            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
+            const countEl = document.getElementById('dashStudentCount');
+            if(countEl) countEl.innerText = count + "명";
         });
 
-        // 외출/외박 수 업데이트
+        // 5. 외출/외박 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
-            const count = Object.keys(s.val() || {}).length;
-            document.getElementById('dashActionCount').innerText = count + "명";
+            const data = s.val() || {};
+            const count = Object.keys(data).length;
+            const actionEl = document.getElementById('dashActionCount');
+            if(actionEl) actionEl.innerText = count + "명";
         });
 
-        // 셔틀(3종) 수 업데이트
+        // 6. 셔틀 수요(3종) 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
-            document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-            document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-            document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
+            const osong = d.osong ? Object.keys(d.osong).length : 0;
+            const terminal = d.terminal ? Object.keys(d.terminal).length : 0;
+            const airport = d.airport ? Object.keys(d.airport).length : 0;
+
+            const oEl = document.getElementById('s-osong-cnt');
+            const tEl = document.getElementById('s-term-cnt');
+            const aEl = document.getElementById('s-air-cnt');
+
+            if(oEl) oEl.innerText = osong;
+            if(tEl) tEl.innerText = terminal;
+            if(aEl) aEl.innerText = airport;
         });
     },
-
     // 공지사항 뷰 로드
        loadNoticeView: async function() {
         if(!state.room) return;
