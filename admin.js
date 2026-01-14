@@ -1624,21 +1624,35 @@ renderQaList: function(f) {
 function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
+            const seenUsers = new Set(); // 이름+번호 중복 체크용 장바구니
 
-            // 어제 데이터 (익일 9시 전까지 노출)
+            // 1. 어제 데이터 처리 (익일 9시 전까지 노출)
             Object.keys(yesterdayData).forEach(token => {
-                appendRow(yesterdayData[token], true, token);
+                const item = yesterdayData[token];
+                const userKey = `${item.name}_${item.phone}`; // 중복 식별 키 생성
+
+                if (!seenUsers.has(userKey)) {
+                    seenUsers.add(userKey);
+                    appendRow(item, true, token);
+                }
             });
 
-            // 오늘 데이터
+            // 2. 오늘 데이터 처리
             Object.keys(todayData).forEach(token => {
-                appendRow(todayData[token], false, token);
+                const item = todayData[token];
+                const userKey = `${item.name}_${item.phone}`; // 중복 식별 키 생성
+
+                if (!seenUsers.has(userKey)) {
+                    seenUsers.add(userKey);
+                    appendRow(item, false, token);
+                }
             });
 
             if (tbody.innerHTML === "") {
                 tbody.innerHTML = "<tr><td colspan='6' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
             }
 
+            // 표에 한 줄씩 추가하는 내부 함수
             function appendRow(item, isYesterday, token) {
                 const typeNm = item.type === 'outing' ? 
                     '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
@@ -1664,8 +1678,7 @@ function renderAdminList(todayData, yesterdayData) {
                     </tr>
                 `;
             }
-        }
-    },
+        },
 
 loadDinnerSkipData: function() {
         if(!state.room) return;
@@ -1675,18 +1688,28 @@ loadDinnerSkipData: function() {
             const tbody = document.getElementById('dinnerSkipTableBody');
             if(!tbody) return;
             
-            const tokens = Object.keys(data); // 학생 고유 키 가져오기
-            const totalEl = document.getElementById('dinnerSkipTotal');
-            if(totalEl) totalEl.innerText = tokens.length;
+            const seenNames = new Set();
+            const uniqueEntries = [];
 
-            tbody.innerHTML = tokens.length ? 
-                tokens.map((token, idx) => `
+            // 중복 이름(홍길동(1234)) 필터링
+            Object.entries(data).forEach(([token, nameAndPhone]) => {
+                if (!seenNames.has(nameAndPhone)) {
+                    seenNames.add(nameAndPhone);
+                    uniqueEntries.push({ token, nameAndPhone });
+                }
+            });
+
+            const totalEl = document.getElementById('dinnerSkipTotal');
+            if(totalEl) totalEl.innerText = uniqueEntries.length;
+
+            tbody.innerHTML = uniqueEntries.length ? 
+                uniqueEntries.map((item, idx) => `
                     <tr>
                         <td>${idx+1}</td>
-                        <td style="font-weight:bold;">${data[token]}</td>
+                        <td style="font-weight:bold;">${item.nameAndPhone}</td>
                         <td style="color:#ef4444; font-weight:800;">석식 미취식</td>
                         <td>
-                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${token}')" 
+                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${item.token}')" 
                                     style="background-color:#64748b; font-size:11px; padding:5px 8px;">
                                 제외 취소
                             </button>
@@ -1740,14 +1763,28 @@ loadStudentList: function() {
             if(!tbody) return;
             const totalEl = document.getElementById('studentTotalCount');
             
-            const studentList = Object.keys(data).map(key => ({
+            // 1. 전체 데이터를 배열로 변환 (기본 필터링)
+            const rawList = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
             })).filter(s => s.name && s.name !== "undefined");
 
+            // 2. [중복 제거 핵심] 성함 + 전화번호 조합으로 중복 검사
+            const seen = new Set();
+            const studentList = rawList.filter(s => {
+                const uniqueKey = `${s.name}_${s.phone}`; // 이름_번호 조합키 생성
+                if (seen.has(uniqueKey)) {
+                    return false; // 이미 목록에 있는 이름+번호면 제외
+                }
+                seen.add(uniqueKey);
+                return true; // 처음 나타난 데이터면 포함
+            });
+
+            // 3. 중복 제거된 인원수로 카운트 업데이트
             if(totalEl) totalEl.innerText = studentList.length;
             tbody.innerHTML = ""; 
 
+            // 4. 테이블 행 생성
             studentList.forEach((s, idx) => {
                 const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
                 const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
@@ -1761,12 +1798,12 @@ loadStudentList: function() {
                         <td style="font-weight:bold;">
                             ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
                         </td>
-                        <!-- 수정됨: 전화번호 뒷 4자리만 출력 -->
+                        <!-- 전화번호 뒷 4자리만 출력 -->
                         <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
                             <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
-                                <!-- 버튼 대신 체크박스 형태로 관리 -->
+                                <!-- 체크박스 형태로 학생장 관리 -->
                                 <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
                                     <input type="checkbox" ${s.isLeader ? 'checked' : ''} 
                                            onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
