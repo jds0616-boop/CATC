@@ -136,35 +136,40 @@ body {
     position: sticky;
     top: 0;             
     z-index: 1000;      
-    background: #f8fafc !important; /* 약간 회색빛 배경으로 구역 분리 */
-    padding: 20px;    
-    margin-bottom: 25px;
+    background: #f8fafc !important;
+    padding: 10px 20px; /* 위아래 패딩 대폭 축소 */
+    margin-bottom: 20px;
     width: 100%;
-    border-radius: 15px;
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px; /* 행 사이 간격 축소 */
 }
 
-/* 필터 그룹 제목 */
+.filter-group {
+    display: flex;
+    align-items: center; /* 세로 중앙 정렬 */
+    gap: 15px;
+    padding: 4px 0;
+}
+
+
+/* 왼쪽 라벨 고정 폭 */
 .filter-group-label {
-    font-size: 11px;
+    width: 130px; /* 제목 너비 고정 */
+    font-size: 12px;
     font-weight: 800;
     color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    margin-bottom: 0 !important; /* 마진 제거 */
+    flex-shrink: 0; /* 너비 유지 */
 }
 
 .basic-filters, #subjectFilterBar {
     display: flex;
     flex-wrap: wrap; 
-    justify-content: center;
-    gap: 8px;
+    justify-content: flex-start !important; /* 왼쪽 정렬 */
+    gap: 6px; /* 버튼 사이 간격 축소 */
 }
 
 
@@ -189,28 +194,27 @@ body {
     border-top: 1px solid #f1f5f9;
 }
 
-/* 필터 칩 디자인 고도화 */
+/* 필터 버튼 크기 축소 */
 .filter-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
+    gap: 5px;
+    padding: 5px 12px; /* 버튼 두께 축소 */
     background: white;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 13px;
+    border-radius: 8px;
+    font-size: 12px; /* 폰트 살짝 축소 */
     font-weight: 600;
     color: #64748b;
     cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+    transition: 0.2s;
 }
+
 
 .filter-chip.active {
     background: #3b82f6 !important;
     color: white !important;
     border-color: #3b82f6 !important;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
 }
 
 
@@ -263,24 +267,19 @@ body {
 
 
 
-/* [복구] 핀 고정 카드 (심플한 초기 버전) */
+/* [수정] 핀 고정 카드: 화면 고정(Sticky) 해제 및 상단 디자인 유지 */
 .q-card.status-pin {
-    position: -webkit-sticky;
-    position: sticky;
+    /* position: sticky 설정을 삭제하여 일반 카드처럼 흐르게 만듭니다 */
+    position: relative; 
+    z-index: 10; 
     
-    /* ★ 필터바 높이만큼 띄워줍니다. (제목 사라진 후 필터바 밑에 딱 붙음) ★ */
-    /* 필터바 높이에 따라 130px ~ 160px 사이로 조절하세요 */
-    top: 155px; 
-    
-    z-index: 900; /* 필터바(1000)보다는 낮고, 일반 카드보다는 높게 */
-    
-    /* 왼쪽 테두리 강조 (두께를 8px로 늘려 시인성 확보) */
+    /* 왼쪽 테두리 강조 (두께 8px로 유지하여 시인성 확보) */
     border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
     
-    /* 핀 카드가 떠 있는 느낌을 주기 위해 그림자 강화 */
-    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1) !important;
-    margin-bottom: 20px; /* 아래 카드와 간격 확보 */
+    /* 일반 카드와 구분되도록 그림자 유지 */
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
+    margin-bottom: 12px;
 }
 
 

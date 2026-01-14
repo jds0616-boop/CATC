@@ -764,9 +764,9 @@ renderFilters: function() {
         let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체보기</div>`;
         
         this.list.forEach(item => {
-            // 강사 이름 뒤에 '강사님'을 붙이고 아이콘 추가
+            // 더 현대적인 '강사 태그' 아이콘으로 교체
             html += `<div class="filter-chip instructor-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">
-                        <i class="fa-solid fa-person-chalkboard"></i> ${item.name} 강사님
+                        <i class="fa-solid fa-user-tag"></i> ${item.name} 강사님
                      </div>`;
         });
         bar.innerHTML = html;

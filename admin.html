@@ -427,28 +427,34 @@
         <p>교육생들의 질문을 실시간으로 확인하고 관리할 수 있습니다.</p>
     </div>
 
-<!-- 2단: 필터 박스 (고도화된 그룹핑 구조) -->
+<!-- 2단: 필터 박스 (최신 세련된 아이콘 버전) -->
     <div class="qa-filters">
         
         <!-- (A) 질문 상태별 필터 -->
         <div class="filter-group">
             <div class="filter-group-label">
-                <i class="fa-solid fa-layer-group"></i> 질문 상태별 보기
+                <i class="fa-solid fa-sliders"></i> 상태 필터링
             </div>
             <div class="basic-filters">
-                <div class="filter-chip active" onclick="ui.filterQa('all', event)">전체 질문</div>
-                <div class="filter-chip" onclick="ui.filterQa('pin', event)">📌 고정됨</div>
-                <div class="filter-chip" onclick="ui.filterQa('later', event)">🕒 나중에 답변</div>
+                <div class="filter-chip active" onclick="ui.filterQa('all', event)">
+                    <i class="fa-solid fa-border-all"></i> 전체
+                </div>
+                <div class="filter-chip" onclick="ui.filterQa('pin', event)">
+                    <i class="fa-solid fa-thumbtack" style="color:#ef4444;"></i> 중요고정
+                </div>
+                <div class="filter-chip" onclick="ui.filterQa('later', event)">
+                    <i class="fa-regular fa-clock"></i> 나중답변
+                </div>
             </div>
         </div>
 
-        <!-- (B) 담당 강사별 필터 (구분선 추가) -->
-        <div class="filter-group" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 5px;">
+        <!-- (B) 담당 강사별 필터 -->
+        <div class="filter-group" style="border-top: 1px solid #f1f5f9; padding-top: 5px;">
             <div class="filter-group-label">
-                <i class="fa-solid fa-user-tie"></i> 담당 강사 선택 (To. 강사님)
+                <i class="fa-solid fa-chalkboard-user"></i> 강사별 보기
             </div>
             <div id="subjectFilterBar">
-                <!-- 강사 이름 버튼들이 JS에 의해 여기에 생성됩니다 -->
+                <!-- 강사 버튼 생성 구역 -->
             </div>
         </div>
 
