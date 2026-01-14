@@ -1495,30 +1495,47 @@ loadShuttleData: function() {
     },
 
 loadDinnerSkipData: function() {
-
-
-// 석식 제외 화면 상단에 '단체 회식' 버튼을 추가하는 로직 (기존 함수 내부에 삽입)
-
         if(!state.room) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
             const data = snap.val() || {};
             const tbody = document.getElementById('dinnerSkipTableBody');
             if(!tbody) return;
-            const items = Object.values(data);
+            
+            const tokens = Object.keys(data); // 학생 고유 키 가져오기
             const totalEl = document.getElementById('dinnerSkipTotal');
-            if(totalEl) totalEl.innerText = items.length;
-            tbody.innerHTML = items.length ? 
-                items.map((name, idx) => `
+            if(totalEl) totalEl.innerText = tokens.length;
+
+            tbody.innerHTML = tokens.length ? 
+                tokens.map((token, idx) => `
                     <tr>
                         <td>${idx+1}</td>
-                        <td style="font-weight:bold;">${name}</td>
+                        <td style="font-weight:bold;">${data[token]}</td>
                         <td style="color:#ef4444; font-weight:800;">석식 미취식</td>
+                        <td>
+                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${token}')" 
+                                    style="background-color:#64748b; font-size:11px; padding:5px 8px;">
+                                제외 취소
+                            </button>
+                        </td>
                     </tr>
                 `).join('') : 
-                "<tr><td colspan='3' style='padding:50px; color:#94a3b8;'>제외 신청자가 없습니다.</td></tr>";
+                "<tr><td colspan='4' style='padding:50px; color:#94a3b8;'>제외 신청자가 없습니다.</td></tr>";
         });
-    }, // <--- 1. 여기 콤마(,)가 반드시 있어야 합니다!
+    },
+
+// [신규] 특정 학생 한 명만 석식 제외 명단에서 삭제 (식사 가능 상태로 복구)
+    cancelIndividualDinnerSkip: function(token) {
+        if(!confirm("이 학생을 석식 제외 명단에서 삭제하시겠습니까?\n(정상 식사 가능 상태로 변경됨)")) return;
+        
+        const today = getTodayString();
+        firebase.database().ref(`courses/${state.room}/dinner_skips/${today}/${token}`).remove()
+            .then(() => {
+                ui.showAlert("✅ 해당 학생이 제외 명단에서 삭제되었습니다.");
+            });
+    },
+
+
 
 loadStudentList: function() {
         if(!state.room) return;
