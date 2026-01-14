@@ -1240,24 +1240,60 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
-            // 생활관 명단 로드
+// [수정] 생활관 배치현황 로직: 이름 우선 매칭 -> 중복 시 전화번호 매칭
             if (mode === 'dormitory') {
-                firebase.database().ref(`courses/${state.room}/students`).once('value', snap => {
-                    const data = snap.val() || {};
-                    const tbody = document.getElementById('dormitoryTableBody');
-                    if(tbody) {
-                        tbody.innerHTML = "";
-                        Object.values(data).filter(s => s.name && s.name !== "undefined").forEach((s, idx) => {
-                            tbody.innerHTML += `
-                                <tr>
-                                    <td>${idx + 1}</td>
-                                    <td style="font-weight:bold;">${s.name}</td>
-                                    <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
-                                    <td style="color:#8b5cf6; font-weight:800;">데이터 연동 대기</td>
-                                    <td>-</td>
-                                </tr>`;
-                        });
+                const tbody = document.getElementById('dormitoryTableBody');
+                if(!tbody) return;
+                
+                // 로딩 메시지 표시
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>생활관 배정 데이터를 매칭 중입니다...</td></tr>";
+
+                // 수강생 명단과 생활관 배정 명단(공용)을 동시에 가져옴
+                Promise.all([
+                    firebase.database().ref(`courses/${state.room}/students`).once('value'),
+                    firebase.database().ref(`system/dormitory_assignments`).once('value')
+                ]).then(([studentSnap, dormSnap]) => {
+                    const students = studentSnap.val() || {};
+                    const dormData = dormSnap.val() || {}; // 배정 데이터 원본
+
+                    tbody.innerHTML = "";
+                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined");
+
+                    if (studentList.length === 0) {
+                        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>현재 입실한 수강생이 없습니다.</td></tr>";
+                        return;
                     }
+
+                    studentList.forEach((s, idx) => {
+                        const sName = s.name;
+                        const sPhone = s.phone ? s.phone.slice(-4) : ""; // 전화번호 뒷 4자리
+                        
+                        let assignedInfo = null;
+
+                        // --- [매칭 핵심 로직] ---
+                        // 1순위: 이름이 정확히 일치하는 데이터가 있는지 확인
+                        if (dormData[sName]) {
+                            assignedInfo = dormData[sName];
+                        } 
+                        // 2순위: 동명이인 대비용 "이름_번호" 형태가 있는지 확인
+                        else if (dormData[`${sName}_${sPhone}`]) {
+                            assignedInfo = dormData[`${sName}_${sPhone}`];
+                        }
+                        // -----------------------
+
+                        const bName = assignedInfo ? assignedInfo.building : "-";
+                        const rNo = assignedInfo ? assignedInfo.room + "호" : "미배정";
+                        const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8"; // 배정 시 파란색 강조
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:bold;">${sName}</td>
+                                <td>${sPhone || "-"}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${bName}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${rNo}</td>
+                            </tr>`;
+                    });
                 });
             }
         }
@@ -1278,20 +1314,29 @@ loadShuttleData: function() {
             
             container.innerHTML = "";
             locations.forEach(loc => {
-                const applicants = data[loc.id] ? Object.values(data[loc.id]) : [];
-                const count = applicants.length;
+                // 해당 목적지의 데이터를 가져옴 (없으면 빈 객체)
+                const locData = data[loc.id] || {};
+                const entries = Object.entries(locData); // [토큰, 이름] 쌍의 배열로 변환
+                const count = entries.length;
                 
-                // 명단을 하얀색 태그(칩) 형태로 생성
+                // [개선] 명단을 하얀색 태그(칩) 형태로 생성하고 X버튼(취소) 추가
                 let membersHtml = "";
                 if (count > 0) {
-                    membersHtml = `<div class="member-tag-container">` + 
-                        applicants.map(name => `<div class="member-tag">${name}</div>`).join('') + 
-                        `</div>`;
+                    membersHtml = `<div class="member-tag-container">`;
+                    membersHtml += entries.map(([token, name]) => `
+                        <div class="member-tag">
+                            ${name}
+                            <i class="fa-solid fa-xmark btn-del-shuttle" 
+                               onclick="ui.cancelIndividualShuttle('${loc.id}', '${token}', '${name}')" 
+                               title="취소"></i>
+                        </div>
+                    `).join('');
+                    membersHtml += `</div>`;
                 } else {
                     membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
                 }
                 
-                // 새로운 CSS 구조(dest-header, dest-body)에 맞춰 HTML 생성
+                // 새로운 CSS 구조에 맞춰 HTML 생성
                 container.innerHTML += `
                     <div class="shuttle-dest-card card-${loc.id}">
                         <div class="dest-header">
@@ -1309,7 +1354,6 @@ loadShuttleData: function() {
             });
         });
     }, // 콤마(,) 확인 완료
-
 
 
     filterQa: function(f, event) { 
@@ -1580,6 +1624,17 @@ loadDinnerSkipData: function() {
         firebase.database().ref(`courses/${state.room}/admin_actions/${date}/${token}`).remove()
             .then(() => {
                 ui.showAlert("✅ 신청 내역이 삭제되었습니다.");
+            });
+    },
+
+
+// [신규] 특정 학생의 차량 신청을 관리자가 취소(삭제)
+    cancelIndividualShuttle: function(locId, token, name) {
+        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
+        
+        firebase.database().ref(`courses/${state.room}/shuttle/${locId}/${token}`).remove()
+            .then(() => {
+                ui.showAlert("✅ 차량 신청이 취소되었습니다.");
             });
     },
 

@@ -1803,3 +1803,58 @@ body.night-mode .status-table tr.is-my-room {
     padding: 20px 0;
 }
 
+
+/* [개선] 석식 제외 명단 버튼 디자인 */
+#view-dinner-skip .view-header div {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#view-dinner-skip .btn-action {
+    width: auto !important;
+    padding: 12px 25px !important;
+    border-radius: 50px !important; /* 둥근 캡슐형 */
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+}
+
+#view-dinner-skip .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+#view-dinner-skip .btn-secondary {
+    background: #fff !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+#view-dinner-skip .btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12) !important;
+}
+
+/* [추가] 차량 명단 개별 취소(X) 버튼 스타일 */
+.member-tag {
+    position: relative;
+    padding-right: 30px !important; /* X 버튼 공간 확보 */
+}
+
+.btn-del-shuttle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #cbd5e1;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.btn-del-shuttle:hover {
+    color: #ef4444;
+}
