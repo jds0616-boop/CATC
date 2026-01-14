@@ -1673,12 +1673,13 @@ function renderAdminList(todayData, yesterdayData) {
                             <button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${token}')" 
                                     style="background-color:#64748b; font-size:11px; padding:5px 8px;">
                                 취소
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }
+                        </button>
+                    </td>
+                </tr>
+            `;
         }
+    }
+},여기에 수정해서 줘
 
 loadDinnerSkipData: function() {
         if(!state.room) return;
