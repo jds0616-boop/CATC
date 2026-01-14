@@ -1663,3 +1663,38 @@ body.night-mode .status-table tr.is-my-room {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* --- 공지사항 관리 페이지 와이드 레이아웃 --- */
+.notice-flex-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* 카드 사이 간격 */
+    width: 100%;
+    max-width: 1200px; /* 전체 가로 폭 */
+    margin: 0 auto 50px auto;
+    align-items: stretch; /* 두 카드의 높이를 동일하게 */
+}
+
+.notice-card-half {
+    flex: 1; /* 5:5 비율 */
+    min-width: 0; /* 글자 넘침 방지 */
+}
+
+.global-notice-viewer {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #334155;
+    white-space: pre-line;
+    height: 355px; /* 왼쪽 입력창+버튼 높이와 맞춤 */
+    overflow-y: auto;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+}
+
+/* 스크롤바 디자인 (오른쪽 공지창용) */
+.global-notice-viewer::-webkit-scrollbar { width: 6px; }
+.global-notice-viewer::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
