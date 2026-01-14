@@ -671,20 +671,35 @@ const profMgr = {
     },
 
 
-// 상세 프로필 편집창 열기
+// [수정] 교수 상세 프로필 편집창 열기 (기존 정보 로드 포함)
     openProfileEditor: function(name) {
-        document.getElementById('pp-name').value = name;
-        // 기존 저장된 프로필이 있다면 불러오기
+        const el = (id) => document.getElementById(id);
+        el('pp-name').value = name; // 성함 고정
+
+        // 사진 미리보기 초기화
+        const previewImg = el('pp-photo-preview').querySelector('img');
+        previewImg.style.display = 'none';
+
+        // 서버에서 기존 프로필 정보 가져오기
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val() || {};
-            document.getElementById('pp-photo').value = p.photo || "";
-            document.getElementById('pp-phone').value = p.phone || "";
-            document.getElementById('pp-email').value = p.email || "";
-            document.getElementById('pp-msg').value = p.msg || "";
-            document.getElementById('pp-bio').value = p.bio || "";
-            document.getElementById('pp-eng-name').value = p.engName || ""; // 추가
+            
+            // 각 입력칸에 기존 데이터 채우기 (없으면 빈칸)
+            el('pp-eng-name').value = p.engName || "";
+            el('pp-phone').value = p.phone || "";
+            el('pp-email').value = p.email || "";
+            el('pp-msg').value = p.msg || "";
+            el('pp-bio').value = p.bio || "";
+            
+            // 기존 사진이 있다면 미리보기에 표시
+            if (p.photo) {
+                previewImg.src = p.photo;
+                previewImg.style.display = 'block';
+            }
         });
-        document.getElementById('profProfileModal').style.display = 'flex';
+
+        // 팝업창 띄우기
+        el('profProfileModal').style.display = 'flex';
     },
 
 
@@ -860,6 +875,18 @@ const ui = {
             ui.showAlert("✅ 석식 제외 명단이 초기화되었습니다.");
         });
     },
+
+
+// [추가/수정] 프로필 모달 닫기 함수
+    closeProfProfileModal: function() {
+        const modal = document.getElementById('profProfileModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    },
+
+
+
 
 
 showProfPresentation: function(name) {
@@ -2162,36 +2189,40 @@ const quizMgr = {
         if(summaryOverlay) summaryOverlay.style.display = 'flex';
     },
     
+// [보완] 상대적 크기를 비교하여 막대 그래프 출력
     renderChart: function(id, corr) {
         const div = document.getElementById('d-chart'); 
         if(!div) return;
         div.innerHTML = "";
         const q = state.quizList[state.currentQuizIdx];
+        
         firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
             const d = s.val() || {}; 
             const cnt = new Array(q.options.length).fill(0);
+            
+            // 1. 투표수 집계
             Object.values(d).forEach(v => { 
                 if(v.choice >= 1 && v.choice <= q.options.length) cnt[v.choice-1]++; 
             });
-            const max = Math.max(...cnt, 1);
+
+            // 2. 가장 높은 투표수 찾기 (분모가 0이 안 되게 최소 1)
+            const maxCount = Math.max(...cnt, 1);
             
-            if(q.isSurvey) {
-                let maxIdx = cnt.indexOf(Math.max(...cnt));
-                firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ 
-                    surveyResult: `가장 많은 선택: '${q.options[maxIdx]}' (${Math.round((cnt[maxIdx]/Object.values(d).length)*100)}%)` 
-                });
-            }
-            
+            // 3. 차트 그리기
             for(let i=0; i < q.options.length; i++) {
+                // 최대 투표수를 가진 막대가 전체 높이의 85%를 차지하도록 계산
+                const barHeight = (cnt[i] / maxCount) * 85; 
                 const isCorrect = !q.isSurvey && (i + 1) === corr; 
-                const h = (cnt[i]/max)*80;
-                const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
+
+                // 왕관은 정답인 경우에만 숫자 바로 위에 표시
+                const crownHtml = isCorrect ? `<div class="crown-icon">👑</div>` : '';
+
                 div.innerHTML += `
                     <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
                         ${crownHtml}
                         <div class="bar-value">${cnt[i]}</div>
-                        <div class="bar-fill" style="height:${h}%"></div>
-                        <div class="bar-label">${q.isOX?(i===0?'O':'X'):(i+1)}</div>
+                        <div class="bar-fill" style="height:${barHeight}%"></div>
+                        <div class="bar-label">${q.isOX ? (i === 0 ? 'O' : 'X') : (i + 1)}</div>
                     </div>
                 `;
             }

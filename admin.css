@@ -343,8 +343,27 @@ body.night-mode .q-card.status-pin {
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 .quiz-opt.ox-mode { flex: 1; min-height: 120px; font-size: 50px; justify-content: center; }
 .quiz-opt.ox-mode .opt-num { display: none; }
-.chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 8%; padding-bottom: 20px; border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; }
-.bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100px; height: 100%; position: relative; }
+.chart-area {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+    align-items: flex-end;    /* ★ 막대가 바닥(Baseline)에 붙도록 설정 ★ */
+    justify-content: center;
+    gap: 8%;
+    padding-bottom: 40px;     /* 하단 여백 살짝 확대 */
+    margin-bottom: 20px;
+}
+
+.bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end; /* ★ 내부 요소(숫자, 막대)도 아래로 정렬 ★ */
+    width: 120px;              /* 너비 살짝 확대 */
+    height: 100%;
+    position: relative;
+}
 .bar-value { font-size: 20px; font-weight: 800; margin-bottom: 5px; }
 .bar-fill { width: 100%; border-radius: 10px 10px 0 0; background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); height: 0; transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .bar-label { margin-top: 10px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #fff; background: #475569; }
