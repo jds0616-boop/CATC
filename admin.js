@@ -1678,7 +1678,7 @@ function renderAdminList(todayData, yesterdayData) {
                     </tr>
                 `;
             }
-        },
+        }
 
 loadDinnerSkipData: function() {
         if(!state.room) return;
