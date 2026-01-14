@@ -436,30 +436,62 @@ resetCourse: function() {
             ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
             return;
         }
-        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 설정(과정명, 담임교수, 과목리스트, 수강생 명부, 신청내역 등)이 완전히 삭제됩니다. 계속하시겠습니까?")) {
+        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
             const rPath = `courses/${state.room}`;
-            
-            // 1. 기존 입교 가이드만 미리 백업 받음
-            firebase.database().ref(`${rPath}/entranceGuide`).once('value', snap => {
-                const backupGuide = snap.val();
-                
-                // 2. 해당 방 데이터 전체 삭제
-                firebase.database().ref(rPath).set(null).then(() => {
-                    // 3. 백업한 가이드와 함께 초기 상태(Idle)로 재설정
-                    firebase.database().ref(rPath).update({
-                        status: {
-                            roomStatus: 'idle',
-                            professorName: "",
-                            mode: 'qa',
-                            resetKey: "reset_" + Date.now()
-                        },
-                        settings: { courseName: "" },
-                        entranceGuide: backupGuide || ""
-                    }).then(() => {
-                        ui.showAlert("✅ 방이 완전히 초기화되었습니다.");
-                        setTimeout(() => location.reload(), 1000);
-                    });
+
+            // 1. 초기화할 데이터들을 묶어서 처리 (가이드는 건드리지 않음)
+            const updates = {};
+
+            // [삭제 항목] - null을 넣으면 해당 경로가 삭제됩니다.
+            updates[`${rPath}/questions`] = null;
+            updates[`${rPath}/students`] = null;
+            updates[`${rPath}/activeQuiz`] = null;
+            updates[`${rPath}/quizAnswers`] = null;
+            updates[`${rPath}/quizFinalResults`] = null;
+            updates[`${rPath}/admin_actions`] = null;
+            updates[`${rPath}/dinner_skips`] = null;
+            updates[`${rPath}/shuttle`] = null;
+            updates[`${rPath}/notice`] = null;
+            updates[`${rPath}/attendanceQR`] = null;
+            updates[`${rPath}/connections`] = null;
+
+            // [초기값 항목] - 빈칸이나 기본값으로 되돌립니다.
+            updates[`${rPath}/settings/courseName`] = "";
+            updates[`${rPath}/settings/subjects`] = null;
+            updates[`${rPath}/status/roomStatus`] = "idle";
+            updates[`${rPath}/status/professorName`] = "";
+            updates[`${rPath}/status/ownerSessionId`] = null;
+            updates[`${rPath}/status/mode`] = "qa";
+            updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
+
+            // 2. 서버 업데이트 실행
+            firebase.database().ref().update(updates).then(() => {
+
+                // 3. [UI 잔여물 제거] 현재 화면에 떠 있는 표(Table) 내용 비움
+                const tableIds = [
+                    'studentListTableBody',
+                    'adminActionTableBody',
+                    'dinnerSkipTableBody',
+                    'dormitoryTableBody'
+                ];
+                tableIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.innerHTML = "";
                 });
+
+                // 4. 좌측 사이드바 입력창 비우기
+                document.getElementById('courseNameInput').value = "";
+                document.getElementById('profSelect').value = "";
+                document.getElementById('roomStatusSelect').value = 'idle';
+                document.getElementById('displayCourseTitle').innerText = "";
+
+                const subContainer = document.getElementById('subjectListContainer');
+                if(subContainer) subContainer.innerHTML = "";
+
+                ui.showAlert("✅ 가이드를 제외한 모든 정보가 초기화되었습니다.");
+
+                // 5. 완벽한 초기 화면 반영을 위해 새로고침
+                setTimeout(() => location.reload(), 500);
             });
         }
     },
@@ -1146,38 +1178,42 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        // 모든 view- 로 시작하는 구역을 숨김 (겹침 방지 핵심)
+        // 1. 모든 view- 로 시작하는 구역을 일단 숨김
         const allViews = document.querySelectorAll('[id^="view-"]');
         allViews.forEach(v => { 
             v.style.display = 'none'; 
         });
         
+        // 2. 현재 선택한 모드에 맞는 구역 ID 결정
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
         
+        // 3. 화면 표시 방식 결정 (모달형은 flex, 일반은 block)
         if(targetEl) {
-            // 교수 프로필이나 퀴즈 같은 모달형 뷰는 flex로, 일반 게시판은 block으로 표시
             if(mode === 'prof-presentation' || mode === 'quiz' || mode === 'qa') {
                 targetEl.style.display = 'flex';
-            } else {
+            } else if(mode === 'waiting' || mode === 'dashboard') {
                 targetEl.style.display = 'block';
+            } else {
+                targetEl.style.display = 'flex'; // 기본값
             }
         }
-        
 
+        // 4. 상단 탭 활성화 표시
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
         localStorage.setItem('kac_last_mode', mode);
 
+        // 5. 각 모드별 데이터 로드
         if (state.room) {
             if (mode === 'quiz') {
                 document.getElementById('quizSelectModal').style.display = 'flex'; 
                 quizMgr.loadSavedQuizList(); 
             }
 
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide'].includes(mode)) ? 'qa' : mode;
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory'].includes(mode)) ? 'qa' : mode;
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
             if (mode === 'dashboard') ui.loadDashboardStats(); 
@@ -1187,37 +1223,27 @@ setMode: function(mode) {
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
-
-
-            // --- 여기에 새로 추가되는 코드 시작 ---
+            
+            // 생활관 명단 로드
             if (mode === 'dormitory') {
                 firebase.database().ref(`courses/${state.room}/students`).once('value', snap => {
                     const data = snap.val() || {};
                     const tbody = document.getElementById('dormitoryTableBody');
-                    tbody.innerHTML = "";
-                    Object.values(data).filter(s => s.name && s.name !== "undefined").forEach((s, idx) => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td style="font-weight:bold;">${s.name}</td>
-                                <td>${s.phone || "-"}</td>
-                                <td style="color:#8b5cf6; font-weight:800;">데이터 연동 대기</td>
-                                <td>-</td>
-                            </tr>
-                        `;
-                    });
+                    if(tbody) {
+                        tbody.innerHTML = "";
+                        Object.values(data).filter(s => s.name && s.name !== "undefined").forEach((s, idx) => {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td style="font-weight:bold;">${s.name}</td>
+                                    <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
+                                    <td style="color:#8b5cf6; font-weight:800;">데이터 연동 대기</td>
+                                    <td>-</td>
+                                </tr>`;
+                        });
+                    }
                 });
             }
-
-
-
-
-
-
-
-
-
-
         }
     },
 
@@ -1472,16 +1498,7 @@ loadDinnerSkipData: function() {
 
 
 // 석식 제외 화면 상단에 '단체 회식' 버튼을 추가하는 로직 (기존 함수 내부에 삽입)
-    const dinnerHeader = document.querySelector('#view-dinner-skip .view-header');
-    if (!document.getElementById('btn-group-dinner')) {
-        const btn = document.createElement('button');
-        btn.id = 'btn-group-dinner';
-        btn.className = 'btn-action btn-primary';
-        btn.style.marginTop = '10px';
-        btn.innerHTML = '<i class="fa-solid fa-users-items"></i> 단체 회식 모드 적용 (전원 제외)';
-        btn.onclick = () => ui.applyGroupDinner();
-        dinnerHeader.appendChild(btn);
-    }
+
         if(!state.room) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
