@@ -1067,7 +1067,7 @@ body.night-mode .badge-idle {
 /* 1. 모든 페이지 제목(헤더) 스타일 */
 .view-header {
     text-align: center;
-    margin-top: 10px;    /* 현황바로부터의 거리 (이 수치를 조절해서 높이를 맞추세요) */
+    margin-top: 20px;    /* 현황바로부터의 거리 (이 수치를 조절해서 높이를 맞추세요) */
     margin-bottom: 30px; /* 제목과 본문 사이의 거리 */
     position: relative;
     z-index: 10;
