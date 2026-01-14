@@ -682,6 +682,7 @@ const profMgr = {
             document.getElementById('pp-email').value = p.email || "";
             document.getElementById('pp-msg').value = p.msg || "";
             document.getElementById('pp-bio').value = p.bio || "";
+            document.getElementById('pp-eng-name').value = p.engName || ""; // 추가
         });
         document.getElementById('profProfileModal').style.display = 'flex';
     },
@@ -717,14 +718,17 @@ const profMgr = {
         const name = document.getElementById('pp-name').value;
         const fileInput = document.getElementById('pp-photo-file');
         
-        const doSave = (photoData) => {
+       const doSave = (photoData) => {
             const profileData = {
                 photo: photoData || "",
+                name: name,
+                engName: document.getElementById('pp-eng-name').value, // 추가
                 phone: document.getElementById('pp-phone').value,
                 email: document.getElementById('pp-email').value,
                 msg: document.getElementById('pp-msg').value,
                 bio: document.getElementById('pp-bio').value
             };
+
             firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
                 ui.showAlert("✅ 교수 프로필이 성공적으로 저장되었습니다.");
                 ui.closeProfProfileModal();
@@ -871,6 +875,11 @@ showProfPresentation: function(name) {
             // 데이터 채우기
             document.getElementById('pres-name').innerText = name;
             document.getElementById('pres-photo').src = p.photo || "logo.png";
+
+    if(document.getElementById('pres-eng-name')) {
+        document.getElementById('pres-eng-name').innerText = p.engName || "";
+    }
+
             document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
             document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
@@ -1365,7 +1374,8 @@ loadShuttleData: function() {
         this.renderQaList(f); 
     },
     
-    renderQaList: function(f) {
+
+renderQaList: function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
         list.innerHTML = "";
@@ -1400,14 +1410,32 @@ loadShuttleData: function() {
                 cls += " is-new"; 
                 newBadge = `<span class="new-badge-icon">NEW</span>`; 
             }
+
+            // --- [신규] 직급 및 호칭 자동 변환 로직 ---
+            const formattedSubject = (() => {
+                const sub = i.subject || '일반';
+                if (sub === '공통질문') return '📢 공통질문';
+
+                // KAC 및 주요 기업 직급 리스트
+                const ranks = ['주임', '대리', '과장', '차장', '부장', '본부장', '단장', '실장', '처장', '공항장', '이사', '사장', '직무대행', '교수'];
+                const hasRank = ranks.some(rank => sub.includes(rank));
+
+                if (hasRank) {
+                    // 직급이 있으면 '님'만 붙임 (이미 '님'이 있으면 중복 방지)
+                    return `To. ${sub}${sub.endsWith('님') ? '' : '님'}`;
+                } else {
+                    // 이름만 있으면 '강사님' 붙임
+                    return `To. ${sub} 강사님`;
+                }
+            })();
+            // ---------------------------------------
             
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
-
-        <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-            To. ${i.subject} 강사님
-        </span>
+                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+                        ${formattedSubject}
+                    </span>
 
                     ${newBadge}${icon}${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
@@ -1419,6 +1447,8 @@ loadShuttleData: function() {
             </div>`;
         });
     },
+
+
     
     openQaModal: function(k) { 
         state.activeQaKey=k; 
