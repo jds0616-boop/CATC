@@ -298,7 +298,7 @@ const dataMgr = {
             }
         });
 
-        dbRef.status.on('value', s => {
+dbRef.status.on('value', s => {
     if(state.room !== room) return;
     const st = s.val() || {};
     ui.renderRoomStatus(st.roomStatus || 'idle'); 
@@ -310,7 +310,17 @@ const dataMgr = {
 
     if(st.professorName) {
         if(sidebarProf) sidebarProf.value = st.professorName; // 사이드바 동기화
-        if(dashProf) dashProf.innerText = st.professorName + " 교수님"; // 대시보드 동기화
+        
+        // [수정된 부분] 단순 텍스트 대신 아이콘과 "프로필 보기" 링크를 포함한 HTML을 삽입합니다.
+        if(dashProf) {
+            dashProf.innerHTML = `
+                <span onclick="ui.showProfPresentation('${st.professorName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
+                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
+                    ${st.professorName} 교수님
+                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
+                </span>
+            `;
+        }
     } else {
         if(sidebarProf) sidebarProf.value = "";
         if(dashProf) dashProf.innerText = "담당 교수 미지정";
@@ -886,7 +896,13 @@ loadDashboardStats: function() {
         // 수정된 부분: 교수님 성함을 클릭하면 발표 모드로 전환되도록 링크 처리
         const profDisplay = document.getElementById('dashProfName');
         if(profName) {
-            profDisplay.innerHTML = `<span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; text-decoration:underline;">${profName} 교수님 (프로필 보기)</span>`;
+            profDisplay.innerHTML = `
+                <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
+                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
+                    ${profName} 교수님
+                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
+                </span>
+            `;
         } else {
             profDisplay.innerText = "담당 교수 미지정";
         }
@@ -1457,29 +1473,32 @@ loadShuttleData: function() {
             }
         });
 
-        function renderAdminList(todayData, yesterdayData) {
+function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
 
-            Object.values(yesterdayData).forEach(item => {
-                appendRow(item, true);
+            // 어제 데이터 (익일 9시 전까지 노출)
+            Object.keys(yesterdayData).forEach(token => {
+                appendRow(yesterdayData[token], true, token);
             });
 
-            Object.values(todayData).forEach(item => {
-                appendRow(item, false);
+            // 오늘 데이터
+            Object.keys(todayData).forEach(token => {
+                appendRow(todayData[token], false, token);
             });
 
             if (tbody.innerHTML === "") {
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='6' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
             }
 
-            function appendRow(item, isYesterday) {
+            function appendRow(item, isYesterday, token) {
                 const typeNm = item.type === 'outing' ? 
                     '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
                     '<span style="color:#ef4444; font-weight:bold;">외박</span>';
                 
                 const datePrefix = isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
                 const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const targetDate = isYesterday ? getYesterdayString() : getTodayString();
 
                 tbody.innerHTML += `
                     <tr>
@@ -1488,6 +1507,12 @@ loadShuttleData: function() {
                         <td style="font-weight:bold;">${item.name}</td>
                         <td>${item.phone}</td>
                         <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
+                        <td>
+                            <button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${token}')" 
+                                    style="background-color:#64748b; font-size:11px; padding:5px 8px;">
+                                취소
+                            </button>
+                        </td>
                     </tr>
                 `;
             }
@@ -1534,6 +1559,17 @@ loadDinnerSkipData: function() {
                 ui.showAlert("✅ 해당 학생이 제외 명단에서 삭제되었습니다.");
             });
     },
+
+// [신규] 특정 학생의 외출/외박 신청을 관리자가 강제 취소(삭제)
+    cancelIndividualAdminAction: function(date, token) {
+        if(!confirm("해당 외출/외박 신청을 취소하시겠습니까?")) return;
+        
+        firebase.database().ref(`courses/${state.room}/admin_actions/${date}/${token}`).remove()
+            .then(() => {
+                ui.showAlert("✅ 신청 내역이 삭제되었습니다.");
+            });
+    },
+
 
 
 
