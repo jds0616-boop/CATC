@@ -1199,43 +1199,45 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        // 1. 모든 view- 로 시작하는 구역을 일단 숨김
+        // 1. 모든 view- 구역을 일단 숨김 (화면 겹침 방지 핵심)
         const allViews = document.querySelectorAll('[id^="view-"]');
         allViews.forEach(v => { 
             v.style.display = 'none'; 
         });
         
-        // 2. 현재 선택한 모드에 맞는 구역 ID 결정
+        // 2. 현재 모드에 맞는 구역 ID 결정
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
         
         // 3. 화면 표시 방식 결정 (모달형은 flex, 일반은 block)
         if(targetEl) {
             if(mode === 'prof-presentation' || mode === 'quiz' || mode === 'qa') {
-                targetEl.style.display = 'flex';
+                targetEl.style.display = 'flex'; // 중앙 정렬 팝업 형태
             } else if(mode === 'waiting' || mode === 'dashboard') {
-                targetEl.style.display = 'block';
+                targetEl.style.display = 'block'; // 일반 게시판 형태
             } else {
-                targetEl.style.display = 'flex'; // 기본값
+                targetEl.style.display = 'block'; // 기본값 block
             }
         }
 
-        // 4. 상단 탭 활성화 표시
+        // 4. 상단 탭 메뉴 활성화 표시
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
         localStorage.setItem('kac_last_mode', mode);
 
-        // 5. 각 모드별 데이터 로드
+        // 5. 강의실이 선택된 상태라면 각 모드별 데이터 로딩 실행
         if (state.room) {
+            // 학생용 화면 모드 제어 (행정 메뉴일 땐 학생 화면을 Q&A로 고정)
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory', 'prof-presentation'].includes(mode)) ? 'qa' : mode;
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+
+            // [데이터 로딩 로직 통합]
             if (mode === 'quiz') {
                 document.getElementById('quizSelectModal').style.display = 'flex'; 
                 quizMgr.loadSavedQuizList(); 
             }
-
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory', 'prof-presentation'].includes(mode)) ? 'qa' : mode;
-            
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
@@ -1244,64 +1246,45 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
-// [수정] 생활관 배치현황 로직: 이름 우선 매칭 -> 중복 시 전화번호 매칭
+            // [신규] 생활관 배치 현황 (이름/전화번호 지능형 매칭 로직)
             if (mode === 'dormitory') {
                 const tbody = document.getElementById('dormitoryTableBody');
-                if(!tbody) return;
-                
-                // 로딩 메시지 표시
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>생활관 배정 데이터를 매칭 중입니다...</td></tr>";
-
-                // 수강생 명단과 생활관 배정 명단(공용)을 동시에 가져옴
-                Promise.all([
-                    firebase.database().ref(`courses/${state.room}/students`).once('value'),
-                    firebase.database().ref(`system/dormitory_assignments`).once('value')
-                ]).then(([studentSnap, dormSnap]) => {
-                    const students = studentSnap.val() || {};
-                    const dormData = dormSnap.val() || {}; // 배정 데이터 원본
-
-                    tbody.innerHTML = "";
-                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined");
-
-                    if (studentList.length === 0) {
-                        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>현재 입실한 수강생이 없습니다.</td></tr>";
-                        return;
-                    }
-
-                    studentList.forEach((s, idx) => {
-                        const sName = s.name;
-                        const sPhone = s.phone ? s.phone.slice(-4) : ""; // 전화번호 뒷 4자리
-                        
-                        let assignedInfo = null;
-
-                        // --- [매칭 핵심 로직] ---
-                        // 1순위: 이름이 정확히 일치하는 데이터가 있는지 확인
-                        if (dormData[sName]) {
-                            assignedInfo = dormData[sName];
-                        } 
-                        // 2순위: 동명이인 대비용 "이름_번호" 형태가 있는지 확인
-                        else if (dormData[`${sName}_${sPhone}`]) {
-                            assignedInfo = dormData[`${sName}_${sPhone}`];
+                if(tbody) {
+                    tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>배정 데이터를 매칭 중입니다...</td></tr>";
+                    Promise.all([
+                        firebase.database().ref(`courses/${state.room}/students`).once('value'),
+                        firebase.database().ref(`system/dormitory_assignments`).once('value')
+                    ]).then(([studentSnap, dormSnap]) => {
+                        const students = studentSnap.val() || {};
+                        const dormData = dormSnap.val() || {};
+                        tbody.innerHTML = "";
+                        const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
+                        if(list.length === 0) {
+                            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>입실한 수강생이 없습니다.</td></tr>";
+                            return;
                         }
-                        // -----------------------
-
-                        const bName = assignedInfo ? assignedInfo.building : "-";
-                        const rNo = assignedInfo ? assignedInfo.room + "호" : "미배정";
-                        const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8"; // 배정 시 파란색 강조
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td style="font-weight:bold;">${sName}</td>
-                                <td>${sPhone || "-"}</td>
-                                <td style="color:${statusColor}; font-weight:800;">${bName}</td>
-                                <td style="color:${statusColor}; font-weight:800;">${rNo}</td>
-                            </tr>`;
+                        list.forEach((s, idx) => {
+                            const sName = s.name;
+                            const sPhone = s.phone ? s.phone.slice(-4) : "";
+                            let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null;
+                            const statusColor = assigned ? "#3b82f6" : "#94a3b8";
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td style="font-weight:bold;">${sName}</td>
+                                    <td>${sPhone || "-"}</td>
+                                    <td style="color:${statusColor}; font-weight:800;">${assigned ? assigned.building : "-"}</td>
+                                    <td style="color:${statusColor}; font-weight:800;">${assigned ? assigned.room + "호" : "미배정"}</td>
+                                </tr>`;
+                        });
                     });
-                });
+                }
             }
         }
     },
+
+
+
 
 // admin.js 내의 ui 객체 안에서 이 부분을 찾아서 교체하세요
 loadShuttleData: function() {
