@@ -1164,12 +1164,6 @@ setMode: function(mode) {
             }
         }
         
-        const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
-        const targetEl = document.getElementById(targetView);
-        
-        if(targetEl) {
-            targetEl.style.display = (mode === 'waiting' || mode === 'dashboard') ? 'block' : 'flex';
-        }
 
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
@@ -1194,8 +1188,6 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
 
-
-if (mode === 'students') ui.loadStudentList();
 
             // --- 여기에 새로 추가되는 코드 시작 ---
             if (mode === 'dormitory') {
