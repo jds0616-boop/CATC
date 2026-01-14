@@ -1692,7 +1692,7 @@ body.night-mode .status-table tr.is-my-room {
     animation: slideUp 0.5s ease-out;
 }
 
-/* 나가기 버튼 */
+/* 1. 컨트롤 (나가기 버튼) */
 .prof-top-controls { position: absolute; top: 25px; left: 25px; z-index: 10; }
 .btn-prof-exit {
     background: #f1f5f9; border: 1px solid #e2e8f0; padding: 10px 20px;
@@ -1701,47 +1701,68 @@ body.night-mode .status-table tr.is-my-room {
 }
 .btn-prof-exit:hover { background: #ef4444; color: white; border-color: #ef4444; }
 
-/* 왼쪽 사진 */
+/* 2. 왼쪽 사진 영역 */
 .prof-photo-frame { width: 450px; height: 100%; background: #f8fafc; border-right: 1px solid #f1f5f9; }
 .prof-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
 
-/* 오른쪽 정보 구역 정렬 */
+/* 3. 오른쪽 정보 구역 전체 */
 .prof-detail-info { flex: 1; padding: 60px; display: flex; flex-direction: column; text-align: left; }
 
-/* 이름 행 정렬 (교수 + 이름 + 영문) */
+/* 성함 정렬 (교수 + 이름 + 영문) */
 .prof-name-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .prof-label-top { font-size: 18px; font-weight: 700; color: #3b82f6; }
 .prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -2px; }
 .prof-eng-inline { font-size: 22px; color: #94a3b8; font-weight: 500; margin-left: 5px; }
 
-/* 성함 바로 아래 포인트 바 (밑줄 대신) */
+/* 포인트 바 */
 .prof-point-line { width: 60px; height: 6px; background: #3b82f6; border-radius: 10px; margin-bottom: 25px; }
 
 /* 전문 분야 태그 */
-.prof-expertise-tags { display: flex; gap: 8px; margin-bottom: 20px; }
+.prof-expertise-tags { display: flex; gap: 8px; margin-bottom: 15px; }
 .expert-tag { 
     background: #eff6ff; color: #3b82f6; padding: 4px 12px; 
     border-radius: 6px; font-size: 14px; font-weight: 800; border: 1px solid #dbeafe;
 }
 
-/* 메시지 (따옴표 제거) */
-.prof-slogan-clean { font-size: 20px; color: #475569; font-weight: 600; line-height: 1.6; margin: 0 0 30px 0; }
+/* 슬로건 (강조) */
+.prof-slogan-clean {
+    font-size: 22px; color: #1e3a8a; font-weight: 800;
+    margin: 5px 0 30px 0; letter-spacing: -0.5px;
+}
 
-/* 연락처 아이템 */
-.prof-contact-box { display: flex; gap: 15px; margin-bottom: 40px; }
+/* 4. 연락처 정보 박스 */
+.prof-contact-box { display: flex; gap: 15px; margin-bottom: 35px; }
 .prof-contact-item {
-    display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700;
-    color: #475569; background: #f1f5f9; padding: 10px 18px; border-radius: 50px;
+    background: #ffffff !important; border: 1px solid #e2e8f0 !important;
+    padding: 10px 18px; border-radius: 50px; font-size: 15px; font-weight: 700;
+    color: #475569; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.2s;
+    display: flex; align-items: center; gap: 8px;
 }
 .prof-contact-item i { color: #3b82f6; }
+.prof-contact-item:hover { border-color: #3b82f6 !important; transform: translateY(-2px); }
 
-/* 약력 리스트 (불렛 포인트) */
-.prof-bio-premium h3 { font-size: 19px; color: #0f172a; font-weight: 800; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+/* 5. 약력 정보 섹션 (배경 박스형) */
+.prof-bio-premium {
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    padding: 25px; border-radius: 20px; margin-top: auto;
+}
+
+.prof-bio-premium h3 {
+    font-size: 18px; color: #0f172a; font-weight: 900;
+    margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;
+}
+/* 제목 옆 파란 사각형 포인트 */
+.prof-bio-premium h3::before {
+    content: ''; width: 4px; height: 18px;
+    background: #3b82f6; border-radius: 4px;
+}
+
 .prof-bio-list { list-style: none; padding: 0; margin: 0; }
 .prof-bio-list li {
-    position: relative; padding-left: 22px; margin-bottom: 12px;
-    font-size: 17px; font-weight: 600; color: #334155; line-height: 1.5;
+    position: relative; padding-left: 22px; margin-bottom: 10px;
+    font-size: 16px; font-weight: 600; color: #334155; line-height: 1.6;
 }
+/* 커스텀 불렛 포인트(파란 점) */
 .prof-bio-list li::before {
     content: ''; position: absolute; left: 0; top: 10px;
     width: 7px; height: 7px; background: #3b82f6; border-radius: 50%;
