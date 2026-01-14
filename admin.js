@@ -1357,29 +1357,28 @@ setMode: function(mode) {
             if (mode === 'students') ui.loadStudentList();
             
             if (mode === 'dormitory') {
-                const tbody = document.getElementById('dormitoryTableBody');
-                if(tbody) {
-                    tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; text-align:center;'>매칭 중...</td></tr>";
-                    Promise.all([
-                        firebase.database().ref(`courses/${state.room}/students`).once('value'),
-                        firebase.database().ref(`system/dormitory_assignments`).once('value')
-                    ]).then(([studentSnap, dormSnap]) => {
-                        const students = studentSnap.val() || {};
-                        const dormData = dormSnap.val() || {};
-                        tbody.innerHTML = "";
-                        const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
-                        list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-                        list.forEach((s, idx) => {
-                            const sPhone = s.phone ? s.phone.slice(-4) : "";
-                            let assigned = dormData[sName] || dormData[`${s.name}_${sPhone}`] || null;
-                            const color = assigned ? "#3b82f6" : "#94a3b8";
-                            tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.name}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
-                        });
-                    });
-                }
-            }
-        }
-    },
+    const tbody = document.getElementById('dormitoryTableBody');
+    if(tbody) {
+        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; text-align:center;'>매칭 중...</td></tr>";
+        Promise.all([
+            firebase.database().ref(`courses/${state.room}/students`).once('value'),
+            firebase.database().ref(`system/dormitory_assignments`).once('value')
+        ]).then(([studentSnap, dormSnap]) => {
+            const students = studentSnap.val() || {};
+            const dormData = dormSnap.val() || {};
+            tbody.innerHTML = "";
+            const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
+            list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            list.forEach((s, idx) => {
+                const sPhone = s.phone ? s.phone.slice(-4) : "";
+                const sName = s.name; // 이 변수 정의가 빠져있었음
+                let assigned = dormData[sName] || dormData[`${s.name}_${sPhone}`] || null;
+                const color = assigned ? "#3b82f6" : "#94a3b8";
+                tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.name}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
+            });
+        });
+    }
+}
 
 
 
@@ -1777,72 +1776,59 @@ loadDinnerSkipData: function() {
 
 
 loadStudentList: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
-            const data = snap.val() || {};
-            const tbody = document.getElementById('studentListTableBody');
-            if(!tbody) return;
-            const totalEl = document.getElementById('studentTotalCount');
-            
-            // 1. 전체 데이터를 배열로 변환 (기본 필터링)
-            const rawList = Object.keys(data).map(key => ({
-                token: key,
-                ...data[key]
-            })).filter(s => s.name && s.name !== "undefined");
+    if(!state.room) return;
+    firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
+        const data = snap.val() || {};
+        const tbody = document.getElementById('studentListTableBody');
+        if(!tbody) return;
+        const totalEl = document.getElementById('studentTotalCount');
+        
+        // 1. 전체 데이터를 배열로 변환 (기본 필터링)
+        let studentList = Object.keys(data).map(key => ({
+            token: key,
+            ...data[key]
+        })).filter(s => s.name && s.name !== "undefined");
 
-            // 2. [중복 제거 핵심] 성함 + 전화번호 조합으로 중복 검사
-            const seen = new Set();
-            const studentList = rawList.filter(s => {
-                studentList.sort((a, b) => a.name.localeCompare('ko'));
-                const uniqueKey = `${s.name}_${s.phone}`; // 이름_번호 조합키 생성
-                if (seen.has(uniqueKey)) {
-                    return false; // 이미 목록에 있는 이름+번호면 제외
-                }
-                seen.add(uniqueKey);
-                return true; // 처음 나타난 데이터면 포함
-            });
+        // 2. 가나다순 정렬 (filter 밖에서 수행)
+        studentList.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-            // 3. 중복 제거된 인원수로 카운트 업데이트
-            if(totalEl) totalEl.innerText = studentList.length;
-            tbody.innerHTML = ""; 
-
-            // 4. 테이블 행 생성
-            studentList.forEach((s, idx) => {
-                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-                const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-                
-                // 학생장 줄 배경색 연보라색으로 강조
-                const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
-
-                tbody.innerHTML += `
-                    <tr ${rowStyle}>
-                        <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">
-                            ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
-                        </td>
-                        <!-- 전화번호 뒷 4자리만 출력 -->
-                        <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
-                        <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                        <td>
-                            <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
-                                <!-- 체크박스 형태로 학생장 관리 -->
-                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
-                                    <input type="checkbox" ${s.isLeader ? 'checked' : ''} 
-                                           onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
-                                           style="width:18px; height:18px; cursor:pointer;">
-                                    학생장
-                                </label>
-                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    삭제
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+        // 3. [중복 제거] 성함 + 전화번호 조합으로 중복 검사
+        const seen = new Set();
+        studentList = studentList.filter(s => {
+            const uniqueKey = `${s.name}_${s.phone}`; 
+            if (seen.has(uniqueKey)) return false;
+            seen.add(uniqueKey);
+            return true;
         });
-    },
+
+        // 4. 인원수 업데이트
+        if(totalEl) totalEl.innerText = studentList.length;
+        tbody.innerHTML = ""; 
+
+        // 5. 테이블 행 생성
+        studentList.forEach((s, idx) => {
+            const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+            const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+            const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
+
+            tbody.innerHTML += `
+                <tr ${rowStyle}>
+                    <td>${idx + 1}</td>
+                    <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
+                    <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
+                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                    <td>
+                        <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
+                                <input type="checkbox" ${s.isLeader ? 'checked' : ''} onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')"> 학생장
+                            </label>
+                            <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px;">삭제</button>
+                        </div>
+                    </td>
+                </tr>`;
+        });
+    });
+},
     toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
         dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
