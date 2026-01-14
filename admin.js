@@ -436,17 +436,32 @@ const dataMgr = {
             ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
             return;
         }
-        if(confirm("강의실을 초기화하시겠습니까?\n모든 수강생은 즉시 강제 퇴장 및 데이터 초기화 처리됩니다.")) {
-            const newResetKey = "reset_" + Date.now(); 
-            firebase.database().ref(`courses/${state.room}`).set(null).then(() => {
-                firebase.database().ref(`courses/${state.room}/status`).set({
-                    resetKey: newResetKey,
-                    roomStatus: 'idle',
-                    mode: 'qa'
-                }).then(() => {
-                    ui.showAlert("강의실이 초기화되었습니다.");
-                    setTimeout(() => location.reload(), 1000);
-                });
+        if(confirm("🚨 경고: 현재 방의 모든 정보(과정명, 교수명, 학생 데이터, 질문, 퀴즈 등)를 삭제하고 대기 상태로 되돌리시겠습니까?")) {
+            // 삭제할 경로들 정의
+            const rPath = `courses/${state.room}`;
+            
+            // 1. 방의 모든 데이터 초기화 (기본 틀만 남김)
+            firebase.database().ref(rPath).set({
+                settings: {
+                    courseName: "" // 과정명 초기화
+                },
+                status: {
+                    roomStatus: 'idle', // 상태를 '비어있음'으로 변경
+                    professorName: "",  // 담임교수 초기화
+                    mode: 'qa',
+                    resetKey: "reset_" + Date.now() // 수강생 강제 로그아웃용 키
+                }
+            }).then(() => {
+                // 2. UI 즉시 반영
+                document.getElementById('courseNameInput').value = "";
+                document.getElementById('profSelect').value = "";
+                document.getElementById('roomStatusSelect').value = 'idle';
+                document.getElementById('displayCourseTitle').innerText = "과정명 미설정";
+                
+                ui.showAlert("✅ 방이 초기화되어 '비어있음' 상태로 변경되었습니다.");
+                
+                // 3. 페이지 새로고침하여 초기 상태 반영
+                setTimeout(() => location.reload(), 1000);
             });
         }
     },
@@ -580,7 +595,13 @@ const profMgr = {
         this.list.forEach(p => {
             const item = document.createElement('div');
             item.className = 'prof-item';
-            item.innerHTML = `<span>${p.name}</span> <button onclick="profMgr.deleteProf('${p.key}')">삭제</button>`;
+            // 수정된 부분: 이름 옆에 [프로필 등록] 버튼 추가
+            item.innerHTML = `
+                <span>${p.name}</span> 
+                <div style="display:flex; gap:5px;">
+                    <button onclick="profMgr.openProfileEditor('${p.name}')" style="background:#3b82f6;">프로필</button>
+                    <button onclick="profMgr.deleteProf('${p.key}')">삭제</button>
+                </div>`;
             div.appendChild(item);
         });
         div.scrollTop = div.scrollHeight;
@@ -605,6 +626,38 @@ const profMgr = {
         if(confirm("정말 삭제하시겠습니까?")) {
             firebase.database().ref(`system/professors/${key}`).remove();
         }
+    },
+
+
+// 상세 프로필 편집창 열기
+    openProfileEditor: function(name) {
+        document.getElementById('pp-name').value = name;
+        // 기존 저장된 프로필이 있다면 불러오기
+        firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
+            const p = snap.val() || {};
+            document.getElementById('pp-photo').value = p.photo || "";
+            document.getElementById('pp-phone').value = p.phone || "";
+            document.getElementById('pp-email').value = p.email || "";
+            document.getElementById('pp-msg').value = p.msg || "";
+            document.getElementById('pp-bio').value = p.bio || "";
+        });
+        document.getElementById('profProfileModal').style.display = 'flex';
+    },
+
+    // 프로필 데이터 저장
+    saveFullProfile: function() {
+        const name = document.getElementById('pp-name').value;
+        const profileData = {
+            photo: document.getElementById('pp-photo').value,
+            phone: document.getElementById('pp-phone').value,
+            email: document.getElementById('pp-email').value,
+            msg: document.getElementById('pp-msg').value,
+            bio: document.getElementById('pp-bio').value
+        };
+        firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
+            ui.showAlert("✅ 교수 프로필이 저장되었습니다.");
+            ui.closeProfProfileModal();
+        });
     }
 };
 
@@ -688,6 +741,51 @@ init: function() {
 // --- 3. UI ---
 const ui = {
 
+
+applyGroupDinner: function() {
+        if(!confirm("모든 수강생을 '석식 제외'로 등록하시겠습니까? (단체 회식 시 사용)")) return;
+        firebase.database().ref(`courses/${state.room}/students`).once('value', snap => {
+            const students = snap.val() || {};
+            const today = getTodayString();
+            const updates = {};
+            Object.keys(students).forEach(token => {
+                const s = students[token];
+                updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = `${s.name}(${s.phone})`;
+            });
+            firebase.database().ref().update(updates).then(() => ui.showAlert("✅ 전원 석식 제외 처리되었습니다."));
+        });
+    },
+
+
+showProfPresentation: function(name) {
+        firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
+            const p = snap.val();
+            if(!p) {
+                ui.showAlert("등록된 상세 프로필이 없습니다. 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
+                return;
+            }
+            // 데이터 채우기
+            document.getElementById('pres-name').innerText = name;
+            document.getElementById('pres-photo').src = p.photo || "logo.png";
+            document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
+            document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
+            document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
+            document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
+            
+            // QR 코드 생성 (연락처 정보)
+            const qrDiv = document.getElementById('pres-qr');
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
+
+            // 화면 전환
+            ui.setMode('prof-presentation');
+        });
+    },
+    closeProfProfileModal: function() { document.getElementById('profProfileModal').style.display = 'none'; },
+
+
+
+
 // 대시보드 통계 실시간 로드
 loadDashboardStats: function() {
         if(!state.room) return;
@@ -697,7 +795,13 @@ loadDashboardStats: function() {
         const today = getTodayString();
 
         document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
-        document.getElementById('dashProfName').innerText = profName ? profName + " 교수님" : "담당 교수 미지정";
+        // 수정된 부분: 교수님 성함을 클릭하면 발표 모드로 전환되도록 링크 처리
+        const profDisplay = document.getElementById('dashProfName');
+        if(profName) {
+            profDisplay.innerHTML = `<span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; text-decoration:underline;">${profName} 교수님 (프로필 보기)</span>`;
+        } else {
+            profDisplay.innerText = "담당 교수 미지정";
+        }
         document.getElementById('dashTodayDateDisplay').innerText = "금일 날짜: " + today;
 
         // 수강생 수 실시간 업데이트
@@ -722,10 +826,23 @@ loadDashboardStats: function() {
     },
 
     // 공지사항 뷰 로드
-    loadNoticeView: async function() {
+       loadNoticeView: async function() {
         if(!state.room) return;
+        
+        // 1. 우리 과정 공지 불러오기 (강사 작성분)
         const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
         document.getElementById('instNoticeInputMain').value = snap.val() || "";
+
+        // 2. 센터 전체 공지 불러오기 (운영자 포털 작성분)
+        firebase.database().ref(`system/globalNotice`).on('value', s => {
+            const globalMsg = s.val();
+            const display = document.getElementById('globalNoticeDisplay');
+            if(globalMsg) {
+                display.innerText = globalMsg;
+            } else {
+                display.innerHTML = "<span style='color:#94a3b8;'>현재 게시된 센터 전체 공지가 없습니다.</span>";
+            }
+        });
     },
 
     // 출결 QR 뷰 로드
@@ -1264,6 +1381,19 @@ loadShuttleData: function() {
     },
 
 loadDinnerSkipData: function() {
+
+
+// 석식 제외 화면 상단에 '단체 회식' 버튼을 추가하는 로직 (기존 함수 내부에 삽입)
+    const dinnerHeader = document.querySelector('#view-dinner-skip .view-header');
+    if (!document.getElementById('btn-group-dinner')) {
+        const btn = document.createElement('button');
+        btn.id = 'btn-group-dinner';
+        btn.className = 'btn-action btn-primary';
+        btn.style.marginTop = '10px';
+        btn.innerHTML = '<i class="fa-solid fa-users-items"></i> 단체 회식 모드 적용 (전원 제외)';
+        btn.onclick = () => ui.applyGroupDinner();
+        dinnerHeader.appendChild(btn);
+    }
         if(!state.room) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
@@ -1850,7 +1980,7 @@ const guideMgr = {
         }
 
         firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
-        firebase.database().ref(`courses/${state.room}/entranceGuide`).on('value', snap => {
+        firebase.database().ref(`system/sharedGuide`).on('value', snap => {
             const data = snap.val();
             const badge = document.getElementById('guideStatusBadge');
             
@@ -1876,7 +2006,7 @@ const guideMgr = {
         if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
         const reader = new FileReader();
         reader.onload = (e) => {
-            firebase.database().ref(`courses/${state.room}/entranceGuide`).set(e.target.result)
+            firebase.database().ref(`system/sharedGuide`).set(e.target.result)
                 .then(() => ui.showAlert("✅ 가이드가 업로드되었습니다."));
         };
         reader.readAsDataURL(file);

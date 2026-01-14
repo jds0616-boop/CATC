@@ -1500,3 +1500,59 @@ body.night-mode .status-table tr.is-my-room {
     background-color: rgba(59, 130, 246, 0.15) !important;
     outline: 2px solid #3b82f6;
 }
+
+
+/* --- 교수 프로필 프레젠테이션 디자인 --- */
+.prof-intro-card {
+    display: flex; gap: 50px; align-items: center; max-width: 1000px;
+    padding: 60px; background: rgba(255,255,255,0.05); border-radius: 40px;
+    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+    animation: fadeIn 0.8s ease-out;
+}
+.prof-photo-big {
+    width: 350px; height: 450px; border-radius: 30px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 5px solid white;
+}
+.prof-photo-big img { width: 100%; height: 100%; object-fit: cover; }
+.prof-info-detail { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.prof-info-detail h1 { font-size: 50px; font-weight: 900; margin: 0; color: #3b82f6; }
+.prof-slogan { font-size: 22px; color: #94a3b8; font-style: italic; margin-bottom: 20px; }
+.prof-contact-row { display: flex; gap: 30px; font-size: 18px; color: #cbd5e1; }
+.prof-contact-row i { color: #3b82f6; margin-right: 8px; }
+.prof-bio-box {
+    margin-top: 30px; padding: 30px; background: rgba(0,0,0,0.3);
+    border-radius: 20px; border-left: 5px solid #3b82f6;
+}
+.prof-bio-box h3 { margin: 0 0 15px 0; font-size: 20px; color: #3b82f6; }
+.prof-bio-box p { font-size: 18px; line-height: 1.8; color: #e2e8f0; }
+.prof-mini-qr { position: absolute; bottom: 40px; right: 40px; background: white; padding: 10px; border-radius: 15px; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* --- 공지사항 관리 페이지 레이아웃 --- */
+.notice-container-grid {
+    display: flex;
+    gap: 25px;
+    width: 100%;
+    max-width: 1100px;
+    margin-bottom: 50px;
+}
+.notice-input-section { flex: 1.2; }
+.notice-viewer-section { flex: 1; }
+
+.global-notice-box {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #334155;
+    white-space: pre-line;
+    height: 325px;
+    overflow-y: auto;
+}
