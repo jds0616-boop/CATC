@@ -919,45 +919,33 @@ body.night-mode .badge-idle {
 }
 
 
-/* --- [수정] 현황판 현재 내 방 강조 (테두리 짤림 방지 완성본) --- */
 
-/* 1. 줄 전체의 outline을 삭제하고 각 칸(td)에 border를 줍니다 */
+/* --- [개선] 강의 현황판 내 강의실 강조 (완벽한 사각 박스) --- */
 .status-table tr.is-my-room td {
     background-color: #eff6ff !important; 
-    border-top: 2px solid #3b82f6 !important;    /* 위쪽 선 */
-    border-bottom: 2px solid #3b82f6 !important; /* 아래쪽 선 */
+    border-top: 2.5px solid #3b82f6 !important;    /* 위쪽 선 */
+    border-bottom: 2.5px solid #3b82f6 !important; /* 아래쪽 선 */
     position: relative;
+    /* 기존 outline은 삭제합니다 */
 }
 
-/* 2. 첫 번째 칸(연번)의 왼쪽면 테두리 */
+/* 첫 번째 칸(연번)의 왼쪽면 벽 세우기 */
 .status-table tr.is-my-room td:first-child {
-    border-left: 2px solid #3b82f6 !important;
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
+    border-left: 2.5px solid #3b82f6 !important;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
 }
 
-/* 3. 마지막 칸(관리 버튼)의 오른쪽면 테두리 */
+/* 마지막 칸(관리 버튼)의 오른쪽면 벽 세우기 */
 .status-table tr.is-my-room td:last-child {
-    border-right: 2px solid #3b82f6 !important;
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
+    border-right: 2.5px solid #3b82f6 !important;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
-/* 4. 방 이름 글자 강조 (유지) */
-.status-table tr.is-my-room td:nth-child(2) {
-    color: #1d4ed8 !important; 
-    font-weight: 900 !important;
-}
-
-/* 5. "관리 중" 표시 배지 (유지) */
-.my-room-badge {
-    background: #3b82f6;
-    color: white;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 5px;
-    vertical-align: middle;
+/* 줄 전체가 떠 보이는 효과를 위해 그림자 살짝 추가 */
+.status-table tr.is-my-room {
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 /* --- 메뉴 드롭다운 스타일 --- */
