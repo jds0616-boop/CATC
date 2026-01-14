@@ -1130,6 +1130,39 @@ setMode: function(mode) {
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
+
+
+if (mode === 'students') ui.loadStudentList();
+
+            // --- 여기에 새로 추가되는 코드 시작 ---
+            if (mode === 'dormitory') {
+                firebase.database().ref(`courses/${state.room}/students`).once('value', snap => {
+                    const data = snap.val() || {};
+                    const tbody = document.getElementById('dormitoryTableBody');
+                    tbody.innerHTML = "";
+                    Object.values(data).filter(s => s.name && s.name !== "undefined").forEach((s, idx) => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:bold;">${s.name}</td>
+                                <td>${s.phone || "-"}</td>
+                                <td style="color:#8b5cf6; font-weight:800;">데이터 연동 대기</td>
+                                <td>-</td>
+                            </tr>
+                        `;
+                    });
+                });
+            }
+
+
+
+
+
+
+
+
+
+
         }
     },
 
@@ -1415,7 +1448,7 @@ loadDinnerSkipData: function() {
         });
     }, // <--- 1. 여기 콤마(,)가 반드시 있어야 합니다!
 
-    loadStudentList: function() {
+loadStudentList: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
             const data = snap.val() || {};
@@ -1423,35 +1456,38 @@ loadDinnerSkipData: function() {
             if(!tbody) return;
             const totalEl = document.getElementById('studentTotalCount');
             
-            // 1. 데이터를 배열로 변환
             const studentList = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
             })).filter(s => s.name && s.name !== "undefined");
 
             if(totalEl) totalEl.innerText = studentList.length;
-            tbody.innerHTML = ""; // 2. 기존 목록 비우기
+            tbody.innerHTML = ""; 
 
-            // 3. 반복문 시작 (이 부분이 누락되어 있었습니다)
             studentList.forEach((s, idx) => {
                 const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
                 const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
                 
-                // 학생장 줄 배경색
+                // 학생장 줄 배경색 연보라색으로 강조
                 const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
 
                 tbody.innerHTML += `
                     <tr ${rowStyle}>
                         <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
+                        <td style="font-weight:bold;">
+                            ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
+                        </td>
                         <td>${s.phone || "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
-                            <div style="display:flex; gap:5px; justify-content:center;">
-                                <button class="btn-table-action" onclick="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
-                                        style="font-size:11px; padding:5px 8px; background-color:${s.isLeader ? '#64748b' : '#6366f1'}; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    ${s.isLeader ? '해제' : '학생장지정'}
-                                </button>
+                            <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
+                                <!-- 버튼 대신 체크박스 형태로 관리 -->
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
+                                    <input type="checkbox" ${s.isLeader ? 'checked' : ''} 
+                                           onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
+                                           style="width:18px; height:18px; cursor:pointer;">
+                                    학생장
+                                </label>
                                 <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
                                         style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
                                     삭제
@@ -1460,14 +1496,14 @@ loadDinnerSkipData: function() {
                         </td>
                     </tr>
                 `;
-            }); // 반복문 닫기
+            });
         });
     },
     toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
         dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     }
-}; // <--- 4. 최종적으로 ui 객체 닫기
+}; // <--- ui 객체 닫기
 
 
 // --- 4. Quiz Logic ---
