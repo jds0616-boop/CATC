@@ -1156,24 +1156,46 @@ async function openAdminAction() {
 
     const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
     
-    if (dinnerSnap.exists() || actionSnap.exists()) {
+if (dinnerSnap.exists() || actionSnap.exists()) {
         // 신청 내역이 있으면 현황창 보여주기
         document.getElementById('adminActionForm').style.display = 'none';
         document.getElementById('adminStatusArea').style.display = 'block';
         
         let statusMsg = "";
         if(dinnerSnap.exists()) statusMsg += "🍴 오늘 저녁 식사 제외 신청됨<br>";
+        
         if(actionSnap.exists()) {
             const data = actionSnap.val();
             const typeNm = data.type === 'outing' ? '외출' : '외박';
             statusMsg += `📍 ${typeNm} 신청됨 (비상연락처: ${data.phone})`;
+
+            // --- [추가] 복귀 체크 로직 ---
+            if (!data.returnedAt) {
+                // 아직 복귀 체크를 안 한 경우: 버튼 노출
+                statusMsg += `
+                    <div style="margin-top:15px; padding:15px; background:#fff; border-radius:12px; border:1.5px solid #e2e8f0; text-align:center;">
+                        <p style="font-size:13px; font-weight:800; color:#475569; margin:0 0 10px 0;">안전하게 복귀하셨나요?</p>
+                        <button onclick="submitReturnAction()" style="width:100%; padding:12px; background:#3b82f6; color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);">
+                            <i class="fa-solid fa-person-walking-arrow-loop-left"></i> 복귀 완료 (체크하기)
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 이미 복귀 체크를 한 경우: 시간 표시
+                const rTime = new Date(data.returnedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                statusMsg += `
+                    <div style="margin-top:12px; padding:10px; background:#f0fdf4; border-radius:10px; border:1px solid #bbf7d0; color:#16a34a; font-weight:900; text-align:center;">
+                        <i class="fa-solid fa-circle-check"></i> 복귀 확인됨 (${rTime})
+                    </div>
+                `;
+            }
+            // ---------------------------
         }
         document.getElementById('adminStatusText').innerHTML = statusMsg;
     } else {
         document.getElementById('adminActionForm').style.display = 'block';
         document.getElementById('adminStatusArea').style.display = 'none';
     }
-}
 
 // 2. 외출/외박 종류 선택 시 로직
 function selectAdminType(type) {
@@ -1290,6 +1312,26 @@ async function cancelAdminAction() {
 
         openAdminAction(); // 화면 새로고침
     });
+}
+
+
+// [신규] 교육생 복귀 확인 제출 함수
+async function submitReturnAction() {
+    const today = getTodayString();
+    const uToken = localStorage.getItem('uToken');
+    const name = localStorage.getItem('kac_user_name');
+
+    if (!confirm("현 시간부로 강의실(생활관)에 복귀하셨음을 확인합니까?")) return;
+
+    try {
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).update({
+            returnedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        alert("✅ 복귀 확인되었습니다. 안전한 교육 되세요!");
+        openAdminAction(); // 화면 새로고침하여 시간 표시
+    } catch (e) {
+        alert("처리에 실패했습니다. 다시 시도해주세요.");
+    }
 }
 
 

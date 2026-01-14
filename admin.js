@@ -988,15 +988,17 @@ const ui = {
             courseTitleEl.innerText = courseName || "과정명이 설정되지 않았습니다.";
         }
 
-        // 2. 우측 담당 교수 정보 업데이트 (디자인 강화)
+// 2. 우측 담당 교수 정보 업데이트 (프로필 버튼 기능 강화)
         const profDisplay = document.getElementById('dashProfName');
         if(profDisplay) {
             if(profName) {
+                // 이름을 안전하게 전달하기 위해 trim() 처리 및 변수 할당
+                const cleanName = profName.trim();
                 profDisplay.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <span style="font-size:22px; font-weight:900; color:#0f172a;">${profName} 교수님</span>
-                            <button onclick="ui.showProfPresentation('${profName}')" 
+                            <span style="font-size:22px; font-weight:900; color:#0f172a;">${cleanName} 교수님</span>
+                            <button onclick="ui.showProfPresentation('${cleanName}')" 
                                     style="cursor:pointer; background:#3b82f6; color:white; border:none; padding:6px 14px; border-radius:8px; font-size:13px; font-weight:800; display:flex; align-items:center; gap:6px; transition:0.2s; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);">
                                 <i class="fa-solid fa-address-card"></i> 프로필 보기
                             </button>
@@ -1004,7 +1006,7 @@ const ui = {
                     </div>
                 `;
             } else {
-                profDisplay.innerHTML = `<span style="color:#94a3b8; font-weight:600;">담당 교수 미지정</span>`;
+                profDisplay.innerHTML = `<span style="color:#94a3b8; font-weight:600;">담임교수 미지정</span>`;
             }
         }
 
@@ -1698,7 +1700,7 @@ function renderAdminList(todayData, yesterdayData) {
             }
 
             // 표에 한 줄씩 추가하는 내부 함수
-            function appendRow(item, isYesterday, token) {
+       function appendRow(item, isYesterday, token) {
                 const typeNm = item.type === 'outing' ? 
                     '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
                     '<span style="color:#ef4444; font-weight:bold;">외박</span>';
@@ -1707,22 +1709,31 @@ function renderAdminList(todayData, yesterdayData) {
                 const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                 const targetDate = isYesterday ? getYesterdayString() : getTodayString();
 
+                // [추가] 복귀 상태 텍스트 생성
+                let returnStatus = "";
+                if (item.returnedAt) {
+                    const rTime = new Date(item.returnedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    returnStatus = `<b style="color:#10b981;">✅ 복귀완료 (${rTime})</b>`;
+                } else {
+                    returnStatus = `<span style="color:#94a3b8;">미복귀</span>`;
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td>${count++}</td>
                         <td>${datePrefix}${typeNm}</td>
                         <td style="font-weight:bold;">${item.name}</td>
-                        <td>${item.phone}</td>
+                        <td style="font-size:13px;">${returnStatus}</td> <!-- 상태 칸으로 변경 -->
                         <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
                         <td>
                             <button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${token}')" 
                                     style="background-color:#64748b; font-size:11px; padding:5px 8px;">
-                                취소
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }
+                                삭제
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
     }
 },
 
