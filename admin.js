@@ -856,12 +856,15 @@ const ui = {
 
 
 showProfPresentation: function(name) {
+        if(!name) return ui.showAlert("교수님 성함 정보가 없습니다.");
+        
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) {
-                ui.showAlert("등록된 상세 프로필이 없습니다. 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
+                ui.showAlert(`[${name}] 교수님의 등록된 상세 프로필이 없습니다. 좌측 교수 명단 관리에서 프로필을 먼저 등록해주세요.`);
                 return;
             }
+            
             // 데이터 채우기
             document.getElementById('pres-name').innerText = name;
             document.getElementById('pres-photo').src = p.photo || "logo.png";
@@ -870,17 +873,19 @@ showProfPresentation: function(name) {
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
             document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
             
-            // QR 코드 생성 (연락처 정보)
+            // QR 코드 생성 (안전하게 처리)
             const qrDiv = document.getElementById('pres-qr');
-            qrDiv.innerHTML = "";
-            new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
+            if(qrDiv) {
+                qrDiv.innerHTML = "";
+                try {
+                    new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
+                } catch(e) { console.log("QR 생성 실패:", e); }
+            }
 
-            // 화면 전환
+            // [핵심] 프로필 모드로 전환
             ui.setMode('prof-presentation');
         });
     },
-    closeProfProfileModal: function() { document.getElementById('profProfileModal').style.display = 'none'; },
-
 
 
 
@@ -1229,8 +1234,7 @@ setMode: function(mode) {
                 quizMgr.loadSavedQuizList(); 
             }
 
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory'].includes(mode)) ? 'qa' : mode;
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory', 'prof-presentation'].includes(mode)) ? 'qa' : mode;
             
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
