@@ -671,35 +671,19 @@ const profMgr = {
     },
 
 
-// [수정] 교수 상세 프로필 편집창 열기 (기존 정보 로드 포함)
+// 상세 프로필 편집창 열기
     openProfileEditor: function(name) {
-        const el = (id) => document.getElementById(id);
-        el('pp-name').value = name; // 성함 고정
-
-        // 사진 미리보기 초기화
-        const previewImg = el('pp-photo-preview').querySelector('img');
-        previewImg.style.display = 'none';
-
-        // 서버에서 기존 프로필 정보 가져오기
+        document.getElementById('pp-name').value = name;
+        // 기존 저장된 프로필이 있다면 불러오기
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val() || {};
-            
-            // 각 입력칸에 기존 데이터 채우기 (없으면 빈칸)
-            el('pp-eng-name').value = p.engName || "";
-            el('pp-phone').value = p.phone || "";
-            el('pp-email').value = p.email || "";
-            el('pp-msg').value = p.msg || "";
-            el('pp-bio').value = p.bio || "";
-            
-            // 기존 사진이 있다면 미리보기에 표시
-            if (p.photo) {
-                previewImg.src = p.photo;
-                previewImg.style.display = 'block';
-            }
+            document.getElementById('pp-photo').value = p.photo || "";
+            document.getElementById('pp-phone').value = p.phone || "";
+            document.getElementById('pp-email').value = p.email || "";
+            document.getElementById('pp-msg').value = p.msg || "";
+            document.getElementById('pp-bio').value = p.bio || "";
         });
-
-        // 팝업창 띄우기
-        el('profProfileModal').style.display = 'flex';
+        document.getElementById('profProfileModal').style.display = 'flex';
     },
 
 
@@ -733,17 +717,14 @@ const profMgr = {
         const name = document.getElementById('pp-name').value;
         const fileInput = document.getElementById('pp-photo-file');
         
-       const doSave = (photoData) => {
+        const doSave = (photoData) => {
             const profileData = {
                 photo: photoData || "",
-                name: name,
-                engName: document.getElementById('pp-eng-name').value, // 추가
                 phone: document.getElementById('pp-phone').value,
                 email: document.getElementById('pp-email').value,
                 msg: document.getElementById('pp-msg').value,
                 bio: document.getElementById('pp-bio').value
             };
-
             firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
                 ui.showAlert("✅ 교수 프로필이 성공적으로 저장되었습니다.");
                 ui.closeProfProfileModal();
@@ -776,22 +757,14 @@ init: function() {
         });
     },
 
-renderFilters: function() {
+    renderFilters: function() {
         const bar = document.getElementById('subjectFilterBar');
         if(!bar) return;
         
-        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체보기</div>`;
+        let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
         
         this.list.forEach(item => {
-            // 직함(교수, 과장, 주임, 책임, 팀장 등)이 이름 끝에 포함되어 있는지 확인하는 규칙
-            const hasTitle = /(교수|과장|주임|책임|팀장|선생님)$/.test(item.name);
-            
-            // 직함이 이미 있으면 "님"만 붙이고, 없으면 " 강사님"을 붙임
-            const finalDisplayName = hasTitle ? item.name + "님" : item.name + " 강사님";
-
-            html += `<div class="filter-chip instructor-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">
-                        <i class="fa-solid fa-user-tag"></i> ${finalDisplayName}
-                     </div>`;
+            html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
         });
         bar.innerHTML = html;
     },
@@ -882,174 +855,80 @@ const ui = {
     },
 
 
-// [추가/수정] 프로필 모달 닫기 함수
-    closeProfProfileModal: function() {
-        const modal = document.getElementById('profProfileModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    },
-
-
-
-
-
-// [최종 통합본] 교수 프로필 발표 화면 실행 함수
-    showProfPresentation: function(name) {
-        if(!name || name === "담당 교수 미지정") {
-            ui.showAlert("담당 교수님이 지정되지 않았습니다.");
-            return;
-        }
-        
+showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) {
-                ui.showAlert(`[${name}] 교수님의 상세 프로필 정보가 없습니다.\n좌측 '교수 명단 관리'에서 프로필을 먼저 저장해주세요.`);
+                ui.showAlert("등록된 상세 프로필이 없습니다. 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
                 return;
             }
+            // 데이터 채우기
+            document.getElementById('pres-name').innerText = name;
+            document.getElementById('pres-photo').src = p.photo || "logo.png";
+            document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
+            document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
+            document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
+            document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
             
-            // 1. 기본 요소 선택용 헬퍼 함수
-            const el = (id) => document.getElementById(id);
+            // QR 코드 생성 (연락처 정보)
+            const qrDiv = document.getElementById('pres-qr');
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
 
-            // 2. 성함 및 영문 성함 채우기 (영문은 괄호 포함)
-            if(el('pres-name')) el('pres-name').innerText = name;
-            if(el('pres-eng-name')) el('pres-eng-name').innerText = p.engName ? `(${p.engName})` : "";
-            
-            // 3. 사진 및 기본 연락처 정보
-            if(el('pres-photo')) el('pres-photo').src = p.photo || "logo.png";
-            if(el('pres-phone')) el('pres-phone').innerText = p.phone || "연락처 미등록";
-            if(el('pres-email')) el('pres-email').innerText = p.email || "이메일 미등록";
-
-            // 4. 슬로건/메시지 채우기 (따옴표 제거 로직)
-            if(el('pres-msg')) el('pres-msg').innerText = p.msg || "환영합니다!";
-
-            // 5. [추가 아이디어] 현재 진행 중인 과정명 자동 매칭
-            const sidebarCourseName = document.getElementById('courseNameInput').value || "KAC 교육 과정";
-            if(el('pres-course-title')) el('pres-course-title').innerText = sidebarCourseName;
-
-            // 6. [추가 아이디어] 전문 분야 해시태그 생성 (샘플 3개)
-            const tagContainer = el('pres-tags');
-            if(tagContainer) {
-                tagContainer.innerHTML = "";
-                const tags = ["#항공기술", "#전문교수", "#직무역량"]; // 나중에 DB 연동 가능하도록 설정 가능
-                tags.forEach(t => {
-                    const span = document.createElement('span');
-                    span.className = 'expert-tag';
-                    span.innerText = t;
-                    tagContainer.appendChild(span);
-                });
-            }
-
-            // 7. [기능] 약력 텍스트를 리스트(<li>)로 자동 변환하여 출력
-            const bioListContainer = el('pres-bio-list');
-            if(bioListContainer) {
-                bioListContainer.innerHTML = ""; // 기존 내용 초기화
-                const bioText = p.bio || "약력이 등록되지 않았습니다.";
-                
-                // 줄바꿈 단위로 나누어 리스트 아이템 생성
-                bioText.split('\n').filter(line => line.trim() !== "").forEach(line => {
-                    const li = document.createElement('li');
-                    // 사용자가 직접 입력한 'ㅇ', '-', '·' 등의 불필요한 기호는 자동 제거 후 텍스트만 정리
-                    li.innerText = line.replace(/^[ㅇ\-\·\*\s]+/, ""); 
-                    bioListContainer.appendChild(li);
-                });
-            }
-            
-            // 8. QR 코드 생성 (기존 내용 비우고 새로 생성)
-            const qrDiv = el('pres-qr');
-            if(qrDiv) {
-                qrDiv.innerHTML = "";
-                if(p.phone) {
-                    try {
-                        new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
-                    } catch(e) { console.log("QR생성오류:", e); }
-                }
-            }
-
-            // 9. 최종 화면 전환 실행 (중앙 정렬 팝업 모드)
+            // 화면 전환
             ui.setMode('prof-presentation');
         });
     },
+    closeProfProfileModal: function() { document.getElementById('profProfileModal').style.display = 'none'; },
+
 
 
 
 // 대시보드 통계 실시간 로드
-// [개선] 대시보드 통계 실시간 로드 (스플릿 레이아웃 대응)--------------------------------------------------------
-    loadDashboardStats: function() {
+loadDashboardStats: function() {
         if(!state.room) return;
         
         const courseName = document.getElementById('courseNameInput').value;
         const profName = document.getElementById('profSelect').value;
         const today = getTodayString();
 
-        // 1. 좌측 과정명 업데이트
-        const courseTitleEl = document.getElementById('dashCourseTitle');
-        if(courseTitleEl) {
-            courseTitleEl.innerText = courseName || "과정명이 설정되지 않았습니다.";
-        }
-
-// 2. 우측 담당 교수 정보 업데이트 (프로필 버튼 기능 강화)
+        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
+        // 수정된 부분: 교수님 성함을 클릭하면 발표 모드로 전환되도록 링크 처리
         const profDisplay = document.getElementById('dashProfName');
-        if(profDisplay) {
-            if(profName) {
-                // 이름을 안전하게 전달하기 위해 trim() 처리 및 변수 할당
-                const cleanName = profName.trim();
-                profDisplay.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span style="font-size:22px; font-weight:900; color:#0f172a;">${cleanName} 교수님</span>
-                            <button onclick="ui.showProfPresentation('${cleanName}')" 
-                                    style="cursor:pointer; background:#3b82f6; color:white; border:none; padding:6px 14px; border-radius:8px; font-size:13px; font-weight:800; display:flex; align-items:center; gap:6px; transition:0.2s; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);">
-                                <i class="fa-solid fa-address-card"></i> 프로필 보기
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                profDisplay.innerHTML = `<span style="color:#94a3b8; font-weight:600;">담임교수 미지정</span>`;
-            }
+        if(profName) {
+            profDisplay.innerHTML = `
+                <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
+                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
+                    ${profName} 교수님
+                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
+                </span>
+            `;
+        } else {
+            profDisplay.innerText = "담당 교수 미지정";
         }
+        document.getElementById('dashTodayDateDisplay').innerText = "금일 날짜: " + today;
 
-        // 3. 상단 날짜 표시
-        const dateDisplayEl = document.getElementById('dashTodayDateDisplay');
-        if(dateDisplayEl) {
-            dateDisplayEl.innerText = "금일 날짜: " + today;
-        }
-
-        // --- 실시간 데이터 리스너 (서버 통계) ---
-
-        // 4. 수강생 수 실시간 업데이트
+        // 수강생 수 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const data = s.val() || {};
-            const count = Object.values(data).filter(u => u.name && u.name !== "undefined").length;
-            const countEl = document.getElementById('dashStudentCount');
-            if(countEl) countEl.innerText = count + "명";
+            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
+            document.getElementById('dashStudentCount').innerText = count + "명";
         });
 
-        // 5. 외출/외박 수 실시간 업데이트
+        // 외출/외박 수 업데이트
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
-            const data = s.val() || {};
-            const count = Object.keys(data).length;
-            const actionEl = document.getElementById('dashActionCount');
-            if(actionEl) actionEl.innerText = count + "명";
+            const count = Object.keys(s.val() || {}).length;
+            document.getElementById('dashActionCount').innerText = count + "명";
         });
 
-        // 6. 셔틀 수요(3종) 실시간 업데이트
+        // 셔틀(3종) 수 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
-            const osong = d.osong ? Object.keys(d.osong).length : 0;
-            const terminal = d.terminal ? Object.keys(d.terminal).length : 0;
-            const airport = d.airport ? Object.keys(d.airport).length : 0;
-
-            const oEl = document.getElementById('s-osong-cnt');
-            const tEl = document.getElementById('s-term-cnt');
-            const aEl = document.getElementById('s-air-cnt');
-
-            if(oEl) oEl.innerText = osong;
-            if(tEl) tEl.innerText = terminal;
-            if(aEl) aEl.innerText = airport;
+            document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
+            document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+            document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
+
     // 공지사항 뷰 로드
        loadNoticeView: async function() {
         if(!state.room) return;
@@ -1315,7 +1194,7 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        // 1. 모든 view- 구역을 일단 숨김 (겹침 방지)
+        // 1. 모든 view- 로 시작하는 구역을 일단 숨김
         const allViews = document.querySelectorAll('[id^="view-"]');
         allViews.forEach(v => { 
             v.style.display = 'none'; 
@@ -1327,27 +1206,32 @@ setMode: function(mode) {
         
         // 3. 화면 표시 방식 결정 (모달형은 flex, 일반은 block)
         if(targetEl) {
-            const flexModes = ['prof-presentation', 'quiz', 'qa', 'shuttle', 'guide', 'dormitory', 'admin-action', 'dinner-skip', 'notice', 'attendance', 'students'];
-            if(flexModes.includes(mode)) {
-                targetEl.style.display = 'flex'; 
+            if(mode === 'prof-presentation' || mode === 'quiz' || mode === 'qa') {
+                targetEl.style.display = 'flex';
+            } else if(mode === 'waiting' || mode === 'dashboard') {
+                targetEl.style.display = 'block';
             } else {
-                targetEl.style.display = 'block'; 
+                targetEl.style.display = 'flex'; // 기본값
             }
         }
 
-        // 4. 상단 탭 메뉴 활성화 표시
+        // 4. 상단 탭 활성화 표시
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
 
         localStorage.setItem('kac_last_mode', mode);
 
-        // 5. 데이터 로딩 실행
+        // 5. 각 모드별 데이터 로드
         if (state.room) {
-            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory', 'prof-presentation'].includes(mode)) ? 'qa' : mode;
-            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+            if (mode === 'quiz') {
+                document.getElementById('quizSelectModal').style.display = 'flex'; 
+                quizMgr.loadSavedQuizList(); 
+            }
 
-            if (mode === 'quiz') { document.getElementById('quizSelectModal').style.display = 'flex'; quizMgr.loadSavedQuizList(); }
+            let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory'].includes(mode)) ? 'qa' : mode;
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+            
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
@@ -1356,32 +1240,64 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
+// [수정] 생활관 배치현황 로직: 이름 우선 매칭 -> 중복 시 전화번호 매칭
             if (mode === 'dormitory') {
-    const tbody = document.getElementById('dormitoryTableBody');
-    if(tbody) {
-        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; text-align:center;'>매칭 중...</td></tr>";
-        Promise.all([
-            firebase.database().ref(`courses/${state.room}/students`).once('value'),
-            firebase.database().ref(`system/dormitory_assignments`).once('value')
-        ]).then(([studentSnap, dormSnap]) => {
-            const students = studentSnap.val() || {};
-            const dormData = dormSnap.val() || {};
-            tbody.innerHTML = "";
-            const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
-            list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-            list.forEach((s, idx) => {
-                const sPhone = s.phone ? s.phone.slice(-4) : "";
-                const sName = s.name; // 이 변수 정의가 빠져있었음
-                let assigned = dormData[sName] || dormData[`${s.name}_${sPhone}`] || null;
-                const color = assigned ? "#3b82f6" : "#94a3b8";
-                tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.name}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
-            });
-        });
-    }
-}
+                const tbody = document.getElementById('dormitoryTableBody');
+                if(!tbody) return;
+                
+                // 로딩 메시지 표시
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>생활관 배정 데이터를 매칭 중입니다...</td></tr>";
 
+                // 수강생 명단과 생활관 배정 명단(공용)을 동시에 가져옴
+                Promise.all([
+                    firebase.database().ref(`courses/${state.room}/students`).once('value'),
+                    firebase.database().ref(`system/dormitory_assignments`).once('value')
+                ]).then(([studentSnap, dormSnap]) => {
+                    const students = studentSnap.val() || {};
+                    const dormData = dormSnap.val() || {}; // 배정 데이터 원본
 
+                    tbody.innerHTML = "";
+                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined");
 
+                    if (studentList.length === 0) {
+                        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>현재 입실한 수강생이 없습니다.</td></tr>";
+                        return;
+                    }
+
+                    studentList.forEach((s, idx) => {
+                        const sName = s.name;
+                        const sPhone = s.phone ? s.phone.slice(-4) : ""; // 전화번호 뒷 4자리
+                        
+                        let assignedInfo = null;
+
+                        // --- [매칭 핵심 로직] ---
+                        // 1순위: 이름이 정확히 일치하는 데이터가 있는지 확인
+                        if (dormData[sName]) {
+                            assignedInfo = dormData[sName];
+                        } 
+                        // 2순위: 동명이인 대비용 "이름_번호" 형태가 있는지 확인
+                        else if (dormData[`${sName}_${sPhone}`]) {
+                            assignedInfo = dormData[`${sName}_${sPhone}`];
+                        }
+                        // -----------------------
+
+                        const bName = assignedInfo ? assignedInfo.building : "-";
+                        const rNo = assignedInfo ? assignedInfo.room + "호" : "미배정";
+                        const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8"; // 배정 시 파란색 강조
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:bold;">${sName}</td>
+                                <td>${sPhone || "-"}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${bName}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${rNo}</td>
+                            </tr>`;
+                    });
+                });
+            }
+        }
+    },
 
 // admin.js 내의 ui 객체 안에서 이 부분을 찾아서 교체하세요
 loadShuttleData: function() {
@@ -1398,33 +1314,16 @@ loadShuttleData: function() {
             
             container.innerHTML = "";
             locations.forEach(loc => {
+                // 해당 목적지의 데이터를 가져옴 (없으면 빈 객체)
                 const locData = data[loc.id] || {};
+                const entries = Object.entries(locData); // [토큰, 이름] 쌍의 배열로 변환
+                const count = entries.length;
                 
-                // --- [중복 제거 핵심 로직 추가] ---
-                const uniqueEntries = [];
-                const seenNames = new Set();
-
-                // 서버에서 가져온 데이터를 하나씩 검사
-                Object.entries(locData).forEach(([token, name]) => {
-                    if (!seenNames.has(name)) {
-                        seenNames.add(name); // 이미 본 이름이 아니면 저장
-                        uniqueEntries.push([token, name]);
-                    } else {
-                        // 중복된 이름(파편)이 발견되면 데이터베이스에서 자동 청소 (선택 사항)
-                        firebase.database().ref(`courses/${state.room}/shuttle/${loc.id}/${token}`).remove();
-                    }
-                });
-                // 가나다순 정렬 코드를 여기에 넣었습니다.
-                uniqueEntries.sort((a, b) => a[1].localeCompare(b[1], 'ko'));
-
-                const count = uniqueEntries.length;                
-
-
-
+                // [개선] 명단을 하얀색 태그(칩) 형태로 생성하고 X버튼(취소) 추가
                 let membersHtml = "";
                 if (count > 0) {
                     membersHtml = `<div class="member-tag-container">`;
-                    membersHtml += uniqueEntries.map(([token, name]) => `
+                    membersHtml += entries.map(([token, name]) => `
                         <div class="member-tag">
                             ${name}
                             <i class="fa-solid fa-xmark btn-del-shuttle" 
@@ -1437,6 +1336,7 @@ loadShuttleData: function() {
                     membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
                 }
                 
+                // 새로운 CSS 구조에 맞춰 HTML 생성
                 container.innerHTML += `
                     <div class="shuttle-dest-card card-${loc.id}">
                         <div class="dest-header">
@@ -1453,7 +1353,7 @@ loadShuttleData: function() {
                 `;
             });
         });
-    },
+    }, // 콤마(,) 확인 완료
 
 
     filterQa: function(f, event) { 
@@ -1462,8 +1362,7 @@ loadShuttleData: function() {
         this.renderQaList(f); 
     },
     
-
-renderQaList: function(f) {
+    renderQaList: function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
         list.innerHTML = "";
@@ -1498,37 +1397,14 @@ renderQaList: function(f) {
                 cls += " is-new"; 
                 newBadge = `<span class="new-badge-icon">NEW</span>`; 
             }
-
-// --- [최종형] 직급 및 호칭 자동 변환 로직 ---
-            const formattedSubject = (() => {
-                const sub = i.subject || '공통질문';
-                
-                // 1. 공통질문이나 일반인 경우 처리
-                if (sub === '공통질문' || sub === '일반') return '📢 공통질문';
-
-                // 2. KAC 및 현장 실정에 맞는 직급/직함 리스트
-                const ranks = ['교수', '과장', '주임', '대리', '차장', '부장', '팀장', '실장', '처장', '단장', '본부장', '이사', '사장', '직무대행', '선생님'];
-                
-                // 3. 직급 포함 여부 확인
-                const hasRank = ranks.some(rank => sub.includes(rank));
-
-                if (hasRank) {
-                    // 직급이 있는 경우: '님'이 이미 붙어있으면 그대로, 없으면 '님' 추가
-                    const suffix = sub.endsWith('님') ? '' : '님';
-                    return `To. ${sub}${suffix}`;
-                } else {
-                    // 이름만 있는 경우: '강사님' 추가
-                    return `To. ${sub} 강사님`;
-                }
-            })();
-            // ---------------------------------------
             
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
-                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-                        ${formattedSubject}
-                    </span>
+
+        <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+            ${i.subject || '일반'}
+        </span>
 
                     ${newBadge}${icon}${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
@@ -1540,8 +1416,6 @@ renderQaList: function(f) {
             </div>`;
         });
     },
-
-
     
     openQaModal: function(k) { 
         state.activeQaKey=k; 
@@ -1627,76 +1501,78 @@ renderQaList: function(f) {
         }
     },
 
-loadAdminActionData: function() {
+    loadAdminActionData: function() {
         if(!state.room) return;
         const today = getTodayString();
         const yesterday = getYesterdayString();
         const now = new Date();
         const showYesterday = now.getHours() < 9; 
+        
         const tbody = document.getElementById('adminActionTableBody');
         if(!tbody) return;
 
-        if (state.adminActionRef) state.adminActionRef.off();
+        if (state.adminActionRef) {
+            state.adminActionRef.off();
+        }
+
         state.adminActionRef = firebase.database().ref(`courses/${state.room}/admin_actions/${today}`);
         
         state.adminActionRef.on('value', snap => {
             const todayData = snap.val() || {};
+            
             if (showYesterday) {
                 firebase.database().ref(`courses/${state.room}/admin_actions/${yesterday}`).once('value', ySnap => {
-                    renderAdminList(todayData, ySnap.val() || {});
+                    const yesterdayData = ySnap.val() || {};
+                    renderAdminList(todayData, yesterdayData);
                 });
             } else {
                 renderAdminList(todayData, {});
             }
         });
 
-        function renderAdminList(todayData, yesterdayData) {
+function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
-            const seenUsers = new Set();
-            const sortedList = [];
 
-            // 데이터 취합 및 중복 제거
-            const allData = { ...yesterdayData, ...todayData };
-            Object.keys(allData).forEach(token => {
-                const item = allData[token];
-                const userKey = `${item.name}_${item.phone}`;
-                const isYesterday = yesterdayData[token] ? true : false;
-                if (!seenUsers.has(userKey)) {
-                    seenUsers.add(userKey);
-                    sortedList.push({ ...item, isYesterday, token });
-                }
+            // 어제 데이터 (익일 9시 전까지 노출)
+            Object.keys(yesterdayData).forEach(token => {
+                appendRow(yesterdayData[token], true, token);
             });
 
-            // 가나다순 정렬
-            sortedList.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            // 오늘 데이터
+            Object.keys(todayData).forEach(token => {
+                appendRow(todayData[token], false, token);
+            });
 
-            if (sortedList.length === 0) {
+            if (tbody.innerHTML === "") {
                 tbody.innerHTML = "<tr><td colspan='6' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
-                return;
             }
 
-            // 표 그리기
-            sortedList.forEach(item => {
-                const typeNm = item.type === 'outing' ? '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : '<span style="color:#ef4444; font-weight:bold;">외박</span>';
-                const datePrefix = item.isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
-                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                const targetDate = item.isYesterday ? getYesterdayString() : getTodayString();
+            function appendRow(item, isYesterday, token) {
+                const typeNm = item.type === 'outing' ? 
+                    '<span style="color:#f59e0b; font-weight:bold;">외출</span>' : 
+                    '<span style="color:#ef4444; font-weight:bold;">외박</span>';
                 
-                let returnStatus = item.returnedAt 
-                    ? `<b style="color:#16a34a;">✅ 복귀완료 (${new Date(item.returnedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})</b>` 
-                    : `<span style="color:#94a3b8;">미복귀</span>`;
+                const datePrefix = isYesterday ? '<small style="color:#94a3b8;">[어제]</small> ' : '';
+                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const targetDate = isYesterday ? getYesterdayString() : getTodayString();
 
                 tbody.innerHTML += `
                     <tr>
                         <td>${count++}</td>
                         <td>${datePrefix}${typeNm}</td>
                         <td style="font-weight:bold;">${item.name}</td>
-                        <td style="font-size:13px;">${returnStatus}</td>
+                        <td>${item.phone}</td>
                         <td style="color:#94a3b8; font-size:13px;">${timeStr}</td>
-                        <td><button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${item.token}')" style="background-color:#64748b; font-size:11px; padding:5px 8px;">삭제</button></td>
-                    </tr>`;
-            });
+                        <td>
+                            <button class="btn-table-action" onclick="ui.cancelIndividualAdminAction('${targetDate}', '${token}')" 
+                                    style="background-color:#64748b; font-size:11px; padding:5px 8px;">
+                                취소
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
         }
     },
 
@@ -1708,28 +1584,18 @@ loadDinnerSkipData: function() {
             const tbody = document.getElementById('dinnerSkipTableBody');
             if(!tbody) return;
             
-            const seenNames = new Set();
-            const uniqueEntries = [];
-
-            // 중복 이름(홍길동(1234)) 필터링
-            Object.entries(data).forEach(([token, nameAndPhone]) => {
-                if (!seenNames.has(nameAndPhone)) {
-                    seenNames.add(nameAndPhone);
-                    uniqueEntries.push({ token, nameAndPhone });
-                }
-            });
-            uniqueEntries.sort((a, b) => a.nameAndPhone.localeCompare('ko'));
+            const tokens = Object.keys(data); // 학생 고유 키 가져오기
             const totalEl = document.getElementById('dinnerSkipTotal');
-            if(totalEl) totalEl.innerText = uniqueEntries.length;
+            if(totalEl) totalEl.innerText = tokens.length;
 
-            tbody.innerHTML = uniqueEntries.length ? 
-                uniqueEntries.map((item, idx) => `
+            tbody.innerHTML = tokens.length ? 
+                tokens.map((token, idx) => `
                     <tr>
                         <td>${idx+1}</td>
-                        <td style="font-weight:bold;">${item.nameAndPhone}</td>
+                        <td style="font-weight:bold;">${data[token]}</td>
                         <td style="color:#ef4444; font-weight:800;">석식 미취식</td>
                         <td>
-                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${item.token}')" 
+                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${token}')" 
                                     style="background-color:#64748b; font-size:11px; padding:5px 8px;">
                                 제외 취소
                             </button>
@@ -1776,59 +1642,57 @@ loadDinnerSkipData: function() {
 
 
 loadStudentList: function() {
-    if(!state.room) return;
-    firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
-        const data = snap.val() || {};
-        const tbody = document.getElementById('studentListTableBody');
-        if(!tbody) return;
-        const totalEl = document.getElementById('studentTotalCount');
-        
-        // 1. 전체 데이터를 배열로 변환 (기본 필터링)
-        let studentList = Object.keys(data).map(key => ({
-            token: key,
-            ...data[key]
-        })).filter(s => s.name && s.name !== "undefined");
+        if(!state.room) return;
+        firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('studentListTableBody');
+            if(!tbody) return;
+            const totalEl = document.getElementById('studentTotalCount');
+            
+            const studentList = Object.keys(data).map(key => ({
+                token: key,
+                ...data[key]
+            })).filter(s => s.name && s.name !== "undefined");
 
-        // 2. 가나다순 정렬 (filter 밖에서 수행)
-        studentList.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            if(totalEl) totalEl.innerText = studentList.length;
+            tbody.innerHTML = ""; 
 
-        // 3. [중복 제거] 성함 + 전화번호 조합으로 중복 검사
-        const seen = new Set();
-        studentList = studentList.filter(s => {
-            const uniqueKey = `${s.name}_${s.phone}`; 
-            if (seen.has(uniqueKey)) return false;
-            seen.add(uniqueKey);
-            return true;
+            studentList.forEach((s, idx) => {
+                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+                const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
+                
+                // 학생장 줄 배경색 연보라색으로 강조
+                const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
+
+                tbody.innerHTML += `
+                    <tr ${rowStyle}>
+                        <td>${idx + 1}</td>
+                        <td style="font-weight:bold;">
+                            ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
+                        </td>
+                        <!-- 수정됨: 전화번호 뒷 4자리만 출력 -->
+                        <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
+                        <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                        <td>
+                            <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
+                                <!-- 버튼 대신 체크박스 형태로 관리 -->
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
+                                    <input type="checkbox" ${s.isLeader ? 'checked' : ''} 
+                                           onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
+                                           style="width:18px; height:18px; cursor:pointer;">
+                                    학생장
+                                </label>
+                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
+                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
+                                    삭제
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
         });
-
-        // 4. 인원수 업데이트
-        if(totalEl) totalEl.innerText = studentList.length;
-        tbody.innerHTML = ""; 
-
-        // 5. 테이블 행 생성
-        studentList.forEach((s, idx) => {
-            const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-            const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-            const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
-
-            tbody.innerHTML += `
-                <tr ${rowStyle}>
-                    <td>${idx + 1}</td>
-                    <td style="font-weight:bold;">${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}</td>
-                    <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
-                    <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                    <td>
-                        <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
-                                <input type="checkbox" ${s.isLeader ? 'checked' : ''} onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')"> 학생장
-                            </label>
-                            <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background-color:#ef4444; font-size:11px; padding:5px 8px;">삭제</button>
-                        </div>
-                    </td>
-                </tr>`;
-        });
-    });
-},
+    },
     toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
         dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
@@ -1901,25 +1765,13 @@ const quizMgr = {
         this.renderMiniList();
     },
     
-// [개선] 퀴즈 에디터 리스트 렌더링
     renderMiniList: function() {
         const d = document.getElementById('miniQuizList'); 
         if(!d) return;
         d.innerHTML = "";
-        
         state.quizList.forEach((q, i) => {
-            const typeLabel = q.isSurvey ? '설문' : (q.isOX ? 'OX' : '4지');
-            
-            // 시각적으로 정돈된 아이템 구조 생성
-            d.innerHTML += `
-                <div class="mini-quiz-item">
-                    <input type="checkbox" ${q.checked ? 'checked' : ''} 
-                           onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked">
-                    <div class="mini-quiz-info">
-                        <div class="mini-quiz-type">Q${i+1}. ${typeLabel}</div>
-                        <div class="mini-quiz-text">${q.text.substring(0, 35)}${q.text.length > 35 ? '...' : ''}</div>
-                    </div>
-                </div>`;
+            const typeLabel = q.isSurvey ? '[설문]' : (q.isOX ? '[OX]' : '[4지]');
+            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeLabel} Q${i+1}.</b> ${q.text.substring(0,20)}...</div>`;
         });
     },
     
@@ -2277,40 +2129,36 @@ const quizMgr = {
         if(summaryOverlay) summaryOverlay.style.display = 'flex';
     },
     
-// [보완] 상대적 크기를 비교하여 막대 그래프 출력
     renderChart: function(id, corr) {
         const div = document.getElementById('d-chart'); 
         if(!div) return;
         div.innerHTML = "";
         const q = state.quizList[state.currentQuizIdx];
-        
         firebase.database().ref(`courses/${state.room}/quizAnswers`).child(id).once('value', s => {
             const d = s.val() || {}; 
             const cnt = new Array(q.options.length).fill(0);
-            
-            // 1. 투표수 집계
             Object.values(d).forEach(v => { 
                 if(v.choice >= 1 && v.choice <= q.options.length) cnt[v.choice-1]++; 
             });
-
-            // 2. 가장 높은 투표수 찾기 (분모가 0이 안 되게 최소 1)
-            const maxCount = Math.max(...cnt, 1);
+            const max = Math.max(...cnt, 1);
             
-            // 3. 차트 그리기
+            if(q.isSurvey) {
+                let maxIdx = cnt.indexOf(Math.max(...cnt));
+                firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ 
+                    surveyResult: `가장 많은 선택: '${q.options[maxIdx]}' (${Math.round((cnt[maxIdx]/Object.values(d).length)*100)}%)` 
+                });
+            }
+            
             for(let i=0; i < q.options.length; i++) {
-                // 최대 투표수를 가진 막대가 전체 높이의 85%를 차지하도록 계산
-                const barHeight = (cnt[i] / maxCount) * 85; 
                 const isCorrect = !q.isSurvey && (i + 1) === corr; 
-
-                // 왕관은 정답인 경우에만 숫자 바로 위에 표시
-                const crownHtml = isCorrect ? `<div class="crown-icon">👑</div>` : '';
-
+                const h = (cnt[i]/max)*80;
+                const crownHtml = isCorrect ? `<div class="crown-icon" style="bottom: ${h > 0 ? h + '%' : '40px'};">👑</div>` : '';
                 div.innerHTML += `
                     <div class="bar-wrapper ${isCorrect ? 'correct' : ''}">
                         ${crownHtml}
                         <div class="bar-value">${cnt[i]}</div>
-                        <div class="bar-fill" style="height:${barHeight}%"></div>
-                        <div class="bar-label">${q.isOX ? (i === 0 ? 'O' : 'X') : (i + 1)}</div>
+                        <div class="bar-fill" style="height:${h}%"></div>
+                        <div class="bar-label">${q.isOX?(i===0?'O':'X'):(i+1)}</div>
                     </div>
                 `;
             }
@@ -2381,19 +2229,6 @@ const guideMgr = {
             }
         });
     },
-
-// [추가] 업로드 전 경고창 띄우기
-    showWarning: function() {
-        const msg = "⚠️ 주의사항\n\n파일을 업로드 할 경우, 기존 입교안내 자료는 삭제됩니다.\n반드시 '최신 자료'인지 확인 후 업로드 해주세요.\n\n업로드를 진행하시겠습니까?";
-        
-        if (confirm(msg)) {
-            // "확인"을 눌렀을 때만 숨겨진 파일 선택창을 강제로 클릭함
-            document.getElementById('guideFileInput').click();
-        }
-    },
-
-
-
 
     // 2. PDF 업로드 (기존 유지)
     uploadGuide: function(input) {
