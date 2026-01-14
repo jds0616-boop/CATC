@@ -44,20 +44,21 @@
         .like-count { font-size: 12px; font-weight: 700; color: #64748b; }
         .like-btn.active + .like-count { color: #ef4444; }
         
-        .input-dock { 
-    position: fixed; /* absolute에서 fixed로 변경 */
+.input-dock { 
+    position: fixed; 
     bottom: 0; 
     left: 0; 
     width: 100%; 
     background: var(--input-bg); 
     border-top-left-radius: 20px; 
     border-top-right-radius: 20px; 
-    padding: 10px 15px calc(15px + var(--safe-area-bottom)) 15px; /* 패딩 살짝 증가 */
+    padding: 10px 15px calc(10px + var(--safe-area-bottom)) 15px; 
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
-    z-index: 1000; /* 레이어 순위 높임 */
+    z-index: 1000; 
     display: flex; 
     flex-direction: column; 
     gap: 4px;
+    transition: bottom 0.1s ease-out; /* 부드럽게 움직이게 추가 */
 }
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
@@ -635,26 +636,77 @@ firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) =>
 
 
 
-        function setupListeners() {
-firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
-        serverTimeOffset = snap.val() || 0;
-    });
+function setupListeners() {
+            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+                serverTimeOffset = snap.val() || 0;
+            });
 
-            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
+            dbRef.settings.on('value', s => { 
+                const val = s.val() || {}; 
+                const title = val.courseName || `Course ${currentRoom}`; 
+                document.getElementById('roomTitle').innerText = title; 
+                document.getElementById('landingTitle').innerText = title; 
+            });
+
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
-// [추가] 과목 리스트 실시간 로드
-    firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
-        const data = s.val() || {};
-        const sel = document.getElementById('subjectSelect');
-        if(!sel) return;
-        
-        let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
-        Object.values(data).forEach(name => {
-            html += `<option value="${name}">${name}</option>`;
-        });
-        sel.innerHTML = html;
-    });
+            // [추가] 과목 리스트 실시간 로드
+            firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
+                const data = s.val() || {};
+                const sel = document.getElementById('subjectSelect');
+                if(!sel) return;
+                
+                let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
+                Object.values(data).forEach(name => {
+                    html += `<option value="${name}">${name}</option>`;
+                });
+                sel.innerHTML = html;
+            });
+
+            // --- [신규] 모바일 키보드 가림 방지 및 자동 스크롤 로직 ---
+            const qInputEl = document.getElementById('qInput');
+            const scrollContainer = document.getElementById('scrollContainer');
+            const inputDock = document.getElementById('inputDock');
+
+            // 1. 입력창 터치 시 채팅창을 맨 아래로 강제 스크롤
+            qInputEl.addEventListener('focus', () => {
+                setTimeout(() => {
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }, 300); // 키보드 올라오는 애니메이션 대기
+            });
+
+            // 2. 비주얼 뷰포트(실제 화면 크기) 변화 감지 (아이폰/안드로이드 공통)
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    const viewportHeight = window.visualViewport.height;
+                    const windowHeight = window.innerHeight;
+                    
+                    if (viewportHeight < windowHeight) {
+                        // 키보드가 올라온 상태
+                        const keyboardHeight = windowHeight - viewportHeight;
+                        // 입력창을 키보드 높이만큼 정확히 밀어올림
+                        inputDock.style.bottom = `${keyboardHeight}px`;
+                        
+                        // 스크롤Container도 최하단으로 유지
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    } else {
+                        // 키보드가 내려간 상태
+                        inputDock.style.bottom = '0px';
+                    }
+                });
+            }
+            // -------------------------------------------------------
+
+            // 기존에 있던 qInput 리스너 (글자수 제한 및 높이 조절)
+            qInputEl.addEventListener('input', function() {
+                const len = this.value.length; 
+                document.getElementById('charCount').innerText = `${len} / 100`;
+                if (len >= 90) document.getElementById('charCount').classList.add('limit'); 
+                else document.getElementById('charCount').classList.remove('limit');
+                this.style.height = '1px'; 
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        }
 
 
 dbRef.status.on('value', snap => {
