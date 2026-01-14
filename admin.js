@@ -894,39 +894,60 @@ const ui = {
 
 
 
-showProfPresentation: function(name) {
-        if(!name) return ui.showAlert("교수님 성함 정보가 없습니다.");
+// [최종 수정] 교수 프로필 발표 화면 실행 함수 (약력 리스트 변환 기능 포함)
+    showProfPresentation: function(name) {
+        if(!name || name === "담당 교수 미지정") {
+            ui.showAlert("담당 교수님이 지정되지 않았습니다.");
+            return;
+        }
         
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) {
-                ui.showAlert(`[${name}] 교수님의 등록된 상세 프로필이 없습니다. 좌측 교수 명단 관리에서 프로필을 먼저 등록해주세요.`);
+                ui.showAlert(`[${name}] 교수님의 상세 프로필 정보가 없습니다.\n좌측 '교수 명단 관리'에서 프로필을 먼저 저장해주세요.`);
                 return;
             }
             
-            // 데이터 채우기
-            document.getElementById('pres-name').innerText = name;
-            document.getElementById('pres-photo').src = p.photo || "logo.png";
+            // 1. 기본 텍스트 정보 채우기
+            const el = (id) => document.getElementById(id);
+            if(el('pres-name')) el('pres-name').innerText = name;
+            if(el('pres-photo')) el('pres-photo').src = p.photo || "logo.png";
+            if(el('pres-phone')) el('pres-phone').innerText = p.phone || "연락처 미등록";
+            if(el('pres-email')) el('pres-email').innerText = p.email || "이메일 미등록";
+            if(el('pres-msg')) el('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
 
-    if(document.getElementById('pres-eng-name')) {
-        document.getElementById('pres-eng-name').innerText = p.engName || "";
-    }
-
-            document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
-            document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
-            document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
-            document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
-            
-            // QR 코드 생성 (안전하게 처리)
-            const qrDiv = document.getElementById('pres-qr');
-            if(qrDiv) {
-                qrDiv.innerHTML = "";
-                try {
-                    new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
-                } catch(e) { console.log("QR 생성 실패:", e); }
+            // [추가] 영문 이름이 있다면 표시
+            if(el('pres-eng-name')) {
+                el('pres-eng-name').innerText = p.engName || "";
             }
 
-            // [핵심] 프로필 모드로 전환
+            // 2. [핵심] 약력 텍스트를 리스트(<li>)로 자동 변환하여 출력
+            const bioListContainer = el('pres-bio-list');
+            if(bioListContainer) {
+                bioListContainer.innerHTML = ""; // 기존 내용 초기화
+                const bioText = p.bio || "약력이 등록되지 않았습니다.";
+                
+                // 줄바꿈 단위로 나누어 리스트 아이템 생성
+                bioText.split('\n').filter(line => line.trim() !== "").forEach(line => {
+                    const li = document.createElement('li');
+                    // 사용자가 직접 입력한 'ㅇ', '-', '·' 등의 불필요한 기호는 자동 제거 후 텍스트만 정리
+                    li.innerText = line.replace(/^[ㅇ\-\·\*\s]+/, ""); 
+                    bioListContainer.appendChild(li);
+                });
+            }
+            
+            // 3. QR 코드 생성 (기존 내용 비우고 새로 생성)
+            const qrDiv = el('pres-qr');
+            if(qrDiv) {
+                qrDiv.innerHTML = "";
+                if(p.phone) {
+                    try {
+                        new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
+                    } catch(e) { console.log("QR생성오류:", e); }
+                }
+            }
+
+            // 4. 화면 전환 실행 (중앙 정렬 팝업 모드)
             ui.setMode('prof-presentation');
         });
     },
@@ -1835,13 +1856,25 @@ const quizMgr = {
         this.renderMiniList();
     },
     
+// [개선] 퀴즈 에디터 리스트 렌더링
     renderMiniList: function() {
         const d = document.getElementById('miniQuizList'); 
         if(!d) return;
         d.innerHTML = "";
+        
         state.quizList.forEach((q, i) => {
-            const typeLabel = q.isSurvey ? '[설문]' : (q.isOX ? '[OX]' : '[4지]');
-            d.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; display:flex; gap:10px;"><input type="checkbox" ${q.checked?'checked':''} onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked"><b>${typeLabel} Q${i+1}.</b> ${q.text.substring(0,20)}...</div>`;
+            const typeLabel = q.isSurvey ? '설문' : (q.isOX ? 'OX' : '4지');
+            
+            // 시각적으로 정돈된 아이템 구조 생성
+            d.innerHTML += `
+                <div class="mini-quiz-item">
+                    <input type="checkbox" ${q.checked ? 'checked' : ''} 
+                           onchange="state.quizList[${i}].checked=!state.quizList[${i}].checked">
+                    <div class="mini-quiz-info">
+                        <div class="mini-quiz-type">Q${i+1}. ${typeLabel}</div>
+                        <div class="mini-quiz-text">${q.text.substring(0, 35)}${q.text.length > 35 ? '...' : ''}</div>
+                    </div>
+                </div>`;
         });
     },
     
