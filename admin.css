@@ -963,10 +963,10 @@ body.night-mode .quiz-card.result-mode {
 
 /* 3. 테이블 중앙 정렬 (핵심!) */
 .status-table {
-    border-collapse: collapse;
-    background: white !important;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-collapse: separate !important; /* ★ 핵심: 칸을 분리해야 사방 테두리가 다 보임 */
+    border-spacing: 0 10px !important;    /* 줄 사이의 위아래 간격 */
+    width: 100%;
+    background: transparent !important;   /* 배경 투명화 */
 }
 
 .status-table th, .status-table td {
@@ -1098,37 +1098,31 @@ body.night-mode .badge-idle {
 
 
 
-/* --- [진짜 최종] 내 강의실 강조: 레이어 최상단으로 올리기 --- */
-.status-table {
-    border-collapse: collapse !important; /* 다시 기본 밀착 모드로 복구 */
-}
-
-/* 1. 줄 전체에 우선순위를 주어 위로 올림 */
+/* [최종 해결] 내 강의실 줄을 레이어 최상단으로 올리고 사방 테두리 완성 */
 .status-table tr.is-my-room td {
-    position: relative;
-    z-index: 100; /* ★ 다른 줄보다 위로 올라오게 설정 ★ */
     background-color: #eff6ff !important;
-    border-top: 3px solid #3b82f6 !important;    /* 선 두께 3px로 강화 */
-    border-bottom: 3px solid #3b82f6 !important;
+    border-top: 3px solid #3b82f6 !important;    /* 위쪽 선 */
+    border-bottom: 3px solid #3b82f6 !important; /* 아래쪽 선 */
+    position: relative;
 }
 
-/* 2. 첫 번째 칸(연번)의 왼쪽 벽 세우기 */
+/* 첫 번째 칸에 왼쪽 벽 만들기 */
 .status-table tr.is-my-room td:first-child {
-    border-left: 3px solid #3b82f6 !important;
+    border-left: 3px solid #3b82f6 !important;    /* ★ 왼쪽 선 ★ */
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
 }
 
-/* 3. 마지막 칸(관리 버튼)의 오른쪽 벽 세우기 */
+/* 마지막 칸에 오른쪽 벽 만들기 */
 .status-table tr.is-my-room td:last-child {
-    border-right: 3px solid #3b82f6 !important;
+    border-right: 3px solid #3b82f6 !important;   /* ★ 오른쪽 선 ★ */
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
 
-/* 4. 그림자까지 추가해서 "떠 있는 박스" 느낌 부여 */
+/* 박스가 떠 있는 것처럼 보이게 그림자 추가 */
 .status-table tr.is-my-room {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
 }
 
 
