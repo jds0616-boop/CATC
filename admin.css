@@ -1676,183 +1676,78 @@ body.night-mode .status-table tr.is-my-room {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* --- [최종 개선] 교수 프로필 프리미엄 명함 스타일 --- */
+/* --- [최종 완결] 교수 프로필 프리미엄 명함 스타일 --- */
 #view-prof-presentation {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.7); /* 배경을 조금 더 어둡게 하여 카드에 집중 */
-    backdrop-filter: blur(15px);
-    z-index: 5000; 
-    justify-content: center;
-    align-items: center;
+    display: none; position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%; z-index: 5000;
+    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(15px);
+    justify-content: center; align-items: center;
 }
 
 .prof-premium-card {
-    display: flex;
-    width: 1050px;
-    height: 650px; 
-    background: #ffffff;
-    border-radius: 40px;
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    overflow: hidden;
-    position: relative; /* 나가기 버튼 배치의 기준 */
-    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; width: 1080px; height: 650px;
+    background: #ffffff; border-radius: 40px;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+    position: relative; overflow: hidden;
+    animation: slideUp 0.5s ease-out;
 }
 
-/* 1. 나가기 버튼 전용 스타일 */
-.prof-top-controls {
-    position: absolute;
-    top: 25px;
-    left: 25px;
-    z-index: 100;
-}
-
+/* 나가기 버튼 */
+.prof-top-controls { position: absolute; top: 25px; left: 25px; z-index: 10; }
 .btn-prof-exit {
-    background: rgba(241, 245, 249, 0.9);
-    border: 1px solid #e2e8f0;
-    padding: 10px 22px;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 800;
-    color: #475569;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    background: #f1f5f9; border: 1px solid #e2e8f0; padding: 10px 20px;
+    border-radius: 12px; font-size: 15px; font-weight: 800; color: #475569;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+}
+.btn-prof-exit:hover { background: #ef4444; color: white; border-color: #ef4444; }
+
+/* 왼쪽 사진 */
+.prof-photo-frame { width: 450px; height: 100%; background: #f8fafc; border-right: 1px solid #f1f5f9; }
+.prof-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 오른쪽 정보 구역 정렬 */
+.prof-detail-info { flex: 1; padding: 60px; display: flex; flex-direction: column; text-align: left; }
+
+/* 이름 행 정렬 (교수 + 이름 + 영문) */
+.prof-name-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.prof-label-top { font-size: 18px; font-weight: 700; color: #3b82f6; }
+.prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -2px; }
+.prof-eng-inline { font-size: 22px; color: #94a3b8; font-weight: 500; margin-left: 5px; }
+
+/* 성함 바로 아래 포인트 바 (밑줄 대신) */
+.prof-point-line { width: 60px; height: 6px; background: #3b82f6; border-radius: 10px; margin-bottom: 25px; }
+
+/* 전문 분야 태그 */
+.prof-expertise-tags { display: flex; gap: 8px; margin-bottom: 20px; }
+.expert-tag { 
+    background: #eff6ff; color: #3b82f6; padding: 4px 12px; 
+    border-radius: 6px; font-size: 14px; font-weight: 800; border: 1px solid #dbeafe;
 }
 
-.btn-prof-exit:hover {
-    background: #ef4444; /* 마우스 올리면 빨간색으로 경고성 강조 */
-    color: white;
-    border-color: #ef4444;
-    transform: translateX(-3px); /* 살짝 왼쪽으로 밀리는 효과 */
-}
+/* 메시지 (따옴표 제거) */
+.prof-slogan-clean { font-size: 20px; color: #475569; font-weight: 600; line-height: 1.6; margin: 0 0 30px 0; }
 
-/* 왼쪽 사진 영역 */
-.prof-photo-frame {
-    width: 450px;
-    height: 100%;
-    background: #f8fafc;
-    border-right: 1px solid #f1f5f9;
-}
-.prof-photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* 오른쪽 콘텐츠 구역 */
-.prof-detail-info {
-    flex: 1;
-    padding: 60px;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-}
-
-.prof-header-group {
-    border-bottom: 2.5px solid #3b82f6; /* 라인 두께 강화 */
-    padding-bottom: 25px;
-    margin-bottom: 30px;
-}
-
-.prof-detail-info h1 {
-    font-size: 55px; /* 한글 성함 크게 */
-    font-weight: 900;
-    color: #0f172a;
-    margin: 0;
-    letter-spacing: -2px;
-}
-
-/* 2. 영문 성함 가독성 강화 */
-.prof-eng-name {
-    font-size: 24px; /* 크기 확대 */
-    color: #94a3b8; /* 세련된 회색 */
-    font-weight: 500;
-    margin-top: -5px;
-    letter-spacing: 0.5px;
-    display: block;
-}
-
-.prof-premium-slogan {
-    font-size: 20px;
-    color: #3b82f6;
-    font-weight: 600;
-    margin-top: 15px;
-    font-style: italic;
-}
-
-/* 연락처 박스 */
-.prof-contact-box {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 40px;
-}
+/* 연락처 아이템 */
+.prof-contact-box { display: flex; gap: 15px; margin-bottom: 40px; }
 .prof-contact-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 700;
-    color: #475569;
-    background: #f1f5f9;
-    padding: 10px 18px;
-    border-radius: 50px;
+    display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700;
+    color: #475569; background: #f1f5f9; padding: 10px 18px; border-radius: 50px;
 }
-.prof-contact-item i { color: #3b82f6; font-size: 17px; }
+.prof-contact-item i { color: #3b82f6; }
 
-/* 주요 약력 리스트 */
-.prof-bio-premium {
-    flex-grow: 1;
-}
-.prof-bio-premium h3 {
-    font-size: 19px;
-    color: #0f172a;
-    font-weight: 800;
-    margin: 0 0 15px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.prof-bio-premium h3::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-}
-
-.prof-bio-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
+/* 약력 리스트 (불렛 포인트) */
+.prof-bio-premium h3 { font-size: 19px; color: #0f172a; font-weight: 800; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+.prof-bio-list { list-style: none; padding: 0; margin: 0; }
 .prof-bio-list li {
-    position: relative;
-    padding-left: 22px;
-    margin-bottom: 12px;
-    font-size: 17px;
-    font-weight: 600;
-    color: #334155;
-    line-height: 1.5;
+    position: relative; padding-left: 22px; margin-bottom: 12px;
+    font-size: 17px; font-weight: 600; color: #334155; line-height: 1.5;
 }
 .prof-bio-list li::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 10px;
-    width: 7px; height: 7px;
-    background: #3b82f6;
-    border-radius: 50%;
+    content: ''; position: absolute; left: 0; top: 10px;
+    width: 7px; height: 7px; background: #3b82f6; border-radius: 50%;
 }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(50px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
 
 /* 3. 공지사항 와이드 레이아웃 */
 .notice-flex-container { display: flex; justify-content: center; gap: 30px; width: 100%; max-width: 1200px; margin: 0 auto 50px auto; align-items: stretch; }

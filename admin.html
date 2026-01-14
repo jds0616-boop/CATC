@@ -626,35 +626,47 @@
 <!-- [개선] 교수 프로필 프리미엄 시네마틱 모달 화면 -->
 <div id="view-prof-presentation">
     <div class="prof-premium-card">
-        <!-- 상단 컨트롤 바: 뒤로가기(나가기) 버튼 추가 -->
+        <!-- 상단 컨트롤: 나가기 버튼 -->
         <div class="prof-top-controls">
             <button class="btn-prof-exit" onclick="ui.setMode('dashboard')">
                 <i class="fa-solid fa-arrow-left"></i> 나가기
             </button>
         </div>
         
-        <!-- 왼쪽 사진 -->
+        <!-- 왼쪽 사진 영역 (유지) -->
         <div class="prof-photo-frame">
             <img id="pres-photo" src="logo.png">
         </div>
 
-        <!-- 오른쪽 정보 -->
+        <!-- 오른쪽 정보 영역 (정렬 개선) -->
         <div class="prof-detail-info">
             <div class="prof-header-group">
-                <!-- "KAC 전문 교수" 삭제됨 -->
-                <h1 id="pres-name">성함</h1>
-                <!-- 영문 이름 자리 -->
-                <div id="pres-eng-name" class="prof-eng-name">English Name</div>
-                <p id="pres-msg" class="prof-premium-slogan">"환영 메시지"</p>
+                <!-- 이름 한 줄 정렬: 교수(작게) + 성함(크게) + (영문이름) -->
+                <div class="prof-name-row">
+                    <span class="prof-label-top">교수</span>
+                    <h1 id="pres-name">장두석</h1>
+                    <span id="pres-eng-name" class="prof-eng-inline">(Dooseok Jang)</span>
+                </div>
+                
+                <!-- 성함 바로 아래에 깔끔한 포인트 선 배치 -->
+                <div class="prof-point-line"></div>
+
+                <!-- 전문 분야 태그 (추가 아이디어) -->
+                <div id="pres-tags" class="prof-expertise-tags"></div>
+
+                <!-- 메시지 (따옴표 제거 및 폰트 정돈) -->
+                <p id="pres-msg" class="prof-slogan-clean">메시지가 표시됩니다.</p>
             </div>
 
+            <!-- 연락처 (유지) -->
             <div class="prof-contact-box">
                 <div class="prof-contact-item"><i class="fa-solid fa-phone"></i> <span id="pres-phone">-</span></div>
                 <div class="prof-contact-item"><i class="fa-solid fa-envelope"></i> <span id="pres-email">-</span></div>
             </div>
 
+            <!-- 약력 (유지 및 정돈) -->
             <div class="prof-bio-premium">
-                <h3><i class="fa-solid fa-graduation-cap"></i> 주요 약력 및 경력</h3>
+                <h3><i class="fa-solid fa-award"></i> 주요 약력 및 경력</h3>
                 <ul id="pres-bio-list" class="prof-bio-list"></ul>
             </div>
         </div>

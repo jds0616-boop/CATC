@@ -894,7 +894,7 @@ const ui = {
 
 
 
-// [최종 수정] 교수 프로필 발표 화면 실행 함수 (약력 리스트 변환 기능 포함)
+// [최종 통합본] 교수 프로필 발표 화면 실행 함수
     showProfPresentation: function(name) {
         if(!name || name === "담당 교수 미지정") {
             ui.showAlert("담당 교수님이 지정되지 않았습니다.");
@@ -908,20 +908,39 @@ const ui = {
                 return;
             }
             
-            // 1. 기본 텍스트 정보 채우기
+            // 1. 기본 요소 선택용 헬퍼 함수
             const el = (id) => document.getElementById(id);
+
+            // 2. 성함 및 영문 성함 채우기 (영문은 괄호 포함)
             if(el('pres-name')) el('pres-name').innerText = name;
+            if(el('pres-eng-name')) el('pres-eng-name').innerText = p.engName ? `(${p.engName})` : "";
+            
+            // 3. 사진 및 기본 연락처 정보
             if(el('pres-photo')) el('pres-photo').src = p.photo || "logo.png";
             if(el('pres-phone')) el('pres-phone').innerText = p.phone || "연락처 미등록";
             if(el('pres-email')) el('pres-email').innerText = p.email || "이메일 미등록";
-            if(el('pres-msg')) el('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
 
-            // [추가] 영문 이름이 있다면 표시
-            if(el('pres-eng-name')) {
-                el('pres-eng-name').innerText = p.engName || "";
+            // 4. 슬로건/메시지 채우기 (따옴표 제거 로직)
+            if(el('pres-msg')) el('pres-msg').innerText = p.msg || "환영합니다!";
+
+            // 5. [추가 아이디어] 현재 진행 중인 과정명 자동 매칭
+            const sidebarCourseName = document.getElementById('courseNameInput').value || "KAC 교육 과정";
+            if(el('pres-course-title')) el('pres-course-title').innerText = sidebarCourseName;
+
+            // 6. [추가 아이디어] 전문 분야 해시태그 생성 (샘플 3개)
+            const tagContainer = el('pres-tags');
+            if(tagContainer) {
+                tagContainer.innerHTML = "";
+                const tags = ["#항공기술", "#전문교수", "#직무역량"]; // 나중에 DB 연동 가능하도록 설정 가능
+                tags.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'expert-tag';
+                    span.innerText = t;
+                    tagContainer.appendChild(span);
+                });
             }
 
-            // 2. [핵심] 약력 텍스트를 리스트(<li>)로 자동 변환하여 출력
+            // 7. [기능] 약력 텍스트를 리스트(<li>)로 자동 변환하여 출력
             const bioListContainer = el('pres-bio-list');
             if(bioListContainer) {
                 bioListContainer.innerHTML = ""; // 기존 내용 초기화
@@ -936,7 +955,7 @@ const ui = {
                 });
             }
             
-            // 3. QR 코드 생성 (기존 내용 비우고 새로 생성)
+            // 8. QR 코드 생성 (기존 내용 비우고 새로 생성)
             const qrDiv = el('pres-qr');
             if(qrDiv) {
                 qrDiv.innerHTML = "";
@@ -947,7 +966,7 @@ const ui = {
                 }
             }
 
-            // 4. 화면 전환 실행 (중앙 정렬 팝업 모드)
+            // 9. 최종 화면 전환 실행 (중앙 정렬 팝업 모드)
             ui.setMode('prof-presentation');
         });
     },
@@ -1324,6 +1343,7 @@ setMode: function(mode) {
                         const dormData = dormSnap.val() || {};
                         tbody.innerHTML = "";
                         const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
+                        list.sort((a, b) => a.name.localeCompare('ko'));
                         if(list.length === 0) {
                             tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>입실한 수강생이 없습니다.</td></tr>";
                             return;
@@ -1382,10 +1402,13 @@ loadShuttleData: function() {
                         firebase.database().ref(`courses/${state.room}/shuttle/${loc.id}/${token}`).remove();
                     }
                 });
-                // ---------------------------------
+                // 가나다순 정렬 코드를 여기에 넣었습니다.
+                uniqueEntries.sort((a, b) => a[1].localeCompare(b[1], 'ko'));
 
-                const count = uniqueEntries.length;
-                
+                const count = uniqueEntries.length;                
+
+
+
                 let membersHtml = "";
                 if (count > 0) {
                     membersHtml = `<div class="member-tag-container">`;
@@ -1624,27 +1647,19 @@ renderQaList: function(f) {
 function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
-            const seenUsers = new Set(); // 이름+번호 중복 체크용 장바구니
+            const seenUsers = new Set();
+            const sortedList = []; // 정렬을 위한 임시 배열
 
-            // 1. 어제 데이터 처리 (익일 9시 전까지 노출)
-            Object.keys(yesterdayData).forEach(token => {
-                const item = yesterdayData[token];
-                const userKey = `${item.name}_${item.phone}`; // 중복 식별 키 생성
-
-                if (!seenUsers.has(userKey)) {
-                    seenUsers.add(userKey);
-                    appendRow(item, true, token);
-                }
-            });
-
-            // 2. 오늘 데이터 처리
-            Object.keys(todayData).forEach(token => {
-                const item = todayData[token];
-                const userKey = `${item.name}_${item.phone}`; // 중복 식별 키 생성
+            // 1. 데이터 모으기 (중복 제거 포함)
+            const allData = { ...yesterdayData, ...todayData };
+            Object.keys(allData).forEach(token => {
+                const item = allData[token];
+                const userKey = `${item.name}_${item.phone}`;
+                const isYesterday = yesterdayData[token] ? true : false;
 
                 if (!seenUsers.has(userKey)) {
                     seenUsers.add(userKey);
-                    appendRow(item, false, token);
+                    sortedList.push({ ...item, isYesterday, token });
                 }
             });
 
@@ -1699,7 +1714,7 @@ loadDinnerSkipData: function() {
                     uniqueEntries.push({ token, nameAndPhone });
                 }
             });
-
+            uniqueEntries.sort((a, b) => a.nameAndPhone.localeCompare('ko'));
             const totalEl = document.getElementById('dinnerSkipTotal');
             if(totalEl) totalEl.innerText = uniqueEntries.length;
 
@@ -1773,6 +1788,7 @@ loadStudentList: function() {
             // 2. [중복 제거 핵심] 성함 + 전화번호 조합으로 중복 검사
             const seen = new Set();
             const studentList = rawList.filter(s => {
+                studentList.sort((a, b) => a.name.localeCompare('ko'));
                 const uniqueKey = `${s.name}_${s.phone}`; // 이름_번호 조합키 생성
                 if (seen.has(uniqueKey)) {
                     return false; // 이미 목록에 있는 이름+번호면 제외
