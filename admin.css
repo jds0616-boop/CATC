@@ -920,33 +920,43 @@ body.night-mode .badge-idle {
 
 
 
-/* --- [개선] 강의 현황판 내 강의실 강조 (완벽한 사각 박스) --- */
-.status-table tr.is-my-room td {
-    background-color: #eff6ff !important; 
-    border-top: 2.5px solid #3b82f6 !important;    /* 위쪽 선 */
-    border-bottom: 2.5px solid #3b82f6 !important; /* 아래쪽 선 */
-    position: relative;
-    /* 기존 outline은 삭제합니다 */
+/* --- [최종 해결] 강의 현황판 내 강의실 완벽한 사각형 강조 --- */
+.status-table {
+    border-collapse: separate; /* 테두리가 끊기지 않게 설정 */
+    border-spacing: 0 5px;    /* 줄 사이 간격을 살짝 주어 네모칸이 더 잘 보이게 함 */
 }
 
-/* 첫 번째 칸(연번)의 왼쪽면 벽 세우기 */
+/* 1. 모든 칸의 위와 아래에 파란색 선 긋기 */
+.status-table tr.is-my-room td {
+    background-color: #eff6ff !important; /* 연한 파란 배경 */
+    border-top: 2.5px solid #3b82f6 !important;
+    border-bottom: 2.5px solid #3b82f6 !important;
+    padding: 15px 10px !important;
+}
+
+/* 2. 첫 번째 칸(연번)의 왼쪽에 파란색 벽 세우기 + 둥근 모서리 */
 .status-table tr.is-my-room td:first-child {
     border-left: 2.5px solid #3b82f6 !important;
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
 }
 
-/* 마지막 칸(관리 버튼)의 오른쪽면 벽 세우기 */
+/* 3. 마지막 칸(관리 버튼)의 오른쪽에 파란색 벽 세우기 + 둥근 모서리 */
 .status-table tr.is-my-room td:last-child {
     border-right: 2.5px solid #3b82f6 !important;
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
 
-/* 줄 전체가 떠 보이는 효과를 위해 그림자 살짝 추가 */
+/* 4. 그림자 효과 추가 (입체감) */
 .status-table tr.is-my-room {
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.15));
 }
+
+
+
+
+
 
 /* --- 메뉴 드롭다운 스타일 --- */
 .mode-dropdown { position: relative; display: inline-block; }
