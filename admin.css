@@ -1502,57 +1502,164 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
-/* --- 교수 프로필 프레젠테이션 디자인 --- */
-.prof-intro-card {
-    display: flex; gap: 50px; align-items: center; max-width: 1000px;
-    padding: 60px; background: rgba(255,255,255,0.05); border-radius: 40px;
-    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
-    animation: fadeIn 0.8s ease-out;
-}
-.prof-photo-big {
-    width: 350px; height: 450px; border-radius: 30px; overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 5px solid white;
-}
-.prof-photo-big img { width: 100%; height: 100%; object-fit: cover; }
-.prof-info-detail { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-.prof-info-detail h1 { font-size: 50px; font-weight: 900; margin: 0; color: #3b82f6; }
-.prof-slogan { font-size: 22px; color: #94a3b8; font-style: italic; margin-bottom: 20px; }
-.prof-contact-row { display: flex; gap: 30px; font-size: 18px; color: #cbd5e1; }
-.prof-contact-row i { color: #3b82f6; margin-right: 8px; }
-.prof-bio-box {
-    margin-top: 30px; padding: 30px; background: rgba(0,0,0,0.3);
-    border-radius: 20px; border-left: 5px solid #3b82f6;
-}
-.prof-bio-box h3 { margin: 0 0 15px 0; font-size: 20px; color: #3b82f6; }
-.prof-bio-box p { font-size: 18px; line-height: 1.8; color: #e2e8f0; }
-.prof-mini-qr { position: absolute; bottom: 40px; right: 40px; background: white; padding: 10px; border-radius: 15px; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ============================================================
+   [개선] 뷰 영역 독립화 및 교수 프로필 프리미엄 디자인
+   ============================================================ */
+
+/* 1. 모든 게시판(View) 구역이 서로 겹치지 않도록 기본 숨김 및 높이 고정 */
+[id^="view-"] {
+    display: none; 
+    width: 100%;
+    animation: fadeIn 0.3s ease-out;
 }
 
+/* 2. 교수 프로필 시네마틱 모달 (밝고 신선한 스타일) */
+#view-prof-presentation {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.85); /* 밝은 반투명 배경 */
+    backdrop-filter: blur(20px); /* 글래스모피즘 효과 */
+    z-index: 5000; 
+    justify-content: center;
+    align-items: center;
+}
 
-/* --- 공지사항 관리 페이지 레이아웃 --- */
-.notice-container-grid {
+.prof-premium-card {
+    display: flex;
+    gap: 50px;
+    width: 90%;
+    max-width: 1100px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); /* 화이트-스카이블루 그라데이션 */
+    padding: 60px;
+    border-radius: 40px;
+    box-shadow: 0 40px 100px rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 장식용 배경 원형 */
+.prof-premium-card::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 50%;
+}
+
+/* 왼쪽 사진 프레임 */
+.prof-photo-frame {
+    flex-shrink: 0;
+    width: 360px;
+    height: 460px;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border: 10px solid white;
+    background: #f8fafc;
+}
+.prof-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 오른쪽 정보 구역 */
+.prof-detail-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.prof-detail-info h1 {
+    font-size: 55px;
+    font-weight: 900;
+    color: #1e3a8a; /* 신뢰감 있는 딥블루 */
+    margin: 0 0 10px 0;
+    letter-spacing: -2px;
+}
+
+.prof-premium-slogan {
+    font-size: 22px;
+    color: #3b82f6; /* 밝은 블루 */
+    font-weight: 600;
+    margin-bottom: 35px;
+    padding-left: 15px;
+    border-left: 5px solid #3b82f6;
+}
+
+.prof-contact-box {
     display: flex;
     gap: 25px;
-    width: 100%;
-    max-width: 1100px;
-    margin-bottom: 50px;
-}
-.notice-input-section { flex: 1.2; }
-.notice-viewer-section { flex: 1; }
-
-.global-notice-box {
+    margin-bottom: 40px;
     background: white;
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px solid #e2e8f0;
-    font-size: 15px;
+    padding: 20px 30px;
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    width: fit-content;
+}
+
+.prof-contact-box span {
+    font-size: 18px;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prof-contact-box i { color: #3b82f6; font-size: 20px; }
+
+.prof-bio-premium {
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 25px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.prof-bio-premium h3 {
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    color: #1e3a8a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prof-bio-premium p {
+    font-size: 18px;
     line-height: 1.8;
     color: #334155;
     white-space: pre-line;
-    height: 325px;
-    overflow-y: auto;
+}
+
+/* 닫기(뒤로가기) 버튼 */
+.prof-close-btn {
+    position: absolute;
+    top: 30px; right: 30px;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #64748b;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.prof-close-btn:hover { 
+    transform: rotate(90deg); 
+    color: #ef4444; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }

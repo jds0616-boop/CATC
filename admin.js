@@ -431,37 +431,35 @@ const dataMgr = {
         }
     },
 
-    resetCourse: function() {
+resetCourse: function() {
         if (!state.room) {
-            ui.showAlert("⚠️ 강의실에 먼저 입장해야 초기화가 가능합니다.");
+            ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
             return;
         }
-        if(confirm("🚨 경고: 현재 방의 모든 정보(과정명, 교수명, 학생 데이터, 질문, 퀴즈 등)를 삭제하고 대기 상태로 되돌리시겠습니까?")) {
-            // 삭제할 경로들 정의
+        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 설정(과정명, 담임교수, 과목리스트, 수강생 명부, 신청내역 등)이 완전히 삭제됩니다. 계속하시겠습니까?")) {
             const rPath = `courses/${state.room}`;
             
-            // 1. 방의 모든 데이터 초기화 (기본 틀만 남김)
-            firebase.database().ref(rPath).set({
-                settings: {
-                    courseName: "" // 과정명 초기화
-                },
-                status: {
-                    roomStatus: 'idle', // 상태를 '비어있음'으로 변경
-                    professorName: "",  // 담임교수 초기화
-                    mode: 'qa',
-                    resetKey: "reset_" + Date.now() // 수강생 강제 로그아웃용 키
-                }
-            }).then(() => {
-                // 2. UI 즉시 반영
-                document.getElementById('courseNameInput').value = "";
-                document.getElementById('profSelect').value = "";
-                document.getElementById('roomStatusSelect').value = 'idle';
-                document.getElementById('displayCourseTitle').innerText = "과정명 미설정";
+            // 1. 기존 입교 가이드만 미리 백업 받음
+            firebase.database().ref(`${rPath}/entranceGuide`).once('value', snap => {
+                const backupGuide = snap.val();
                 
-                ui.showAlert("✅ 방이 초기화되어 '비어있음' 상태로 변경되었습니다.");
-                
-                // 3. 페이지 새로고침하여 초기 상태 반영
-                setTimeout(() => location.reload(), 1000);
+                // 2. 해당 방 데이터 전체 삭제
+                firebase.database().ref(rPath).set(null).then(() => {
+                    // 3. 백업한 가이드와 함께 초기 상태(Idle)로 재설정
+                    firebase.database().ref(rPath).update({
+                        status: {
+                            roomStatus: 'idle',
+                            professorName: "",
+                            mode: 'qa',
+                            resetKey: "reset_" + Date.now()
+                        },
+                        settings: { courseName: "" },
+                        entranceGuide: backupGuide || ""
+                    }).then(() => {
+                        ui.showAlert("✅ 방이 완전히 초기화되었습니다.");
+                        setTimeout(() => location.reload(), 1000);
+                    });
+                });
             });
         }
     },
@@ -528,16 +526,18 @@ const dataMgr = {
 
 
     // [수정완료] 수강생 삭제 기능 함수 추가
-    deleteStudent: function(token) {
+deleteStudent: function(token) {
         if(!state.room) return;
-        if(confirm("해당 수강생을 명부에서 삭제하시겠습니까?\n삭제 시 해당 수강생의 화면도 초기화될 수 있습니다.")) {
-            firebase.database().ref(`courses/${state.room}/students/${token}`).remove()
-                .then(() => {
-                    ui.showAlert("수강생이 명부에서 삭제되었습니다.");
-                })
-                .catch(err => {
-                    alert("삭제 중 오류 발생: " + err.message);
-                });
+        if(confirm("해당 수강생을 삭제하시겠습니까?\n(외출/외박 및 석식 신청 내역도 함께 삭제됩니다.)")) {
+            const today = getTodayString();
+            const updates = {};
+            updates[`courses/${state.room}/students/${token}`] = null;
+            updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
+            updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
+
+            firebase.database().ref().update(updates).then(() => {
+                ui.showAlert("✅ 해당 수강생의 모든 데이터가 삭제되었습니다.");
+            });
         }
     }
 };
@@ -644,21 +644,60 @@ const profMgr = {
         document.getElementById('profProfileModal').style.display = 'flex';
     },
 
-    // 프로필 데이터 저장
+
+// [추가] 사진 용량 최적화 (가로 500px 기준 압축)
+    resizeImage: function(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max_size = 500; // 최대 가로 크기 500px
+
+                if (width > max_size) {
+                    height *= max_size / width;
+                    width = max_size;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.7)); // 70% 품질로 압축
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
+    // [수정] 상세 프로필 저장 (사진 파일 처리 포함)
     saveFullProfile: function() {
         const name = document.getElementById('pp-name').value;
-        const profileData = {
-            photo: document.getElementById('pp-photo').value,
-            phone: document.getElementById('pp-phone').value,
-            email: document.getElementById('pp-email').value,
-            msg: document.getElementById('pp-msg').value,
-            bio: document.getElementById('pp-bio').value
+        const fileInput = document.getElementById('pp-photo-file');
+        
+        const doSave = (photoData) => {
+            const profileData = {
+                photo: photoData || "",
+                phone: document.getElementById('pp-phone').value,
+                email: document.getElementById('pp-email').value,
+                msg: document.getElementById('pp-msg').value,
+                bio: document.getElementById('pp-bio').value
+            };
+            firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
+                ui.showAlert("✅ 교수 프로필이 성공적으로 저장되었습니다.");
+                ui.closeProfProfileModal();
+            });
         };
-        firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
-            ui.showAlert("✅ 교수 프로필이 저장되었습니다.");
-            ui.closeProfProfileModal();
-        });
+
+        if (fileInput.files.length > 0) {
+            // 사진이 선택되었다면 최적화 후 저장
+            this.resizeImage(fileInput.files[0], (optimizedData) => doSave(optimizedData));
+        } else {
+            // 사진 선택 안 했다면 기존 사진 유지 확인 후 저장
+            firebase.database().ref(`system/professorProfiles/${name}/photo`).once('value', s => doSave(s.val()));
+        }
     }
+
 };
 
 // --- [신규] 과목(세션) 관리 로직 ---
@@ -742,17 +781,34 @@ init: function() {
 const ui = {
 
 
-applyGroupDinner: function() {
-        if(!confirm("모든 수강생을 '석식 제외'로 등록하시겠습니까? (단체 회식 시 사용)")) return;
+// [신규] 단체 회식 적용 (전원 석식 제외)
+    applyGroupDinner: function() {
+        if(!confirm("현재 명단의 모든 수강생을 '석식 제외'로 등록하시겠습니까?\n(단체 회식 시 사용)")) return;
+        
         firebase.database().ref(`courses/${state.room}/students`).once('value', snap => {
             const students = snap.val() || {};
             const today = getTodayString();
             const updates = {};
+            
             Object.keys(students).forEach(token => {
                 const s = students[token];
-                updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = `${s.name}(${s.phone})`;
+                if(s.name) {
+                    updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = `${s.name}(${s.phone ? s.phone.slice(-4) : '0000'})`;
+                }
             });
-            firebase.database().ref().update(updates).then(() => ui.showAlert("✅ 전원 석식 제외 처리되었습니다."));
+            
+            firebase.database().ref().update(updates).then(() => {
+                ui.showAlert("✅ 전원 석식 제외 처리가 완료되었습니다.");
+            });
+        });
+    },
+
+    // [신규] 석식 제외 초기화
+    resetDinnerSkip: function() {
+        if(!confirm("오늘의 모든 석식 제외 신청 내역을 삭제하시겠습니까?")) return;
+        const today = getTodayString();
+        firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).set(null).then(() => {
+            ui.showAlert("✅ 석식 제외 명단이 초기화되었습니다.");
         });
     },
 
@@ -1090,16 +1146,23 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
-        const views = [
-            'view-qa', 'view-quiz', 'view-waiting', 'view-shuttle', 
-            'view-admin-action', 'view-dinner-skip', 'view-students', 
-            'view-dashboard', 'view-notice', 'view-attendance', 'view-guide'
-        ]; 
-        
-        views.forEach(v => { 
-            const el = document.getElementById(v); 
-            if(el) el.style.display = 'none'; 
+        // 모든 view- 로 시작하는 구역을 숨김 (겹침 방지 핵심)
+        const allViews = document.querySelectorAll('[id^="view-"]');
+        allViews.forEach(v => { 
+            v.style.display = 'none'; 
         });
+        
+        const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
+        const targetEl = document.getElementById(targetView);
+        
+        if(targetEl) {
+            // 교수 프로필이나 퀴즈 같은 모달형 뷰는 flex로, 일반 게시판은 block으로 표시
+            if(mode === 'prof-presentation' || mode === 'quiz' || mode === 'qa') {
+                targetEl.style.display = 'flex';
+            } else {
+                targetEl.style.display = 'block';
+            }
+        }
         
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
@@ -1477,7 +1540,8 @@ loadStudentList: function() {
                         <td style="font-weight:bold;">
                             ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
                         </td>
-                        <td>${s.phone || "-"}</td>
+                        <!-- 수정됨: 전화번호 뒷 4자리만 출력 -->
+                        <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
                         <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
                         <td>
                             <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
