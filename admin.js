@@ -908,14 +908,14 @@ const ui = {
 
 
 
-// [5.2차 수정] 박스 내부 우측 배지에 정보 연동
+// [5.4차 수정] 프리미엄 대시보드 데이터 연동
     loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 박스 내부 우측 날짜 표시
+        // 1. 우측 하단 텍스트 날짜 표시
         const dateDisplay = document.getElementById('dashTodayDateDisplay');
-        if(dateDisplay) dateDisplay.innerText = `📅 DATE: ${today}`;
+        if(dateDisplay) dateDisplay.innerText = today;
 
         // 2. 과정 정보 실시간 감시
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
@@ -928,28 +928,25 @@ const ui = {
             if(roomDetailEl) roomDetailEl.innerText = s.roomDetailName || "장소 미설정";
         });
 
-        // 3. 박스 내부 우측 교수 정보 표시
+        // 3. 교수 정보 연동 (히어로 박스 우측 카드)
         firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
             const st = snap.val() || {};
-            const profDisplay = document.getElementById('dashProfName');
-            if(profDisplay) {
-                if(st.professorName) {
-                    profDisplay.innerHTML = `
-                        <b>담임</b> ${st.professorName} 교수님
-                        <span class="btn-prof-link" onclick="ui.showProfPresentation('${st.professorName}')">프로필</span>
-                    `;
-                } else { profDisplay.innerText = "교수 미지정"; }
+            const profOnlyEl = document.getElementById('dashProfNameOnly');
+            if(profOnlyEl) {
+                profOnlyEl.innerText = st.professorName || "미지정";
             }
         });
 
-        // 4. 통계 수치 로직 (유지)
+        // 4. 통계 수치 연동
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count + "명";
+            const studentCountEl = document.getElementById('dashStudentCount');
+            if(studentCountEl) studentCountEl.innerText = count;
         });
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
-            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count + "명";
+            const actionCountEl = document.getElementById('dashActionCount');
+            if(actionCountEl) actionCountEl.innerText = count;
         });
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
@@ -958,7 +955,6 @@ const ui = {
             if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
-
 
 
 

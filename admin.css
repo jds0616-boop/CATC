@@ -1961,66 +1961,147 @@ body.night-mode .status-table tr.is-my-room {
 
 
 
-/* --- [5.2차 최종] 센터 제목 유지 + 박스 내부 정보창 스타일 --- */
 
-/* 1. 과정명 컬러박스: 내부 요소를 좌/우로 정렬하도록 설정 */
-.course-title-box {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 30px 40px !important;
-    position: relative;
-    border-left: 10px solid #3b82f6 !important;
-    background: #f0f7ff !important;
-    border-radius: 20px;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.05);
+
+
+
+
+
+
+
+
+/* --- [5.4차 최종] 프리미엄 에듀-대시보드 신규 스타일 --- */
+
+/* 1. 헤더 & 컨테이너 정리 */
+.dash-hero-header { margin-bottom: 25px !important; }
+.dash-title-main { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.dash-title-main i { font-size: 32px; color: #3b82f6; }
+
+.dash-hero-container {
+    padding: 30px !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.05) !important;
 }
 
-/* 2. 컬러박스 우측 정보창 (교수/날짜 배지) */
-.title-right-info {
+/* 2. 과정 히어로 배너 (상단 박스) */
+.course-hero-banner {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end; /* 배지들을 오른쪽 끝으로 정렬 */
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    padding: 40px 50px;
+    border-radius: 24px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
 }
 
-/* 교수님 성함 하얀색 배지 스타일 */
-.dash-prof-badge-inner {
-    background: #ffffff;
-    padding: 8px 15px;
-    border-radius: 12px;
-    border: 1.5px solid #dbeafe;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.05);
-    font-size: 14px;
-    font-weight: 700;
-    color: #475569;
-    white-space: nowrap;
+/* 배경 장식 원형 */
+.course-hero-banner::after {
+    content: ''; position: absolute; top: -50px; right: -50px;
+    width: 200px; height: 200px; background: rgba(59, 130, 246, 0.1); border-radius: 50%;
 }
 
-.dash-prof-badge-inner b { color: #3b82f6; margin-right: 5px; }
-
-.dash-prof-badge-inner .btn-prof-link {
-    font-size: 11px;
-    color: #94a3b8;
-    text-decoration: underline;
-    cursor: pointer;
-    margin-left: 10px;
+.hero-tag {
+    background: #3b82f6; color: white; padding: 4px 12px;
+    border-radius: 6px; font-size: 11px; font-weight: 800;
+    margin-bottom: 15px; display: inline-block; letter-spacing: 1px;
 }
 
-/* 날짜 텍스트 스타일 */
-.dash-date-badge-inner {
-    font-size: 13px;
-    color: #94a3b8;
-    font-weight: 600;
-    margin-right: 5px;
-    letter-spacing: 0.5px;
+#dashCourseTitle {
+    font-size: 38px !important; font-weight: 900 !important;
+    color: white !important; margin: 0 0 20px 0 !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* 3. 상단바 Room 번호 버그 해결 스타일 */
-#displayRoomName {
-    font-weight: 900;
-    color: #3b82f6 !important;
-    background: rgba(59, 130, 246, 0.1);
-    padding: 4px 10px;
-    border-radius: 8px;
+.hero-info-row { display: flex; gap: 20px; }
+.info-pill {
+    background: rgba(255,255,255,0.1); padding: 8px 16px;
+    border-radius: 50px; font-size: 14px; display: flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.info-pill i { color: #60a5fa; }
+
+/* 3. 우측 교수님 글래스 카드 */
+.prof-glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 15px 25px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; gap: 15px;
+    cursor: pointer; transition: 0.3s;
+    min-width: 240px;
+}
+.prof-glass-card:hover { background: rgba(255,255,255,0.2); transform: translateY(-3px); }
+
+.prof-avatar {
+    width: 45px; height: 45px; background: white; color: #1e293b;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+
+.prof-details { display: flex; flex-direction: column; }
+.prof-label { font-size: 10px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; }
+.prof-name-row { font-size: 18px; font-weight: 800; color: white; }
+.prof-name-row span { font-size: 14px; font-weight: 400; opacity: 0.8; }
+.prof-arrow { color: rgba(255,255,255,0.3); margin-left: auto; }
+
+.date-minimal-box {
+    margin-top: 15px; text-align: right; font-size: 13px; color: #94a3b8;
+    display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+}
+
+/* 4. 하단 통계 프리미엄 그리드 */
+.dash-premium-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 20px; }
+
+.stat-premium-card {
+    background: #f8fafc; padding: 25px; border-radius: 20px;
+    display: flex; flex-direction: column; position: relative;
+    transition: 0.3s; border: 1px solid #f1f5f9;
+}
+.stat-premium-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+
+.card-icon {
+    width: 50px; height: 50px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 15px;
+}
+
+.card-label { font-size: 14px; font-weight: 700; color: #64748b; margin-bottom: 10px; }
+.card-value { font-size: 32px; font-weight: 900; color: #1e293b; }
+.card-value small { font-size: 16px; margin-left: 4px; color: #94a3b8; }
+
+.card-status-bar {
+    margin-top: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    padding-top: 15px; border-top: 1px solid #edf2f7;
+}
+
+/* 카드별 컬러 포인트 */
+.card-blue { border-top: 5px solid #3b82f6; }
+.card-blue .card-icon { background: #eff6ff; color: #3b82f6; }
+.card-blue .card-status-bar { color: #3b82f6; }
+
+.card-coral { border-top: 5px solid #f87171; }
+.card-coral .card-icon { background: #fef2f2; color: #f87171; }
+.card-coral .card-status-bar { color: #f87171; }
+
+.card-mint { border-top: 5px solid #10b981; }
+.card-mint .card-label-shuttle { font-size: 14px; font-weight: 800; color: #10b981; margin-bottom: 20px; }
+
+/* 5. 셔틀 스코어보드 디자인 */
+.shuttle-scoreboard {
+    display: flex; align-items: center; justify-content: space-around;
+    background: white; padding: 15px; border-radius: 15px; border: 1px solid #e2e8f0;
+}
+.sb-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.sb-val { font-size: 26px; font-weight: 900; color: #1e293b; }
+.sb-txt { font-size: 11px; font-weight: 700; color: #94a3b8; }
+.sb-divider { width: 1px; height: 30px; background: #e2e8f0; }
+
+/* 상단바 Room 배지 세련화 */
+.header-room-badge {
+    background: #3b82f6 !important; color: white !important;
+    padding: 4px 14px !important; border-radius: 50px !important; font-size: 16px !important;
 }

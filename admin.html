@@ -319,60 +319,94 @@
 
 
 
-<!-- [5.2차 교체] 대시보드: 제목 센터 정렬 & 정보 박스 내부 이동 -->
+<!-- [5.4차 프리미엄 교체] 에듀-대시보드 히어로 버전 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 상단 표준 헤더: 타 게시판과 동일하게 중앙 정렬 유지 -->
-    <div class="view-header">
-        <i class="fa-solid fa-gauge-high"></i>
-        <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
+    <!-- 상단 헤더: 깔끔한 센터링 -->
+    <div class="view-header dash-hero-header">
+        <div class="dash-title-main">
+            <i class="fa-solid fa- school-flag"></i> 
+            <h1>현재과정 운영 현황</h1>
+            <span id="dashRoomBadge" class="header-room-badge"></span>
+        </div>
     </div>
 
-    <!-- 메인 대시보드 카드 -->
-    <div class="modern-white-card dashboard-card">
-        <!-- 과정명 컬러박스 (내부에 교수/날짜 정보 포함) -->
-        <div class="course-title-box">
-            <div class="title-left-side">
+    <!-- 메인 섹션: 히어로 배너 스타일 -->
+    <div class="modern-white-card dash-hero-container">
+        <!-- 과정명 히어로 박스 -->
+        <div class="course-hero-banner">
+            <div class="hero-left">
+                <div class="hero-tag">NOW TRAINING</div>
                 <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
-                <div class="course-sub-info">
-                    <span><i class="fa-solid fa-calendar-days"></i> <b id="dashPeriod">-</b></span>
-                    <span><i class="fa-solid fa-location-dot"></i> <b id="dashRoomDetail">-</b></span>
+                <div class="hero-info-row">
+                    <span class="info-pill"><i class="fa-solid fa-calendar-check"></i> <b id="dashPeriod">-</b></span>
+                    <span class="info-pill"><i class="fa-solid fa-map-location-dot"></i> <b id="dashRoomDetail">-</b></span>
                 </div>
             </div>
             
-            <!-- 교수/날짜 미니 정보창 (박스 내부 우측 고정 - 파란 동그라미 위치) -->
-            <div class="title-right-info">
-                <div id="dashProfName" class="dash-prof-badge-inner">
-                    <!-- JS에서 교수 정보가 들어감 -->
+            <div class="hero-right">
+                <!-- 교수님 정보 카드 스타일 -->
+                <div class="prof-glass-card" onclick="ui.showProfPresentation(document.getElementById('dashProfNameOnly').innerText)">
+                    <div class="prof-avatar"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="prof-details">
+                        <span class="prof-label">INSTRUCTOR</span>
+                        <div class="prof-name-row">
+                            <strong id="dashProfNameOnly">-</strong> <span>교수님</span>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right prof-arrow"></i>
                 </div>
-                <div id="dashTodayDateDisplay" class="dash-date-badge-inner"></div>
+                <!-- 날짜 배지 -->
+                <div class="date-minimal-box">
+                    <i class="fa-regular fa-clock"></i> <span id="dashTodayDateDisplay"></span>
+                </div>
             </div>
         </div>
 
-        <!-- 하단 3단 통계 그리드 -->
-        <div class="dash-stats-row">
-            <div class="stat-box">
-                <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
-                <span class="s-label">현재 수강생</span>
-                <b id="dashStudentCount">0명</b>
+        <!-- 하단 통계 섹션: 3-Card Glassmorphism -->
+        <div class="dash-premium-grid">
+            <!-- 1. 수강생 카드 -->
+            <div class="stat-premium-card card-blue">
+                <div class="card-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                <div class="card-content">
+                    <span class="card-label">현재 강의실 수강생</span>
+                    <div class="card-value"><b id="dashStudentCount">0</b><small>명</small></div>
+                </div>
+                <div class="card-status-bar">LIVE CONNECTED</div>
             </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                <span class="s-label">금일 외출/외박</span>
-                <b id="dashActionCount">0명</b>
+
+            <!-- 2. 외출 카드 -->
+            <div class="stat-premium-card card-coral">
+                <div class="card-icon"><i class="fa-solid fa-door-open"></i></div>
+                <div class="card-content">
+                    <span class="card-label">금일 외출/외박 현황</span>
+                    <div class="card-value"><b id="dashActionCount">0</b><small>명</small></div>
+                </div>
+                <div class="card-status-bar">TODAY’S REPORT</div>
             </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
-                <span class="s-label">셔틀 수요 (항기원 발)</span>
-                <div class="shuttle-mini-stats">
-                    <div><span>오송</span><b id="s-osong-cnt">0</b></div>
-                    <div><span>터미널</span><b id="s-term-cnt">0</b></div>
-                    <div><span>공항</span><b id="s-air-cnt">0</b></div>
+
+            <!-- 3. 셔틀 카드 (스코어보드형) -->
+            <div class="stat-premium-card card-mint">
+                <div class="card-label-shuttle">셔틀 탑승 수요 (항기원 발)</div>
+                <div class="shuttle-scoreboard">
+                    <div class="sb-item">
+                        <span class="sb-val" id="s-osong-cnt">0</span>
+                        <span class="sb-txt">오송역</span>
+                    </div>
+                    <div class="sb-divider"></div>
+                    <div class="sb-item">
+                        <span class="sb-val" id="s-term-cnt">0</span>
+                        <span class="sb-txt">터미널</span>
+                    </div>
+                    <div class="sb-divider"></div>
+                    <div class="sb-item">
+                        <span class="sb-val" id="s-air-cnt">0</span>
+                        <span class="sb-txt">청주공항</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 
 
 
