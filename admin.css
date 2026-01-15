@@ -130,55 +130,25 @@ body {
     margin-bottom: 25px;
 }
 
-/* Q&A 필터 패널 디자인 개선 */
+/* Q&A 필터 전체 컨테이너 */
 .qa-filters { 
     position: -webkit-sticky;
     position: sticky;
     top: 0;             
+    
+    /* ★ 핵심 수정: 탭 메뉴(2000)보다 낮게 조정 ★ */
     z-index: 1000;      
-    background: #f8fafc !important;
-    padding: 10px 20px; /* 위아래 패딩 대폭 축소 */
-    margin-bottom: 20px;
+    
+    background: var(--bg-color) !important; 
+    padding: 20px 0;    
+    margin-bottom: 15px;
     width: 100%;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* 행 사이 간격 축소 */
 }
-
-.filter-group {
-    display: flex;
-    align-items: center; /* 세로 중앙 정렬 */
-    gap: 15px;
-    padding: 4px 0;
-}
-
-
-/* 왼쪽 라벨 고정 폭 */
-.filter-group-label {
-    width: 130px; /* 제목 너비 고정 */
-    font-size: 12px;
-    font-weight: 800;
-    color: #94a3b8;
-    margin-bottom: 0 !important; /* 마진 제거 */
-    flex-shrink: 0; /* 너비 유지 */
-}
-
-.basic-filters, #subjectFilterBar {
-    display: flex;
-    flex-wrap: wrap; 
-    justify-content: flex-start !important; /* 왼쪽 정렬 */
-    gap: 6px; /* 버튼 사이 간격 축소 */
-}
-
-
 
 /* 상단 기본 필터 (All, Pinned, Later) 감싸는 영역 */
 .basic-filters {
     display: flex;
-    flex-wrap: wrap; 
-    justify-content: center; /* ★ 버튼들을 가운데로 모음 ★ */
+    flex-wrap: wrap; /* 화면이 아주 작아지면 다음줄로 넘어가게 */
     gap: 10px;
     padding-bottom: 5px;
 }
@@ -186,62 +156,46 @@ body {
 /* 하단 강사 필터 바 */
 #subjectFilterBar {
     display: flex; 
-    flex-wrap: wrap; 
-    justify-content: center; /* ★ 강사 이름 버튼들도 가운데로 모음 ★ */
+    flex-wrap: wrap; /* 강사가 많아지면 다음 줄로 자동 줄바꿈 (핵심) */
     gap: 8px; 
     margin: 0; 
     padding: 15px 0 0 0; 
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid #f1f5f9; /* 상단과 구분선 */
 }
 
-/* 필터 버튼 크기 축소 */
+/* 공통 필터 칩 디자인 (예전 디자인 복구 및 세련미 추가) */
 .filter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px; /* 버튼 두께 축소 */
-    background: white;
+    display: inline-block;
+    padding: 7px 16px;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 12px; /* 폰트 살짝 축소 */
+    border-radius: 20px; /* 다시 둥글게 복구 */
+    font-size: 13px;
     font-weight: 600;
     color: #64748b;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s;
+    white-space: nowrap;
+    width: auto; /* 세로로 늘어나는 것 방지 */
 }
-
 
 .filter-chip.active {
     background: #3b82f6 !important;
     color: white !important;
     border-color: #3b82f6 !important;
-}
-
-
-/* 강사 전용 칩 스타일 */
-.instructor-chip {
-    border-color: #dbeafe;
-    color: #3b82f6;
-}
-
-
-.filter-chip:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
 
 
-/* 수정 후 권장 스타일 */
+
 .qa-list { 
     flex-grow: 1; 
-    width: 100%;           /* ★ 추가 ★ */
-    max-width: 1000px;     /* ★ 추가 (필요시 조절) ★ */
     overflow-y: visible !important; 
     display: flex; 
     flex-direction: column; 
     gap: 12px; 
-    padding: 10px 5px 300px 5px;
+    padding: 10px 5px 300px 5px; /* 하단 여유 공간 */
 }
 
 
@@ -267,19 +221,24 @@ body {
 
 
 
-/* [수정] 핀 고정 카드: 화면 고정(Sticky) 해제 및 상단 디자인 유지 */
+/* [복구] 핀 고정 카드 (심플한 초기 버전) */
 .q-card.status-pin {
-    /* position: sticky 설정을 삭제하여 일반 카드처럼 흐르게 만듭니다 */
-    position: relative; 
-    z-index: 10; 
+    position: -webkit-sticky;
+    position: sticky;
     
-    /* 왼쪽 테두리 강조 (두께 8px로 유지하여 시인성 확보) */
+    /* ★ 필터바 높이만큼 띄워줍니다. (제목 사라진 후 필터바 밑에 딱 붙음) ★ */
+    /* 필터바 높이에 따라 130px ~ 160px 사이로 조절하세요 */
+    top: 155px; 
+    
+    z-index: 900; /* 필터바(1000)보다는 낮고, 일반 카드보다는 높게 */
+    
+    /* 왼쪽 테두리 강조 (두께를 8px로 늘려 시인성 확보) */
     border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
     
-    /* 일반 카드와 구분되도록 그림자 유지 */
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
-    margin-bottom: 12px;
+    /* 핀 카드가 떠 있는 느낌을 주기 위해 그림자 강화 */
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1) !important;
+    margin-bottom: 20px; /* 아래 카드와 간격 확보 */
 }
 
 
@@ -343,27 +302,8 @@ body.night-mode .q-card.status-pin {
 .quiz-opt.reveal-answer .opt-num { background: #10b981; color: white; }
 .quiz-opt.ox-mode { flex: 1; min-height: 120px; font-size: 50px; justify-content: center; }
 .quiz-opt.ox-mode .opt-num { display: none; }
-.chart-area {
-    display: none;
-    width: 100%;
-    height: 100%;
-    flex-grow: 1;
-    align-items: flex-end;    /* ★ 막대가 바닥(Baseline)에 붙도록 설정 ★ */
-    justify-content: center;
-    gap: 8%;
-    padding-bottom: 40px;     /* 하단 여백 살짝 확대 */
-    margin-bottom: 20px;
-}
-
-.bar-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end; /* ★ 내부 요소(숫자, 막대)도 아래로 정렬 ★ */
-    width: 120px;              /* 너비 살짝 확대 */
-    height: 100%;
-    position: relative;
-}
+.chart-area { display: none; width: 100%; height: 100%; flex-grow: 1; align-items: flex-end; justify-content: center; gap: 8%; padding-bottom: 20px; border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; }
+.bar-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100px; height: 100%; position: relative; }
 .bar-value { font-size: 20px; font-weight: 800; margin-bottom: 5px; }
 .bar-fill { width: 100%; border-radius: 10px 10px 0 0; background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); height: 0; transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .bar-label { margin-top: 10px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #fff; background: #475569; }
@@ -390,130 +330,12 @@ body.night-mode .q-card.status-pin {
 .m-btn-icon { width: 45px; height: 45px; border-radius: 50%; padding: 0; justify-content: center; font-size: 18px; color: white; }
 .m-btn-pin { background: #3b82f6; } .m-btn-del { background: #ef4444; }
 
-
-
-
-/* [개선] 퀴즈 에디터 패널 디자인 */
-.overlay-panel { 
-    position: fixed; 
-    top: 60px; /* 상단 헤더 높이만큼 정확히 띄움 */
-    right: 0; 
-    width: 350px; 
-    height: calc(100% - 60px); 
-    background: white; 
-    box-shadow: -10px 0 30px rgba(0,0,0,0.05); 
-    transform: translateX(100%); 
-    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-    z-index: 1000; 
-    display: flex; 
-    flex-direction: column;
-    border-left: 1px solid #e2e8f0;
-}
+.overlay-panel { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: white; box-shadow: -5px 0 30px rgba(0,0,0,0.1); transform: translateX(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; display: flex; flex-direction: column; }
 .overlay-panel.open { transform: translateX(0); }
-
-/* 패널 열기/닫기 탭 버튼 */
-.overlay-toggle-tab { 
-    position: absolute; 
-    top: 50%; 
-    left: -32px; 
-    width: 32px; 
-    height: 70px; 
-    background: white; 
-    border-radius: 12px 0 0 12px; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    box-shadow: -5px 0 15px rgba(0,0,0,0.05); 
-    color: #475569; 
-    border: 1px solid #e2e8f0; 
-    border-right: none; 
-}
-
-/* 패널 헤더 */
-.panel-header { 
-    padding: 25px 20px; 
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-}
-.panel-header h3 { 
-    margin: 0; 
-    font-size: 18px; 
-    font-weight: 800; 
-    color: #1e293b;
-}
-
-/* 패널 내부 입력 영역 */
-.panel-body { 
-    padding: 20px; 
-    flex-grow: 1; 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-}
-
-/* 입력창 디자인 최적화 */
-.editor-input { 
-    border: 1px solid #e2e8f0; 
-    padding: 12px; 
-    border-radius: 10px; 
-    width: 100%; 
-    font-size: 14px;
-    background: #f8fafc;
-    transition: 0.2s;
-}
-.editor-input:focus {
-    border-color: #3b82f6;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    outline: none;
-}
-
-/* 퀴즈 목록 아이템 디자인 (깔끔한 카드 형태) */
-.mini-quiz-item {
-    padding: 15px 10px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-}
-.mini-quiz-item:hover { background: #f8fafc; }
-
-.mini-quiz-item input[type="checkbox"] {
-    width: 18px; height: 18px;
-    margin-top: 3px;
-    cursor: pointer;
-}
-
-.mini-quiz-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.mini-quiz-type {
-    font-size: 11px;
-    font-weight: 800;
-    color: #3b82f6;
-    background: #eff6ff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    width: fit-content;
-}
-.mini-quiz-text {
-    font-size: 13px;
-    font-weight: 600;
-    color: #475569;
-    line-height: 1.4;
-}
-
-
-
-
-
-
-
+.overlay-toggle-tab { position: absolute; top: 50%; left: -32px; width: 32px; height: 70px; background: white; border-radius: 8px 0 0 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: -4px 0 10px rgba(0,0,0,0.05); color: #333; border: 1px solid #e2e8f0; border-right: none; }
+.panel-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
+.panel-body { padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.editor-input { border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px; width: 100%; }
 .qr-big-box { background: white; padding: 20px; border-radius: 20px; }
 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -961,47 +783,19 @@ body.night-mode .quiz-card.result-mode {
     margin-right: auto !important;
 }
 
-/* [현황판 테두리 완벽 해결] 헤더와의 간격 벌리기 및 레이어 최상단 고정 */
+/* 3. 테이블 중앙 정렬 (핵심!) */
 .status-table {
-    border-collapse: separate !important; /* 칸을 분리해야 테두리가 안 씹힘 */
-    border-spacing: 0 12px !important;    /* 줄 사이 간격을 벌려 가려짐 방지 */
-    width: 100%;
-    margin-top: 10px;
-    background-color: transparent !important;
+    border-collapse: collapse;
+    background: white !important;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-/* 헤더(연번, 과정명 등) 스타일 정돈 */
-.status-table thead th {
-    padding-bottom: 15px !important; /* 헤더 글자와 파란 선 사이 거리 확보 */
-    border: none !important;
-}
-
-/* 내 강의실 줄 - 레이어 최상단으로 올리기 */
-.status-table tr.is-my-room td {
-    position: relative;
-    z-index: 999; /* ★ 모든 요소를 뚫고 위로 올라오게 함 */
-    background-color: #eff6ff !important;
-    border-top: 3px solid #3b82f6 !important;
-    border-bottom: 3px solid #3b82f6 !important;
-}
-
-/* 왼쪽 테두리 마감 */
-.status-table tr.is-my-room td:first-child {
-    border-left: 3px solid #3b82f6 !important;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-}
-
-/* 오른쪽 테두리 마감 */
-.status-table tr.is-my-room td:last-child {
-    border-right: 3px solid #3b82f6 !important;
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-}
-
-/* 박스가 떠 있는 입체감 효과 */
-.status-table tr.is-my-room {
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2) !important;
+.status-table th, .status-table td {
+    text-align: center !important; /* 모든 칸 가운데 정렬 */
+    vertical-align: middle !important;
+    padding: 15px 10px !important;
+    font-size: 16px !important;
 }
 
 /* 과정명 내부 박스 정렬 */
@@ -1126,36 +920,33 @@ body.night-mode .badge-idle {
 
 
 
-/* [최종 해결] 내 강의실 줄을 레이어 최상단으로 올리고 사방 테두리 완성 */
+/* --- [개선] 강의 현황판 내 강의실 강조 (완벽한 사각 박스) --- */
 .status-table tr.is-my-room td {
-    background-color: #eff6ff !important;
-    border-top: 3px solid #3b82f6 !important;    /* 위쪽 선 */
-    border-bottom: 3px solid #3b82f6 !important; /* 아래쪽 선 */
+    background-color: #eff6ff !important; 
+    border-top: 2.5px solid #3b82f6 !important;    /* 위쪽 선 */
+    border-bottom: 2.5px solid #3b82f6 !important; /* 아래쪽 선 */
     position: relative;
+    /* 기존 outline은 삭제합니다 */
 }
 
-/* 첫 번째 칸에 왼쪽 벽 만들기 */
+/* 첫 번째 칸(연번)의 왼쪽면 벽 세우기 */
 .status-table tr.is-my-room td:first-child {
-    border-left: 3px solid #3b82f6 !important;    /* ★ 왼쪽 선 ★ */
+    border-left: 2.5px solid #3b82f6 !important;
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
 }
 
-/* 마지막 칸에 오른쪽 벽 만들기 */
+/* 마지막 칸(관리 버튼)의 오른쪽면 벽 세우기 */
 .status-table tr.is-my-room td:last-child {
-    border-right: 3px solid #3b82f6 !important;   /* ★ 오른쪽 선 ★ */
+    border-right: 2.5px solid #3b82f6 !important;
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
 
-/* 박스가 떠 있는 것처럼 보이게 그림자 추가 */
+/* 줄 전체가 떠 보이는 효과를 위해 그림자 살짝 추가 */
 .status-table tr.is-my-room {
-    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
-
-
-
-
 
 /* --- 메뉴 드롭다운 스타일 --- */
 .mode-dropdown { position: relative; display: inline-block; }
@@ -1365,49 +1156,33 @@ body.night-mode .badge-idle {
 
 /* --- 대시보드 내부 정렬 디자인 --- */
 .dashboard-card {
-    padding: 0 !important; /* 내부 패딩 제거하고 영역별로 배분 */
-    overflow: hidden;
-    border-top: 6px solid #3b82f6 !important;
+    text-align: center;
+    border-top: 6px solid #3b82f6 !important; /* 상단에 굵은 파란 선으로 포인트 */
 }
 
-.dash-info-banner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 30px 40px;
-    background: #f8fafc; /* 연한 배경색으로 정보 구역 강조 */
-    border-bottom: 1px solid #e2e8f0;
-    text-align: left;
-}
-
-.dash-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 800;
-    color: #94a3b8;
-    margin-bottom: 8px;
-    text-transform: uppercase;
+.dash-main-info {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 #dashCourseTitle {
-    font-size: 28px !important; /* 너무 크지 않게 조절 */
+    font-size: 32px;
     font-weight: 900;
-    color: #1e293b;
-    margin: 0 !important;
+    color: #0f172a;
+    margin-bottom: 10px;
 }
 
-.dash-prof-area {
-    text-align: right; /* 교수는 오른쪽 정렬 */
+.dash-prof-badge {
+    font-size: 18px;
+    color: #64748b;
 }
 
-
-
-
-
-
-
-
-
+.dash-prof-badge strong {
+    color: #3b82f6;
+    margin-left: 8px;
+    font-weight: 800;
+}
 
 /* 통계 박스 가로 배치 */
 .dash-stats-row {
@@ -1497,7 +1272,6 @@ body.night-mode .badge-idle {
     width: 100%;
     max-width: 1050px; /* 슬라이드 가시성 확보를 위한 적정 너비 */
     position: relative;
-    margin: 0 auto; /* ★ 추가: 가로 중앙 정렬 ★ */
 }
 
 /* 4. PDF 래퍼: 깨끗하고 세련된 슬라이드 (테두리 없음) */
@@ -1580,8 +1354,6 @@ body.night-mode .badge-idle {
 #pageIndicator {
     display: none !important;
 }
-
-
 
 
 /* ============================================================
@@ -1708,227 +1480,278 @@ body.night-mode .status-table tr.is-my-room {
 
 
 /* ============================================================
-   [최종 정리] 뷰 영역 독립화 및 특수 레이아웃 디자인
+   [개선] 뷰 영역 독립화 및 교수 프로필 프리미엄 디자인
    ============================================================ */
 
-/* 1. 모든 게시판 구역 독립화 (겹침 방지) */
+/* 1. 모든 게시판(View) 구역이 서로 겹치지 않도록 기본 숨김 및 높이 고정 */
 [id^="view-"] {
     display: none; 
     width: 100%;
-    flex-direction: column; /* 위에서 아래로 배치 */
-    align-items: center;    /* ★ 가로 중앙 정렬 ★ */
     animation: fadeIn 0.3s ease-out;
 }
 
-/* --- [최종 완결] 교수 프로필 프리미엄 명함 스타일 --- */
+/* 2. 교수 프로필 시네마틱 모달 (밝고 신선한 스타일) */
 #view-prof-presentation {
-    display: none; position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%; z-index: 5000;
-    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(15px);
-    justify-content: center; align-items: center;
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.85); /* 밝은 반투명 배경 */
+    backdrop-filter: blur(20px); /* 글래스모피즘 효과 */
+    z-index: 5000; 
+    justify-content: center;
+    align-items: center;
 }
 
 .prof-premium-card {
-    display: flex; width: 1080px; height: 650px;
-    background: #ffffff; border-radius: 40px;
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
-    position: relative; overflow: hidden;
-    animation: slideUp 0.5s ease-out;
-}
-
-/* 1. 컨트롤 (나가기 버튼) */
-.prof-top-controls { position: absolute; top: 25px; left: 25px; z-index: 10; }
-.btn-prof-exit {
-    background: #f1f5f9; border: 1px solid #e2e8f0; padding: 10px 20px;
-    border-radius: 12px; font-size: 15px; font-weight: 800; color: #475569;
-    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
-}
-.btn-prof-exit:hover { background: #ef4444; color: white; border-color: #ef4444; }
-
-/* 2. 왼쪽 사진 영역 */
-.prof-photo-frame { width: 450px; height: 100%; background: #f8fafc; border-right: 1px solid #f1f5f9; }
-.prof-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
-
-/* 3. 오른쪽 정보 구역 전체 */
-.prof-detail-info { flex: 1; padding: 60px; display: flex; flex-direction: column; text-align: left; }
-
-/* 성함 정렬 (교수 + 이름 + 영문) */
-.prof-name-row {
     display: flex;
-    align-items: center; /* baseline에서 center로 변경하여 정렬 보정 */
+    gap: 50px;
+    width: 90%;
+    max-width: 1100px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); /* 화이트-스카이블루 그라데이션 */
+    padding: 60px;
+    border-radius: 40px;
+    box-shadow: 0 40px 100px rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 장식용 배경 원형 */
+.prof-premium-card::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 50%;
+}
+
+/* 왼쪽 사진 프레임 */
+.prof-photo-frame {
+    flex-shrink: 0;
+    width: 360px;
+    height: 460px;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border: 10px solid white;
+    background: #f8fafc;
+}
+.prof-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 오른쪽 정보 구역 */
+.prof-detail-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.prof-detail-info h1 {
+    font-size: 55px;
+    font-weight: 900;
+    color: #1e3a8a; /* 신뢰감 있는 딥블루 */
+    margin: 0 0 10px 0;
+    letter-spacing: -2px;
+}
+
+.prof-premium-slogan {
+    font-size: 22px;
+    color: #3b82f6; /* 밝은 블루 */
+    font-weight: 600;
+    margin-bottom: 35px;
+    padding-left: 15px;
+    border-left: 5px solid #3b82f6;
+}
+
+.prof-contact-box {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 40px;
+    background: white;
+    padding: 20px 30px;
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    width: fit-content;
+}
+
+.prof-contact-box span {
+    font-size: 18px;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
     gap: 10px;
-    margin-bottom: 5px;
-}
-.prof-label-top {
-    font-size: 16px;
-    background: #eff6ff;
-    color: #3b82f6;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 800;
-}
-.prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -2px; }
-.prof-eng-inline {
-    font-size: 20px;
-    color: #94a3b8;
-    font-weight: 400;
 }
 
-/* 포인트 바 */
-.prof-point-line { width: 60px; height: 6px; background: #3b82f6; border-radius: 10px; margin-bottom: 25px; }
+.prof-contact-box i { color: #3b82f6; font-size: 20px; }
 
-/* 전문 분야 태그 */
-.prof-expertise-tags { display: flex; gap: 8px; margin-bottom: 15px; }
-.expert-tag { 
-    background: #eff6ff; color: #3b82f6; padding: 4px 12px; 
-    border-radius: 6px; font-size: 14px; font-weight: 800; border: 1px solid #dbeafe;
-}
-
-/* 슬로건 (강조) */
-.prof-slogan-clean {
-    font-size: 22px; color: #1e3a8a; font-weight: 800;
-    margin: 5px 0 30px 0; letter-spacing: -0.5px;
-}
-
-/* 4. 연락처 정보 박스 */
-.prof-contact-box { display: flex; gap: 15px; margin-bottom: 35px; }
-.prof-contact-item {
-    background: #ffffff !important; border: 1px solid #e2e8f0 !important;
-    padding: 10px 18px; border-radius: 50px; font-size: 15px; font-weight: 700;
-    color: #475569; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.2s;
-    display: flex; align-items: center; gap: 8px;
-}
-.prof-contact-item i { color: #3b82f6; }
-.prof-contact-item:hover { border-color: #3b82f6 !important; transform: translateY(-2px); }
-
-/* 5. 약력 정보 섹션 (배경 박스형) */
 .prof-bio-premium {
-    background: #f8fafc; border: 1px solid #e2e8f0;
-    padding: 25px; border-radius: 20px; margin-top: auto;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 25px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .prof-bio-premium h3 {
-    font-size: 18px; color: #0f172a; font-weight: 900;
-    margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;
-}
-/* 제목 옆 파란 사각형 포인트 */
-.prof-bio-premium h3::before {
-    content: ''; width: 4px; height: 18px;
-    background: #3b82f6; border-radius: 4px;
-}
-
-.prof-bio-list { list-style: none; padding: 0; margin: 0; }
-.prof-bio-list li {
-    position: relative; padding-left: 22px; margin-bottom: 10px;
-    font-size: 16px; font-weight: 600; color: #334155; line-height: 1.6;
-}
-/* 커스텀 불렛 포인트(파란 점) */
-.prof-bio-list li::before {
-    content: ''; position: absolute; left: 0; top: 10px;
-    width: 7px; height: 7px; background: #3b82f6; border-radius: 50%;
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    color: #1e3a8a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+.prof-bio-premium p {
+    font-size: 18px;
+    line-height: 1.8;
+    color: #334155;
+    white-space: pre-line;
+}
 
-/* 3. 공지사항 와이드 레이아웃 */
-.notice-flex-container { display: flex; justify-content: center; gap: 30px; width: 100%; max-width: 1200px; margin: 0 auto 50px auto; align-items: stretch; }
-.notice-card-half { flex: 1; min-width: 0; }
+/* 닫기(뒤로가기) 버튼 */
+.prof-close-btn {
+    position: absolute;
+    top: 30px; right: 30px;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #64748b;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.prof-close-btn:hover { 
+    transform: rotate(90deg); 
+    color: #ef4444; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* --- 공지사항 관리 페이지 와이드 레이아웃 --- */
+.notice-flex-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* 카드 사이 간격 */
+    width: 100%;
+    max-width: 1200px; /* 전체 가로 폭 */
+    margin: 0 auto 50px auto;
+    align-items: stretch; /* 두 카드의 높이를 동일하게 */
+}
+
+.notice-card-half {
+    flex: 1; /* 5:5 비율 */
+    min-width: 0; /* 글자 넘침 방지 */
+}
+
 .global-notice-viewer {
-    background: white; padding: 25px; border-radius: 15px; border: 1px solid #e2e8f0;
-    font-size: 16px; line-height: 1.8; color: #334155; white-space: pre-line;
-    height: 355px; overflow-y: auto; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #334155;
+    white-space: pre-line;
+    height: 355px; /* 왼쪽 입력창+버튼 높이와 맞춤 */
+    overflow-y: auto;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
 }
 
-/* 4. 차량 수요조사 카드 (가로 중앙 정렬 및 가독성 최적화) */
+/* 스크롤바 디자인 (오른쪽 공지창용) */
+.global-notice-viewer::-webkit-scrollbar { width: 6px; }
+.global-notice-viewer::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+
+
+/* --- 차량 수요조사 시안성 개선 스타일 --- */
 .shuttle-card-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 25px;
     width: 100%;
     max-width: 1100px;
-    margin: 20px auto 50px auto; /* 상단 20px, 좌우 자동(중앙), 하단 50px 여백 */
-    align-items: stretch;
+    margin-top: 20px;
 }
 
 .shuttle-dest-card {
     background: white;
     border-radius: 20px;
-    padding: 0; 
+    padding: 0; /* 내부 패딩은 섹션별로 분리 */
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border: 1px solid #e2e8f0;
     overflow: hidden;
     transition: transform 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    height: 100%; 
 }
 
-.shuttle-dest-card:hover { transform: translateY(-5px); }
+.shuttle-dest-card:hover {
+    transform: translateY(-5px);
+}
 
-/* 카드 상단 헤더: 아이콘과 제목을 한 줄로 정렬 */
+/* 카드 상단 헤더 구역 */
 .dest-header {
     padding: 20px 25px;
     display: flex;
     justify-content: space-between;
-    align-items: center; /* 아이콘세트와 숫자뱃지의 세로 중앙 맞춤 */
+    align-items: center;
     border-bottom: 1px solid #f1f5f9;
-    flex-shrink: 0;
 }
 
-/* 아이콘+글자 묶음 정렬 */
 .dest-name-group {
     display: flex;
-    align-items: center; /* ★ 아이콘 박스와 글자 높이 일치 ★ */
+    align-items: center;
     gap: 12px;
 }
 
-/* 아이콘 박스 디자인 */
 .dest-icon-box {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    flex-shrink: 0;
 }
 
-/* 목적지 제목 (오송역 등) */
 .dest-title {
-    font-size: 22px; 
+    font-size: 20px;
     font-weight: 800;
     color: #1e293b;
-    line-height: 1; /* 글자 위아래 여백 제거하여 정렬 보정 */
-    margin: 0;
 }
 
-/* 숫자와 "명" 뱃지 (대폭 확대) */
 .dest-count-badge {
     background: #f1f5f9;
     color: #475569;
-    font-size: 28px;     /* ★ 기존 18px에서 28px로 확대 ★ */
-    font-weight: 900;    /* 더 두껍게 */
-    padding: 4px 18px;
+    font-size: 18px;
+    font-weight: 900;
+    padding: 5px 15px;
     border-radius: 30px;
-    min-width: 85px;
-    text-align: center;
 }
 
 /* 카드 하단 명단 구역 */
 .dest-body {
     padding: 20px 25px;
     background: #fafcfe;
-    flex-grow: 1; 
-    display: flex;
-    flex-direction: column;
+    min-height: 100px;
 }
 
 .member-tag-container {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    align-content: flex-start;
 }
 
 .member-tag {
@@ -1939,11 +1762,76 @@ body.night-mode .status-table tr.is-my-room {
     font-size: 14px;
     font-weight: 600;
     color: #475569;
-    position: relative;
-    padding-right: 30px; /* X버튼 공간 */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-/* X 취소 버튼 */
+/* 목적지별 포인트 컬러 */
+.card-osong { border-top: 5px solid #3b82f6; }
+.card-osong .dest-icon-box { background: #eff6ff; color: #3b82f6; }
+.card-osong .dest-count-badge { background: #3b82f6; color: white; }
+
+.card-terminal { border-top: 5px solid #f59e0b; }
+.card-terminal .dest-icon-box { background: #fffbeb; color: #f59e0b; }
+.card-terminal .dest-count-badge { background: #f59e0b; color: white; }
+
+.card-airport { border-top: 5px solid #10b981; }
+.card-airport .dest-icon-box { background: #ecfdf5; color: #10b981; }
+.card-airport .dest-count-badge { background: #10b981; color: white; }
+
+.card-car { border-top: 5px solid #6366f1; }
+.card-car .dest-icon-box { background: #f5f3ff; color: #6366f1; }
+.card-car .dest-count-badge { background: #6366f1; color: white; }
+
+.no-member-text {
+    color: #94a3b8;
+    font-size: 14px;
+    font-style: italic;
+    width: 100%;
+    text-align: center;
+    padding: 20px 0;
+}
+
+
+/* [개선] 석식 제외 명단 버튼 디자인 */
+#view-dinner-skip .view-header div {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#view-dinner-skip .btn-action {
+    width: auto !important;
+    padding: 12px 25px !important;
+    border-radius: 50px !important; /* 둥근 캡슐형 */
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+}
+
+#view-dinner-skip .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+#view-dinner-skip .btn-secondary {
+    background: #fff !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+#view-dinner-skip .btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12) !important;
+}
+
+/* [추가] 차량 명단 개별 취소(X) 버튼 스타일 */
+.member-tag {
+    position: relative;
+    padding-right: 30px !important; /* X 버튼 공간 확보 */
+}
+
 .btn-del-shuttle {
     position: absolute;
     right: 8px;
@@ -1952,57 +1840,9 @@ body.night-mode .status-table tr.is-my-room {
     cursor: pointer;
     color: #cbd5e1;
     font-size: 12px;
-}
-.btn-del-shuttle:hover { color: #ef4444; }
-
-/* 신청자 없을 때 문구 중앙 배치 */
-.no-member-text {
-    color: #94a3b8;
-    font-size: 14px;
-    font-style: italic;
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 80px;
+    transition: 0.2s;
 }
 
-/* 목적지별 포인트 컬러 및 아이콘 배경색 설정 */
-.card-osong { border-top: 5px solid #3b82f6; } 
-.card-osong .dest-icon-box { background: #eff6ff; color: #3b82f6; }
-.card-osong .dest-count-badge { background: #3b82f6; color: white; }
-
-.card-terminal { border-top: 5px solid #f59e0b; } 
-.card-terminal .dest-icon-box { background: #fffbeb; color: #f59e0b; }
-.card-terminal .dest-count-badge { background: #f59e0b; color: white; }
-
-.card-airport { border-top: 5px solid #10b981; } 
-.card-airport .dest-icon-box { background: #ecfdf5; color: #10b981; }
-.card-airport .dest-count-badge { background: #10b981; color: white; }
-
-.card-car { border-top: 5px solid #6366f1; } 
-.card-car .dest-icon-box { background: #f5f3ff; color: #6366f1; }
-.card-car .dest-count-badge { background: #6366f1; color: white; }
-
-
-/* 5. 석식 제외 명단 버튼 디자인 */
-#view-dinner-skip .view-header div { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-#view-dinner-skip .btn-action {
-    width: auto !important;
-    padding: 8px 20px !important;   /* 기존 12px 25px에서 축소 */
-    border-radius: 50px !important; 
-    font-size: 13px !important;     /* 기존 14px에서 축소 */
-    font-weight: 700 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important; /* 그림자도 가볍게 */
-    transition: all 0.2s ease !important;
-    border: none !important;
-    min-width: 140px;               /* 버튼들끼리 최소 너비를 맞춰 정렬감 부여 */
+.btn-del-shuttle:hover {
+    color: #ef4444;
 }
-#view-dinner-skip .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; }
-#view-dinner-skip .btn-secondary { background: #fff !important; color: #64748b !important; border: 1px solid #e2e8f0 !important; }
-#view-dinner-skip .btn-action:hover {
-    transform: translateY(-1px);    /* 기존 -2px에서 축소 */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
-}
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
