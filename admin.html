@@ -649,18 +649,18 @@
             </tbody>
         </table>
         
-        <!-- 명단 업로드 및 초기화 버튼 -->
+        <!-- 명단 업로드 및 초기화 버튼 (흰색 카드 안쪽으로 이동) -->
         <div class="list-upload-footer">
             <input type="file" id="studentFile" accept=".txt" style="display:none;" onchange="dataMgr.uploadStudentNames(this)">
             <label for="studentFile" class="btn-list-upload">
                 <i class="fa-solid fa-file-import"></i> 예정 명단(.txt) 업로드
             </label>
             <button class="btn-list-clear" onclick="dataMgr.clearExpectedList()">
-                <i class="fa-solid fa-trash-can"></i> 예정 명단 초기화
+                <i class="fa-solid fa-trash-can"></i> 명단 초기화
             </button>
         </div>
-    </div>
-</div>
+    </div> <!-- modern-white-card 마침 -->
+</div> <!-- view-students 마침 -->
 
 
 <!-- [신규] 생활관 배치 현황 섹션 -->
