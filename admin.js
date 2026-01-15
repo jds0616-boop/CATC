@@ -1638,7 +1638,7 @@ renderQaList: function(f) {
         }
     },
 
-loadAdminActionData: function() {
+ui.loadAdminActionData = function()
         if(!state.room) return;
         const today = getTodayString();
         const yesterday = getYesterdayString();
@@ -1711,7 +1711,7 @@ loadAdminActionData: function() {
         }
     },
 
-loadDinnerSkipData: function() {
+ui.loadDinnerSkipData = function() {
         if(!state.room) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', snap => {
@@ -1786,7 +1786,7 @@ loadDinnerSkipData: function() {
 
 
 
-loadStudentList: function() {
+ui.loadStudentList = function() {
     if(!state.room) return;
     firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
         const data = snap.val() || {};
