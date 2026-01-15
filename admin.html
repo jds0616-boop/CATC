@@ -318,16 +318,25 @@
 
 
 
-<!-- [5.9차 최종 통합본] 대시보드 구역 -->
+<!-- [6.0차 최종 통합본] 대시보드 구역 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    
+    <!-- 1. 헤더 영역: 중앙 정렬 및 실시간 배지 연동 -->
     <div class="view-header dash-hero-header">
         <div class="dash-title-main">
-            <h1><i class="fa-solid fa-school-flag"></i> 현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
-            <span id="dashRoomBadge" class="header-room-badge"></span>
+            <h1>
+                <i class="fa-solid fa-school-flag"></i> 
+                현재과정 운영 현황 
+                <!-- room-badge-global 클래스가 있어야 모든 페이지 배지가 동시에 바뀝니다 -->
+                <span id="dashRoomBadge" class="header-room-badge room-badge-global"></span>
+            </h1>
         </div>
     </div>
 
+    <!-- 2. 메인 컨테이너 -->
     <div class="modern-white-card dash-hero-container">
+        
+        <!-- 상단 히어로 배너 (과정명 + 교수님) -->
         <div class="course-hero-banner">
             <div class="hero-left">
                 <div class="hero-tag">NOW TRAINING</div>
@@ -339,6 +348,7 @@
             </div>
             
             <div class="hero-right">
+                <!-- 교수님 프로필 카드 -->
                 <div class="prof-glass-card" onclick="ui.showProfPresentation(document.getElementById('dashProfNameOnly').innerText)">
                     <div class="prof-avatar"><i class="fa-solid fa-user-tie"></i></div>
                     <div class="prof-details">
@@ -349,13 +359,17 @@
                     </div>
                     <i class="fa-solid fa-chevron-right prof-arrow"></i>
                 </div>
+                <!-- 하단 날짜 표시 -->
                 <div class="date-minimal-box">
                     <i class="fa-regular fa-clock"></i> <span id="dashTodayDateDisplay"></span>
                 </div>
             </div>
-        </div>
+        </div> <!-- course-hero-banner 끝 -->
 
+        <!-- 하단 프리미엄 그리드 (통계 + 공지 + 셔틀) -->
         <div class="dash-premium-grid">
+            
+            <!-- (1) 수강생 및 외출 현황 -->
             <div class="stat-premium-card card-blue">
                 <div class="card-content combined-stats">
                     <div class="stat-row">
@@ -371,6 +385,7 @@
                 <div class="card-status-bar">REAL-TIME ACTIVITY</div>
             </div>
 
+            <!-- (2) 공지사항 허브 -->
             <div class="stat-premium-card card-notice-hub">
                 <div class="notice-hub-header">
                     <i class="fa-solid fa-bullhorn"></i> <span>주요 공지 피드</span>
@@ -383,29 +398,22 @@
                 <div class="card-status-bar">NOTICE UPDATES</div>
             </div>
 
+            <!-- (3) 셔틀 탑승 수요 -->
             <div class="stat-premium-card card-mint">
                 <div class="card-label-shuttle">셔틀 탑승 수요 (항기원 발)</div>
                 <div class="shuttle-scoreboard">
-                    <div class="sb-item">
-                        <span class="sb-val" id="s-osong-cnt">0</span>
-                        <span class="sb-txt">오송역</span>
-                    </div>
+                    <div class="sb-item"><span class="sb-val" id="s-osong-cnt">0</span><span class="sb-txt">오송역</span></div>
                     <div class="sb-divider"></div>
-                    <div class="sb-item">
-                        <span class="sb-val" id="s-term-cnt">0</span>
-                        <span class="sb-txt">터미널</span>
-                    </div>
+                    <div class="sb-item"><span class="sb-val" id="s-term-cnt">0</span><span class="sb-txt">터미널</span></div>
                     <div class="sb-divider"></div>
-                    <div class="sb-item">
-                        <span class="sb-val" id="s-air-cnt">0</span>
-                        <span class="sb-txt">청주공항</span>
-                    </div>
+                    <div class="sb-item"><span class="sb-val" id="s-air-cnt">0</span><span class="sb-txt">청주공항</span></div>
                 </div>
                 <div class="card-status-bar">TRANSPORTATION</div>
             </div>
-        </div>
-    </div>
-</div>
+
+        </div> <!-- dash-premium-grid 끝 -->
+    </div> <!-- modern-white-card 끝 -->
+</div> <!-- view-dashboard 끝 -->
 
 
 
