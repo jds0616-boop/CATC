@@ -319,22 +319,21 @@
 
 
 
-<!-- [5.5차 프리미엄 교체] 딥블루 에디션 & 공지 허브 대시보드 -->
+<!-- [5.9차 최종 통합본] 대시보드 구역 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header dash-hero-header">
         <div class="dash-title-main">
-            <i class="fa-solid fa-school-flag" style="color: #003366;"></i> 
-            <h1 style="color: #003366;">현재과정 운영 현황</h1>
+            <i class="fa-solid fa-school-flag"></i> 
+            <h1>현재과정 운영 현황</h1>
             <span id="dashRoomBadge" class="header-room-badge"></span>
         </div>
     </div>
 
     <div class="modern-white-card dash-hero-container">
-        <!-- 과정명 히어로 박스 -->
-        <div class="course-hero-banner" style="background: linear-gradient(135deg, #002e6d 0%, #004d99 100%);">
+        <div class="course-hero-banner">
             <div class="hero-left">
                 <div class="hero-tag">NOW TRAINING</div>
-                <h2 id="dashCourseTitle" style="color: white !important;">과정명을 설정해주세요.</h2>
+                <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
                 <div class="hero-info-row">
                     <span class="info-pill"><i class="fa-solid fa-calendar-check"></i> <b id="dashPeriod">-</b></span>
                     <span class="info-pill"><i class="fa-solid fa-map-location-dot"></i> <b id="dashRoomDetail">-</b></span>
@@ -343,7 +342,7 @@
             
             <div class="hero-right">
                 <div class="prof-glass-card" onclick="ui.showProfPresentation(document.getElementById('dashProfNameOnly').innerText)">
-                    <div class="prof-avatar"><i class="fa-solid fa-user-tie" style="color: #003366;"></i></div>
+                    <div class="prof-avatar"><i class="fa-solid fa-user-tie"></i></div>
                     <div class="prof-details">
                         <span class="prof-label">과정 담임</span>
                         <div class="prof-name-row">
@@ -358,11 +357,8 @@
             </div>
         </div>
 
-        <!-- 하단 통계 섹션: 3-Card 재구성 -->
         <div class="dash-premium-grid">
-            <!-- 1. 수강생 및 외출 통합 카드 -->
             <div class="stat-premium-card card-blue">
-                <div class="card-icon"><i class="fa-solid fa-users-viewfinder"></i></div>
                 <div class="card-content combined-stats">
                     <div class="stat-row">
                         <span class="card-label">현재 강의실 수강생</span>
@@ -377,29 +373,18 @@
                 <div class="card-status-bar">REAL-TIME ACTIVITY</div>
             </div>
 
-            <!-- 2. 공지사항 허브 카드 (가운데) -->
             <div class="stat-premium-card card-notice-hub">
                 <div class="notice-hub-header">
                     <i class="fa-solid fa-bullhorn"></i> <span>주요 공지 피드</span>
                 </div>
                 <div class="notice-hub-content">
-                    <div class="notice-item instructor">
-                        <span class="n-tag">담임</span>
-                        <p id="dashNoticeInst">등록된 담임 공지가 없습니다.</p>
-                    </div>
-                    <div class="notice-item admin">
-                        <span class="n-tag">운영</span>
-                        <p id="dashNoticeAdmin">등록된 운영부 공지가 없습니다.</p>
-                    </div>
-                    <div class="notice-item global">
-                        <span class="n-tag">센터</span>
-                        <p id="dashNoticeGlobal">게시된 센터 공지가 없습니다.</p>
-                    </div>
+                    <div class="notice-item instructor"><span class="n-tag">담임</span><p id="dashNoticeInst">내용 로딩 중...</p></div>
+                    <div class="notice-item admin"><span class="n-tag">운영</span><p id="dashNoticeAdmin">등록된 운영부 공지가 없습니다.</p></div>
+                    <div class="notice-item global"><span class="n-tag">센터</span><p id="dashNoticeGlobal">내용 로딩 중...</p></div>
                 </div>
                 <div class="card-status-bar">NOTICE UPDATES</div>
             </div>
 
-            <!-- 3. 셔틀 카드 (기존 유지) -->
             <div class="stat-premium-card card-mint">
                 <div class="card-label-shuttle">셔틀 탑승 수요 (항기원 발)</div>
                 <div class="shuttle-scoreboard">
@@ -418,7 +403,7 @@
                         <span class="sb-txt">청주공항</span>
                     </div>
                 </div>
-                <div class="card-status-bar" style="margin-top:auto;">TRANSPORTATION</div>
+                <div class="card-status-bar">TRANSPORTATION</div>
             </div>
         </div>
     </div>
