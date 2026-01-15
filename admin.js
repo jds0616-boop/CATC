@@ -875,31 +875,31 @@ const ui = {
     },
 
 
-// [4차 최종] 담임 교수 프로필: 약력 줄바꿈 자동 불렛화 및 성함 정밀 포맷팅
+// [5.6차 수정] 교수 프로필 시네마틱 데이터 연동
     showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) return ui.showAlert("등록된 상세 프로필이 없습니다. 담임 교수 관리에서 먼저 등록해주세요.");
             
-            // 1. 성함 포맷팅: 한글자씩 띄우고(CSS 8px 대응) 영문명 밀착 배치
-            const spacedName = name.split('').join(' ');
-            const engName = p.engName ? `<span class="pres-eng-name">(${p.engName})</span>` : "";
-            document.getElementById('pres-name').innerHTML = spacedName + engName;
+            // 1. 이름 및 영문명 포맷팅
+            document.getElementById('pres-name-main').innerText = name;
+            document.getElementById('pres-eng-sub').innerText = p.engName ? `(${p.engName})` : "";
             
-            // 2. 사진 및 연락처 정보
+            // 2. 사진 및 기본 정보
             document.getElementById('pres-photo').src = p.photo || "logo.png";
             document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
             document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
             
-            // 3. [핵심] 약력 자동 리스트화 (엔터를 인식하여 • 점을 찍어줌)
+            // 3. 약력 리스트화 (불렛 포인트 적용)
             const bioArea = document.getElementById('pres-bio');
             if(p.bio) {
                 const bioLines = p.bio.split('\n').filter(line => line.trim() !== "");
-                bioArea.innerHTML = bioLines.map(line => `<span class="bio-line">${line.trim()}</span>`).join('');
+                bioArea.innerHTML = bioLines.map(line => `<div class="bio-line">${line.trim()}</div>`).join('');
             } else {
                 bioArea.innerText = "등록된 약력이 없습니다.";
             }
+            
             ui.setMode('prof-presentation');
         });
     },

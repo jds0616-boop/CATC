@@ -1490,150 +1490,93 @@ body.night-mode .status-table tr.is-my-room {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* 2. 교수 프로필 시네마틱 모달 (밝고 신선한 스타일) */
-#view-prof-presentation {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.85); /* 밝은 반투명 배경 */
-    backdrop-filter: blur(20px); /* 글래스모피즘 효과 */
-    z-index: 5000; 
-    justify-content: center;
-    align-items: center;
-}
 
+/* --- [5.6차 최종] 교수 프로필 시네마틱 스타일 보정 --- */
+
+/* 카드 레이아웃 정밀화 */
 .prof-premium-card {
     display: flex;
-    gap: 50px;
-    width: 90%;
-    max-width: 1100px;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); /* 화이트-스카이블루 그라데이션 */
-    padding: 60px;
-    border-radius: 40px;
-    box-shadow: 0 40px 100px rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    position: relative;
-    overflow: hidden;
-}
-
-/* 장식용 배경 원형 */
-.prof-premium-card::before {
-    content: '';
-    position: absolute;
-    top: -100px; right: -100px;
-    width: 300px; height: 300px;
-    background: rgba(59, 130, 246, 0.05);
-    border-radius: 50%;
-}
-
-/* 왼쪽 사진 프레임 */
-.prof-photo-frame {
-    flex-shrink: 0;
-    width: 360px;
-    height: 460px;
-    border-radius: 30px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    border: 10px solid white;
-    background: #f8fafc;
-}
-.prof-photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* 오른쪽 정보 구역 */
-.prof-detail-info {
-    flex-grow: 1;
-    display: flex;
     flex-direction: column;
-    justify-content: center;
+    padding: 70px !important;
+    background: #ffffff !important;
+    border-radius: 40px !important;
+    max-width: 1200px !important;
+    min-height: 650px;
 }
 
-.prof-detail-info h1 {
-    font-size: 55px;
-    font-weight: 900;
-    color: #1e3a8a; /* 신뢰감 있는 딥블루 */
-    margin: 0 0 10px 0;
-    letter-spacing: -2px;
+.prof-layout-main { display: flex; gap: 60px; align-items: flex-start; }
+
+/* 이름 및 타이틀 색상 보정 */
+#pres-display-name {
+    font-size: 50px !important;
+    font-weight: 900 !important;
+    color: #003366 !important; /* 이름 색상을 딥블루로 변경 */
+    margin: 10px 0 !important;
+    letter-spacing: -1px;
 }
 
-.prof-premium-slogan {
+.p-rank { font-size: 28px; color: #64748b; font-weight: 600; margin-right: 10px; }
+.p-eng { font-size: 24px; color: #94a3b8; font-weight: 400; margin-left: 15px; }
+
+.prof-title-label {
+    background: #003366;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.prof-slogan-text {
     font-size: 22px;
-    color: #3b82f6; /* 밝은 블루 */
-    font-weight: 600;
-    margin-bottom: 35px;
-    padding-left: 15px;
-    border-left: 5px solid #3b82f6;
+    color: #3b82f6;
+    font-style: italic;
+    margin-bottom: 30px;
+    font-weight: 500;
 }
 
-.prof-contact-box {
+/* 연락처 배지 스타일 */
+.prof-contact-grid { display: flex; gap: 15px; margin-bottom: 40px; }
+.contact-pill {
+    background: #f1f5f9;
+    padding: 12px 20px;
+    border-radius: 12px;
     display: flex;
-    gap: 25px;
-    margin-bottom: 40px;
-    background: white;
-    padding: 20px 30px;
-    border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-    width: fit-content;
-}
-
-.prof-contact-box span {
-    font-size: 18px;
+    align-items: center; gap: 10px;
+    font-size: 16px;
     font-weight: 700;
-    color: #475569;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.prof-contact-box i { color: #3b82f6; font-size: 20px; }
-
-.prof-bio-premium {
-    padding: 30px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 25px;
-    border: 1px solid rgba(59, 130, 246, 0.1);
-}
-
-.prof-bio-premium h3 {
-    margin: 0 0 15px 0;
-    font-size: 20px;
-    color: #1e3a8a;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.prof-bio-premium p {
-    font-size: 18px;
-    line-height: 1.8;
     color: #334155;
-    white-space: pre-line;
+}
+.contact-pill i { color: #003366; }
+
+/* 약력 섹션 강화 */
+.prof-bio-section {
+    background: #f8fafc;
+    border-radius: 25px;
+    padding: 35px;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+}
+.bio-header {
+    font-size: 18px;
+    font-weight: 800;
+    color: #003366;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center; gap: 10px;
+}
+.bio-body-list { font-size: 18px; line-height: 2; color: #475569; }
+
+/* 사진 프레임 크기 조절 */
+.prof-photo-frame {
+    width: 380px !important;
+    height: 500px !important;
+    border: 12px solid #f8fafc;
 }
 
-/* 닫기(뒤로가기) 버튼 */
-.prof-close-btn {
-    position: absolute;
-    top: 30px; right: 30px;
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #64748b;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.prof-close-btn:hover { 
-    transform: rotate(90deg); 
-    color: #ef4444; 
-}
+
+
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -2163,3 +2106,43 @@ body.night-mode .status-table tr.is-my-room {
 
 /* 4. 기타 스타일 유지 및 보정 */
 .dash-premium-grid { grid-template-columns: 1fr 1.2fr 1fr !important; } /* 가운데 공지창을 조금 더 넓게 */
+
+
+/* 1. 교수 프로필 시네마틱 모달 배경 (필수) */
+#view-prof-presentation {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.9); /* 어두운 네이비 반투명 배경 */
+    backdrop-filter: blur(15px); /* 뒷배경 흐리게 */
+    z-index: 5000; 
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* 2. 프로필 우측 상단 닫기 버튼 (필수) */
+.prof-close-btn {
+    position: absolute;
+    top: 30px; right: 30px;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #1e293b;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.prof-close-btn:hover { 
+    transform: rotate(90deg); 
+    color: #ef4444; 
+    background: #ffffff;
+}
+

@@ -669,39 +669,55 @@
 
 
 
-<!-- [리포트 반영] 교수 프로필 프리미엄 시네마틱 모달 (전체 화면 전용) -->
+<!-- [5.6차 프리미엄 교체] 교수 프로필 시네마틱 뷰 -->
 <div id="view-prof-presentation">
     <div class="prof-premium-card">
-        <!-- 닫기 버튼 -->
+        <!-- 상단 닫기 버튼 -->
         <div class="prof-close-btn" onclick="ui.setMode('dashboard')" title="닫기">
             <i class="fa-solid fa-xmark"></i>
         </div>
 
-        <!-- 왼쪽: 사진 영역 -->
-        <div class="prof-photo-frame">
-            <img id="pres-photo" src="logo.png" alt="교수님 사진">
-        </div>
-
-        <!-- 오른쪽: 정보 영역 -->
-        <div class="prof-detail-info">
-            <h1 id="pres-name">교수님 성함</h1>
-            <p id="pres-msg" class="prof-premium-slogan">"환영합니다!"</p>
-            
-            <div class="prof-contact-box">
-                <span><i class="fa-solid fa-phone"></i> <span id="pres-phone">010-0000-0000</span></span>
-                <span><i class="fa-solid fa-envelope"></i> <span id="pres-email">email@airport.co.kr</span></span>
+        <div class="prof-layout-main">
+            <!-- 왼쪽: 고화질 사진 프레임 -->
+            <div class="prof-photo-column">
+                <div class="prof-photo-frame">
+                    <img id="pres-photo" src="logo.png" alt="교수님 사진">
+                </div>
             </div>
 
-            <div class="prof-bio-premium">
-                <h3><i class="fa-solid fa-award"></i> 주요 약력 및 경력</h3>
-                <p id="pres-bio">약력 정보가 표시되는 공간입니다.</p>
+            <!-- 오른쪽: 상세 정보 및 약력 -->
+            <div class="prof-info-column">
+                <div class="prof-header-row">
+                    <span class="prof-title-label">KAC INSTRUCTOR</span>
+                    <h1 id="pres-display-name">
+                        <span class="p-rank">교수</span> 
+                        <span id="pres-name-main">성함</span> 
+                        <span id="pres-eng-sub" class="p-eng">(English Name)</span>
+                    </h1>
+                    <p id="pres-msg" class="prof-slogan-text">"교육생 여러분을 환영합니다."</p>
+                </div>
+
+                <div class="prof-contact-grid">
+                    <div class="contact-pill">
+                        <i class="fa-solid fa-phone"></i>
+                        <span id="pres-phone">-</span>
+                    </div>
+                    <div class="contact-pill">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span id="pres-email">-</span>
+                    </div>
+                </div>
+
+                <div class="prof-bio-section">
+                    <div class="bio-header">
+                        <i class="fa-solid fa-award"></i> 주요 약력 및 경력사항
+                    </div>
+                    <div id="pres-bio" class="bio-body-list">
+                        <!-- JS에서 불렛 리스트가 들어감 -->
+                    </div>
+                </div>
             </div>
         </div>
-
-        <!-- 전체화면 토글 버튼 -->
-        <button class="btn-action btn-primary" onclick="ui.toggleFullScreen()" style="position:absolute; bottom:30px; right:30px; width:auto; padding:10px 20px; font-size:12px; opacity:0.5;">
-            <i class="fa-solid fa-expand"></i> 전체화면 모드
-        </button>
     </div>
 </div>
 
