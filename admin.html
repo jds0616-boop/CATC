@@ -105,9 +105,9 @@
     <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
     <div class="file-row">
         <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
-        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
-            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
-        </label>
+       <label onclick="guideMgr.showWarning()" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
+    <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
+</label>
     </div>
 </div>
 
@@ -319,39 +319,44 @@
     </div>
 
     <!-- 메인 화이트 카드 -->
-    <div class="modern-white-card dashboard-card">
-        <div class="dash-main-info">
+<div class="modern-white-card dashboard-card">
+    <!-- 상단 정보 바: 과정명(좌) / 담당교수(우) 스플릿 배치 -->
+    <div class="dash-info-banner">
+        <div class="dash-course-area">
+            <span class="dash-label">진행 과정</span>
             <h2 id="dashCourseTitle">과정명 로드 중...</h2>
-            <div class="dash-prof-badge">
-                <span class="p-label">담당 교수</span>
-                <strong id="dashProfName">교수님 성함</strong>
+        </div>
+        <div class="dash-prof-area">
+            <span class="dash-label">담임교수</span>
+            <div id="dashProfName">
+                <!-- 여기에 JS로 아이콘+성함+프로필버튼이 들어갑니다 -->
             </div>
         </div>
+    </div>
 
-        <div class="dash-stats-row">
-            <div class="stat-box">
-                <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
-                <span class="s-label">현재 수강생</span>
-                <b id="dashStudentCount">0명</b>
-            </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                <span class="s-label">금일 외출/외박</span>
-                <b id="dashActionCount">0명</b>
-            </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
-                <span class="s-label">셔틀 수요(항기원 발)</span>
-                <div class="shuttle-mini-stats-inner">
-                    <span>오송 <b id="s-osong-cnt">0</b></span>
-                    <span>터미널 <b id="s-term-cnt">0</b></span>
-                    <span>공항 <b id="s-air-cnt">0</b></span>
-                </div>
+    <!-- 하단 통계 박스 (기존 유지) -->
+    <div class="dash-stats-row">
+        <div class="stat-box">
+            <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
+            <span class="s-label">현재 수강생</span>
+            <b id="dashStudentCount">0명</b>
+        </div>
+        <div class="stat-box">
+            <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+            <span class="s-label">금일 외출/외박</span>
+            <b id="dashActionCount">0명</b>
+        </div>
+        <div class="stat-box">
+            <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
+            <span class="s-label">셔틀 수요(항기원 발)</span>
+            <div class="shuttle-mini-stats-inner">
+                <span>오송 <b id="s-osong-cnt">0</b></span>
+                <span>터미널 <b id="s-term-cnt">0</b></span>
+                <span>공항 <b id="s-air-cnt">0</b></span>
             </div>
         </div>
     </div>
 </div>
-
 
 
 
@@ -427,14 +432,37 @@
         <p>교육생들의 질문을 실시간으로 확인하고 관리할 수 있습니다.</p>
     </div>
 
-    <!-- 2단: 필터 박스 (고정) -->
+<!-- 2단: 필터 박스 (최신 세련된 아이콘 버전) -->
     <div class="qa-filters">
-        <div class="basic-filters">
-            <div class="filter-chip active" onclick="ui.filterQa('all', event)">All Questions</div>
-            <div class="filter-chip" onclick="ui.filterQa('pin', event)">Pinned</div>
-            <div class="filter-chip" onclick="ui.filterQa('later', event)">Answer Later</div>
+        
+        <!-- (A) 질문 상태별 필터 -->
+        <div class="filter-group">
+            <div class="filter-group-label">
+                <i class="fa-solid fa-sliders"></i> 상태 필터링
+            </div>
+            <div class="basic-filters">
+                <div class="filter-chip active" onclick="ui.filterQa('all', event)">
+                    <i class="fa-solid fa-border-all"></i> 전체
+                </div>
+                <div class="filter-chip" onclick="ui.filterQa('pin', event)">
+                    <i class="fa-solid fa-thumbtack" style="color:#ef4444;"></i> 중요고정
+                </div>
+                <div class="filter-chip" onclick="ui.filterQa('later', event)">
+                    <i class="fa-regular fa-clock"></i> 나중답변
+                </div>
+            </div>
         </div>
-        <div id="subjectFilterBar"></div>
+
+        <!-- (B) 담당 강사별 필터 -->
+        <div class="filter-group" style="border-top: 1px solid #f1f5f9; padding-top: 5px;">
+            <div class="filter-group-label">
+                <i class="fa-solid fa-chalkboard-user"></i> 강사별 보기
+            </div>
+            <div id="subjectFilterBar">
+                <!-- 강사 버튼 생성 구역 -->
+            </div>
+        </div>
+
     </div>
 
     <!-- 3단: 질문 리스트 (스크롤) -->
@@ -603,39 +631,52 @@
 <!-- [개선] 교수 프로필 프리미엄 시네마틱 모달 화면 -->
 <div id="view-prof-presentation">
     <div class="prof-premium-card">
-        <!-- 닫기 버튼 -->
-        <div class="prof-close-btn" onclick="ui.setMode('dashboard')" title="닫기">
-            <i class="fa-solid fa-xmark"></i>
+        <!-- 상단 컨트롤: 나가기 버튼 -->
+        <div class="prof-top-controls">
+            <button class="btn-prof-exit" onclick="ui.setMode('dashboard')">
+                <i class="fa-solid fa-arrow-left"></i> 나가기
+            </button>
         </div>
-
-        <!-- 왼쪽: 사진 영역 -->
+        
+        <!-- 왼쪽 사진 영역 (유지) -->
         <div class="prof-photo-frame">
-            <img id="pres-photo" src="logo.png" alt="교수님 사진">
+            <img id="pres-photo" src="logo.png">
         </div>
 
-        <!-- 오른쪽: 정보 영역 -->
+        <!-- 오른쪽 정보 영역 (정렬 개선) -->
         <div class="prof-detail-info">
-            <h1 id="pres-name">교수님 성함</h1>
-            <p id="pres-msg" class="prof-premium-slogan">"환영합니다!"</p>
-            
-            <div class="prof-contact-box">
-                <span><i class="fa-solid fa-phone"></i> <span id="pres-phone">010-0000-0000</span></span>
-                <span><i class="fa-solid fa-envelope"></i> <span id="pres-email">email@airport.co.kr</span></span>
+            <div class="prof-header-group">
+                <!-- 이름 한 줄 정렬: 교수(작게) + 성함(크게) + (영문이름) -->
+                <div class="prof-name-row">
+                    <span class="prof-label-top">교수</span>
+                    <h1 id="pres-name">장두석</h1>
+                    <span id="pres-eng-name" class="prof-eng-inline">(Dooseok Jang)</span>
+                </div>
+                
+                <!-- 성함 바로 아래에 깔끔한 포인트 선 배치 -->
+                <div class="prof-point-line"></div>
+
+                <!-- 전문 분야 태그 (추가 아이디어) -->
+                <div id="pres-tags" class="prof-expertise-tags"></div>
+
+                <!-- 메시지 (따옴표 제거 및 폰트 정돈) -->
+                <p id="pres-msg" class="prof-slogan-clean">메시지가 표시됩니다.</p>
             </div>
 
+            <!-- 연락처 (유지) -->
+            <div class="prof-contact-box">
+                <div class="prof-contact-item"><i class="fa-solid fa-phone"></i> <span id="pres-phone">-</span></div>
+                <div class="prof-contact-item"><i class="fa-solid fa-envelope"></i> <span id="pres-email">-</span></div>
+            </div>
+
+            <!-- 약력 (유지 및 정돈) -->
             <div class="prof-bio-premium">
                 <h3><i class="fa-solid fa-award"></i> 주요 약력 및 경력</h3>
-                <p id="pres-bio">약력 정보가 표시되는 공간입니다.</p>
+                <ul id="pres-bio-list" class="prof-bio-list"></ul>
             </div>
         </div>
-
-        <!-- 전체화면 버튼 (우측 하단 플로팅) -->
-        <button class="btn-action btn-primary" onclick="ui.toggleFullScreen()" style="position:absolute; bottom:30px; right:30px; width:auto; padding:10px 20px; font-size:12px; opacity:0.5;">
-            <i class="fa-solid fa-expand"></i> 전체화면 모드
-        </button>
     </div>
 </div>
-
 
 
 
@@ -850,18 +891,20 @@
                 </div>
             </div>
             <div class="setting-group"><label class="setting-label">성함</label><input type="text" id="pp-name" class="setting-input" readonly></div>
+            <!-- [추가] 영문 성함 입력란 -->
+            <div class="setting-group"><label class="setting-label">영문 성함 (English Name)</label><input type="text" id="pp-eng-name" class="setting-input" placeholder="e.g. Doo-Seok Jang"></div>
             <div class="setting-group"><label class="setting-label">연락처</label><input type="text" id="pp-phone" class="setting-input" placeholder="010-0000-0000"></div>
             <div class="setting-group"><label class="setting-label">이메일</label><input type="text" id="pp-email" class="setting-input" placeholder="kac@airport.co.kr"></div>
             <div class="setting-group"><label class="setting-label">한 줄 메시지</label><input type="text" id="pp-msg" class="setting-input" placeholder="교육생에게 전하는 한 마디"></div>
             <div class="setting-group"><label class="setting-label">주요 약력</label><textarea id="pp-bio" class="setting-input" style="height:120px; resize:none;" placeholder="주요 경력 및 약력을 입력하세요."></textarea></div>
         </div>
         <div class="modal-actions" style="margin-top:20px; justify-content:flex-end; gap:10px;">
-            <button class="m-btn m-btn-later" onclick="ui.closeProfProfileModal()" style="background:#64748b; color:white;">취소</button>
+            <!-- [수정] 취소 버튼 동작 보완 -->
+            <button class="m-btn m-btn-later" onclick="ui.closeProfProfileModal()" style="background:#64748b; color:white; cursor:pointer;">취소</button>
             <button class="m-btn m-btn-done" onclick="profMgr.saveFullProfile()">프로필 저장</button>
         </div>
     </div>
 </div>
-
 
 
 
