@@ -1381,9 +1381,9 @@ if (mode === 'dormitory') {
             const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
             list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 list.forEach((s, idx) => {
-    const sName = s.name || "이름없음"; // 변수 선언 확실히
-    const sPhone = s.phone ? s.phone.slice(-4) : "";
-    let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null;
+                const sName = s.name || "이름없음"; 
+                const sPhone = s.phone ? s.phone.slice(-4) : "";
+                let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null;
                 const color = assigned ? "#3b82f6" : "#94a3b8";
                 tbody.innerHTML += `<tr><td>${idx+1}</td><td>${sName}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
             });
