@@ -1467,14 +1467,14 @@ ui.loadShuttleData = function() {
     },
 
 
-    filterQa: function(f, event) { 
+   ui.filterQa = function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
-        this.renderQaList(f); 
+        ui.renderQaList(f);
     },
     
 
-renderQaList: function(f) {
+ui.renderQaList = function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
         list.innerHTML = "";
