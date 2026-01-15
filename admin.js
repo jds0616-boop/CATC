@@ -1162,9 +1162,12 @@ if (c === state.room) {
         }
     },
     
+// [리포트 반영] 대시보드 제목 우측에 (ROOM #A) 배지 추가
     updateHeaderRoom: function(r) { 
         const el = document.getElementById('displayRoomName');
-        if(el) el.innerText = `Course ROOM ${r}`; 
+        if(el) {
+            el.innerHTML = `현재과정 운영 현황 <span class="header-room-badge">(Room #${r})</span>`;
+        }
     },
     
     renderSettings: function(d) {
@@ -2264,22 +2267,33 @@ const guideMgr = {
         });
     },
 
+
+
+
     // 2. PDF 업로드 (기존 유지)
-// [리포트 반영] PDF 업로드 시 기존 자료 삭제 경고문구 추가
+// [리포트 반영] PDF 업로드 시 경고창 + 성공 후 확실한 alert 알림 추가
     uploadGuide: function(input) {
-        if (!confirm("⚠️ 주의: 새 가이드(PDF)를 업로드하면 기존에 등록된 자료는 즉시 삭제되고 본 자료로 교체됩니다. 계속하시겠습니까?")) {
-            input.value = ""; // 취소 시 선택된 파일 비우기
-            return;
-        }
         const file = input.files[0];
         if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
+
+        if (!confirm("⚠️ 주의: 새 가이드를 업로드하면 기존 자료는 즉시 삭제되고 교체됩니다. 진행할까요?")) {
+            input.value = ""; 
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
             firebase.database().ref(`system/sharedGuide`).set(e.target.result)
-                .then(() => ui.showAlert("✅ 가이드가 업로드되었습니다."));
+                .then(() => {
+                    alert("✅ 입교안내 가이드가 성공적으로 교체되었습니다!"); // 확실한 알림창
+                    input.value = "";
+                });
         };
         reader.readAsDataURL(file);
     },
+
+
+
 
     // 3. PDF 로드
     loadPDF: async function(base64) {
@@ -2487,3 +2501,48 @@ window.onclick = function(event) {
     }
 };
 
+
+
+// --- [박상임 패치] 신규 과정 설정(Course Setup) 관리 로직 ---
+const setupMgr = {
+    // 1. 설정 팝업창 열기 (기존 데이터 로드)
+    openSetupModal: function() {
+        if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+        
+        // 기존 사이드바의 값들을 팝업창으로 복사
+        document.getElementById('setup-course-name').value = document.getElementById('courseNameInput').value;
+        
+        document.getElementById('courseSetupModal').style.display = 'flex';
+    },
+
+    // 2. 팝업창 닫기
+    closeSetupModal: function() {
+        document.getElementById('courseSetupModal').style.display = 'none';
+    },
+
+    // 3. 최종 저장 로직 (달력 및 강의실 선택값 포함)
+    saveAll: function() {
+        const name = document.getElementById('setup-course-name').value;
+        const sDate = document.getElementById('setup-start-date').value;
+        const eDate = document.getElementById('setup-end-date').value;
+        const roomName = document.getElementById('setup-room-select').value;
+
+        if(!name || !sDate || !eDate) return alert("과정명과 교육기간을 모두 입력해주세요.");
+
+        // 1. 사이드바에 데이터 동기화
+        document.getElementById('courseNameInput').value = name;
+        
+        // 2. Firebase 저장 (교육기간과 강의실 상세 정보 포함)
+        firebase.database().ref(`courses/${state.room}/settings`).update({
+            courseName: name,
+            period: `${sDate} ~ ${eDate}`,
+            roomDetailName: roomName
+        });
+
+        // 3. 대시보드 즉시 갱신을 위해 Save Settings 호출 효과
+        dataMgr.saveSettings();
+
+        alert("✅ 과정 정보가 성공적으로 설정되었습니다.");
+        this.closeSetupModal();
+    }
+};

@@ -129,7 +129,17 @@
                 </div>
             </div>
 
-            <div class="setting-group"><label class="setting-label">Course Name</label><input type="text" id="courseNameInput" class="setting-input"></div>
+<!-- [리포트 반영] 과정명 입력을 스마트 팝업 방식으로 변경 -->
+            <div class="setting-group">
+                <label class="setting-label">Course Setup</label>
+                <button class="btn-action btn-primary" onclick="setupMgr.openSetupModal()" style="height:45px; font-size:14px;">
+                    <i class="fa-solid fa-gears"></i> 과정 환경 설정 (팝업)
+                </button>
+                <!-- 기존 로직 유지를 위한 숨김 처리 -->
+                <input type="text" id="courseNameInput" style="display:none;">
+            </div>
+
+
 <!-- [신규] 과목(세션) 관리 섹션 -->
 <div class="setting-group" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
     <label class="setting-label">과목(세션) 관리</label>
@@ -861,18 +871,6 @@
 </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         <!-- [신규] Custom Alert Modal (전체화면 깨짐 방지용) -->
         <div id="customAlertModal" class="modal-overlay" style="z-index: 99999;">
             <div class="modal-box" style="width: 350px; text-align: center;">
@@ -882,6 +880,66 @@
                 <button class="btn-action btn-primary" onclick="document.getElementById('customAlertModal').style.display='none'">확인</button>
             </div>
         </div>
+
+
+
+<!-- [리포트 반영] 스마트 과정 설정 팝업창 (달력/강의실 선택 포함) -->
+<div id="courseSetupModal" class="modal-overlay">
+    <div class="modal-box setup-modal-box">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-sliders"></i> 교육과정 환경 설정</h3>
+        </div>
+        
+        <div class="setup-group">
+            <label>교육과정명</label>
+            <input type="text" id="setup-course-name" class="setup-input" placeholder="정확한 과정명을 입력하세요">
+        </div>
+
+        <div class="setup-group">
+            <label>교육 기간 (시작일 ~ 종료일)</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="date" id="setup-start-date" class="setup-input"> 
+                <span style="font-weight:bold;">~</span>
+                <input type="date" id="setup-end-date" class="setup-input">
+            </div>
+        </div>
+
+        <div class="setup-group">
+            <label>강의실 상세 위치 선택</label>
+            <select id="setup-room-select" class="setup-input">
+                <optgroup label="하늘관">
+                    <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
+                    <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
+                    <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
+                    <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
+                    <option value="하늘관 2층 D강의실">하늘관 2층 D강의실</option>
+                    <option value="하늘관 2층 E강의실">하늘관 2층 E강의실</option>
+                    <option value="하늘관 2층 F강의실">하늘관 2층 F강의실</option>
+                </optgroup>
+                <optgroup label="국제동">
+                    <option value="국제동 1층 A강의실">국제동 1층 A강의실</option>
+                    <option value="국제동 1층 B강의실">국제동 1층 B강의실</option>
+                    <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
+                    <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
+                    <option value="국제동 2층 ILS 실습실">국제동 2층 ILS 실습실</option>
+                    <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
+                </optgroup>
+                <optgroup label="관제교육동">
+                    <option value="관제교육동 1층">관제교육동 1층</option>
+                    <option value="관제교육동 2층">관제교육동 2층</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="modal-actions" style="margin-top:30px; justify-content:center; gap:10px;">
+            <button class="m-btn m-btn-later" onclick="setupMgr.closeSetupModal()" style="background:#64748b; color:white; min-width:120px; justify-content:center;">취소</button>
+            <button class="m-btn m-btn-done" onclick="setupMgr.saveAll()" style="min-width:200px; justify-content:center;">설정 저장 및 적용</button>
+        </div>
+    </div>
+</div>
+
+
+
 
 </body>
 </html>

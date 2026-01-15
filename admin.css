@@ -1847,8 +1847,11 @@ body.night-mode .status-table tr.is-my-room {
     color: #ef4444;
 }
 
+
+
+
 /* ============================================================
-   [박상임 패치] Step 1: 디자인 고도화 및 시안성 개선 (통합본)
+   [박상임 패치] Step 1-3: 3차 통합 디자인 최종 (중복 제거본)
    ============================================================ */
 
 /* 1. 대시보드 상단 레이아웃 (과정명 좌측 / 담임교수 우측 분리) */
@@ -1869,33 +1872,46 @@ body.night-mode .status-table tr.is-my-room {
     font-weight: 900 !important;
     color: #1e293b !important;
     margin: 0 !important; 
-    max-width: 60%;
+    max-width: 65%;
     line-height: 1.2;
 }
 
-.dash-prof-badge {
-    background: white;
-    padding: 15px 25px;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    border: 1px solid #e2e8f0;
-    text-align: right;
+/* 대시보드 제목 옆 룸 번호 배지 (리포트 요청사항: (ROOM #A) 표시) */
+.header-room-badge {
+    font-size: 18px;
+    color: #3b82f6;
+    background: #eff6ff;
+    padding: 4px 12px;
+    border-radius: 8px;
+    margin-left: 15px;
+    vertical-align: middle;
+    font-weight: 800;
+    border: 1px solid #dbeafe;
 }
 
-/* 2. 셔틀 수요 정렬 및 크기 보정 (리포트 8번 항목) */
+/* 2. 셔틀 수요조사 가로형 배치 및 숫자 극대화 */
 .shuttle-mini-stats {
     display: flex !important;
-    justify-content: center !important;
-    gap: 20px !important; 
-    background: #f1f5f9 !important;
-    padding: 12px 20px !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    gap: 15px !important; 
+    background: #ffffff !important;
+    padding: 15px 25px !important;
     border-radius: 12px !important;
+    border: 1px solid #e2e8f0;
+}
+
+.shuttle-mini-stats div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
 }
 
 .shuttle-mini-stats b {
-    font-size: 22px !important; 
+    font-size: 42px !important; 
     color: #3b82f6 !important;
-    margin-left: 5px;
+    line-height: 1;
 }
 
 /* 3. 석식 제외 버튼 슬림화 (세련된 캡슐형) */
@@ -1906,50 +1922,50 @@ body.night-mode .status-table tr.is-my-room {
     border-radius: 50px !important; 
     font-size: 14px !important;
     font-weight: 800 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
 }
 
-/* 4. 시네마틱 프로필: 성함 띄어쓰기 및 약력 양식 (리포트 3번 항목) */
+/* 4. 시네마틱 프로필: 성함 간격 8px 및 영문명 밀착 */
 #pres-name {
-    letter-spacing: 15px !important; 
-    margin-right: -15px; 
+    letter-spacing: 8px !important; 
+    margin-right: -8px; 
     font-weight: 900;
+    font-size: 42px !important;
+    color: #1e3a8a !important;
 }
 
-/* 영문 성함 스타일링 추가 */
 .pres-eng-name {
-    font-size: 24px;
+    font-size: 22px !important;
     color: #64748b;
     font-weight: 500;
     letter-spacing: 0px !important;
-    margin-left: 10px;
+    margin-left: 10px !important;
 }
 
 .prof-bio-premium p {
     text-align: left !important;
     line-height: 2 !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
 }
 
-/* 약력 리스트 불렛(•) 효과 */
-.bio-line {
-    display: block;
-    position: relative;
-    padding-left: 20px;
-    margin-bottom: 8px;
-}
-.bio-line::before {
-    content: "•";
-    position: absolute;
-    left: 0;
-    color: #3b82f6;
-    font-weight: bold;
+/* 5. 과정 설정용 신규 팝업창(모달) 디자인 */
+.setup-modal-box {
+    width: 550px !important;
+    background: white;
+    border-radius: 24px;
+    padding: 35px !important;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.2);
 }
 
-/* 5. 현황판 1번 항목 테두리 가림 해결 (리포트 5번 항목) */
-.status-table tr.is-my-room {
-    position: relative;
-    z-index: 10;
+.setup-group { margin-bottom: 20px; text-align: left; }
+.setup-group label { display: block; font-size: 13px; font-weight: 800; color: #64748b; margin-bottom: 8px; }
+.setup-input {
+    width: 100%; padding: 12px 15px; border: 2px solid #f1f5f9;
+    border-radius: 12px; font-size: 15px; font-weight: 600; outline: none;
 }
+
+/* 6. 현황판 1번 항목 테두리 가림 해결 */
+.status-table tr.is-my-room { position: relative; z-index: 10; }
 .status-table tr.is-my-room td {
     background-color: #eff6ff !important; 
     border-top: 3px solid #3b82f6 !important;
@@ -1958,6 +1974,6 @@ body.night-mode .status-table tr.is-my-room {
 .status-table tr.is-my-room td:first-child { border-left: 3px solid #3b82f6 !important; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
 .status-table tr.is-my-room td:last-child { border-right: 3px solid #3b82f6 !important; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
 
-/* 6. 불필요 요소 제거 */
-.prof-premium-card .btn-primary { display: none !important; }
-
+/* 7. 기타 UI 정리 */
+.prof-premium-card .btn-primary, .prof-premium-card .btn-guide-fullscreen { display: none !important; }
+.prof-close-btn { background: #f1f5f9 !important; color: #1e293b !important; width: 45px !important; height: 45px !important; font-size: 24px !important; }
