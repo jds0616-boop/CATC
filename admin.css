@@ -1600,10 +1600,12 @@ body.night-mode .status-table tr.is-my-room {
 }
 .contact-pill i { color: #003366; font-size: 18px; }
 
-/* 약력 섹션: 세련된 리스트 */
+/* 4. 약력 리스트 여백 조정 (텅 빈 느낌 제거) */
 .prof-bio-section {
-    width: 100%;
+    margin-top: 20px;
+    flex-grow: 1; /* 남은 공간을 꽉 채우도록 설정 */
 }
+
 .bio-header {
     font-size: 16px;
     font-weight: 800;
@@ -1613,10 +1615,12 @@ body.night-mode .status-table tr.is-my-room {
     align-items: center;
     gap: 8px;
 }
+
+
 .bio-body-list {
-    font-size: 15px;
-    line-height: 1.8;
-    color: #475569;
+    padding-top: 10px;
+    max-height: 250px;
+    overflow-y: auto;
 }
 
 /* 불렛 포인트 스타일 */
@@ -2204,9 +2208,10 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
-/* 교수님 성함 색상을 확실하게 하얀색으로 변경 */
+/* 5. 대시보드 미니 카드 내 성함 시안성 최종 보정 */
 #dashProfNameOnly {
-    color: #ffffff !important;
+    font-size: 20px !important;
+    letter-spacing: 1px;
 }
 
 /* "교수님"이라는 글자도 하얀색으로 맞추고 싶다면 아래 추가 */
@@ -2223,12 +2228,29 @@ body.night-mode .status-table tr.is-my-room {
     padding-top: 40px !important;
 }
 
-/* 프로필 성함 딥블루 강조 */
+
+/* 1. 프로필 상세창의 텍스트 강제 노출 및 색상 고정 */
+.prof-info-column * {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* 2. "과정 담임" 라벨 디자인 강화 (좀 더 고급스럽게) */
+.prof-header-row .prof-title-label {
+    background: #003366 !important;
+    border-radius: 50px !important; /* 둥근 캡슐형으로 변경 */
+    padding: 6px 18px !important;
+    font-size: 12px !important;
+    box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);
+}
+
+
 #pres-display-full-name {
-    font-size: 42px !important;
-    font-weight: 900 !important;
-    color: #003366 !important; /* 딥블루 고정 */
-    margin: 15px 0 !important;
+    display: block !important;
+    color: #003366 !important;
+    border-bottom: 2px solid #f1f5f9; /* 이름 아래 얇은 선으로 무게감 추가 */
+    padding-bottom: 10px;
+    margin-bottom: 20px !important;
 }
 
 #pres-display-full-name .rank-txt { font-size: 24px; color: #64748b; margin-right: 12px; }
@@ -2248,4 +2270,49 @@ body.night-mode .status-table tr.is-my-room {
     line-height: 2;
     margin-bottom: 8px;
     color: #475569 !important;
+}
+
+/* ============================================================
+   [박상임 패치 5.91] 딥블루 포인트 완벽 복구
+   ============================================================ */
+
+/* 1. 메인 제목 및 룸 배지 딥블루 */
+.dash-title-main h1 { 
+    color: #003366 !important; 
+}
+.header-room-badge {
+    background: #003366 !important;
+    color: #ffffff !important;
+}
+.dash-title-main i {
+    color: #003366 !important;
+}
+
+/* 2. 하단 통계 카드 라벨(제목) 딥블루 */
+.stat-premium-card .card-label,
+.stat-premium-card .card-label-shuttle,
+.notice-hub-header {
+    color: #003366 !important;
+    font-weight: 800 !important;
+}
+
+/* 3. 셔틀 스코어보드 숫자 딥블루 */
+.sb-val {
+    color: #003366 !important;
+}
+
+/* 4. 통계 카드 아이콘/라인 색상 보정 */
+.card-blue {
+    border-top: 5px solid #003366 !important;
+}
+.combined-stats .stat-row b {
+    color: #003366 !important; /* 수강생 숫자 */
+}
+.combined-stats .stat-row .color-coral b {
+    color: #f87171 !important; /* 외출 숫자는 빨간색 유지 (시인성) */
+}
+
+/* 5. 공지 허브 헤더 아이콘 딥블루 */
+.notice-hub-header i {
+    color: #003366 !important;
 }
