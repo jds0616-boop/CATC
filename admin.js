@@ -1188,13 +1188,21 @@ if (c === state.room) {
         }
     },
     
-// [5.2차 수정] 상단바 및 본문 룸 번호 동시 업데이트
+// [6.0차 수정] 모든 페이지의 룸 배지를 한꺼번에 업데이트
     updateHeaderRoom: function(r) { 
-        const elDash = document.getElementById('dashRoomBadge');
+        // 1. 상단바 텍스트 업데이트
         const elTop = document.getElementById('displayRoomName'); 
-        
+        if(elTop) elTop.innerText = `Room #${r}`;
+
+        // 2. 모든 섹션 제목 옆의 룸 배지(.room-badge-global)들을 찾아 일괄 변경
+        const allBadges = document.querySelectorAll('.room-badge-global');
+        allBadges.forEach(badge => {
+            badge.innerText = `(Room #${r})`;
+        });
+
+        // 3. (구버전 호환용) 대시보드 전용 배지 id도 업데이트
+        const elDash = document.getElementById('dashRoomBadge');
         if(elDash) elDash.innerText = `(Room #${r})`;
-        if(elTop) elTop.innerText = `Room #${r}`; // Connecting... 글자를 즉시 변경
     },
     
     renderSettings: function(d) {

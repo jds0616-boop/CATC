@@ -2322,3 +2322,43 @@ body.night-mode .status-table tr.is-my-room {
 .notice-hub-header i {
     color: #003366 !important;
 }
+
+/* ============================================================
+   [6.0차 최종] 전 페이지 제목 양식 딥블루 표준화 스타일
+   ============================================================ */
+
+/* 1. 모든 섹션 제목(h1) 및 아이콘 색상 통일 */
+.view-header h1 {
+    color: #003366 !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.view-header i {
+    color: #003366 !important;
+    font-size: 32px !important;
+}
+
+/* 2. 룸 배지 공통 디자인 (둥근 캡슐형) */
+.header-room-badge {
+    background: #003366 !important;
+    color: #ffffff !important;
+    padding: 4px 15px !important;
+    border-radius: 50px !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    margin-left: 10px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 8px rgba(0, 51, 102, 0.2);
+}
+
+/* 3. 소제목(p) 색상 보정 */
+.view-header p {
+    color: #64748b !important;
+    font-weight: 500;
+}
+
+
