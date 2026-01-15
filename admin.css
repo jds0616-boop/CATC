@@ -2059,8 +2059,6 @@ body.night-mode .status-table tr.is-my-room {
     margin-top: 15px; text-align: right; font-size: 13px; color: rgba(255, 255, 255, 0.7) !important;
     display: flex; align-items: center; justify-content: flex-end; gap: 6px;
 }
-
-}
 .date-minimal-box i {
     color: rgba(255, 255, 255, 0.7) !important;
 }
