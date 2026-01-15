@@ -333,7 +333,7 @@ body.night-mode .q-card.status-pin {
 
 .overlay-panel { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: white; box-shadow: -5px 0 30px rgba(0,0,0,0.1); transform: translateX(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; display: flex; flex-direction: column; }
 .overlay-panel.open { transform: translateX(0); }
-.overlay-toggle-tab { position: absolute; top: 50%; left: -32px; width: 32px; height: 70px; background: white; border-radius: 8px 0 0 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: -4px 0 10px rgba(0,0,0,0.05); color: #333; border: 1px solid #e2e8f0; border-right: none; }
+.overlay-toggle-tab { display: none !important; position: absolute; top: 50%; left: -32px; width: 32px; height: 70px; background: white; border-radius: 8px 0 0 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: -4px 0 10px rgba(0,0,0,0.05); color: #333; border: 1px solid #e2e8f0; border-right: none; }
 .panel-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
 .panel-body { padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .editor-input { border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px; width: 100%; }
@@ -2392,4 +2392,16 @@ body.night-mode .status-table tr.is-my-room {
 .header-room-badge {
     margin-left: 12px !important;
     vertical-align: middle;
+}
+
+/* 실시간 현황판 아이콘 전용 보정 */
+#view-waiting .view-header h1 i {
+    color: #003366 !important;
+    margin-right: 15px;
+    font-size: 28px;
+}
+
+/* [6.4차 최종] 우측 퀴즈 에디터 패널 및 손잡이 완전 숨김 */
+.overlay-panel, .overlay-toggle-tab {
+    display: none !important;
 }
