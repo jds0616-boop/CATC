@@ -563,32 +563,46 @@ resetCourse: function() {
         });
     },
 
-// [5차 수정] 수강생 삭제 시 셔틀/석식/외출 모든 데이터 경로에서 완전 소거
+// [5.8차 수정] 수강생 삭제 시 모든 행정 리스트(셔틀/석식/외출/상생관) 연쇄 삭제
     deleteStudent: function(token) {
         if(!state.room) return;
-        if(confirm("해당 수강생을 삭제하시겠습니까?\n(수강생 명부 및 모든 행정 신청 내역이 함께 삭제됩니다.)")) {
+        
+        // 1. 삭제 전 확인 창
+        if(confirm("🚨 해당 수강생을 명부에서 삭제하시겠습니까?\n\n삭제 시 차량 신청, 석식 제외, 외출 내역 등\n모든 행정 데이터가 함께 즉시 삭제됩니다.")) {
             const today = getTodayString();
             const updates = {};
             
-            // 1. 명부 삭제
+            // 2. 삭제할 모든 경로 설정 (유령 데이터 방지)
+            
+            // (1) 기본 수강생 명부에서 삭제
             updates[`courses/${state.room}/students/${token}`] = null;
-            // 2. 석식 제외 데이터 삭제
+            
+            // (2) 금일 석식 제외 명단에서 삭제
             updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
-            // 3. 외출/외박 데이터 삭제
+            
+            // (3) 금일 외출/외박 신청 내역에서 삭제
             updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
-            // 4. 모든 차량 신청 경로에서 삭제
-            ['osong', 'terminal', 'airport', 'car'].forEach(path => {
+            
+            // (4) 셔틀 수요조사 모든 목적지(4종)에서 삭제
+            const shuttlePaths = ['osong', 'terminal', 'airport', 'car'];
+            shuttlePaths.forEach(path => {
                 updates[`courses/${state.room}/shuttle/${path}/${token}`] = null;
             });
+            
+            // (5) 상생관(생활관) 배정 데이터와 연결된 유령 데이터가 있다면 삭제 (필요시)
+            // (생활관 정보는 보통 이름 기반 대조이므로 명부에서 사라지면 자동으로 리스트에서 빠집니다.)
 
-            firebase.database().ref().update(updates).then(() => {
-                ui.showAlert("✅ 해당 수강생의 모든 데이터가 완벽하게 정리되었습니다.");
-            });
+            // 3. 서버에 한꺼번에 반영 (Atomic Update)
+            firebase.database().ref().update(updates)
+                .then(() => {
+                    ui.showAlert("✅ 해당 수강생의 모든 정보가 완벽하게 정리되었습니다.");
+                })
+                .catch(err => {
+                    ui.showAlert("❌ 삭제 중 오류가 발생했습니다.");
+                    console.error(err);
+                });
         }
-    }
-
-};
-
+    },
 
 
 // --- [수정된 profMgr] 교수님 명단 관리 ---
@@ -875,29 +889,36 @@ const ui = {
     },
 
 
-// [5.6차 수정] 교수 프로필 시네마틱 데이터 연동
+// [5.9차 수정] "교수 [성함] ([영문])" 형식 및 데이터 주입 로직
     showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
-            if(!p) return ui.showAlert("등록된 상세 프로필이 없습니다. 담임 교수 관리에서 먼저 등록해주세요.");
+            if(!p) return ui.showAlert("상세 프로필을 먼저 등록해주세요.");
             
-            // 1. 이름 및 영문명 포맷팅
-            document.getElementById('pres-name-main').innerText = name;
-            document.getElementById('pres-eng-sub').innerText = p.engName ? `(${p.engName})` : "";
+            // 1. 성함 포맷팅 (교수 성함 (English Name))
+            const fullNameEl = document.getElementById('pres-display-full-name');
+            if(fullNameEl) {
+                const engPart = p.engName ? `<span class="eng-txt">(${p.engName})</span>` : "";
+                fullNameEl.innerHTML = `<span class="rank-txt">교수</span> ${name} ${engPart}`;
+            }
             
-            // 2. 사진 및 기본 정보
-            document.getElementById('pres-photo').src = p.photo || "logo.png";
+            // 2. 사진 및 텍스트 주입
+            const photoImg = document.getElementById('pres-photo');
+            if(photoImg) photoImg.src = p.photo || "logo.png";
+            
             document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
             document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
             
-            // 3. 약력 리스트화 (불렛 포인트 적용)
+            // 3. 약력 리스트 (불렛 로직 포함)
             const bioArea = document.getElementById('pres-bio');
-            if(p.bio) {
-                const bioLines = p.bio.split('\n').filter(line => line.trim() !== "");
-                bioArea.innerHTML = bioLines.map(line => `<div class="bio-line">${line.trim()}</div>`).join('');
-            } else {
-                bioArea.innerText = "등록된 약력이 없습니다.";
+            if(bioArea) {
+                if(p.bio) {
+                    const lines = p.bio.split('\n').filter(l => l.trim() !== "");
+                    bioArea.innerHTML = lines.map(l => `<div class="bio-line">${l.trim()}</div>`).join('');
+                } else {
+                    bioArea.innerText = "등록된 약력이 없습니다.";
+                }
             }
             
             ui.setMode('prof-presentation');

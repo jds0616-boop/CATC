@@ -669,58 +669,43 @@
 
 
 
-<!-- [5.6차 프리미엄 교체] 교수 프로필 시네마틱 뷰 -->
+<!-- [5.9차 교체] 교수 프로필 시네마틱 뷰 (ID 복구 및 버튼 제거 버전) -->
 <div id="view-prof-presentation">
-    <div class="prof-premium-card">
-        <!-- 상단 닫기 버튼 -->
+    <div class="prof-premium-card magazine-style">
+        <!-- 닫기 버튼 -->
         <div class="prof-close-btn" onclick="ui.setMode('dashboard')" title="닫기">
             <i class="fa-solid fa-xmark"></i>
         </div>
 
-        <div class="prof-layout-main">
-            <!-- 왼쪽: 고화질 사진 프레임 -->
-            <div class="prof-photo-column">
-                <div class="prof-photo-frame">
-                    <img id="pres-photo" src="logo.png" alt="교수님 사진">
-                </div>
+        <!-- 좌측 사진 (1/3) -->
+        <div class="prof-photo-column">
+            <div class="prof-photo-frame">
+                <img id="pres-photo" src="logo.png" alt="Instructor">
+            </div>
+        </div>
+
+        <!-- 우측 정보 (2/3) -->
+        <div class="prof-info-column">
+            <div class="prof-header-row">
+                <span class="prof-title-label">과정 담임</span>
+                <h1 id="pres-display-full-name">
+                    <!-- JS에서 "교수 성함 (English)" 형식으로 채움 -->
+                </h1>
+                <p id="pres-msg" class="prof-slogan-text"></p>
             </div>
 
-            <!-- 오른쪽: 상세 정보 및 약력 -->
-            <div class="prof-info-column">
-                <div class="prof-header-row">
-                    <span class="prof-title-label">과정 담임</span>
-                    <h1 id="pres-display-name">
-                        <span class="p-rank">교수</span> 
-                        <span id="pres-name-main">성함</span> 
-                        <span id="pres-eng-sub" class="p-eng">(English Name)</span>
-                    </h1>
-                    <p id="pres-msg" class="prof-slogan-text">"교육생 여러분을 환영합니다."</p>
-                </div>
+            <div class="prof-contact-grid">
+                <div class="contact-pill"><i class="fa-solid fa-phone"></i> <span id="pres-phone"></span></div>
+                <div class="contact-pill"><i class="fa-solid fa-envelope"></i> <span id="pres-email"></span></div>
+            </div>
 
-                <div class="prof-contact-grid">
-                    <div class="contact-pill">
-                        <i class="fa-solid fa-phone"></i>
-                        <span id="pres-phone">-</span>
-                    </div>
-                    <div class="contact-pill">
-                        <i class="fa-solid fa-envelope"></i>
-                        <span id="pres-email">-</span>
-                    </div>
-                </div>
-
-                <div class="prof-bio-section">
-                    <div class="bio-header">
-                        <i class="fa-solid fa-award"></i> 주요 약력 및 경력사항
-                    </div>
-                    <div id="pres-bio" class="bio-body-list">
-                        <!-- JS에서 불렛 리스트가 들어감 -->
-                    </div>
-                </div>
+            <div class="prof-bio-section">
+                <div class="bio-header"><i class="fa-solid fa-award"></i> 주요 약력 및 경력사항</div>
+                <div id="pres-bio" class="bio-body-list"></div>
             </div>
         </div>
     </div>
 </div>
-
 
 
 

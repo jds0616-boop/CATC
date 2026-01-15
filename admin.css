@@ -2214,3 +2214,38 @@ body.night-mode .status-table tr.is-my-room {
     color: rgba(255, 255, 255, 0.8) !important;
 }
 
+
+/* --- [5.9차 최종] 딥블루 클린 스타일 보정 --- */
+
+/* 통계 카드 아이콘 제거 후 텍스트 정렬 보정 */
+.stat-premium-card {
+    justify-content: center !important;
+    padding-top: 40px !important;
+}
+
+/* 프로필 성함 딥블루 강조 */
+#pres-display-full-name {
+    font-size: 42px !important;
+    font-weight: 900 !important;
+    color: #003366 !important; /* 딥블루 고정 */
+    margin: 15px 0 !important;
+}
+
+#pres-display-full-name .rank-txt { font-size: 24px; color: #64748b; margin-right: 12px; }
+#pres-display-full-name .eng-txt { font-size: 24px; color: #94a3b8; font-weight: 400; margin-left: 15px; }
+
+/* 매거진 레이아웃 텍스트 가시성 확보 */
+.prof-info-column {
+    background: #ffffff;
+    color: #334155 !important;
+}
+
+.contact-pill span { color: #475569 !important; }
+
+/* 약력 리스트 줄간격 및 크기 보정 */
+.bio-line {
+    font-size: 16px;
+    line-height: 2;
+    margin-bottom: 8px;
+    color: #475569 !important;
+}
