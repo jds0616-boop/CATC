@@ -563,23 +563,21 @@ resetCourse: function() {
         });
     },
 
-// [4차 최종] 수강생 삭제 시 모든 행정 데이터(셔틀/석식/외출) 연쇄 삭제 로직
+// [5차 수정] 수강생 삭제 시 셔틀/석식/외출 모든 데이터 경로에서 완전 소거
     deleteStudent: function(token) {
         if(!state.room) return;
-        if(confirm("해당 수강생을 삭제하시겠습니까?\n(수강생 명부 및 셔틀/석식/외출 신청 내역이 모두 함께 삭제됩니다.)")) {
+        if(confirm("해당 수강생을 삭제하시겠습니까?\n(수강생 명부 및 모든 행정 신청 내역이 함께 삭제됩니다.)")) {
             const today = getTodayString();
             const updates = {};
             
-            // 1. 수강생 기본 명부에서 삭제
+            // 1. 명부 삭제
             updates[`courses/${state.room}/students/${token}`] = null;
-            
-            // 2. 석식 제외 및 외출·외박 내역에서 연쇄 삭제
+            // 2. 석식 제외 데이터 삭제
             updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
+            // 3. 외출/외박 데이터 삭제
             updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
-            
-            // 3. 셔틀 신청 명단(4종 목적지 전체)에서 해당 학생 연쇄 삭제
-            const shuttlePaths = ['osong', 'terminal', 'airport', 'car'];
-            shuttlePaths.forEach(path => {
+            // 4. 모든 차량 신청 경로에서 삭제
+            ['osong', 'terminal', 'airport', 'car'].forEach(path => {
                 updates[`courses/${state.room}/shuttle/${path}/${token}`] = null;
             });
 
@@ -910,14 +908,14 @@ const ui = {
 
 
 
-// [박상임 패치] 대시보드 통계 및 과정 정보 실시간 출력
+// [5차 수정] 통합된 슬림 헤더에 교수 및 날짜 정보 실시간 출력
     loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 금일 날짜 표시
+        // 1. 우측 상단 슬림 날짜 표시
         const dateDisplay = document.getElementById('dashTodayDateDisplay');
-        if(dateDisplay) dateDisplay.innerText = `금일 날짜: ${today}`;
+        if(dateDisplay) dateDisplay.innerText = `📅 ${today}`;
 
         // 2. 과정 설정 정보 (명칭, 기간, 장소) 실시간 감시
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
@@ -931,36 +929,29 @@ const ui = {
             if(roomDetailEl) roomDetailEl.innerText = s.roomDetailName || "장소 미설정";
         });
 
-        // 3. 담임 교수 정보 및 프로필 링크
+        // 3. 우측 상단 미니 카드에 담임 교수 정보 실시간 업데이트
         firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
             const st = snap.val() || {};
             const profDisplay = document.getElementById('dashProfName');
             if(profDisplay) {
                 if(st.professorName) {
                     profDisplay.innerHTML = `
-                        <span onclick="ui.showProfPresentation('${st.professorName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
-                            <i class="fa-solid fa-address-card"></i> ${st.professorName} 교수님
-                            <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
-                        </span>`;
+                        <b><i class="fa-solid fa-user-tie"></i> 담임</b> ${st.professorName} 교수님
+                        <span class="btn-prof-link" onclick="ui.showProfPresentation('${st.professorName}')">프로필 보기</span>
+                    `;
                 } else { profDisplay.innerText = "담임 교수 미지정"; }
             }
         });
 
-        // 4. 수강생 현황 숫자
+        // 4. 나머지 통계 데이터 연동
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            const countEl = document.getElementById('dashStudentCount');
-            if(countEl) countEl.innerText = count + "명";
+            if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count + "명";
         });
-
-        // 5. 금일 외출/외박 숫자
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
-            const actionEl = document.getElementById('dashActionCount');
-            if(actionEl) actionEl.innerText = count + "명";
+            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count + "명";
         });
-
-        // 6. 셔틀 수요 3단 데이터
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
             if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -968,6 +959,9 @@ const ui = {
             if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
+
+
+
 
 
 
@@ -1170,15 +1164,13 @@ if (c === state.room) {
         }
     },
     
-// [4차 최종] 상단바는 건드리지 않고, 본문 중앙 제목 옆에만 (Room #A) 표시
+// [5차 수정] 상단바 및 본문 룸 번호 동시 업데이트
     updateHeaderRoom: function(r) { 
-        // 본문 제목 옆에 만들 칸(dashRoomBadge)만 찾습니다.
-        const el = document.getElementById('dashRoomBadge');
+        const elDash = document.getElementById('dashRoomBadge');
+        const elTop = document.getElementById('displayRoomName'); // 상단바
         
-        if(el) {
-            el.innerText = `(Room #${r})`;
-        }
-        // 상단바(displayRoomName) 관련 코드는 여기서 완전히 삭제되었습니다.
+        if(elDash) elDash.innerText = `(Room #${r})`;
+        if(elTop) elTop.innerText = `Room #${r}`; // Connecting... 글자를 변경
     },
     
     renderSettings: function(d) {
@@ -2282,12 +2274,16 @@ const guideMgr = {
 
 
     // 2. PDF 업로드 (기존 유지)
-// [리포트 반영] PDF 업로드 시 경고창 + 성공 후 확실한 alert 알림 추가
+// [5차 수정] 가이드 업로드 알림을 커스텀 모달 팝업으로 교체
     uploadGuide: function(input) {
         const file = input.files[0];
-        if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
+        if(!file || file.type !== 'application/pdf') {
+            ui.showAlert("PDF 파일만 업로드 가능합니다.");
+            return;
+        }
 
-        if (!confirm("⚠️ 주의: 새 가이드를 업로드하면 기존 자료는 즉시 삭제되고 교체됩니다. 진행할까요?")) {
+        // 알림창 시 일관성을 위해 confirm은 유지하되, 성공 메시지는 커스텀 팝업 사용
+        if (!confirm("⚠️ 주의: 새 가이드를 업로드하면 기존 자료는 즉시 교체됩니다. 진행할까요?")) {
             input.value = ""; 
             return;
         }
@@ -2296,7 +2292,7 @@ const guideMgr = {
         reader.onload = (e) => {
             firebase.database().ref(`system/sharedGuide`).set(e.target.result)
                 .then(() => {
-                    alert("✅ 입교안내 가이드가 성공적으로 교체되었습니다!"); // 확실한 알림창
+                    ui.showAlert("✅ 가이드가 성공적으로 업로드 및 교체되었습니다.");
                     input.value = "";
                 });
         };

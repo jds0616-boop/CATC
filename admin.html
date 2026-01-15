@@ -319,30 +319,31 @@
 
 
 
-<!-- [1단계 교체] 대시보드 시안성 개선 버전 -->
+<!-- [5차 교체] 대시보드: 헤더 통합 및 프리미엄 디자인 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 상단 헤더: 제목 옆에 (Room #A) 배치 -->
-    <div class="view-header">
-        <i class="fa-solid fa-gauge-high"></i>
-        <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
-        <p id="dashTodayDateDisplay">금일 날짜: 로딩 중...</p>
+    <!-- 통합 헤더: 제목 + 교수정보 + 룸번호를 한 줄에 배치 -->
+    <div class="view-header dashboard-header-integrated">
+        <div class="header-left-group">
+            <i class="fa-solid fa-gauge-high"></i>
+            <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
+        </div>
+        
+        <div class="header-right-info">
+            <div id="dashProfName" class="dash-prof-mini-card">
+                <!-- JS에서 교수 정보가 여기에 들어감 -->
+            </div>
+            <div id="dashTodayDateDisplay" class="dash-date-small"></div>
+        </div>
     </div>
 
     <!-- 메인 대시보드 카드 -->
     <div class="modern-white-card dashboard-card">
-        <!-- 과정명 프리미엄 컬러박스 -->
+        <!-- 과정명 프리미엄 컬러박스 (이것만 강조) -->
         <div class="course-title-box">
             <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
             <div class="course-sub-info">
                 <span><i class="fa-solid fa-calendar-days"></i> 교육기간: <b id="dashPeriod">-</b></span>
                 <span><i class="fa-solid fa-location-dot"></i> 장소: <b id="dashRoomDetail">-</b></span>
-            </div>
-        </div>
-
-        <div class="dash-main-info" style="margin-top:20px; border-bottom:none;">
-            <div class="dash-prof-badge">
-                <span class="p-label">담임 교수</span>
-                <strong id="dashProfName">-</strong>
             </div>
         </div>
 
@@ -361,7 +362,6 @@
             <div class="stat-box">
                 <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
                 <span class="s-label">셔틀 수요 (항기원 발)</span>
-                <!-- 셔틀 3단 그리드 배치 -->
                 <div class="shuttle-mini-stats">
                     <div><span>오송</span><b id="s-osong-cnt">0</b></div>
                     <div><span>터미널</span><b id="s-term-cnt">0</b></div>
