@@ -2461,3 +2461,10 @@ body.night-mode .status-table tr.is-my-room {
     margin-top: 10px;
     margin-bottom: 50px; /* 화면 하단에 너무 붙지 않게 여백 추가 */
 }
+
+/* [6.6차] 테이블 헤더 글자 세로 꺾임 방지 */
+.modern-white-card th {
+    white-space: nowrap !important; /* 글자가 옆으로 퍼지지 않고 한 줄로 나오게 고정 */
+    word-break: keep-all !important; 
+    min-width: 60px; /* 연번 칸의 최소 너비를 보장 */
+}
