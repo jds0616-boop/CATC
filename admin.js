@@ -563,32 +563,28 @@ resetCourse: function() {
         });
     },
 
-
-
-
-
-// [리포트 반영] 수강생 삭제 시 해당 학생의 모든 신청 데이터 연쇄 삭제
+// [4차 최종] 수강생 삭제 시 모든 행정 데이터(셔틀/석식/외출) 연쇄 삭제 로직
     deleteStudent: function(token) {
         if(!state.room) return;
-        if(confirm("해당 수강생을 삭제하시겠습니까?\n(차량/외출/석식 신청 내역이 모두 함께 삭제됩니다.)")) {
+        if(confirm("해당 수강생을 삭제하시겠습니까?\n(수강생 명부 및 셔틀/석식/외출 신청 내역이 모두 함께 삭제됩니다.)")) {
             const today = getTodayString();
             const updates = {};
             
-            // 1. 수강생 명부에서 삭제
+            // 1. 수강생 기본 명부에서 삭제
             updates[`courses/${state.room}/students/${token}`] = null;
             
-            // 2. 일일 행정 신청 내역 연쇄 삭제
-            updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
+            // 2. 석식 제외 및 외출·외박 내역에서 연쇄 삭제
             updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
+            updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
             
-            // 3. 차량 수요조사 내역 연쇄 삭제 (모든 목적지 전수 조사)
-            const locations = ['osong', 'terminal', 'airport', 'car'];
-            locations.forEach(loc => {
-                updates[`courses/${state.room}/shuttle/${loc}/${token}`] = null;
+            // 3. 셔틀 신청 명단(4종 목적지 전체)에서 해당 학생 연쇄 삭제
+            const shuttlePaths = ['osong', 'terminal', 'airport', 'car'];
+            shuttlePaths.forEach(path => {
+                updates[`courses/${state.room}/shuttle/${path}/${token}`] = null;
             });
 
             firebase.database().ref().update(updates).then(() => {
-                ui.showAlert("✅ 해당 수강생의 모든 데이터가 정리되었습니다.");
+                ui.showAlert("✅ 해당 수강생의 모든 데이터가 완벽하게 정리되었습니다.");
             });
         }
     }
@@ -881,35 +877,31 @@ const ui = {
     },
 
 
-// [리포트 반영] 담임 교수 프로필 시네마틱 팝업: 성함 띄어쓰기 및 약력 불렛 자동화
+// [4차 최종] 담임 교수 프로필: 약력 줄바꿈 자동 불렛화 및 성함 정밀 포맷팅
     showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
-            if(!p) {
-                ui.showAlert("등록된 상세 프로필이 없습니다. 담임 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
-                return;
-            }
+            if(!p) return ui.showAlert("등록된 상세 프로필이 없습니다. 담임 교수 관리에서 먼저 등록해주세요.");
             
-            // 1. 성함 포맷팅: 한글자씩 띄우고 영문명 병기 (예: 장 두 석 (Jang Doo Seok))
+            // 1. 성함 포맷팅: 한글자씩 띄우고(CSS 8px 대응) 영문명 밀착 배치
             const spacedName = name.split('').join(' ');
             const engName = p.engName ? `<span class="pres-eng-name">(${p.engName})</span>` : "";
-            document.getElementById('pres-name').innerHTML = `<small style="font-size:20px; font-weight:400; letter-spacing:0; margin-right:20px; color:#64748b;">담임교수</small>${spacedName} ${engName}`;
+            document.getElementById('pres-name').innerHTML = spacedName + engName;
             
-            // 2. 사진 및 기본정보
+            // 2. 사진 및 연락처 정보
             document.getElementById('pres-photo').src = p.photo || "logo.png";
             document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
             document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
             
-            // 3. 약력 자동 리스트화 (줄바꿈 기준 • 기호 삽입)
+            // 3. [핵심] 약력 자동 리스트화 (엔터를 인식하여 • 점을 찍어줌)
             const bioArea = document.getElementById('pres-bio');
             if(p.bio) {
                 const bioLines = p.bio.split('\n').filter(line => line.trim() !== "");
-                bioArea.innerHTML = bioLines.map(line => `<span class="bio-line">${line.replace(/^[o*•-]\s*/, '')}</span>`).join('');
+                bioArea.innerHTML = bioLines.map(line => `<span class="bio-line">${line.trim()}</span>`).join('');
             } else {
-                bioArea.innerText = "약력이 등록되지 않았습니다.";
+                bioArea.innerText = "등록된 약력이 없습니다.";
             }
-            
             ui.setMode('prof-presentation');
         });
     },
@@ -918,50 +910,54 @@ const ui = {
 
 
 
-// 대시보드 통계 실시간 로드
-loadDashboardStats: function() {
+// [4차 최종] 팝업에서 입력한 과정명, 기간, 장소를 메인 화면에 실시간 연동
+    loadDashboardStats: function() {
         if(!state.room) return;
-        
-        const courseName = document.getElementById('courseNameInput').value;
-        const profName = document.getElementById('profSelect').value;
         const today = getTodayString();
 
-        document.getElementById('dashCourseTitle').innerText = courseName || "과정명 미설정";
-        // 수정된 부분: 교수님 성함을 클릭하면 발표 모드로 전환되도록 링크 처리
-        const profDisplay = document.getElementById('dashProfName');
-        if(profName) {
-            profDisplay.innerHTML = `
-                <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
-                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
-                    ${profName} 교수님
-                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
-                </span>
-            `;
-        } else {
-            profDisplay.innerText = "담당 교수 미지정";
-        }
-        document.getElementById('dashTodayDateDisplay').innerText = "금일 날짜: " + today;
+        // 1. 파이어베이스에서 과정 설정 정보(3종) 감시 및 출력
+        firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
+            const s = snap.val() || {};
+            const titleEl = document.getElementById('dashCourseTitle');
+            const periodEl = document.getElementById('dashPeriod');
+            const roomEl = document.getElementById('dashRoomDetail');
 
-        // 수강생 수 실시간 업데이트
+            if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
+            if(periodEl) periodEl.innerText = s.period || "기간 미설정";
+            if(roomEl) roomEl.innerText = s.roomDetailName || "장소 미설정";
+        });
+
+        // 2. 담임 교수 정보 (기존 로직 유지)
+        const profName = document.getElementById('profSelect').value;
+        const profDisplay = document.getElementById('dashProfName');
+        if(profDisplay) {
+            if(profName) {
+                profDisplay.innerHTML = `
+                    <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
+                        <i class="fa-solid fa-address-card"></i> ${profName} 교수님
+                        <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
+                    </span>`;
+            } else { profDisplay.innerText = "담임 교수 미지정"; }
+        }
+
+        // 3. 수강생/외출/셔틀 통계 (기존 로직 유지)
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            document.getElementById('dashStudentCount').innerText = count + "명";
+            if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count + "명";
         });
-
-        // 외출/외박 수 업데이트
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
-            document.getElementById('dashActionCount').innerText = count + "명";
+            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count + "명";
         });
-
-        // 셔틀(3종) 수 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
-            document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-            document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-            document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
+            if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
+            if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+            if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
+
+
 
     // 공지사항 뷰 로드
        loadNoticeView: async function() {
@@ -1162,12 +1158,15 @@ if (c === state.room) {
         }
     },
     
-// [리포트 반영] 대시보드 제목 우측에 (ROOM #A) 배지 추가
+// [4차 최종] 상단바는 건드리지 않고, 본문 중앙 제목 옆에만 (Room #A) 표시
     updateHeaderRoom: function(r) { 
-        const el = document.getElementById('displayRoomName');
+        // 본문 제목 옆에 만들 칸(dashRoomBadge)만 찾습니다.
+        const el = document.getElementById('dashRoomBadge');
+        
         if(el) {
-            el.innerHTML = `현재과정 운영 현황 <span class="header-room-badge">(Room #${r})</span>`;
+            el.innerText = `(Room #${r})`;
         }
+        // 상단바(displayRoomName) 관련 코드는 여기서 완전히 삭제되었습니다.
     },
     
     renderSettings: function(d) {
