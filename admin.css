@@ -2446,3 +2446,9 @@ body.night-mode .status-table tr.is-my-room {
 .info-pill i {
     margin-top: 1px !important; /* 배너 안의 작은 아이콘들도 미세 조정 */
 }
+
+/* 석식 제외 하단 버튼 여백 보정 */
+#view-dinner-skip .btn-action {
+    margin-top: 10px;
+    margin-bottom: 50px; /* 화면 하단에 너무 붙지 않게 여백 추가 */
+}
