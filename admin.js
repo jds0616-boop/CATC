@@ -455,6 +455,7 @@ resetCourse: function() {
             // [삭제 항목] - null을 넣으면 해당 경로가 삭제됩니다.
             updates[`${rPath}/questions`] = null;
             updates[`${rPath}/students`] = null;
+            updates[`${rPath}/expectedStudents`] = null; 
             updates[`${rPath}/activeQuiz`] = null;
             updates[`${rPath}/quizAnswers`] = null;
             updates[`${rPath}/quizFinalResults`] = null;

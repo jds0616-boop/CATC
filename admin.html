@@ -616,16 +616,16 @@
 
 
 
-<!-- [7.0차] 수강생 현황 상단 상황판 및 업로드 섹션 -->
+<!-- [7.0차 최종] 수강생 현황: 실시간 출석 상황판 및 명단 대조 구역 -->
 <div id="view-students" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header">
         <h1><i class="fa-solid fa-users-viewfinder"></i> 수강생 입실 명부 <span class="header-room-badge room-badge-global"></span></h1>
         
-        <!-- 실시간 출석 상황판 -->
+        <!-- 실시간 출석 현황 상황판 -->
         <div class="attendance-summary-box">
             <div class="summary-info">
-                <span>실시간 출석 현황</span>
-                <strong id="arrivalStatus">0 / 0 명</strong>
+                <span><i class="fa-solid fa-signal"></i> 실시간 출석 현황</span>
+                <strong id="arrivalStatus">0 / 0 명 (0%)</strong>
             </div>
             <div class="progress-container">
                 <div id="attendanceBar" class="progress-bar" style="width: 0%;"></div>
@@ -639,17 +639,17 @@
                 <tr>
                     <th style="width:80px;">연번</th>
                     <th>성명</th>
-                    <th>상태</th> <!-- 상태 칸 추가 -->
+                    <th style="width:120px;">상태</th>
                     <th>최초 입장시간</th>
-                    <th style="width:120px;">관리</th>
+                    <th style="width:150px;">관리</th>
                 </tr>
             </thead>
             <tbody id="studentListTableBody">
-                <!-- 여기에 업로드된 명단 + 실제 입장 인원이 합쳐져서 출력됨 -->
+                <!-- JS에서 업로드 명단 + 실제 입장 인원을 대조하여 출력함 -->
             </tbody>
         </table>
         
-        <!-- 명단 업로드 컨트롤 -->
+        <!-- 명단 업로드 및 초기화 버튼 -->
         <div class="list-upload-footer">
             <input type="file" id="studentFile" accept=".txt" style="display:none;" onchange="dataMgr.uploadStudentNames(this)">
             <label for="studentFile" class="btn-list-upload">

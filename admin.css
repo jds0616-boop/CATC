@@ -2571,3 +2571,47 @@ body.night-mode .status-table tr.is-my-room {
     background: #f1f5f9; color: #ef4444; border: 1px solid #fee2e2;
     padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px;
 }
+
+/* --- [7.0차] 수강생 상황판 및 업로드 버튼 디자인 --- */
+
+/* 1. 상단 상황판 박스 */
+.attendance-summary-box {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 20px 30px;
+    width: 100%;
+    max-width: 650px;
+    margin: 20px auto 10px auto;
+}
+.summary-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.summary-info span { font-weight: 800; color: #64748b; font-size: 13px; }
+.summary-info strong { font-size: 24px; color: #003366; font-weight: 900; }
+
+.progress-container { background: #e2e8f0; height: 14px; border-radius: 50px; overflow: hidden; }
+.progress-bar { background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; transition: width 0.6s ease; }
+
+/* 2. 상태 배지 디자인 */
+.status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+.status-wait { background: #f1f5f9; color: #94a3b8; } /* 미입실 */
+.status-arrived { background: #ecfdf5; color: #10b981; } /* 입실 완료 */
+
+/* 3. 하단 업로드 버튼 구역 */
+.list-upload-footer {
+    display: flex; justify-content: center; gap: 12px;
+    margin-top: 30px; padding-top: 20px; border-top: 1px dashed #e2e8f0;
+}
+.btn-list-upload {
+    background: #003366 !important; color: white !important;
+    padding: 10px 25px; border-radius: 12px; font-weight: 800;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 14px; transition: 0.2s; border: none;
+}
+.btn-list-upload:hover { background: #002244 !important; transform: translateY(-2px); }
+
+.btn-list-clear {
+    background: #ffffff; color: #ef4444; border: 1px solid #fee2e2;
+    padding: 10px 20px; border-radius: 12px; font-weight: 700;
+    cursor: pointer; font-size: 13px; transition: 0.2s;
+}
+.btn-list-clear:hover { background: #fef2f2; }
