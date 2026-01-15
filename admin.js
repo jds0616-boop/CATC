@@ -1325,7 +1325,7 @@ setMode: function(mode) {
                     const students = studentSnap.val() || {};
                     const dormData = dormSnap.val() || {}; 
                     tbody.innerHTML = "";
-                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined");
+                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined").sort((a, b) => a.name.localeCompare(b.name)); // 가나다순 정렬
 
                     if (studentList.length === 0) {
                         tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>현재 입실한 수강생이 없습니다.</td></tr>";
@@ -1623,19 +1623,27 @@ function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
             let count = 1;
 
-            // 어제 데이터 (익일 9시 전까지 노출)
+            // 1. 데이터를 하나로 합쳐서 배열로 변환
+            const combinedList = [];
             Object.keys(yesterdayData).forEach(token => {
-                appendRow(yesterdayData[token], true, token);
+                combinedList.push({ ...yesterdayData[token], token, isYesterday: true });
             });
-
-            // 오늘 데이터
             Object.keys(todayData).forEach(token => {
-                appendRow(todayData[token], false, token);
+                combinedList.push({ ...todayData[token], token, isYesterday: false });
             });
 
-            if (tbody.innerHTML === "") {
+            // 2. 가나다순(이름순) 정렬 실행
+            combinedList.sort((a, b) => a.name.localeCompare(b.name));
+
+            if (combinedList.length === 0) {
                 tbody.innerHTML = "<tr><td colspan='6' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+                return;
             }
+
+            // 3. 정렬된 리스트를 화면에 출력
+            combinedList.forEach(item => {
+                appendRow(item, item.isYesterday, item.token);
+            });
 
             function appendRow(item, isYesterday, token) {
                 const typeNm = item.type === 'outing' ? 
@@ -1673,18 +1681,25 @@ loadDinnerSkipData: function() {
             const tbody = document.getElementById('dinnerSkipTableBody');
             if(!tbody) return;
             
-            const tokens = Object.keys(data); // 학생 고유 키 가져오기
+            const tokens = Object.keys(data);
             const totalEl = document.getElementById('dinnerSkipTotal');
             if(totalEl) totalEl.innerText = tokens.length;
 
-            tbody.innerHTML = tokens.length ? 
-                tokens.map((token, idx) => `
+            // [정렬 로직 추가] 데이터를 이름순으로 먼저 정렬합니다.
+            const sortedList = tokens.map(token => ({
+                token: token,
+                nameStr: data[token]
+            })).sort((a, b) => a.nameStr.localeCompare(b.nameStr));
+
+            // 정렬된 리스트(sortedList)를 화면에 출력합니다.
+            tbody.innerHTML = sortedList.length ? 
+                sortedList.map((item, idx) => `
                     <tr>
                         <td>${idx+1}</td>
-                        <td style="font-weight:bold;">${data[token]}</td>
+                        <td style="font-weight:bold;">${item.nameStr}</td>
                         <td style="color:#ef4444; font-weight:800;">석식 미취식</td>
                         <td>
-                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${token}')" 
+                            <button class="btn-table-action" onclick="ui.cancelIndividualDinnerSkip('${item.token}')" 
                                     style="background-color:#64748b; font-size:11px; padding:5px 8px;">
                                 제외 취소
                             </button>
@@ -1741,7 +1756,7 @@ loadStudentList: function() {
             const studentList = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
-            })).filter(s => s.name && s.name !== "undefined");
+            })).filter(s => s.name && s.name !== "undefined").sort((a, b) => a.name.localeCompare(b.name)); // 가나다순 정렬
 
             if(totalEl) totalEl.innerText = studentList.length;
             tbody.innerHTML = ""; 
