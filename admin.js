@@ -671,17 +671,31 @@ const profMgr = {
     },
 
 
-// 상세 프로필 편집창 열기
+// [리포트 반영] 프로필 편집 창 열 때 기존 저장 데이터 자동 호출 로직
     openProfileEditor: function(name) {
         document.getElementById('pp-name').value = name;
-        // 기존 저장된 프로필이 있다면 불러오기
+        
+        // 입력창들 초기화
+        document.getElementById('pp-phone').value = "";
+        document.getElementById('pp-email').value = "";
+        document.getElementById('pp-msg').value = "";
+        document.getElementById('pp-bio').value = "";
+        const previewImg = document.getElementById('pp-photo-preview').querySelector('img');
+        if(previewImg) previewImg.style.display = 'none';
+
+        // 전역 저장소(system/professorProfiles)에서 해당 교수 데이터 가져오기
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
-            const p = snap.val() || {};
-            document.getElementById('pp-photo').value = p.photo || "";
-            document.getElementById('pp-phone').value = p.phone || "";
-            document.getElementById('pp-email').value = p.email || "";
-            document.getElementById('pp-msg').value = p.msg || "";
-            document.getElementById('pp-bio').value = p.bio || "";
+            const p = snap.val();
+            if(p) {
+                document.getElementById('pp-phone').value = p.phone || "";
+                document.getElementById('pp-email').value = p.email || "";
+                document.getElementById('pp-msg').value = p.msg || "";
+                document.getElementById('pp-bio').value = p.bio || "";
+                if(p.photo && previewImg) {
+                    previewImg.src = p.photo;
+                    previewImg.style.display = 'block';
+                }
+            }
         });
         document.getElementById('profProfileModal').style.display = 'flex';
     },
@@ -855,7 +869,8 @@ const ui = {
     },
 
 
-showProfPresentation: function(name) {
+// [리포트 반영] 어제 극찬하신 프리미엄 시네마틱 프로필 팝업 로직 복구
+    showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) {
@@ -870,12 +885,7 @@ showProfPresentation: function(name) {
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
             document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
             
-            // QR 코드 생성 (연락처 정보)
-            const qrDiv = document.getElementById('pres-qr');
-            qrDiv.innerHTML = "";
-            new QRCode(qrDiv, { text: `TEL:${p.phone}`, width: 100, height: 100 });
-
-            // 화면 전환
+            // 화면 전환 (CSS에서 만든 시네마틱 레이어 보이기)
             ui.setMode('prof-presentation');
         });
     },
@@ -1240,22 +1250,18 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
-// [수정] 생활관 배치현황 로직: 이름 우선 매칭 -> 중복 시 전화번호 매칭
+// [리포트 반영] 생활관 배치현황 로직: 이름 우선 매칭 -> 동명이인 시 전화번호 대조
             if (mode === 'dormitory') {
                 const tbody = document.getElementById('dormitoryTableBody');
                 if(!tbody) return;
-                
-                // 로딩 메시지 표시
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>생활관 배정 데이터를 매칭 중입니다...</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>데이터를 매칭 중입니다...</td></tr>";
 
-                // 수강생 명단과 생활관 배정 명단(공용)을 동시에 가져옴
                 Promise.all([
                     firebase.database().ref(`courses/${state.room}/students`).once('value'),
                     firebase.database().ref(`system/dormitory_assignments`).once('value')
                 ]).then(([studentSnap, dormSnap]) => {
                     const students = studentSnap.val() || {};
-                    const dormData = dormSnap.val() || {}; // 배정 데이터 원본
-
+                    const dormData = dormSnap.val() || {}; 
                     tbody.innerHTML = "";
                     const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined");
 
@@ -1266,24 +1272,22 @@ setMode: function(mode) {
 
                     studentList.forEach((s, idx) => {
                         const sName = s.name;
-                        const sPhone = s.phone ? s.phone.slice(-4) : ""; // 전화번호 뒷 4자리
+                        const sPhone = s.phone ? s.phone.slice(-4) : ""; 
                         
                         let assignedInfo = null;
 
-                        // --- [매칭 핵심 로직] ---
-                        // 1순위: 이름이 정확히 일치하는 데이터가 있는지 확인
-                        if (dormData[sName]) {
-                            assignedInfo = dormData[sName];
-                        } 
-                        // 2순위: 동명이인 대비용 "이름_번호" 형태가 있는지 확인
-                        else if (dormData[`${sName}_${sPhone}`]) {
+                        // 1순위: '이름_전화번호' 형태의 키가 있는지 먼저 확인 (동명이인 처리용)
+                        if (dormData[`${sName}_${sPhone}`]) {
                             assignedInfo = dormData[`${sName}_${sPhone}`];
+                        } 
+                        // 2순위: 그냥 이름으로 된 키가 있는지 확인
+                        else if (dormData[sName]) {
+                            assignedInfo = dormData[sName];
                         }
-                        // -----------------------
 
                         const bName = assignedInfo ? assignedInfo.building : "-";
                         const rNo = assignedInfo ? assignedInfo.room + "호" : "미배정";
-                        const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8"; // 배정 시 파란색 강조
+                        const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8";
 
                         tbody.innerHTML += `
                             <tr>
@@ -1299,12 +1303,14 @@ setMode: function(mode) {
         }
     },
 
-// admin.js 내의 ui 객체 안에서 이 부분을 찾아서 교체하세요
-loadShuttleData: function() {
+// [수정사항 반영] 차량 수요조사: 중복 신청자 제거 로직 및 시안성 강화
+    loadShuttleData: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
             const data = snap.val() || {};
             const container = document.getElementById('shuttleCardContainer');
+            if(!container) return;
+
             const locations = [
                 { id: 'osong', name: '오송역', icon: 'fa-train' }, 
                 { id: 'terminal', name: '청주터미널', icon: 'fa-bus-simple' }, 
@@ -1314,16 +1320,23 @@ loadShuttleData: function() {
             
             container.innerHTML = "";
             locations.forEach(loc => {
-                // 해당 목적지의 데이터를 가져옴 (없으면 빈 객체)
                 const locData = data[loc.id] || {};
-                const entries = Object.entries(locData); // [토큰, 이름] 쌍의 배열로 변환
-                const count = entries.length;
+                const entries = Object.entries(locData); 
                 
-                // [개선] 명단을 하얀색 태그(칩) 형태로 생성하고 X버튼(취소) 추가
+                // --- [핵심: 중복 제거 로직] ---
+                // 이름(번호)이 동일한 신청자가 여러 명이면 마지막 신청자 하나만 남깁니다.
+                const uniqueMembers = {};
+                entries.forEach(([token, fullName]) => {
+                    uniqueMembers[fullName] = token; // 이름(fullName)을 키로 써서 중복을 덮어씀
+                });
+                const finalMembers = Object.entries(uniqueMembers); // [이름, 토큰] 배열로 재변환
+                const count = finalMembers.length;
+                
                 let membersHtml = "";
                 if (count > 0) {
                     membersHtml = `<div class="member-tag-container">`;
-                    membersHtml += entries.map(([token, name]) => `
+                    // 중복 제거된 명단만 출력
+                    membersHtml += finalMembers.map(([name, token]) => `
                         <div class="member-tag">
                             ${name}
                             <i class="fa-solid fa-xmark btn-del-shuttle" 
@@ -1336,7 +1349,6 @@ loadShuttleData: function() {
                     membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
                 }
                 
-                // 새로운 CSS 구조에 맞춰 HTML 생성
                 container.innerHTML += `
                     <div class="shuttle-dest-card card-${loc.id}">
                         <div class="dest-header">
@@ -1353,7 +1365,7 @@ loadShuttleData: function() {
                 `;
             });
         });
-    }, // 콤마(,) 확인 완료
+    },
 
 
     filterQa: function(f, event) { 
@@ -1362,13 +1374,13 @@ loadShuttleData: function() {
         this.renderQaList(f); 
     },
     
+// [수정사항 반영] Q&A: 지목 대상 직책별 호칭 자동 변환 로직 복구
     renderQaList: function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
         list.innerHTML = "";
         let items = Object.keys(state.qaData).map(k => ({id:k, ...state.qaData[k]}));
 
-        // [추가] 과목 필터링 로직
         if(subjectMgr.selectedFilter !== 'all') {
             items = items.filter(x => x.subject === subjectMgr.selectedFilter);
         }
@@ -1397,15 +1409,30 @@ loadShuttleData: function() {
                 cls += " is-new"; 
                 newBadge = `<span class="new-badge-icon">NEW</span>`; 
             }
+
+            // --- [핵심: 호칭 변환 로직] ---
+            let targetName = i.subject || '일반';
+            let displayName = "";
+            const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
+            
+            // 직책 키워드가 포함되어 있는지 확인
+            const foundPosition = positions.find(pos => targetName.includes(pos));
+            if (foundPosition) {
+                // 직책이 있으면 '님'만 붙임 (예: 공항장님)
+                displayName = targetName.includes("님") ? targetName : targetName + "님";
+            } else if (targetName !== '일반' && targetName !== '공통질문') {
+                // 일반 이름이면 ' 강사님' 붙임 (예: 이호준 강사님)
+                displayName = targetName + " 강사님";
+            } else {
+                displayName = targetName;
+            }
             
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
-
-        <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-            ${i.subject || '일반'}
-        </span>
-
+                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+                        ${displayName}
+                    </span>
                     ${newBadge}${icon}${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
                 </div>
@@ -1416,6 +1443,9 @@ loadShuttleData: function() {
             </div>`;
         });
     },
+
+
+
     
     openQaModal: function(k) { 
         state.activeQaKey=k; 
@@ -2231,7 +2261,12 @@ const guideMgr = {
     },
 
     // 2. PDF 업로드 (기존 유지)
+// [리포트 반영] PDF 업로드 시 기존 자료 삭제 경고문구 추가
     uploadGuide: function(input) {
+        if (!confirm("⚠️ 주의: 새 가이드(PDF)를 업로드하면 기존에 등록된 자료는 즉시 삭제되고 본 자료로 교체됩니다. 계속하시겠습니까?")) {
+            input.value = ""; // 취소 시 선택된 파일 비우기
+            return;
+        }
         const file = input.files[0];
         if(!file || file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
         const reader = new FileReader();

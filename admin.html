@@ -309,49 +309,47 @@
 
 
 
-<!-- [수정] 현재과정 현황 (대시보드) 디자인 통일 -->
+<!-- [리포트 반영] 현재과정 운영현황 (대시보드) 디자인 위계 및 시안성 개선 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 상단 표준 헤더 -->
+    <!-- 상단 헤더: 제목과 부제목 분리 -->
     <div class="view-header">
-        <i class="fa-solid fa-gauge-high" style="color: #6366f1;"></i>
+        <i class="fa-solid fa-gauge-high" style="color: #6366f1; font-size: 40px; margin-bottom: 15px;"></i>
         <h1>현재과정 운영 현황</h1>
-        <p id="dashTodayDateDisplay">금일 날짜: 202X-XX-XX</p>
+        <p id="dashTodayDateDisplay" style="margin-top: 5px;">금일 날짜: 로딩 중...</p>
     </div>
 
-    <!-- 메인 화이트 카드 -->
-    <div class="modern-white-card dashboard-card">
-        <div class="dash-main-info">
-            <h2 id="dashCourseTitle">과정명 로드 중...</h2>
+    <!-- 메인 대시보드 카드 -->
+    <div class="modern-white-card dashboard-card" style="text-align: center;">
+        <div class="dash-main-info" style="margin-bottom: 40px; padding-bottom: 30px; border-bottom: 1px solid #f1f5f9;">
+            <h2 id="dashCourseTitle">과정명을 불러오고 있습니다...</h2>
             <div class="dash-prof-badge">
-                <span class="p-label">담당 교수</span>
-                <strong id="dashProfName">교수님 성함</strong>
+                <span class="p-label" style="font-weight: 600; color: #64748b;">담당 교수</span>
+                <strong id="dashProfName" style="margin-left: 10px;">-</strong>
             </div>
         </div>
 
-        <div class="dash-stats-row">
-            <div class="stat-box">
-                <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
-                <span class="s-label">현재 수강생</span>
-                <b id="dashStudentCount">0명</b>
+        <!-- 하단 3단 통계 그리드 -->
+        <div class="dash-stats-row" style="display: flex; justify-content: space-around; gap: 20px;">
+            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
+                <div class="s-icon" style="color: #0ea5e9; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-users"></i></div>
+                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">현재 수강생</span>
+                <b id="dashStudentCount" style="font-size: 40px; color: #1e293b;">0명</b>
             </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                <span class="s-label">금일 외출/외박</span>
-                <b id="dashActionCount">0명</b>
+            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
+                <div class="s-icon" style="color: #ef4444; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">금일 외출/외박</span>
+                <b id="dashActionCount" style="font-size: 40px; color: #1e293b;">0명</b>
             </div>
-            <div class="stat-box">
-                <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
-                <span class="s-label">셔틀 수요(항기원 발)</span>
-                <div class="shuttle-mini-stats-inner">
-                    <span>오송 <b id="s-osong-cnt">0</b></span>
-                    <span>터미널 <b id="s-term-cnt">0</b></span>
-                    <span>공항 <b id="s-air-cnt">0</b></span>
+            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
+                <div class="s-icon" style="color: #10b981; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-bus"></i></div>
+                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">셔틀 수요(항기원 발)</span>
+                <div class="shuttle-mini-stats" style="margin-top: 5px;">
+                    오송 <b id="s-osong-cnt">0</b> 터미널 <b id="s-term-cnt">0</b> 공항 <b id="s-air-cnt">0</b>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 
 
 
@@ -600,7 +598,7 @@
 
 
 
-<!-- [개선] 교수 프로필 프리미엄 시네마틱 모달 화면 -->
+<!-- [리포트 반영] 교수 프로필 프리미엄 시네마틱 모달 (전체 화면 전용) -->
 <div id="view-prof-presentation">
     <div class="prof-premium-card">
         <!-- 닫기 버튼 -->
@@ -629,13 +627,12 @@
             </div>
         </div>
 
-        <!-- 전체화면 버튼 (우측 하단 플로팅) -->
+        <!-- 전체화면 토글 버튼 -->
         <button class="btn-action btn-primary" onclick="ui.toggleFullScreen()" style="position:absolute; bottom:30px; right:30px; width:auto; padding:10px 20px; font-size:12px; opacity:0.5;">
             <i class="fa-solid fa-expand"></i> 전체화면 모드
         </button>
     </div>
 </div>
-
 
 
 
