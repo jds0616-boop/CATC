@@ -1445,10 +1445,27 @@ setMode: function(mode) {
             items = items.filter(x => x.subject === subjectMgr.selectedFilter);
         }
         
-        // 핀(Pin) 고정 항목이 최상단에 오도록 정렬 (일반 질문처럼 위로 이동)
-        items.sort((a,b) => {
-            const getPrio = s => (s === 'pin' ? 2 : 1);
-            if (getPrio(a.status) !== getPrio(b.status)) return getPrio(b.status) - getPrio(a.status);
+// [6.5차 수정] 정렬 우선순위: 핀 고정(3) > 추후 답변(2) > 좋아요(1) > 최신순
+        items.sort((a, b) => {
+            // 1. 상태별 가중치 부여
+            const getWeight = (item) => {
+                if (item.status === 'pin') return 3;   // 핀 고정 최상단
+                if (item.status === 'later') return 2; // 추후 답변 그 다음
+                return 1;                              // 일반 질문
+            };
+
+            const weightA = getWeight(a);
+            const weightB = getWeight(b);
+
+            // 가중치가 다르면 높은 순서대로 (3->2->1)
+            if (weightA !== weightB) return weightB - weightA;
+
+            // 2. 가중치가 같다면 '좋아요' 수로 비교 (내림차순)
+            const likesA = a.likes || 0;
+            const likesB = b.likes || 0;
+            if (likesA !== likesB) return likesB - likesA;
+
+            // 3. 좋아요 수까지 같다면 '최신순'으로 비교 (내림차순)
             return b.timestamp - a.timestamp;
         });
 
