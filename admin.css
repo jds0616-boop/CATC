@@ -2363,3 +2363,33 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
+/* --- [6.3차] 제목 + 아이콘 한 줄 정렬 및 정밀 보정 --- */
+
+.view-header {
+    text-align: center;
+    margin-top: 25px;
+    margin-bottom: 35px;
+}
+
+.view-header h1 {
+    display: flex !important;
+    align-items: center !important; /* 아이콘과 글자의 높이를 완벽하게 일치시킴 */
+    justify-content: center !important;
+    gap: 15px !important; /* 아이콘과 글자 사이 간격 */
+    color: #003366 !important;
+    font-weight: 800 !important;
+    margin: 0 auto !important;
+}
+
+.view-header h1 i {
+    font-size: 28px !important; /* 아이콘 크기를 제목과 조화롭게 조절 */
+    margin-bottom: 0 !important; /* 위로 뜨는 현상 방지 */
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 룸 배지 위치 미세 조정 */
+.header-room-badge {
+    margin-left: 12px !important;
+    vertical-align: middle;
+}
