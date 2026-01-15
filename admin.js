@@ -591,7 +591,9 @@ resetCourse: function() {
                 ui.showAlert("✅ 해당 수강생의 모든 데이터가 정리되었습니다.");
             });
         }
-    },
+    }
+
+};
 
 
 
