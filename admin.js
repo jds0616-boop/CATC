@@ -2271,26 +2271,37 @@ const guideMgr = {
 
 
 
-    // 2. PDF 업로드 (기존 유지)
-// [5차 수정] 가이드 업로드 알림을 커스텀 모달 팝업으로 교체
+// [가이드 업로드 전용 확인 팝업 추가 버전]
     uploadGuide: function(input) {
         const file = input.files[0];
+        
+        // 1. 파일이 비었거나 PDF가 아니면 경고 후 종료
         if(!file || file.type !== 'application/pdf') {
             ui.showAlert("PDF 파일만 업로드 가능합니다.");
-            return;
-        }
-
-        // 알림창 시 일관성을 위해 confirm은 유지하되, 성공 메시지는 커스텀 팝업 사용
-        if (!confirm("⚠️ 주의: 새 가이드를 업로드하면 기존 자료는 즉시 교체됩니다. 진행할까요?")) {
             input.value = ""; 
             return;
         }
 
+        // 2. [핵심 추가] 사용자에게 확인창 띄우기
+        const userConfirmed = confirm(
+            "⚠️ [주의] 새 가이드를 업로드하시겠습니까?\n\n" +
+            "업로드 시 기존에 등록되어 있던 가이드 자료는\n" +
+            "즉시 삭제되고 새로운 파일로 교체됩니다.\n\n" +
+            "진행하시겠습니까?"
+        );
+
+        // 3. 사용자가 취소를 누르면 실행 중단
+        if (!userConfirmed) {
+            input.value = ""; // 선택했던 파일 초기화
+            return;
+        }
+
+        // 4. 확인을 눌렀을 때만 실제 업로드 로직 실행
         const reader = new FileReader();
         reader.onload = (e) => {
             firebase.database().ref(`system/sharedGuide`).set(e.target.result)
                 .then(() => {
-                    ui.showAlert("✅ 가이드가 성공적으로 업로드 및 교체되었습니다.");
+                    ui.showAlert("✅ 가이드가 성공적으로 교체되었습니다.");
                     input.value = "";
                 });
         };
