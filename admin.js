@@ -61,6 +61,8 @@ const state = {
     adminActionRef: null // 추가됨
 };
 
+
+let lastPostTimeMap = {};
 let dbRef = { qa: null, quiz: null, ans: null, settings: null, status: null, connections: null };
 
 // --- 1. Auth ---
@@ -248,7 +250,12 @@ const dataMgr = {
         });
         
         state.room = room; 
+        lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${room}`) || '{}');
         localStorage.setItem('kac_last_room', room); 
+
+    try {
+        lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${room}`) || '{}');
+    } catch(e) { lastPostTimeMap = {}; }
         
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
@@ -1370,10 +1377,10 @@ if (mode === 'dormitory') {
             tbody.innerHTML = "";
             const list = Object.values(students).filter(s => s.name && s.name !== "undefined");
             list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-            list.forEach((s, idx) => {
-                const sPhone = s.phone ? s.phone.slice(-4) : "";
-                const sName = s.name; // 이 변수 정의 확인
-                let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null; // sName 사용
+list.forEach((s, idx) => {
+    const sName = s.name || "이름없음"; // 변수 선언 확실히
+    const sPhone = s.phone ? s.phone.slice(-4) : "";
+    let assigned = dormData[sName] || dormData[`${sName}_${sPhone}`] || null;
                 const color = assigned ? "#3b82f6" : "#94a3b8";
                 tbody.innerHTML += `<tr><td>${idx+1}</td><td>${sName}</td><td>${sPhone}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.building : "-"}</td><td style="color:${color}; font-weight:800;">${assigned ? assigned.room+"호" : "미배정"}</td></tr>`;
             });
