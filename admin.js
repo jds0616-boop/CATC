@@ -1395,7 +1395,7 @@ list.forEach((s, idx) => {
 
 
 // admin.js 내의 ui 객체 안에서 이 부분을 찾아서 교체하세요
-loadShuttleData: function() {
+ui.loadShuttleData = function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
             const data = snap.val() || {};
