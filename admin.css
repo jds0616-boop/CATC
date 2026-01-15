@@ -2408,3 +2408,41 @@ body.night-mode .status-table tr.is-my-room {
 .overlay-panel, .overlay-toggle-tab {
     display: none !important;
 }
+
+
+/* ============================================================
+   [6.4차 최종] 우측 패널 완전 제거 및 제목 정렬 미세 보정
+   ============================================================ */
+
+/* 1. 우측의 거슬리는 남색 바(패널 손잡이)와 숨겨진 패널 완전 삭제 */
+.overlay-panel, 
+.overlay-toggle-tab, 
+#rightPanel {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+}
+
+/* 2. 대시보드 및 모든 제목의 아이콘-글자 수직 정렬 정밀 보정 */
+.view-header h1 {
+    display: flex !important;
+    align-items: center !important; 
+    justify-content: center !important;
+    line-height: 1 !important; /* 행간을 1로 고정하여 기준선 맞춤 */
+}
+
+.view-header h1 i {
+    margin-top: 2px !important; /* 아이콘을 아주 미세하게 아래로 내려 글자 중앙에 맞춤 */
+    font-size: 26px !important;
+    display: inline-block !important;
+}
+
+/* 3. 대시보드 히어로 배너 내 아이콘 정렬 (달력, 장소) */
+.info-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.info-pill i {
+    margin-top: 1px !important; /* 배너 안의 작은 아이콘들도 미세 조정 */
+}
