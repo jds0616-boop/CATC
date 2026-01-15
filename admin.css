@@ -2468,3 +2468,17 @@ body.night-mode .status-table tr.is-my-room {
     word-break: keep-all !important; 
     min-width: 60px; /* 연번 칸의 최소 너비를 보장 */
 }
+
+/* [6.8차] 출결 QR 코드 영역 프리미엄 보정 */
+#view-attendance .modern-white-card {
+    border: 2px solid #e2e8f0 !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.05) !important;
+}
+
+/* QR 이미지를 감싸는 점선 박스 보정 */
+#view-attendance div[style*="background: #f8fafc"] {
+    background: #f0f7ff !important; /* 연한 블루 배경 */
+    border: 10px solid #003366 !important; /* 딥블루 두툼한 테두리 */
+    border-radius: 24px !important;
+    padding: 30px !important;
+}
