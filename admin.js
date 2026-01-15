@@ -249,13 +249,16 @@ const dataMgr = {
             lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
         });
         
-        state.room = room; 
-        lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${room}`) || '{}');
-        localStorage.setItem('kac_last_room', room); 
+state.room = room;
+localStorage.setItem('kac_last_room', room);
 
-    try {
-        lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${room}`) || '{}');
-    } catch(e) { lastPostTimeMap = {}; }
+// 안전하게 try-catch 안에서 한 번만 수행하며, 문자열'{}'이 아닌 객체 {}를 할당함
+try {
+    const savedMap = localStorage.getItem(`lastTimeMap_${room}`);
+    lastPostTimeMap = savedMap ? JSON.parse(savedMap) : {};
+} catch(e) { 
+    lastPostTimeMap = {}; 
+}
         
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
