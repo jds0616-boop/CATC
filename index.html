@@ -480,7 +480,7 @@ function sendAns(idx) {
             dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
 
 
-            setupListeners(); checkCooldown();
+            setupListeners(); checkCooldown(); nitKeyboardFix();
 
             dbRef.status.once('value', s => {
                 const st = s.val() || {};
@@ -1462,6 +1462,35 @@ async function openAttendanceQR() {
         else { msg.style.display = 'block'; }
     } catch (e) { msg.innerText = "연결 오류"; msg.style.display = 'block'; }
 }
+
+
+
+function initKeyboardFix() {
+    if (window.visualViewport) {
+        const inputDock = document.getElementById('inputDock');
+        
+        const adjustLayout = () => {
+            // 전체 화면 높이에서 실제로 보이는 화면 높이를 뺍니다 (키보드 높이)
+            const viewportHeight = window.visualViewport.height;
+            const windowHeight = window.innerHeight;
+            const offset = windowHeight - viewportHeight;
+
+            if (offset > 0) {
+                // 키보드가 올라왔을 때
+                inputDock.style.bottom = offset + 'px';
+            } else {
+                // 키보드가 내려갔을 때
+                inputDock.style.bottom = '0px';
+            }
+        };
+
+        window.visualViewport.addEventListener('resize', adjustLayout);
+        window.visualViewport.addEventListener('scroll', adjustLayout);
+    }
+}
+
+
+
 
 
 
