@@ -2483,23 +2483,6 @@ const printMgr = {
     }
 };
 
-window.onload = function() { 
-    dataMgr.checkMobile(); 
-    dataMgr.initSystem(); 
-    profMgr.init(); 
-    guideMgr.init();
-
-    // [중요] 이 코드가 있어야 새로고침 시 자동으로 방을 찾아 들어갑니다.
-    const lastRoom = localStorage.getItem('kac_last_room');
-    if (lastRoom) {
-        // Firebase가 연결될 때까지 0.5초만 기다렸다가 실행합니다.
-        setTimeout(() => {
-            if (firebase.auth().currentUser) {
-                dataMgr.forceEnterRoom(lastRoom);
-            }
-        }, 500);
-    }
-};
 
 // --- [최종 정리] 객체 정의 및 전역 이벤트 통합 ---
 
