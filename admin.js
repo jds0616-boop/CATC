@@ -602,8 +602,8 @@ resetCourse: function() {
                     console.error(err);
                 });
         }
-    },
-
+    }
+};
 
 // --- [수정된 profMgr] 교수님 명단 관리 ---
 const profMgr = {
