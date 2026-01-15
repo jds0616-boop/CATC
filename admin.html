@@ -319,9 +319,9 @@
 
 
 
-<!-- [5.1차 교체] 대시보드: 제목 센터 정렬 & 정보 박스 내부 이동 -->
+<!-- [5.2차 교체] 대시보드: 제목 센터 정렬 & 정보 박스 내부 이동 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 상단 표준 헤더: 다시 중앙 정렬로 복구 -->
+    <!-- 상단 표준 헤더: 타 게시판과 동일하게 중앙 정렬 유지 -->
     <div class="view-header">
         <i class="fa-solid fa-gauge-high"></i>
         <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
@@ -339,7 +339,7 @@
                 </div>
             </div>
             
-            <!-- 교수/날짜 미니 정보창 (박스 내부 우측 고정) -->
+            <!-- 교수/날짜 미니 정보창 (박스 내부 우측 고정 - 파란 동그라미 위치) -->
             <div class="title-right-info">
                 <div id="dashProfName" class="dash-prof-badge-inner">
                     <!-- JS에서 교수 정보가 들어감 -->
@@ -348,7 +348,7 @@
             </div>
         </div>
 
-        <!-- 하단 3단 통계 그리드 (기존 동일) -->
+        <!-- 하단 3단 통계 그리드 -->
         <div class="dash-stats-row">
             <div class="stat-box">
                 <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>

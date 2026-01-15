@@ -1960,27 +1960,33 @@ body.night-mode .status-table tr.is-my-room {
 
 
 
-/* --- [5.1차 교체] 박스 내부 정보창 스타일 --- */
 
-/* 컬러박스 레이아웃 조정 */
+/* --- [5.2차 최종] 센터 제목 유지 + 박스 내부 정보창 스타일 --- */
+
+/* 1. 과정명 컬러박스: 내부 요소를 좌/우로 정렬하도록 설정 */
 .course-title-box {
-    display: flex;
-    justify-content: space-between; /* 좌/우 끝으로 배치 */
-    align-items: center;
-    position: relative;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
     padding: 30px 40px !important;
+    position: relative;
+    border-left: 10px solid #3b82f6 !important;
+    background: #f0f7ff !important;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.05);
 }
 
-/* 교수/날짜 정보창 스타일 */
+/* 2. 컬러박스 우측 정보창 (교수/날짜 배지) */
 .title-right-info {
     display: flex;
     flex-direction: column;
-    align-items: flex-end; /* 우측 정렬 */
+    align-items: flex-end; /* 배지들을 오른쪽 끝으로 정렬 */
     gap: 8px;
 }
 
+/* 교수님 성함 하얀색 배지 스타일 */
 .dash-prof-badge-inner {
-    background: #ffffff; /* 흰색 배지 스타일 */
+    background: #ffffff;
     padding: 8px 15px;
     border-radius: 12px;
     border: 1.5px solid #dbeafe;
@@ -1988,6 +1994,7 @@ body.night-mode .status-table tr.is-my-room {
     font-size: 14px;
     font-weight: 700;
     color: #475569;
+    white-space: nowrap;
 }
 
 .dash-prof-badge-inner b { color: #3b82f6; margin-right: 5px; }
@@ -2000,6 +2007,7 @@ body.night-mode .status-table tr.is-my-room {
     margin-left: 10px;
 }
 
+/* 날짜 텍스트 스타일 */
 .dash-date-badge-inner {
     font-size: 13px;
     color: #94a3b8;
@@ -2008,17 +2016,11 @@ body.night-mode .status-table tr.is-my-room {
     letter-spacing: 0.5px;
 }
 
-/* 제목 헤더 여백 보정 */
-.view-header h1 {
-    display: block !important; /* 다시 센터 정렬을 위해 인라인 해제 */
-}
-
-/* 상단바 Room 번호 유지 */
+/* 3. 상단바 Room 번호 버그 해결 스타일 */
 #displayRoomName {
     font-weight: 900;
-    color: #3b82f6;
+    color: #3b82f6 !important;
     background: rgba(59, 130, 246, 0.1);
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
 }
-

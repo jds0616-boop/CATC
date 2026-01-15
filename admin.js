@@ -908,16 +908,16 @@ const ui = {
 
 
 
-// [5.1차 수정] 내부 우측 배지에 정보 연동
+// [5.2차 수정] 박스 내부 우측 배지에 정보 연동
     loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 박스 내부 우측 날짜 배지 표시
+        // 1. 박스 내부 우측 날짜 표시
         const dateDisplay = document.getElementById('dashTodayDateDisplay');
         if(dateDisplay) dateDisplay.innerText = `📅 DATE: ${today}`;
 
-        // 2. 과정 정보 (명칭, 기간, 장소) 실시간 감시 (기존 동일)
+        // 2. 과정 정보 실시간 감시
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
             const s = snap.val() || {};
             const titleEl = document.getElementById('dashCourseTitle');
@@ -928,7 +928,7 @@ const ui = {
             if(roomDetailEl) roomDetailEl.innerText = s.roomDetailName || "장소 미설정";
         });
 
-        // 3. 박스 내부 우측 교수 배지 표시
+        // 3. 박스 내부 우측 교수 정보 표시
         firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
             const st = snap.val() || {};
             const profDisplay = document.getElementById('dashProfName');
@@ -942,7 +942,7 @@ const ui = {
             }
         });
 
-        // (이하 통계 수치 로직은 기존과 동일하므로 유지)
+        // 4. 통계 수치 로직 (유지)
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
             if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count + "명";
@@ -1162,13 +1162,13 @@ if (c === state.room) {
         }
     },
     
-// [5차 수정] 상단바 및 본문 룸 번호 동시 업데이트
+// [5.2차 수정] 상단바 및 본문 룸 번호 동시 업데이트
     updateHeaderRoom: function(r) { 
         const elDash = document.getElementById('dashRoomBadge');
-        const elTop = document.getElementById('displayRoomName'); // 상단바
+        const elTop = document.getElementById('displayRoomName'); 
         
         if(elDash) elDash.innerText = `(Room #${r})`;
-        if(elTop) elTop.innerText = `Room #${r}`; // Connecting... 글자를 변경
+        if(elTop) elTop.innerText = `Room #${r}`; // Connecting... 글자를 즉시 변경
     },
     
     renderSettings: function(d) {
