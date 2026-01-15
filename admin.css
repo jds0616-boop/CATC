@@ -110,8 +110,27 @@ body {
 
 
 
-
-.status-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; color: white; }
+/* [5.99차 수정] 대시보드 전체를 덮고 클릭을 차단하는 레이어 */
+.status-overlay { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(15, 23, 42, 0.7); /* 배경 투명도 살짝 조절 */
+    backdrop-filter: blur(12px);     /* 흐림 효과 강화 */
+    
+    /* 탭 메뉴(2000)보다 높게 설정하여 상단바와 메뉴를 모두 덮음 */
+    z-index: 5000 !important;        
+    
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    flex-direction: column; 
+    text-align: center; 
+    color: white; 
+    pointer-events: auto; /* 클릭 차단 확인 */
+}
 .text-badge { background-color: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin: 0 4px; display: inline-block; }
 
 #view-qa { 
