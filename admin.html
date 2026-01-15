@@ -302,7 +302,7 @@
         <p>교육생들을 위한 입교 안내 및 시설 이용 가이드 슬라이드입니다.</p>
     </div>
 
-    <div class="guide-main-container">
+    <div class="guide-main-container" style="padding: 40px 0;">
         <!-- PDF 화면 구역 -->
         <div id="pdfWrapper" onclick="guideMgr.changePage(1)" oncontextmenu="event.preventDefault(); guideMgr.changePage(-1);">
             <canvas id="guideCanvas"></canvas>
@@ -418,24 +418,23 @@
 
 
 
-<!-- [개선] 공지사항 관리 섹션 - 좌우 와이드 배치 -->
+<!-- [6.10차 최종] 공지사항 관리 섹션 - 제목 정렬 및 내용 복구 -->
 <div id="view-notice" style="display:none; width:100%; flex-direction:column; align-items:center;">
-<div class="view-header">
-    <h1><i class="fa-solid fa-qrcode"></i> 출결 QR 코드 <span class="header-room-badge room-badge-global"></span></h1>
-    <p>E-HRD 출결 처리를 위한 QR 코드입니다. 화면에 크게 띄워주세요.</p>
-</div>
+    <div class="view-header">
+        <h1><i class="fa-solid fa-bullhorn"></i> 통합 공지사항 관리 <span class="header-room-badge room-badge-global"></span></h1>
+        <p>교육생 앱에 실시간으로 노출될 공지사항을 관리합니다.</p>
+    </div>
 
-    <!-- 좌우 배치를 위한 새로운 감싸는 박스 -->
+    <!-- 좌우 배치를 위한 감싸는 박스 -->
     <div class="notice-flex-container">
-        
         <!-- 왼쪽: 강사 공지 작성 -->
         <div class="notice-card-half">
             <div class="modern-white-card" style="margin:0; height:100%;">
-                <h3 style="margin-top:0; color:#1e293b;"><i class="fa-solid fa-pen-to-square"></i> 우리 과정 공지 작성</h3>
+                <h3 style="margin-top:0; color:#003366;"><i class="fa-solid fa-pen-to-square"></i> 우리 과정 공지 작성</h3>
                 <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">입력 후 하단 버튼을 눌러야 교육생 앱에 반영됩니다.</p>
                 <textarea id="instNoticeInputMain" 
                           style="width: 100%; height: 280px; border-radius: 15px; border: 2px solid #f1f5f9; padding: 20px; font-size: 16px; outline:none; background:#fcfdfe; resize: none;" 
-                          placeholder="교육생들에게 전달할 공지 내용을 입력하세요."></textarea>
+                          placeholder="내용을 입력하세요."></textarea>
                 <button class="btn-action btn-primary" onclick="dataMgr.saveInstructorNoticeMain()" style="height:55px; font-size:18px; width:100%; border-radius:12px; margin-top:20px;">공지사항 게시하기</button>
             </div>
         </div>
@@ -443,14 +442,13 @@
         <!-- 오른쪽: 센터 공지 확인 -->
         <div class="notice-card-half">
             <div class="modern-white-card" style="margin:0; height:100%; background: #f8fafc !important;">
-                <h3 style="margin-top:0; color:#1e293b;"><i class="fa-solid fa-circle-info"></i> 센터 및 운영자 전달사항</h3>
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">운영자 포털에서 게시한 전체 공지 내용입니다. (열람 전용)</p>
+                <h3 style="margin-top:0; color:#003366;"><i class="fa-solid fa-circle-info"></i> 센터 및 운영자 전달사항</h3>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">운영자 포털에서 게시한 전체 공지 내용입니다.</p>
                 <div id="globalNoticeDisplay" class="global-notice-viewer">
                     센터 전체 공지사항을 불러오는 중...
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -459,11 +457,11 @@
 
 
 <div id="view-attendance" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <div class="view-header">
-        <i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i>
-        <h1>출결 QR 코드</h1>
-        <p>E-HRD 출결 처리를 위한 QR 코드입니다. 화면에 크게 띄워주세요.</p>
-    </div>
+<div class="view-header">
+    <!-- 아이콘을 h1 안으로 넣어서 한 줄로 만듭니다 -->
+    <h1><i class="fa-solid fa-qrcode"></i> 출결 QR 코드 <span class="header-room-badge room-badge-global"></span></h1>
+    <p>E-HRD 출결 처리를 위한 QR 코드입니다. 화면에 크게 띄워주세요.</p>
+</div>
     <div class="modern-white-card" style="text-align: center; max-width: 600px;">
         <div style="background: #f8fafc; padding: 20px; border-radius: 20px; border: 1px dashed #cbd5e1;">
             <img id="attendanceQrImgMain" style="width: 100%; max-width: 400px; border-radius: 12px; display:none; margin: 0 auto;">

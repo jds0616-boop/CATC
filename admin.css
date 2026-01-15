@@ -2469,16 +2469,40 @@ body.night-mode .status-table tr.is-my-room {
     min-width: 60px; /* 연번 칸의 최소 너비를 보장 */
 }
 
-/* [6.8차] 출결 QR 코드 영역 프리미엄 보정 */
-#view-attendance .modern-white-card {
-    border: 2px solid #e2e8f0 !important;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.05) !important;
+/* [6.9차 최종] 출결 QR 테두리 제거 및 PDF 슬라이드 프리미엄 프레임 적용 */
+
+/* 1. 아까 잘못 들어간 출결 QR 테두리 원상복구 */
+#view-attendance div[style*="border: 10px solid #003366"] {
+    border: none !important;
+    background: #f8fafc !important;
+    padding: 20px !important;
 }
 
-/* QR 이미지를 감싸는 점선 박스 보정 */
-#view-attendance div[style*="background: #f8fafc"] {
-    background: #f0f7ff !important; /* 연한 블루 배경 */
-    border: 10px solid #003366 !important; /* 딥블루 두툼한 테두리 */
-    border-radius: 24px !important;
-    padding: 30px !important;
+/* 2. 입교안내 PDF 슬라이드에 딥블루 라운딩 프레임 적용 */
+#pdfWrapper {
+    border: 15px solid #003366 !important; /* 두툼한 딥블루 프레임 */
+    border-radius: 35px !important;       /* 모서리를 아주 부드럽게 */
+    background-color: #003366 !important; /* 캔버스 뒤 배경도 딥블루로 */
+    box-shadow: 0 30px 80px rgba(0, 51, 102, 0.3) !important; /* 깊이감 있는 그림자 */
+    overflow: hidden;
+    transition: all 0.3s ease;
+    line-height: 0; /* 하단 미세 틈새 제거 */
+}
+
+/* 마우스를 올렸을 때 살짝 반응하는 효과 */
+#pdfWrapper:hover {
+    transform: scale(1.01);
+    box-shadow: 0 40px 100px rgba(0, 51, 102, 0.4) !important;
+}
+
+/* 내부 PDF 캔버스 보정 */
+#guideCanvas {
+    border-radius: 20px; /* 내부 화면도 살짝 라운딩 처리하여 일체감 부여 */
+    display: block;
+}
+
+/* 전체화면 모드일 때는 테두리 숨기기 (발표용) */
+#view-guide:fullscreen #pdfWrapper {
+    border: none !important;
+    border-radius: 0 !important;
 }
