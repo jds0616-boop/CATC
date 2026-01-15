@@ -1989,17 +1989,20 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 /* 2. 과정 히어로 배너 (상단 박스) */
+/* [배경 박스 색상 수정] */
 .course-hero-banner {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    /* 검정계열에서 주신 딥블루 계열 그라데이션으로 교체 */
+    background: linear-gradient(135deg, #003366 0%, #0055aa 100%) !important; 
     padding: 40px 50px;
     border-radius: 24px;
     color: white;
     position: relative;
     overflow: hidden;
     margin-bottom: 30px;
+    border: 1px solid rgba(255,255,255,0.1); /* 테두리에 아주 얇은 빛 추가 */
 }
 
 /* 배경 장식 원형 */
@@ -2047,14 +2050,19 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 .prof-details { display: flex; flex-direction: column; }
-.prof-label { font-size: 10px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; }
+.prof-label { font-size: 10px; color: rgba(255, 255, 255, 0.8) !important;  font-weight: 800; letter-spacing: 0.5px; }
 .prof-name-row { font-size: 18px; font-weight: 800; color: white; }
-.prof-name-row span { font-size: 14px; font-weight: 400; opacity: 0.8; }
+.prof-name-row span { font-size: 14px; font-weight: 400; opacity: 0.8; color: rgba(255, 255, 255, 0.5) !important; }
 .prof-arrow { color: rgba(255,255,255,0.3); margin-left: auto; }
 
 .date-minimal-box {
-    margin-top: 15px; text-align: right; font-size: 13px; color: #94a3b8;
+    margin-top: 15px; text-align: right; font-size: 13px; color: rgba(255, 255, 255, 0.7) !important;
     display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+}
+
+}
+.date-minimal-box i {
+    color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* 4. 하단 통계 프리미엄 그리드 */
@@ -2210,8 +2218,8 @@ body.night-mode .status-table tr.is-my-room {
 
 /* 5. 대시보드 미니 카드 내 성함 시안성 최종 보정 */
 #dashProfNameOnly {
-    font-size: 20px !important;
-    letter-spacing: 1px;
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2); /* 선명도를 위한 얇은 그림자 */
 }
 
 /* "교수님"이라는 글자도 하얀색으로 맞추고 싶다면 아래 추가 */
@@ -2237,7 +2245,7 @@ body.night-mode .status-table tr.is-my-room {
 
 /* 2. "과정 담임" 라벨 디자인 강화 (좀 더 고급스럽게) */
 .prof-header-row .prof-title-label {
-    background: #003366 !important;
+    background: #002244 !important; /* 박스보다 살짝 더 진한 딥블루 */
     border-radius: 50px !important; /* 둥근 캡슐형으로 변경 */
     padding: 6px 18px !important;
     font-size: 12px !important;
