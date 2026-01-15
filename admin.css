@@ -221,26 +221,27 @@ body {
 
 
 
-/* [복구] 핀 고정 카드 (심플한 초기 버전) */
+/* [6.1차 수정] 핀 고정 질문이 화면에 박제되지 않고 같이 올라가도록 수정 */
 .q-card.status-pin {
-    position: -webkit-sticky;
-    position: sticky;
+    /* 1. 고정(sticky) 기능을 해제하고 일반 위치로 복구 */
+    position: relative !important; 
+    top: 0 !important; /* 상단 여백 제거 */
+    z-index: 10 !important; /* 일반 카드 수준으로 레이어 낮춤 */
     
-    /* ★ 필터바 높이만큼 띄워줍니다. (제목 사라진 후 필터바 밑에 딱 붙음) ★ */
-    /* 필터바 높이에 따라 130px ~ 160px 사이로 조절하세요 */
-    top: 155px; 
-    
-    z-index: 900; /* 필터바(1000)보다는 낮고, 일반 카드보다는 높게 */
-    
-    /* 왼쪽 테두리 강조 (두께를 8px로 늘려 시인성 확보) */
+    /* 2. 시각적 강조 효과(빨간 테두리, 분홍 배경)는 그대로 유지 */
     border-left: 8px solid #ef4444 !important; 
     background-color: #fff1f2 !important; 
     
-    /* 핀 카드가 떠 있는 느낌을 주기 위해 그림자 강화 */
+    /* 3. 그림자와 간격 유지 */
     box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1) !important;
-    margin-bottom: 20px; /* 아래 카드와 간격 확보 */
+    margin-bottom: 20px; 
 }
 
+/* 다크모드일 때도 고정되지 않게 보정 */
+body.night-mode .q-card.status-pin {
+    position: relative !important;
+    top: 0 !important;
+}
 
 /* 핀 카드 마우스 올렸을 때 효과 (원래대로) */
 .q-card.status-pin:hover {
