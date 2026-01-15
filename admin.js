@@ -563,36 +563,25 @@ resetCourse: function() {
         });
     },
 
+
+
 // [5.8차 수정] 수강생 삭제 시 모든 행정 리스트(셔틀/석식/외출/상생관) 연쇄 삭제
     deleteStudent: function(token) {
         if(!state.room) return;
         
-        // 1. 삭제 전 확인 창
         if(confirm("🚨 해당 수강생을 명부에서 삭제하시겠습니까?\n\n삭제 시 차량 신청, 석식 제외, 외출 내역 등\n모든 행정 데이터가 함께 즉시 삭제됩니다.")) {
             const today = getTodayString();
             const updates = {};
             
-            // 2. 삭제할 모든 경로 설정 (유령 데이터 방지)
-            
-            // (1) 기본 수강생 명부에서 삭제
             updates[`courses/${state.room}/students/${token}`] = null;
-            
-            // (2) 금일 석식 제외 명단에서 삭제
             updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
-            
-            // (3) 금일 외출/외박 신청 내역에서 삭제
             updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
             
-            // (4) 셔틀 수요조사 모든 목적지(4종)에서 삭제
             const shuttlePaths = ['osong', 'terminal', 'airport', 'car'];
             shuttlePaths.forEach(path => {
                 updates[`courses/${state.room}/shuttle/${path}/${token}`] = null;
             });
             
-            // (5) 상생관(생활관) 배정 데이터와 연결된 유령 데이터가 있다면 삭제 (필요시)
-            // (생활관 정보는 보통 이름 기반 대조이므로 명부에서 사라지면 자동으로 리스트에서 빠집니다.)
-
-            // 3. 서버에 한꺼번에 반영 (Atomic Update)
             firebase.database().ref().update(updates)
                 .then(() => {
                     ui.showAlert("✅ 해당 수강생의 모든 정보가 완벽하게 정리되었습니다.");
@@ -602,8 +591,43 @@ resetCourse: function() {
                     console.error(err);
                 });
         }
+    },
+
+    // [7.0차 신규] 수강생 예정 명단 업로드 로직 (텍스트 파일 읽기)
+    uploadStudentNames: function(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // 한 줄에 한 명씩 이름을 분리하여 배열로 저장
+            const names = e.target.result.split(/\r?\n/)
+                .map(n => n.trim())
+                .filter(n => n.length > 0);
+            
+            if(names.length === 0) {
+                ui.showAlert("⚠️ 파일에 유효한 이름이 없습니다.");
+                return;
+            }
+
+            firebase.database().ref(`courses/${state.room}/expectedStudents`).set(names)
+                .then(() => {
+                    ui.showAlert(`✅ ${names.length}명의 예정 명단이 등록되었습니다.`);
+                    input.value = ""; // 입력창 초기화
+                });
+        };
+        reader.readAsText(file);
+    },
+
+    // [7.0차 신규] 등록된 예정 명단 초기화
+    clearExpectedList: function() {
+        if(confirm("등록된 예정 명단을 삭제하시겠습니까?\n(실제 입실한 학생 기록은 지워지지 않습니다.)")) {
+            firebase.database().ref(`courses/${state.room}/expectedStudents`).set(null)
+                .then(() => {
+                    ui.showAlert("✅ 예정 명단이 초기화되었습니다.");
+                });
+        }
     }
-};
+}; // <--- dataMgr 객체 진짜 마감
 
 // --- [수정된 profMgr] 교수님 명단 관리 ---
 const profMgr = {
@@ -1745,63 +1769,90 @@ loadDinnerSkipData: function() {
 
 
 
-loadStudentList: function() {
+// [7.0차 수정] 가나다순 정렬 + 예정 명단 대조 + 상황판 로직
+    loadStudentList: function() {
         if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/students`).on('value', snap => {
-            const data = snap.val() || {};
-            const tbody = document.getElementById('studentListTableBody');
-            if(!tbody) return;
-            const totalEl = document.getElementById('studentTotalCount');
+
+        // 1. 예정 명단과 실제 학생 명단을 동시에 감시
+        const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
+        const actualRef = firebase.database().ref(`courses/${state.room}/students`);
+
+        expectedRef.on('value', expSnap => {
+            const expectedNames = expSnap.val() || [];
             
-            const studentList = Object.keys(data).map(key => ({
-                token: key,
-                ...data[key]
-            })).filter(s => s.name && s.name !== "undefined").sort((a, b) => a.name.localeCompare(b.name)); // 가나다순 정렬
+            actualRef.on('value', snap => {
+                const data = snap.val() || {};
+                const tbody = document.getElementById('studentListTableBody');
+                if(!tbody) return;
 
-            if(totalEl) totalEl.innerText = studentList.length;
-            tbody.innerHTML = ""; 
+                // 실제 접속한 학생들 (토큰 포함)
+                const actualStudents = Object.keys(data).map(key => ({
+                    token: key,
+                    ...data[key]
+                })).filter(s => s.name && s.name !== "undefined");
 
-            studentList.forEach((s, idx) => {
-                const joinTime = s.joinedAt ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
-                const statusDot = s.isOnline ? '<span style="color:#22c55e; margin-right:5px;">●</span>' : '<span style="color:#cbd5e1; margin-right:5px;">●</span>';
-                
-                // 학생장 줄 배경색 연보라색으로 강조
-                const rowStyle = s.isLeader ? 'style="background-color:#f5f3ff;"' : '';
+                // 2. 전체 명단 구성 (예정자 + 불청객/현장입장객)
+                const actualNames = actualStudents.map(s => s.name);
+                const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
-                tbody.innerHTML += `
-                    <tr ${rowStyle}>
-                        <td>${idx + 1}</td>
-                        <td style="font-weight:bold;">
-                            ${statusDot}${s.name} ${s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
-                        </td>
-                        <!-- 수정됨: 전화번호 뒷 4자리만 출력 -->
-                        <td>${s.phone ? s.phone.slice(-4) : "-"}</td>
-                        <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
-                        <td>
-                            <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
-                                <!-- 버튼 대신 체크박스 형태로 관리 -->
-                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
-                                    <input type="checkbox" ${s.isLeader ? 'checked' : ''} 
-                                           onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')" 
-                                           style="width:18px; height:18px; cursor:pointer;">
-                                    학생장
-                                </label>
-                                <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" 
-                                        style="background-color:#ef4444; font-size:11px; padding:5px 8px; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                    삭제
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = ""; 
+                let arrivedCount = 0;
+
+                combinedNames.forEach((name, idx) => {
+                    const s = actualStudents.find(student => student.name === name);
+                    const isArrived = !!s;
+                    if(isArrived) arrivedCount++;
+
+                    // 디자인 설정
+                    const statusDot = isArrived ? (s.isOnline ? '●' : '○') : '';
+                    const dotColor = isArrived && s.isOnline ? '#22c55e' : '#cbd5e1';
+                    const statusHtml = isArrived ? 
+                        `<span class="status-badge status-arrived">입실완료</span>` : 
+                        `<span class="status-badge status-wait">미입실</span>`;
+                    
+                    const rowStyle = isArrived ? (s.isLeader ? 'background-color:#f5f3ff;' : '') : 'opacity: 0.5; background-color:#fcfcfc;';
+                    const joinTime = isArrived ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : "-";
+                    const phoneSuffix = isArrived && s.phone ? s.phone.slice(-4) : "-";
+
+                    tbody.innerHTML += `
+                        <tr style="${rowStyle}">
+                            <td>${idx + 1}</td>
+                            <td style="font-weight:bold;">
+                                <span style="color:${dotColor}; margin-right:5px;">${statusDot}</span>${name} 
+                                ${isArrived && s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
+                            </td>
+                            <td>${statusHtml}</td>
+                            <td>${phoneSuffix}</td>
+                            <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                            <td>
+                                ${isArrived ? `
+                                    <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
+                                        <label style="cursor:pointer; font-size:11px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
+                                            <input type="checkbox" ${s.isLeader ? 'checked' : ''} onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')"> 학생장
+                                        </label>
+                                        <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background:#ef4444; font-size:11px; padding:4px 8px;">삭제</button>
+                                    </div>
+                                ` : `-`}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                // 3. 상단 상황판 업데이트
+                const total = combinedNames.length;
+                const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
+                document.getElementById('arrivalStatus').innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
+                document.getElementById('attendanceBar').style.width = percent + "%";
             });
         });
     },
     toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
-        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+        if(dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     }
-}; // <--- ui 객체 닫기
+}; // ui 객체 닫기
+
+
 
 
 // --- 4. Quiz Logic ---
