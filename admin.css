@@ -1956,87 +1956,64 @@ body.night-mode .status-table tr.is-my-room {
 .setup-input { width: 100%; padding: 12px 15px; border: 2px solid #f1f5f9; border-radius: 12px; font-size: 15px; font-weight: 600; outline: none; }
 
 
-/* --- [5차 교체] 대시보드 통합 헤더 및 시안성 보정 스타일 --- */
 
-/* 1. 대시보드 제목 영역 통합 레이아웃 */
-.dashboard-header-integrated {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end; /* 바닥선 정렬로 안정감 부여 */
-    width: 100%;
-    max-width: 1000px;
-    margin: 30px auto 20px auto !important; /* 상단 여백 최적화 */
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e2e8f0;
-}
 
-.header-left-group {
+
+
+/* --- [5.1차 교체] 박스 내부 정보창 스타일 --- */
+
+/* 컬러박스 레이아웃 조정 */
+.course-title-box {
     display: flex;
+    justify-content: space-between; /* 좌/우 끝으로 배치 */
     align-items: center;
-    gap: 15px;
+    position: relative;
+    padding: 30px 40px !important;
 }
 
-.header-left-group i {
-    font-size: 28px !important;
-    color: #6366f1;
-    margin-bottom: 0 !important; /* 위아래 조잡한 마진 제거 */
-}
-
-.header-left-group h1 {
-    font-size: 26px !important;
-    margin: 0 !important;
-    display: flex;
-    align-items: center;
-}
-
-/* 2. 우측 담임교수 & 날짜 정보 구역 */
-.header-right-info {
-    text-align: right;
+/* 교수/날짜 정보창 스타일 */
+.title-right-info {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    align-items: flex-end; /* 우측 정렬 */
+    gap: 8px;
 }
 
-/* 담임교수 미니 카드 디자인 */
-.dash-prof-mini-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 6px 14px;
+.dash-prof-badge-inner {
+    background: #ffffff; /* 흰색 배지 스타일 */
+    padding: 8px 15px;
     border-radius: 12px;
+    border: 1.5px solid #dbeafe;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.05);
     font-size: 14px;
     font-weight: 700;
     color: #475569;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
 }
 
-.dash-prof-mini-card b {
-    color: #3b82f6;
-    margin-right: 5px;
-}
+.dash-prof-badge-inner b { color: #3b82f6; margin-right: 5px; }
 
-.dash-prof-mini-card .btn-prof-link {
+.dash-prof-badge-inner .btn-prof-link {
     font-size: 11px;
     color: #94a3b8;
     text-decoration: underline;
     cursor: pointer;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 
-/* 날짜 텍스트 슬림화 */
-.dash-date-small {
-    font-size: 12px;
+.dash-date-badge-inner {
+    font-size: 13px;
     color: #94a3b8;
-    font-weight: 500;
+    font-weight: 600;
     margin-right: 5px;
+    letter-spacing: 0.5px;
 }
 
-/* 3. 대시보드 카드 내부 보정 (위쪽 조잡한 컬러바 효과 제거) */
-.dashboard-card {
-    border-top: none !important; /* 제목 영역과 선이 겹치므로 제거 */
-    margin-top: 10px !important;
+/* 제목 헤더 여백 보정 */
+.view-header h1 {
+    display: block !important; /* 다시 센터 정렬을 위해 인라인 해제 */
 }
 
-/* 상단바 Room 번호 배지 강조 (Connecting 오류 해결용) */
+/* 상단바 Room 번호 유지 */
 #displayRoomName {
     font-weight: 900;
     color: #3b82f6;
@@ -2044,3 +2021,4 @@ body.night-mode .status-table tr.is-my-room {
     padding: 2px 8px;
     border-radius: 6px;
 }
+

@@ -319,35 +319,36 @@
 
 
 
-<!-- [5차 교체] 대시보드: 헤더 통합 및 프리미엄 디자인 -->
+<!-- [5.1차 교체] 대시보드: 제목 센터 정렬 & 정보 박스 내부 이동 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 통합 헤더: 제목 + 교수정보 + 룸번호를 한 줄에 배치 -->
-    <div class="view-header dashboard-header-integrated">
-        <div class="header-left-group">
-            <i class="fa-solid fa-gauge-high"></i>
-            <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
-        </div>
-        
-        <div class="header-right-info">
-            <div id="dashProfName" class="dash-prof-mini-card">
-                <!-- JS에서 교수 정보가 여기에 들어감 -->
-            </div>
-            <div id="dashTodayDateDisplay" class="dash-date-small"></div>
-        </div>
+    <!-- 상단 표준 헤더: 다시 중앙 정렬로 복구 -->
+    <div class="view-header">
+        <i class="fa-solid fa-gauge-high"></i>
+        <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
     </div>
 
     <!-- 메인 대시보드 카드 -->
     <div class="modern-white-card dashboard-card">
-        <!-- 과정명 프리미엄 컬러박스 (이것만 강조) -->
+        <!-- 과정명 컬러박스 (내부에 교수/날짜 정보 포함) -->
         <div class="course-title-box">
-            <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
-            <div class="course-sub-info">
-                <span><i class="fa-solid fa-calendar-days"></i> 교육기간: <b id="dashPeriod">-</b></span>
-                <span><i class="fa-solid fa-location-dot"></i> 장소: <b id="dashRoomDetail">-</b></span>
+            <div class="title-left-side">
+                <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
+                <div class="course-sub-info">
+                    <span><i class="fa-solid fa-calendar-days"></i> <b id="dashPeriod">-</b></span>
+                    <span><i class="fa-solid fa-location-dot"></i> <b id="dashRoomDetail">-</b></span>
+                </div>
+            </div>
+            
+            <!-- 교수/날짜 미니 정보창 (박스 내부 우측 고정) -->
+            <div class="title-right-info">
+                <div id="dashProfName" class="dash-prof-badge-inner">
+                    <!-- JS에서 교수 정보가 들어감 -->
+                </div>
+                <div id="dashTodayDateDisplay" class="dash-date-badge-inner"></div>
             </div>
         </div>
 
-        <!-- 하단 3단 통계 그리드 -->
+        <!-- 하단 3단 통계 그리드 (기존 동일) -->
         <div class="dash-stats-row">
             <div class="stat-box">
                 <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
