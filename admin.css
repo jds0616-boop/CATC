@@ -1847,92 +1847,117 @@ body.night-mode .status-table tr.is-my-room {
     color: #ef4444;
 }
 
-
 /* ============================================================
-   [리포트 반영] 강사 플랫폼 디자인 고도화 및 시안성 개선 패치
+   [박상임 패치] Step 1: 디자인 고도화 및 시안성 개선 (통합본)
    ============================================================ */
 
-/* 1. 과정명 디자인 강조 (리포트 3번 항목: 시각적 위계 개선) */
+/* 1. 대시보드 상단 레이아웃 (과정명 좌측 / 담임교수 우측 분리) */
+.dash-main-info {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    text-align: left !important;
+    padding: 30px 40px !important;
+    background: #fcfdfe;
+    border-radius: 20px;
+    margin-bottom: 35px !important;
+    border-bottom: 1px solid #f1f5f9;
+}
+
 #dashCourseTitle {
-    font-size: 42px !important; 
+    font-size: 38px !important;
     font-weight: 900 !important;
+    color: #1e293b !important;
+    margin: 0 !important; 
+    max-width: 60%;
+    line-height: 1.2;
+}
+
+.dash-prof-badge {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    text-align: right;
+}
+
+/* 2. 셔틀 수요 정렬 및 크기 보정 (리포트 8번 항목) */
+.shuttle-mini-stats {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 20px !important; 
+    background: #f1f5f9 !important;
+    padding: 12px 20px !important;
+    border-radius: 12px !important;
+}
+
+.shuttle-mini-stats b {
+    font-size: 22px !important; 
     color: #3b82f6 !important;
-    margin: 20px 0 !important;
-    letter-spacing: -2px !important;
+    margin-left: 5px;
 }
 
-/* 2. 셔틀 인원수 및 아이콘 확대 (리포트 1, 3번 항목: 텍스트 크기 확대) */
-.dest-count-badge {
-    font-size: 32px !important; 
-    font-weight: 900 !important;
-    padding: 5px 25px !important;
-}
-.dash-item .dash-icon { 
-    width: 80px !important; 
-    height: 80px !important; 
-    font-size: 36px !important; 
-}
-.dash-text b { font-size: 48px !important; }
-.shuttle-mini-stats b { font-size: 22px !important; }
-
-/* 3. 교수 프로필 시네마틱 팝업 레이아웃 (리포트 3번 항목: 팝업 복구) */
-#view-prof-presentation {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(15px);
-    z-index: 5000; 
-    justify-content: center;
-    align-items: center;
-}
-.prof-premium-card {
-    display: flex; gap: 50px; width: 90%; max-width: 1100px;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
-    padding: 60px; border-radius: 40px;
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5); position: relative;
-}
-.prof-photo-frame {
-    flex-shrink: 0; width: 360px; height: 480px; border-radius: 30px;
-    overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 10px solid white;
-}
-.prof-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
-.prof-detail-info h1 { font-size: 55px; font-weight: 900; color: #1e3a8a; margin-bottom: 10px; }
-.prof-premium-slogan { font-size: 24px; color: #3b82f6; font-weight: 700; margin-bottom: 30px; border-left: 6px solid #3b82f6; padding-left: 20px; }
-
-/* 4. 석식 제외 버튼 슬림화 (리포트 7번 항목: 버튼 슬림화) */
+/* 3. 석식 제외 버튼 슬림화 (세련된 캡슐형) */
 #view-dinner-skip .btn-action {
     width: auto !important;
-    padding: 8px 20px !important;
-    border-radius: 50px !important;
+    min-width: 160px;
+    padding: 8px 25px !important;
+    border-radius: 50px !important; 
     font-size: 14px !important;
     font-weight: 800 !important;
 }
 
-/* 5. 공지 관리 카드 시안성 개선 (리포트 6번 항목: 카드 음영 추가) */
-#view-notice .modern-white-card {
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+/* 4. 시네마틱 프로필: 성함 띄어쓰기 및 약력 양식 (리포트 3번 항목) */
+#pres-name {
+    letter-spacing: 15px !important; 
+    margin-right: -15px; 
+    font-weight: 900;
 }
 
-/* 6. 입교안내 PDF 화면 테두리 선 추가 (리포트 8번 항목: 테두리 추가) */
-#pdfWrapper {
-    border: 2px solid #cbd5e1 !important;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.15) !important;
+/* 영문 성함 스타일링 추가 */
+.pres-eng-name {
+    font-size: 24px;
+    color: #64748b;
+    font-weight: 500;
+    letter-spacing: 0px !important;
+    margin-left: 10px;
 }
 
-/* 7. 과정총현황 내 강의실(A Room 등) 테두리 강조 (리포트 9번 항목: 현황판 강조) */
+.prof-bio-premium p {
+    text-align: left !important;
+    line-height: 2 !important;
+    font-size: 17px !important;
+}
+
+/* 약력 리스트 불렛(•) 효과 */
+.bio-line {
+    display: block;
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 8px;
+}
+.bio-line::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+/* 5. 현황판 1번 항목 테두리 가림 해결 (리포트 5번 항목) */
+.status-table tr.is-my-room {
+    position: relative;
+    z-index: 10;
+}
 .status-table tr.is-my-room td {
     background-color: #eff6ff !important; 
-    border-top: 3.5px solid #3b82f6 !important;
-    border-bottom: 3.5px solid #3b82f6 !important;
+    border-top: 3px solid #3b82f6 !important;
+    border-bottom: 3px solid #3b82f6 !important;
 }
-.status-table tr.is-my-room td:first-child { 
-    border-left: 3.5px solid #3b82f6 !important; 
-    border-top-left-radius: 12px; border-bottom-left-radius: 12px; 
-}
-.status-table tr.is-my-room td:last-child { 
-    border-right: 3.5px solid #3b82f6 !important; 
-    border-top-right-radius: 12px; border-bottom-right-radius: 12px; 
-}
+.status-table tr.is-my-room td:first-child { border-left: 3px solid #3b82f6 !important; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+.status-table tr.is-my-room td:last-child { border-right: 3px solid #3b82f6 !important; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* 6. 불필요 요소 제거 */
+.prof-premium-card .btn-primary { display: none !important; }
+

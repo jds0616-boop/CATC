@@ -567,22 +567,31 @@ resetCourse: function() {
 
 
 
-    // [수정완료] 수강생 삭제 기능 함수 추가
-deleteStudent: function(token) {
+// [리포트 반영] 수강생 삭제 시 해당 학생의 모든 신청 데이터 연쇄 삭제
+    deleteStudent: function(token) {
         if(!state.room) return;
-        if(confirm("해당 수강생을 삭제하시겠습니까?\n(외출/외박 및 석식 신청 내역도 함께 삭제됩니다.)")) {
+        if(confirm("해당 수강생을 삭제하시겠습니까?\n(차량/외출/석식 신청 내역이 모두 함께 삭제됩니다.)")) {
             const today = getTodayString();
             const updates = {};
+            
+            // 1. 수강생 명부에서 삭제
             updates[`courses/${state.room}/students/${token}`] = null;
+            
+            // 2. 일일 행정 신청 내역 연쇄 삭제
             updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
             updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
+            
+            // 3. 차량 수요조사 내역 연쇄 삭제 (모든 목적지 전수 조사)
+            const locations = ['osong', 'terminal', 'airport', 'car'];
+            locations.forEach(loc => {
+                updates[`courses/${state.room}/shuttle/${loc}/${token}`] = null;
+            });
 
             firebase.database().ref().update(updates).then(() => {
-                ui.showAlert("✅ 해당 수강생의 모든 데이터가 삭제되었습니다.");
+                ui.showAlert("✅ 해당 수강생의 모든 데이터가 정리되었습니다.");
             });
         }
-    }
-};
+    },
 
 
 
@@ -671,11 +680,10 @@ const profMgr = {
     },
 
 
-// [리포트 반영] 프로필 편집 창 열 때 기존 저장 데이터 자동 호출 로직
+// [리포트 반영] 프로필 편집 창 열 때 영문 성함 포함 기존 데이터 호출
     openProfileEditor: function(name) {
         document.getElementById('pp-name').value = name;
-        
-        // 입력창들 초기화
+        document.getElementById('pp-eng-name').value = ""; // 초기화
         document.getElementById('pp-phone').value = "";
         document.getElementById('pp-email').value = "";
         document.getElementById('pp-msg').value = "";
@@ -683,10 +691,10 @@ const profMgr = {
         const previewImg = document.getElementById('pp-photo-preview').querySelector('img');
         if(previewImg) previewImg.style.display = 'none';
 
-        // 전역 저장소(system/professorProfiles)에서 해당 교수 데이터 가져오기
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(p) {
+                document.getElementById('pp-eng-name').value = p.engName || ""; // 영문 성함 로드
                 document.getElementById('pp-phone').value = p.phone || "";
                 document.getElementById('pp-email').value = p.email || "";
                 document.getElementById('pp-msg').value = p.msg || "";
@@ -726,7 +734,7 @@ const profMgr = {
         reader.readAsDataURL(file);
     },
 
-    // [수정] 상세 프로필 저장 (사진 파일 처리 포함)
+// [리포트 반영] 상세 프로필 저장 (영문 성함 데이터 포함)
     saveFullProfile: function() {
         const name = document.getElementById('pp-name').value;
         const fileInput = document.getElementById('pp-photo-file');
@@ -734,27 +742,25 @@ const profMgr = {
         const doSave = (photoData) => {
             const profileData = {
                 photo: photoData || "",
+                engName: document.getElementById('pp-eng-name').value, // 영문 성함 추가
                 phone: document.getElementById('pp-phone').value,
                 email: document.getElementById('pp-email').value,
                 msg: document.getElementById('pp-msg').value,
                 bio: document.getElementById('pp-bio').value
             };
             firebase.database().ref(`system/professorProfiles/${name}`).set(profileData).then(() => {
-                ui.showAlert("✅ 교수 프로필이 성공적으로 저장되었습니다.");
+                ui.showAlert("✅ 담임 교수 프로필이 성공적으로 저장되었습니다.");
                 ui.closeProfProfileModal();
             });
         };
 
         if (fileInput.files.length > 0) {
-            // 사진이 선택되었다면 최적화 후 저장
             this.resizeImage(fileInput.files[0], (optimizedData) => doSave(optimizedData));
         } else {
-            // 사진 선택 안 했다면 기존 사진 유지 확인 후 저장
             firebase.database().ref(`system/professorProfiles/${name}/photo`).once('value', s => doSave(s.val()));
         }
-    }
-
-};
+    } // <--- 함수의 끝
+}; // <--- 중요!! profMgr라는 큰 바구니를 여기서 완전히 닫습니다. (콤마 없음)
 
 // --- [신규] 과목(세션) 관리 로직 ---
 const subjectMgr = {
@@ -771,11 +777,15 @@ init: function() {
         });
     },
 
+// [리포트 반영] 과목 필터 바 렌더링 (공통질문 필터 추가)
     renderFilters: function() {
         const bar = document.getElementById('subjectFilterBar');
         if(!bar) return;
         
         let html = `<div class="filter-chip ${this.selectedFilter === 'all' ? 'active' : ''}" onclick="subjectMgr.setFilter('all')">전체</div>`;
+        
+        // 공통질문 전용 필터 칩 추가
+        html += `<div class="filter-chip ${this.selectedFilter === '공통질문' ? 'active' : ''}" onclick="subjectMgr.setFilter('공통질문')">공통질문</div>`;
         
         this.list.forEach(item => {
             html += `<div class="filter-chip ${this.selectedFilter === item.name ? 'active' : ''}" onclick="subjectMgr.setFilter('${item.name}')">${item.name}</div>`;
@@ -869,23 +879,35 @@ const ui = {
     },
 
 
-// [리포트 반영] 어제 극찬하신 프리미엄 시네마틱 프로필 팝업 로직 복구
+// [리포트 반영] 담임 교수 프로필 시네마틱 팝업: 성함 띄어쓰기 및 약력 불렛 자동화
     showProfPresentation: function(name) {
         firebase.database().ref(`system/professorProfiles/${name}`).once('value', snap => {
             const p = snap.val();
             if(!p) {
-                ui.showAlert("등록된 상세 프로필이 없습니다. 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
+                ui.showAlert("등록된 상세 프로필이 없습니다. 담임 교수 명단 관리에서 프로필을 먼저 등록해주세요.");
                 return;
             }
-            // 데이터 채우기
-            document.getElementById('pres-name').innerText = name;
+            
+            // 1. 성함 포맷팅: 한글자씩 띄우고 영문명 병기 (예: 장 두 석 (Jang Doo Seok))
+            const spacedName = name.split('').join(' ');
+            const engName = p.engName ? `<span class="pres-eng-name">(${p.engName})</span>` : "";
+            document.getElementById('pres-name').innerHTML = `<small style="font-size:20px; font-weight:400; letter-spacing:0; margin-right:20px; color:#64748b;">담임교수</small>${spacedName} ${engName}`;
+            
+            // 2. 사진 및 기본정보
             document.getElementById('pres-photo').src = p.photo || "logo.png";
             document.getElementById('pres-phone').innerText = p.phone || "연락처 미등록";
             document.getElementById('pres-email').innerText = p.email || "이메일 미등록";
             document.getElementById('pres-msg').innerText = p.msg ? `"${p.msg}"` : "";
-            document.getElementById('pres-bio').innerText = p.bio || "약력이 등록되지 않았습니다.";
             
-            // 화면 전환 (CSS에서 만든 시네마틱 레이어 보이기)
+            // 3. 약력 자동 리스트화 (줄바꿈 기준 • 기호 삽입)
+            const bioArea = document.getElementById('pres-bio');
+            if(p.bio) {
+                const bioLines = p.bio.split('\n').filter(line => line.trim() !== "");
+                bioArea.innerHTML = bioLines.map(line => `<span class="bio-line">${line.replace(/^[o*•-]\s*/, '')}</span>`).join('');
+            } else {
+                bioArea.innerText = "약력이 등록되지 않았습니다.";
+            }
+            
             ui.setMode('prof-presentation');
         });
     },
@@ -1303,7 +1325,7 @@ setMode: function(mode) {
         }
     },
 
-// [수정사항 반영] 차량 수요조사: 중복 신청자 제거 로직 및 시안성 강화
+// [리포트 반영] 차량 수요조사: 동일 이름 신청자 중복 제거 로직
     loadShuttleData: function() {
         if(!state.room) return;
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
@@ -1323,19 +1345,17 @@ setMode: function(mode) {
                 const locData = data[loc.id] || {};
                 const entries = Object.entries(locData); 
                 
-                // --- [핵심: 중복 제거 로직] ---
-                // 이름(번호)이 동일한 신청자가 여러 명이면 마지막 신청자 하나만 남깁니다.
+                // --- [중복 제거 로직] ---
                 const uniqueMembers = {};
                 entries.forEach(([token, fullName]) => {
-                    uniqueMembers[fullName] = token; // 이름(fullName)을 키로 써서 중복을 덮어씀
+                    uniqueMembers[fullName] = token; 
                 });
-                const finalMembers = Object.entries(uniqueMembers); // [이름, 토큰] 배열로 재변환
+                const finalMembers = Object.entries(uniqueMembers);
                 const count = finalMembers.length;
                 
                 let membersHtml = "";
                 if (count > 0) {
                     membersHtml = `<div class="member-tag-container">`;
-                    // 중복 제거된 명단만 출력
                     membersHtml += finalMembers.map(([name, token]) => `
                         <div class="member-tag">
                             ${name}
@@ -1374,7 +1394,7 @@ setMode: function(mode) {
         this.renderQaList(f); 
     },
     
-// [수정사항 반영] Q&A: 지목 대상 직책별 호칭 자동 변환 로직 복구
+// [리포트 반영] Q&A 리스트 렌더링 (질문 대상 To. 표기 및 핀 정렬 보정)
     renderQaList: function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
@@ -1385,55 +1405,37 @@ setMode: function(mode) {
             items = items.filter(x => x.subject === subjectMgr.selectedFilter);
         }
         
-        if(f==='pin') items=items.filter(x=>x.status==='pin'); 
-        else if(f==='later') items=items.filter(x=>x.status==='later');
-        
+        // 핀(Pin) 고정 항목이 최상단에 오도록 정렬 (일반 질문처럼 위로 이동)
         items.sort((a,b) => {
-            const getPrio = s => (s === 'pin' ? 3 : (s === 'later' ? 2 : (s === 'done' ? 0 : 1)));
-            const pA = getPrio(a.status);
-            const pB = getPrio(b.status);
-            if (pA !== pB) return pB - pA;
-            const likeA = a.likes || 0;
-            const likeB = b.likes || 0;
-            if (likeA !== likeB) return likeB - likeA;
+            const getPrio = s => (s === 'pin' ? 2 : 1);
+            if (getPrio(a.status) !== getPrio(b.status)) return getPrio(b.status) - getPrio(a.status);
             return b.timestamp - a.timestamp;
         });
-        
+
         items.forEach(i => {
+            if(f==='pin' && i.status!=='pin') return;
+            if(f==='later' && i.status!=='later') return;
+            
             let cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
             const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
-            const isRecent = (Date.now() - i.timestamp) < 120000; 
-            let newBadge = "";
             
-            if (isRecent && i.status !== 'pin' && i.status !== 'done') {
-                cls += " is-new"; 
-                newBadge = `<span class="new-badge-icon">NEW</span>`; 
-            }
-
-            // --- [핵심: 호칭 변환 로직] ---
-            let targetName = i.subject || '일반';
+            // 호칭 변환 로직 및 To. 추가
+            let targetName = i.subject || '공통질문';
             let displayName = "";
             const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
+            const foundPos = positions.find(pos => targetName.includes(pos));
             
-            // 직책 키워드가 포함되어 있는지 확인
-            const foundPosition = positions.find(pos => targetName.includes(pos));
-            if (foundPosition) {
-                // 직책이 있으면 '님'만 붙임 (예: 공항장님)
-                displayName = targetName.includes("님") ? targetName : targetName + "님";
-            } else if (targetName !== '일반' && targetName !== '공통질문') {
-                // 일반 이름이면 ' 강사님' 붙임 (예: 이호준 강사님)
-                displayName = targetName + " 강사님";
-            } else {
-                displayName = targetName;
-            }
-            
+            if (foundPos) displayName = targetName.includes("님") ? targetName : targetName + "님";
+            else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
+            else displayName = targetName;
+
             list.innerHTML += `
             <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
                     <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
-                        ${displayName}
+                        To. ${displayName}
                     </span>
-                    ${newBadge}${icon}${i.text}
+                    ${icon}${i.text}
                     <button class="btn-translate" onclick="event.stopPropagation(); ui.translateQa('${i.id}')" title="번역"><i class="fa-solid fa-language"></i> 번역</button>
                 </div>
                 <div class="q-meta">
