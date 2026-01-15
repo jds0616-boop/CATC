@@ -2601,8 +2601,10 @@ window.onload = function() {
     profMgr.init(); 
     guideMgr.init();
 
+    // [중요] 이 코드가 있어야 새로고침 시 자동으로 방을 찾아 들어갑니다.
     const lastRoom = localStorage.getItem('kac_last_room');
     if (lastRoom) {
+        // Firebase가 연결될 때까지 0.5초만 기다렸다가 실행합니다.
         setTimeout(() => {
             if (firebase.auth().currentUser) {
                 dataMgr.forceEnterRoom(lastRoom);
@@ -2611,7 +2613,9 @@ window.onload = function() {
     }
 };
 
+// ▼ 이 아래에 제공해드린 코드를 붙여넣으세요 ▼
 window.onclick = function(event) {
+    // 클릭한 대상이 드롭다운 버튼이 아니면 드롭다운 메뉴를 닫음
     if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
