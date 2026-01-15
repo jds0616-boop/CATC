@@ -910,45 +910,57 @@ const ui = {
 
 
 
-// [4차 최종] 팝업에서 입력한 과정명, 기간, 장소를 메인 화면에 실시간 연동
+// [박상임 패치] 대시보드 통계 및 과정 정보 실시간 출력
     loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 파이어베이스에서 과정 설정 정보(3종) 감시 및 출력
+        // 1. 금일 날짜 표시
+        const dateDisplay = document.getElementById('dashTodayDateDisplay');
+        if(dateDisplay) dateDisplay.innerText = `금일 날짜: ${today}`;
+
+        // 2. 과정 설정 정보 (명칭, 기간, 장소) 실시간 감시
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
             const s = snap.val() || {};
             const titleEl = document.getElementById('dashCourseTitle');
             const periodEl = document.getElementById('dashPeriod');
-            const roomEl = document.getElementById('dashRoomDetail');
+            const roomDetailEl = document.getElementById('dashRoomDetail');
 
             if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
             if(periodEl) periodEl.innerText = s.period || "기간 미설정";
-            if(roomEl) roomEl.innerText = s.roomDetailName || "장소 미설정";
+            if(roomDetailEl) roomDetailEl.innerText = s.roomDetailName || "장소 미설정";
         });
 
-        // 2. 담임 교수 정보 (기존 로직 유지)
-        const profName = document.getElementById('profSelect').value;
-        const profDisplay = document.getElementById('dashProfName');
-        if(profDisplay) {
-            if(profName) {
-                profDisplay.innerHTML = `
-                    <span onclick="ui.showProfPresentation('${profName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
-                        <i class="fa-solid fa-address-card"></i> ${profName} 교수님
-                        <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
-                    </span>`;
-            } else { profDisplay.innerText = "담임 교수 미지정"; }
-        }
+        // 3. 담임 교수 정보 및 프로필 링크
+        firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
+            const st = snap.val() || {};
+            const profDisplay = document.getElementById('dashProfName');
+            if(profDisplay) {
+                if(st.professorName) {
+                    profDisplay.innerHTML = `
+                        <span onclick="ui.showProfPresentation('${st.professorName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
+                            <i class="fa-solid fa-address-card"></i> ${st.professorName} 교수님
+                            <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
+                        </span>`;
+                } else { profDisplay.innerText = "담임 교수 미지정"; }
+            }
+        });
 
-        // 3. 수강생/외출/셔틀 통계 (기존 로직 유지)
+        // 4. 수강생 현황 숫자
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count + "명";
+            const countEl = document.getElementById('dashStudentCount');
+            if(countEl) countEl.innerText = count + "명";
         });
+
+        // 5. 금일 외출/외박 숫자
         firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
-            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count + "명";
+            const actionEl = document.getElementById('dashActionCount');
+            if(actionEl) actionEl.innerText = count + "명";
         });
+
+        // 6. 셔틀 수요 3단 데이터
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
             if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -2489,59 +2501,90 @@ window.onload = function() {
     }
 };
 
-// ▼ 이 아래에 제공해드린 코드를 붙여넣으세요 ▼
-window.onclick = function(event) {
-    // 클릭한 대상이 드롭다운 버튼이 아니면 드롭다운 메뉴를 닫음
-    if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
-        const dropdowns = document.getElementsByClassName("dropdown-content");
-        for (let i = 0; i < dropdowns.length; i++) {
-            dropdowns[i].style.display = "none";
-        }
-    }
-};
+// --- [최종 정리] 객체 정의 및 전역 이벤트 통합 ---
 
-
-
-// --- [박상임 패치] 신규 과정 설정(Course Setup) 관리 로직 ---
+// 1. [정의] 과정 설정 관리 객체 (setupMgr)
 const setupMgr = {
-    // 1. 설정 팝업창 열기 (기존 데이터 로드)
     openSetupModal: function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 기존 사이드바의 값들을 팝업창으로 복사
-        document.getElementById('setup-course-name').value = document.getElementById('courseNameInput').value;
+        // 기존 데이터를 팝업 입력창에 로드
+        firebase.database().ref(`courses/${state.room}/settings`).once('value', snap => {
+            const s = snap.val() || {};
+            document.getElementById('setup-course-name').value = s.courseName || "";
+            
+            if(s.period && s.period.includes(" ~ ")) {
+                const dates = s.period.split(" ~ ");
+                document.getElementById('setup-start-date').value = dates[0];
+                document.getElementById('setup-end-date').value = dates[1];
+            }
+            document.getElementById('setup-room-select').value = s.roomDetailName || "하늘관 1층 대강당";
+        });
         
         document.getElementById('courseSetupModal').style.display = 'flex';
     },
 
-    // 2. 팝업창 닫기
     closeSetupModal: function() {
         document.getElementById('courseSetupModal').style.display = 'none';
     },
 
-    // 3. 최종 저장 로직 (달력 및 강의실 선택값 포함)
     saveAll: function() {
-        const name = document.getElementById('setup-course-name').value;
+        const name = document.getElementById('setup-course-name').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const roomName = document.getElementById('setup-room-select').value;
 
-        if(!name || !sDate || !eDate) return alert("과정명과 교육기간을 모두 입력해주세요.");
+        if(!name || !sDate || !eDate) {
+            alert("과정명과 교육기간을 모두 선택해주세요.");
+            return;
+        }
 
-        // 1. 사이드바에 데이터 동기화
-        document.getElementById('courseNameInput').value = name;
-        
-        // 2. Firebase 저장 (교육기간과 강의실 상세 정보 포함)
+        // Firebase 업데이트
         firebase.database().ref(`courses/${state.room}/settings`).update({
             courseName: name,
             period: `${sDate} ~ ${eDate}`,
             roomDetailName: roomName
+        }).then(() => {
+            document.getElementById('courseNameInput').value = name;
+            dataMgr.saveSettings(); // 사이드바 설정값들과 함께 최종 저장
+            ui.showAlert("✅ 과정 환경 설정이 저장되었습니다.");
+            this.closeSetupModal();
         });
+    }
+};
 
-        // 3. 대시보드 즉시 갱신을 위해 Save Settings 호출 효과
-        dataMgr.saveSettings();
+// 2. [실행] 페이지 로드 시 초기화 통합
+window.onload = function() { 
+    dataMgr.checkMobile(); 
+    dataMgr.initSystem(); 
+    profMgr.init(); 
+    guideMgr.init();
 
-        alert("✅ 과정 정보가 성공적으로 설정되었습니다.");
-        this.closeSetupModal();
+    // 새로고침 시 기존 접속 강의실 자동 복구
+    const lastRoom = localStorage.getItem('kac_last_room');
+    if (lastRoom) {
+        setTimeout(() => {
+            if (firebase.auth().currentUser) {
+                dataMgr.forceEnterRoom(lastRoom);
+            }
+        }, 500);
+    }
+};
+
+// 3. [실행] 전역 클릭 이벤트 통합
+window.onclick = function(event) {
+    // 메뉴 드롭다운 외 클릭 시 닫기
+    if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            if (dropdowns[i].style.display === "block") {
+                dropdowns[i].style.display = "none";
+            }
+        }
+    }
+    // 설정 모달 배경 클릭 시 닫기
+    const setupModal = document.getElementById('courseSetupModal');
+    if (event.target == setupModal) {
+        setupMgr.closeSetupModal();
     }
 };

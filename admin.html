@@ -319,48 +319,58 @@
 
 
 
-<!-- [리포트 반영] 현재과정 운영현황 (대시보드) 디자인 위계 및 시안성 개선 -->
+<!-- [1단계 교체] 대시보드 시안성 개선 버전 -->
 <div id="view-dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <!-- 상단 헤더: 제목과 부제목 분리 -->
+    <!-- 상단 헤더: 제목 옆에 (Room #A) 배치 -->
     <div class="view-header">
-        <i class="fa-solid fa-gauge-high" style="color: #6366f1; font-size: 40px; margin-bottom: 15px;"></i>
+        <i class="fa-solid fa-gauge-high"></i>
         <h1>현재과정 운영 현황 <span id="dashRoomBadge" class="header-room-badge"></span></h1>
-        <p id="dashTodayDateDisplay" style="margin-top: 5px;">금일 날짜: 로딩 중...</p>
+        <p id="dashTodayDateDisplay">금일 날짜: 로딩 중...</p>
     </div>
 
     <!-- 메인 대시보드 카드 -->
-    <div class="modern-white-card dashboard-card" style="text-align: center;">
-        <div class="dash-main-info" style="margin-bottom: 40px; padding-bottom: 30px; border-bottom: 1px solid #f1f5f9;">
-            <h2 id="dashCourseTitle">과정명을 불러오고 있습니다...</h2>
+    <div class="modern-white-card dashboard-card">
+        <!-- 과정명 프리미엄 컬러박스 -->
+        <div class="course-title-box">
+            <h2 id="dashCourseTitle">과정명을 설정해주세요.</h2>
+            <div class="course-sub-info">
+                <span><i class="fa-solid fa-calendar-days"></i> 교육기간: <b id="dashPeriod">-</b></span>
+                <span><i class="fa-solid fa-location-dot"></i> 장소: <b id="dashRoomDetail">-</b></span>
+            </div>
+        </div>
+
+        <div class="dash-main-info" style="margin-top:20px; border-bottom:none;">
             <div class="dash-prof-badge">
-                <span class="p-label" style="font-weight: 600; color: #64748b;">담임 교수</span>
-                <strong id="dashProfName" style="margin-left: 10px;">-</strong>
+                <span class="p-label">담임 교수</span>
+                <strong id="dashProfName">-</strong>
             </div>
         </div>
 
         <!-- 하단 3단 통계 그리드 -->
-        <div class="dash-stats-row" style="display: flex; justify-content: space-around; gap: 20px;">
-            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
-                <div class="s-icon" style="color: #0ea5e9; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-users"></i></div>
-                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">현재 수강생</span>
-                <b id="dashStudentCount" style="font-size: 40px; color: #1e293b;">0명</b>
+        <div class="dash-stats-row">
+            <div class="stat-box">
+                <div class="s-icon" style="background:#e0f2fe; color:#0ea5e9;"><i class="fa-solid fa-users"></i></div>
+                <span class="s-label">현재 수강생</span>
+                <b id="dashStudentCount">0명</b>
             </div>
-            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
-                <div class="s-icon" style="color: #ef4444; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">금일 외출/외박</span>
-                <b id="dashActionCount" style="font-size: 40px; color: #1e293b;">0명</b>
+            <div class="stat-box">
+                <div class="s-icon" style="background:#fee2e2; color:#ef4444;"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                <span class="s-label">금일 외출/외박</span>
+                <b id="dashActionCount">0명</b>
             </div>
-            <div class="stat-box" style="flex: 1; padding: 30px; background: #f8fafc; border-radius: 20px;">
-                <div class="s-icon" style="color: #10b981; font-size: 30px; margin-bottom: 15px;"><i class="fa-solid fa-bus"></i></div>
-                <span style="display: block; color: #64748b; font-weight: 700; margin-bottom: 10px;">셔틀 수요(항기원 발)</span>
-                <div class="shuttle-mini-stats" style="margin-top: 5px;">
-                    오송 <b id="s-osong-cnt">0</b> 터미널 <b id="s-term-cnt">0</b> 공항 <b id="s-air-cnt">0</b>
+            <div class="stat-box">
+                <div class="s-icon" style="background:#f0fdf4; color:#10b981;"><i class="fa-solid fa-bus"></i></div>
+                <span class="s-label">셔틀 수요 (항기원 발)</span>
+                <!-- 셔틀 3단 그리드 배치 -->
+                <div class="shuttle-mini-stats">
+                    <div><span>오송</span><b id="s-osong-cnt">0</b></div>
+                    <div><span>터미널</span><b id="s-term-cnt">0</b></div>
+                    <div><span>공항</span><b id="s-air-cnt">0</b></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 
 
 
