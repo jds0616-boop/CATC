@@ -629,18 +629,17 @@ cursor: pointer;
     color: #3b82f6; 
 }
 
-/* [신규] 최신 질문 강조 스타일 */
+/* [신규] 최신 질문 강조 스타일 (JS에서 2분 뒤 해제함) */
 @keyframes flashNew {
     0% { background-color: #ecfdf5; transform: scale(1.02); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-    50% { background-color: #d1fae5; }
-    100% { background-color: var(--card-bg); transform: scale(1); }
+    100% { background-color: #f0fdf4; transform: scale(1); }
 }
 
 .q-card.is-new {
-    /* 5분간 초록색 테두리로 강조 */
-    border-left-color: #10b981 !important;
-    /* 등장 시 깜빡이는 애니메이션 */
-    animation: flashNew 2s ease-out;
+    /* JS가 클래스를 제거하기 전까지 초록색 테두리와 배경 유지 */
+    border-left: 8px solid #10b981 !important; 
+    background-color: #f0fdf4 !important; 
+    animation: flashNew 1s ease-out; /* 첫 등장 시에만 살짝 깜빡임 */
 }
 
 .new-badge-icon {

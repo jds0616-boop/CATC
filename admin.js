@@ -1495,8 +1495,11 @@ setMode: function(mode) {
         if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
+
+
+
     
-// [리포트 반영] Q&A 리스트 렌더링 (질문 대상 To. 표기 및 핀 정렬 보정)
+// [6.13차 수정] Q&A 리스트 렌더링 (최신 질문 2분 강조 기능 복구)
     renderQaList: function(f) {
         const list = document.getElementById('qaList'); 
         if(!list) return;
@@ -1507,27 +1510,19 @@ setMode: function(mode) {
             items = items.filter(x => x.subject === subjectMgr.selectedFilter);
         }
         
-// [6.5차 수정] 정렬 우선순위: 핀 고정(3) > 추후 답변(2) > 좋아요(1) > 최신순
+        // 정렬 우선순위: 핀 고정 > 추후 답변 > 좋아요 > 최신순
         items.sort((a, b) => {
-            // 1. 상태별 가중치 부여
             const getWeight = (item) => {
-                if (item.status === 'pin') return 3;   // 핀 고정 최상단
-                if (item.status === 'later') return 2; // 추후 답변 그 다음
-                return 1;                              // 일반 질문
+                if (item.status === 'pin') return 3;
+                if (item.status === 'later') return 2;
+                return 1;
             };
-
             const weightA = getWeight(a);
             const weightB = getWeight(b);
-
-            // 가중치가 다르면 높은 순서대로 (3->2->1)
             if (weightA !== weightB) return weightB - weightA;
-
-            // 2. 가중치가 같다면 '좋아요' 수로 비교 (내림차순)
             const likesA = a.likes || 0;
             const likesB = b.likes || 0;
             if (likesA !== likesB) return likesB - likesA;
-
-            // 3. 좋아요 수까지 같다면 '최신순'으로 비교 (내림차순)
             return b.timestamp - a.timestamp;
         });
 
@@ -1538,7 +1533,12 @@ setMode: function(mode) {
             let cls = i.status==='pin'?'status-pin':(i.status==='later'?'status-later':(i.status==='done'?'status-done':''));
             const icon = i.status==='pin'?'📌 ':(i.status==='later'?'⚠️ ':(i.status==='done'?'✅ ':''));
             
-            // 호칭 변환 로직 및 To. 추가
+            // --- [신규/복구] 최신 질문 강조 로직 (2분 = 120,000ms) ---
+            const isNew = (Date.now() - i.timestamp) < 120000;
+            const newClass = isNew ? 'is-new' : '';
+            const newBadge = isNew ? '<span class="new-badge-icon">NEW</span>' : '';
+            // ---------------------------------------------------
+
             let targetName = i.subject || '공통질문';
             let displayName = "";
             const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
@@ -1549,8 +1549,9 @@ setMode: function(mode) {
             else displayName = targetName;
 
             list.innerHTML += `
-            <div class="q-card ${cls}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
+            <div class="q-card ${cls} ${newClass}" data-ts="${i.timestamp}" onclick="ui.openQaModal('${i.id}')">
                 <div class="q-content">
+                    ${newBadge}
                     <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
                         To. ${displayName}
                     </span>
