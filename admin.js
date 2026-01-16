@@ -1816,10 +1816,10 @@ loadDinnerSkipData: function() {
 
 
 // --- 여기서부터 ui 객체의 끝까지 교체하는 코드입니다 ---
+// [수정] 수강생 명부 로드 (중복 제거 및 정렬 보완)
     loadStudentList: function() {
         if(!state.room) return;
 
-        // 1. 예정 명단(업로드)과 실제 학생 명단을 동시에 감시
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
@@ -1831,13 +1831,12 @@ loadDinnerSkipData: function() {
                 const tbody = document.getElementById('studentListTableBody');
                 if(!tbody) return;
 
-                // 실제 접속한 학생들 (토큰 포함)
+                // 실제 접속한 학생들 (Key가 이름_번호이므로 자동으로 1인 1행 유지됨)
                 const actualStudents = Object.keys(data).map(key => ({
                     token: key,
                     ...data[key]
                 })).filter(s => s.name && s.name !== "undefined");
 
-                // 2. 전체 명단 구성 (예정자 + 현장입장객 합치기)
                 const actualNames = actualStudents.map(s => s.name);
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
@@ -1849,36 +1848,25 @@ loadDinnerSkipData: function() {
                     const isArrived = !!s;
                     if(isArrived) arrivedCount++;
 
-                    // [요청 1] 명단 구분 아이콘 (📄: 예정자, ✨: 현장입장)
                     const isExpected = expectedNames.includes(name);
-                    const sourceIcon = isExpected ? 
-                        '<span title="명단 등록 인원" style="margin-right:5px; cursor:help;">📄</span>' : 
-                        '<span title="현장 QR 입장" style="margin-right:5px; cursor:help;">✨</span>';
-
-                    // [요청 2] 입교 상태 텍스트 변경
-                    const statusHtml = isArrived ? 
-                        `<span class="status-badge status-arrived">입교 완료</span>` : 
-                        `<span class="status-badge status-wait">미입교</span>`;
+                    const sourceIcon = isExpected ? '📄' : '✨';
+                    const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
+                    const dotColor = isArrived && s.isOnline ? '#22c55e' : '#cbd5e1'; 
                     
-                    const dotColor = isArrived && s.isOnline ? '#22c55e' : '#cbd5e1'; // 온라인 시 초록불
-                    const rowStyle = isArrived ? (s.isLeader ? 'background-color:#f5f3ff;' : '') : 'opacity: 0.5; background-color:#fcfcfc;';
-                    
-                    // [요청 3] 최초 입장 시간 (전화번호 칸을 없애고 여기에 시간을 배치)
-                    const joinTime = (isArrived && s.joinedAt && !isNaN(new Date(s.joinedAt))) 
-    ? new Date(s.joinedAt).toLocaleString([], {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) 
-    : "-";
+                    const joinTime = (isArrived && s.joinedAt) 
+                        ? new Date(s.joinedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+                        : "-";
 
-                    // [요청 4] 칸 정렬 (5개의 td로 정확히 배치)
                     tbody.innerHTML += `
-                        <tr style="${rowStyle}">
-                            <td>${idx + 1}</td> <!-- 1. 연번 -->
-                            <td style="font-weight:bold; text-align:left; padding-left:15px;"> <!-- 2. 성명 (아이콘 포함) -->
-                                ${sourceIcon}<span style="color:${dotColor}; margin-right:5px;">●</span>${name} 
+                        <tr style="${isArrived && s.isLeader ? 'background-color:#f5f3ff;' : ''}">
+                            <td>${idx + 1}</td>
+                            <td style="font-weight:bold; text-align:left; padding-left:15px;">
+                                ${sourceIcon} <span style="color:${dotColor}; margin-right:5px;">●</span>${name} 
                                 ${isArrived && s.isLeader ? '<span style="color:#f59e0b;">👑</span>' : ''}
                             </td>
-                            <td>${statusHtml}</td> <!-- 3. 상태 -->
-                            <td style="color:#94a3b8; font-size:13px;">${joinTime}</td> <!-- 4. 최초 입장시간 -->
-                            <td> <!-- 5. 관리 -->
+                            <td>${statusHtml}</td>
+                            <td style="color:#94a3b8; font-size:13px;">${joinTime}</td>
+                            <td>
                                 ${isArrived ? `
                                     <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
                                         <label style="cursor:pointer; font-size:11px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
@@ -1886,18 +1874,15 @@ loadDinnerSkipData: function() {
                                         </label>
                                         <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background:#ef4444; font-size:11px; padding:4px 8px;">삭제</button>
                                     </div>
-                                ` : `<span style="color:#cbd5e1;">-</span>`}
+                                ` : `-`}
                             </td>
-                        </tr>
-                    `;
+                        </tr>`;
                 });
 
-                // 상단 상황판 숫자 업데이트
                 const total = combinedNames.length;
                 const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
                 const statusEl = document.getElementById('arrivalStatus');
                 if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
-                
                 const barEl = document.getElementById('attendanceBar');
                 if(barEl) barEl.style.width = percent + "%";
             });
