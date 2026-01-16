@@ -607,42 +607,33 @@
 
 
 
-<!-- [7.2차 수정] 수강생 현황: 막대바 제거 및 라이브 상황판 디자인 적용 -->
+<!-- [7.3차 최종] 수강생 현황: 거대 박스 제거 및 리스트 상단 배지 적용 -->
 <div id="view-students" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <div class="view-header">
+    <div class="view-header" style="margin-bottom: 20px;">
         <h1><i class="fa-solid fa-users-viewfinder"></i> 수강생 현황 <span class="header-room-badge room-badge-global"></span></h1>
-        
-        <!-- 실시간 라이브 상황판 (막대바 제거 버전) -->
-        <div class="attendance-summary-box" style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 25px; padding: 25px 40px; width: 100%; max-width: 500px; margin: 20px auto 10px auto; box-shadow: 0 15px 35px rgba(0, 51, 102, 0.08); text-align: center;">
-            
-            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-                <!-- 돌아가는 아이콘을 메인 위치로 이동 -->
-                <div style="width: 60px; height: 60px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-sync fa-spin" style="font-size: 28px; color: #3b82f6;"></i>
-                </div>
-                
-                <div style="text-align: left;">
-                    <div style="font-weight: 800; color: #94a3b8; font-size: 13px; margin-bottom: 3px; letter-spacing: -0.5px;">실시간 수강생 정보 업데이트 중</div>
-                    <strong id="arrivalStatus" style="font-size: 32px; color: #003366; font-weight: 900; letter-spacing: -1px;">0 / 0 명 (0%)</strong>
-                </div>
-            </div>
-            
-            <!-- 하단에 아주 얇은 진행선 하나만 남김 (시각적 보조) -->
-            <div style="background: #f1f5f9; height: 4px; border-radius: 10px; margin-top: 20px; overflow: hidden;">
-                <div id="attendanceBar" style="width: 0%; background: #3b82f6; height: 100%; transition: width 1s ease;"></div>
-            </div>
-        </div>
     </div>
 
-    <div class="modern-white-card">
+    <!-- 리스트 카드 상단에 실시간 정보를 작게 배치 -->
+    <div class="modern-white-card" style="position: relative; padding-top: 50px;">
+        
+        <!-- [신규] 우측 상단 슬림 업데이트 배지 -->
+        <div style="position: absolute; top: 25px; right: 35px; display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 12px; font-weight: 800;">
+            <div style="display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 4px 12px; border-radius: 50px; border: 1px solid #e2e8f0;">
+                <i class="fa-solid fa-sync fa-spin" style="color: #3b82f6; font-size: 11px;"></i>
+                <span id="arrivalStatusSmall">0 / 0 명 (0%)</span>
+                <span style="color: #cbd5e1; font-weight: 400;">|</span>
+                <span>실시간 업데이트 중</span>
+            </div>
+        </div>
+
         <table>
             <thead>
                 <tr>
-                    <th style="width:80px;">연번</th>
-                    <th>성명</th>
+                    <th style="width:70px;">연번</th>
+                    <th style="text-align: left; padding-left: 20px;">수강생 성명</th>
                     <th style="width:120px;">상태</th>
-                    <th>최초 입장시간</th>
-                    <th style="width:150px;">관리</th>
+                    <th style="width:150px;">최초 입장시간</th>
+                    <th style="width:180px;">관리</th>
                 </tr>
             </thead>
             <tbody id="studentListTableBody">
@@ -650,7 +641,6 @@
             </tbody>
         </table>
         
-        <!-- 하단 업로드/초기화 버튼 -->
         <div class="list-upload-footer" style="display: flex; justify-content: center; gap: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #e2e8f0;">
             <input type="file" id="studentFile" accept=".txt" style="display:none;" onchange="dataMgr.uploadStudentNames(this)">
             <label for="studentFile" class="btn-list-upload" style="background: #003366; color: white; padding: 10px 25px; border-radius: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
