@@ -640,19 +640,24 @@
 
 
 
-<!-- [7.0차 최종] 수강생 현황: 실시간 출석 상황판 및 명단 대조 구역 -->
+<!-- [7.1차 수정] 수강생 현황: 실시간 업데이트 아이콘 및 디자인 강화 버전 -->
 <div id="view-students" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header">
         <h1><i class="fa-solid fa-users-viewfinder"></i> 수강생 현황 <span class="header-room-badge room-badge-global"></span></h1>
         
-        <!-- 실시간 출석 현황 상황판 -->
-        <div class="attendance-summary-box">
-            <div class="summary-info">
-                <span><i class="fa-solid fa-signal"></i> 실시간 등록 현황</span>
-                <strong id="arrivalStatus">0 / 0 명 (0%)</strong>
+        <!-- 실시간 출석 현황 상황판 (고도화) -->
+        <div class="attendance-summary-box" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 20px; padding: 20px 30px; width: 100%; max-width: 650px; margin: 20px auto 10px auto; box-shadow: 0 10px 25px rgba(0, 51, 102, 0.05);">
+            <div class="summary-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-weight: 800; color: #64748b; font-size: 13px;"><i class="fa-solid fa-signal"></i> 실시간 등록 현황</span>
+                <strong id="arrivalStatus" style="font-size: 24px; color: #003366; font-weight: 900;">0 / 0 명 (0%)</strong>
             </div>
-            <div class="progress-container">
-                <div id="attendanceBar" class="progress-bar" style="width: 0%;"></div>
+            <div class="progress-container" style="background: #e2e8f0; height: 14px; border-radius: 50px; overflow: hidden; margin-bottom: 15px;">
+                <div id="attendanceBar" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; transition: width 0.6s ease;"></div>
+            </div>
+
+            <!-- [신규 추가] 실시간 정보 업데이트 안내 (공지사항 관리와 동일 디자인) -->
+            <div style="text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; border-top: 1px solid #edf2f7; padding-top: 12px;">
+                <i class="fa-solid fa-sync fa-spin" style="margin-right:5px; color:#3b82f6;"></i> 실시간 수강생 정보 업데이트 중
             </div>
         </div>
     </div>
@@ -673,19 +678,18 @@
             </tbody>
         </table>
         
-        <!-- 명단 업로드 및 초기화 버튼 (흰색 카드 안쪽으로 이동) -->
-        <div class="list-upload-footer">
+        <!-- 명단 업로드 및 초기화 버튼 (흰색 카드 안쪽 하단) -->
+        <div class="list-upload-footer" style="display: flex; justify-content: center; gap: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #e2e8f0;">
             <input type="file" id="studentFile" accept=".txt" style="display:none;" onchange="dataMgr.uploadStudentNames(this)">
-            <label for="studentFile" class="btn-list-upload">
+            <label for="studentFile" class="btn-list-upload" style="background: #003366; color: white; padding: 10px 25px; border-radius: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
                 <i class="fa-solid fa-file-import"></i> 예정 명단(.txt) 업로드
             </label>
-            <button class="btn-list-clear" onclick="dataMgr.clearExpectedList()">
+            <button class="btn-list-clear" onclick="dataMgr.clearExpectedList()" style="background: #ffffff; color: #ef4444; border: 1px solid #fee2e2; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px;">
                 <i class="fa-solid fa-trash-can"></i> 명단 초기화
             </button>
         </div>
     </div> <!-- modern-white-card 마침 -->
 </div> <!-- view-students 마침 -->
-
 
 <!-- [신규] 생활관 배치 현황 섹션 -->
 <div id="view-dormitory" style="display:none; width:100%; flex-direction:column; align-items:center;">
