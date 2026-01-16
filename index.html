@@ -868,7 +868,7 @@ dbRef.quiz.on('value', s => {
 
 
 
-// [수정] 질문 목록 렌더링 (강사 태그 "To. 누구" 추가 버전)
+// [디자인 긴급 복구] 질문 목록 렌더링 (슬림 배지 적용 버전)
         function renderList(data) {
             const list = document.getElementById('qList'); 
             list.innerHTML = ""; 
@@ -886,7 +886,7 @@ dbRef.quiz.on('value', s => {
                 const isMine = myQs[item.id] ? 'my-q' : ''; 
                 const likedClass = myLikes[item.id] ? 'active' : '';
                 
-                // --- [추가] 강사 이름 포맷팅 로직 ---
+                // --- 강사 성함 및 호칭 정리 ---
                 let targetName = item.subject || '공통질문';
                 let displayName = "";
                 const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
@@ -900,13 +900,12 @@ dbRef.quiz.on('value', s => {
                     displayName = targetName;
                 }
 
-                // 강사 태그 HTML (강사 플랫폼과 동일 디자인)
+                // [수정] 배지를 아주 작고 슬림하게 변경하여 텍스트와 한 줄로 정렬
                 const instructorTag = `
-                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+                    <span style="display:inline-block; background:#f1f5f9; color:#475569; font-size:10px; padding:1px 5px; border-radius:4px; margin-right:6px; border:1px solid #e2e8f0; font-weight:700; vertical-align:middle; line-height:1.2;">
                         To. ${displayName}
                     </span>
                 `;
-                // ------------------------------------
 
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
                 if(isMine && (Date.now() - myQs[item.id] < 300000)) {
@@ -914,11 +913,12 @@ dbRef.quiz.on('value', s => {
                 }
                 metaHtml += `</div>`;
 
+                // [수정] q-text 안에서 태그와 본문이 자연스럽게 이어지도록 배치
                 list.innerHTML += `
                     <div class="q-card ${isMine}">
                         <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
                         <div class="q-content">
-                            <div class="q-text">${instructorTag}${escapeHtml(item.text)}</div>
+                            <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
                             ${metaHtml}
                         </div>
                         <div class="q-like-area">
@@ -1508,30 +1508,45 @@ async function openAttendanceQR() {
 
 
 
+// [수정] 모바일 키보드 가림 방지 로직 (VisualViewport API 활용)
 function initKeyboardFix() {
     if (window.visualViewport) {
         const inputDock = document.getElementById('inputDock');
-        
+        const scrollContainer = document.getElementById('scrollContainer');
+
         const adjustLayout = () => {
-            // 전체 화면 높이에서 실제로 보이는 화면 높이를 뺍니다 (키보드 높이)
+            // 현재 화면에서 키보드를 제외하고 실제로 보이는 영역의 높이 계산
             const viewportHeight = window.visualViewport.height;
             const windowHeight = window.innerHeight;
             const offset = windowHeight - viewportHeight;
 
             if (offset > 0) {
-                // 키보드가 올라왔을 때
+                // 키보드가 올라온 경우: 입력창을 키보드 높이만큼 정확히 올림
                 inputDock.style.bottom = offset + 'px';
+                
+                // 입력창이 올라올 때 채팅 목록도 같이 위로 밀어줌 (입력 중인 내용 가리지 않게)
+                setTimeout(() => {
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }, 100);
             } else {
-                // 키보드가 내려갔을 때
+                // 키보드가 내려간 경우: 원래 위치로 복구
                 inputDock.style.bottom = '0px';
             }
         };
 
+        // 키보드 상태 변화 감지 (리사이즈, 스크롤 모두 대응)
         window.visualViewport.addEventListener('resize', adjustLayout);
         window.visualViewport.addEventListener('scroll', adjustLayout);
     }
+    
+    // 입력창 클릭 시 자동으로 맨 아래로 스크롤
+    document.getElementById('qInput').addEventListener('focus', () => {
+        setTimeout(() => {
+            const scrollContainer = document.getElementById('scrollContainer');
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }, 300);
+    });
 }
-
 
 
 
