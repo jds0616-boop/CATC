@@ -1813,7 +1813,7 @@ cancelIndividualShuttle: function(locId, token, name) {
 
 
 
-// [정렬 보정] 수강생 명부 로드 (성명 정렬 및 소형 배지 연동)
+// [안정성 복구] 수강생 명부 로드 (기본 리스트 출력 모드)
     loadStudentList: function() {
         if(!state.room) return;
 
@@ -1828,17 +1828,12 @@ cancelIndividualShuttle: function(locId, token, name) {
                 const tbody = document.getElementById('studentListTableBody');
                 if(!tbody) return;
 
-                const mergedData = {}; 
-                Object.keys(data).forEach(key => {
-                    const s = data[key];
-                    if (!s.name || s.name === "undefined") return;
-                    const identity = s.name + "_" + (s.phone || "0000");
-                    if (!mergedData[identity] || s.isOnline) {
-                        mergedData[identity] = { token: key, ...s };
-                    }
-                });
-                
-                const actualStudents = Object.values(mergedData);
+                // 실제 접속한 학생들 (기기별 개별 데이터)
+                const actualStudents = Object.keys(data).map(key => ({
+                    token: key,
+                    ...data[key]
+                })).filter(s => s.name && s.name !== "undefined");
+
                 const actualNames = actualStudents.map(s => s.name);
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
@@ -1846,41 +1841,33 @@ cancelIndividualShuttle: function(locId, token, name) {
                 let arrivedCount = 0;
 
                 combinedNames.forEach((name, idx) => {
-                    const s = actualStudents.find(student => student.name === name);
-                    const isArrived = !!s;
+                    const sList = actualStudents.filter(student => student.name === name);
+                    const isArrived = sList.length > 0;
                     if(isArrived) arrivedCount++;
 
                     const isExpected = expectedNames.includes(name);
-                    const sourceIcon = isExpected ? '<i class="fa-solid fa-file-invoice" style="color:#94a3b8; font-size:12px; margin-right:6px;"></i>' : '<i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b; font-size:12px; margin-right:6px;"></i>';
-                    const statusHtml = isArrived ? `<span class="status-badge status-arrived" style="background:#ecfdf5; color:#10b981; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:800;">입교 완료</span>` : `<span class="status-badge status-wait" style="background:#f1f5f9; color:#94a3b8; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:800;">미입교</span>`;
-                    const dotColor = isArrived && s.isOnline ? '#22c55e' : '#cbd5e1'; 
+                    const sourceIcon = isExpected ? '📄' : '✨';
+                    const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
                     
-                    const joinTime = (isArrived && s.joinedAt) 
-                        ? new Date(s.joinedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
-                        : "-";
+                    // 하나라도 온라인이면 초록불
+                    const isOnline = sList.some(s => s.isOnline);
+                    const dotColor = isOnline ? '#22c55e' : '#cbd5e1'; 
 
-                    // [핵심 정렬] 성명 칸의 아이콘과 텍스트를 flex로 묶어 수직 중앙 정렬
                     tbody.innerHTML += `
-                        <tr style="${isArrived && s.isLeader ? 'background-color:#f5f3ff;' : ''}">
+                        <tr style="${isArrived && sList.some(s=>s.isLeader) ? 'background-color:#f5f3ff;' : ''}">
                             <td style="font-weight:700; color:#cbd5e1;">${idx + 1}</td>
                             <td style="text-align:left; padding-left:20px;">
                                 <div style="display:inline-flex; align-items:center; vertical-align:middle;">
-                                    ${sourceIcon}
-                                    <span style="color:${dotColor}; font-size:10px; margin-right:8px;">●</span>
+                                    ${sourceIcon} <span style="color:${dotColor}; margin-right:8px;">●</span>
                                     <span style="font-weight:800; color:#1e293b; font-size:15px;">${name}</span>
-                                    ${isArrived && s.isLeader ? '<span style="color:#f59e0b; margin-left:6px; font-size:14px;">👑</span>' : ''}
+                                    ${isArrived && sList.some(s=>s.isLeader) ? '<span style="color:#f59e0b; margin-left:6px;">👑</span>' : ''}
                                 </div>
                             </td>
                             <td>${statusHtml}</td>
-                            <td style="color:#94a3b8; font-size:13px; font-weight:600;">${joinTime}</td>
+                            <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
                             <td>
                                 ${isArrived ? `
-                                    <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
-                                        <label style="cursor:pointer; font-size:11px; font-weight:bold; color:${s.isLeader ? '#6366f1' : '#94a3b8'};">
-                                            <input type="checkbox" ${s.isLeader ? 'checked' : ''} onchange="dataMgr.toggleLeader('${s.token}', '${s.name}')"> 학생장
-                                        </label>
-                                        <button class="btn-table-action" onclick="dataMgr.deleteStudent('${s.token}')" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:800; cursor:pointer;">삭제</button>
-                                    </div>
+                                    <button class="btn-table-action" onclick="dataMgr.deleteStudent('${sList[0].token}')" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:800; cursor:pointer;">삭제</button>
                                 ` : `-`}
                             </td>
                         </tr>`;
@@ -1888,13 +1875,8 @@ cancelIndividualShuttle: function(locId, token, name) {
 
                 const total = combinedNames.length;
                 const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
-                
-                // [수정] 소형 배지에 숫자 업데이트
                 const statusEl = document.getElementById('arrivalStatusSmall');
                 if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
-                
-                const barEl = document.getElementById('attendanceBar');
-                if(barEl) barEl.style.width = percent + "%";
             });
         });
     },
