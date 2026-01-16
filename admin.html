@@ -67,94 +67,40 @@
         <div class="modal-box" style="width: 400px;">
             <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">📜 리포트 정보 입력</div>
             <div class="setting-container">
-                <div class="setting-group"><label class="setting-label">교육 기간</label><input type="text" id="printDateInput" class="setting-input"></div>
-                <div class="setting-group"><label class="setting-label">담임 교수</label><input type="text" id="printProfInput" class="setting-input"></div>
-            </div>
-            <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
-                <button class="m-btn m-btn-later" onclick="printMgr.closeInputModal()" style="background:#64748b; color:white;">취소</button>
-                <button class="m-btn m-btn-done" onclick="printMgr.confirmPrint(false)">미리보기 생성</button>
-            </div>
-        </div>
-    </div>
-    <div id="printPreviewModal" class="modal-overlay">
-        <div class="print-preview-box">
-            <div class="preview-header"><h3>🖨️ Preview</h3><div style="display:flex; gap:10px;"><button class="btn-action btn-danger" onclick="printMgr.closePreview()" style="width:auto;">Close</button><button class="btn-action btn-primary" onclick="printMgr.executePrint()" style="width:auto;">Print</button></div></div>
-            <div class="preview-content"><div id="official-document"><div class="doc-header"><h2>KAC Training Platform</h2></div><table class="doc-info-table"><tr><th>과정명</th><td id="doc-cname"></td></tr><tr><th>교육기간</th><td id="doc-date"></td></tr><tr><th>담임교수</th><td id="doc-prof"></td></tr></table><div class="doc-summary" id="doc-summary-text"></div><table class="doc-list-table"><tbody id="docListBody"></tbody></table><div class="doc-footer">Korea Airports Corporation</div></div></div>
-        </div>
-    </div>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-top">
-            <div class="sidebar-header">KAC Training Platform</div>
-            <div class="setting-container">
-                <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
+
+<div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
                 <div class="setting-group">
                     <label class="setting-label">Room Status</label>
                     <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
                         <option value="active">🟢 사용중</option>
                         <option value="idle">⚪ 비어있음</option>
-                        <option value="waiting" disabled hidden>🟡 대기중</option>
                     </select>
                 </div>
 
-
-
-<div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-    <label class="setting-label">입교안내 가이드 관리</label>
-    <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
-    <div class="file-row">
-        <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
-        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
-            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
-        </label>
-    </div>
-</div>
-
-
-
-
-
-
-<!-- [추가] 담당 교수 선택 및 관리 버튼 -->
-            <div class="setting-group">
-                <label class="setting-label">담임교수</label>
-                <div style="display:flex; gap:5px;">
-                    <select id="profSelect" class="setting-select">
-                        <option value="">선택 안함</option>
-                    </select>
-                    <button class="btn-action btn-small btn-dark" onclick="profMgr.openManageModal()" style="width:auto; padding:0 10px;" title="명단 관리">
-                        <i class="fa-solid fa-gear"></i>
+                <!-- [통합] 과정의 모든 설정을 관리하는 마스터 버튼 -->
+                <div class="setting-group" style="margin-top: 10px;">
+                    <label class="setting-label">Admin Control</label>
+                    <button class="btn-action btn-primary" onclick="setupMgr.openSetupModal()" style="height:50px; font-size:14px; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);">
+                        <i class="fa-solid fa-gears"></i> 교육과정 환경 설정 (통합)
                     </button>
+                    <!-- 기존 연동을 위해 숨겨진 상태로 유지되는 입력창들 -->
+                    <input type="text" id="courseNameInput" style="display:none;">
+                    <input type="password" id="roomPw" style="display:none;">
                 </div>
-            </div>
 
-<!-- [리포트 반영] 과정명 입력을 스마트 팝업 방식으로 변경 -->
-            <div class="setting-group">
-                <label class="setting-label">Course Setup</label>
-                <button class="btn-action btn-primary" onclick="setupMgr.openSetupModal()" style="height:45px; font-size:14px;">
-                    <i class="fa-solid fa-gears"></i> 과정 환경 설정 (팝업)
-                </button>
-                <!-- 기존 로직 유지를 위한 숨김 처리 -->
-                <input type="text" id="courseNameInput" style="display:none;">
-            </div>
-
-
-<!-- [신규] 과목(세션) 관리 섹션 -->
-<div class="setting-group" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-    <label class="setting-label">과목(세션) 관리</label>
-    <div id="subjectListContainer" style="max-height: 120px; overflow-y: auto; background: #0f172a; border-radius: 6px; padding: 5px; margin-bottom: 8px; border: 1px solid #334155;">
-        <!-- 과목 리스트가 여기에 생성됨 -->
-    </div>
-    <div style="display: flex; gap: 5px;">
-        <input type="text" id="newSubjectInput" class="setting-input" placeholder="과목 또는 강사명 입력" style="flex: 1;">
-        <button class="btn-action btn-primary btn-small" onclick="subjectMgr.addSubject()" style="width: 50px;">추가</button>
-    </div>
-</div>
+                <div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <label class="setting-label">입교안내 가이드 관리</label>
+                    <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
+                    <div class="file-row">
+                        <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
+                        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
+                        </label>
+                    </div>
+                </div>
 
 
-                <div class="setting-group"><label class="setting-label">Student Room PW</label><input type="password" id="roomPw" class="setting-input" maxlength="4"></div>
-                <button class="btn-action btn-primary" id="btnSaveInfo" onclick="dataMgr.saveSettings()">Save Settings</button>
                 <div class="divider"></div>
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
@@ -1010,19 +956,27 @@
 
 
 <!-- [리포트 반영] 스마트 과정 설정 팝업창 (달력/강의실 선택 포함) -->
+
+
 <div id="courseSetupModal" class="modal-overlay">
-    <div class="modal-box setup-modal-box">
+    <div class="modal-box setup-modal-box" style="width: 600px !important;">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-sliders"></i> 교육과정 환경 설정</h3>
+            <h3><i class="fa-solid fa-sliders"></i> 교육과정 통합 환경 설정</h3>
         </div>
         
-        <div class="setup-group">
-            <label>교육과정명</label>
-            <input type="text" id="setup-course-name" class="setup-input" placeholder="정확한 과정명을 입력하세요">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-bottom: 20px;">
+            <div class="setup-group">
+                <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">교육과정명</label>
+                <input type="text" id="setup-course-name" class="setup-input" placeholder="정확한 과정명 입력">
+            </div>
+            <div class="setup-group">
+                <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">교육생 입장 비밀번호</label>
+                <input type="password" id="setup-room-pw" class="setup-input" maxlength="4" placeholder="숫자 4자리">
+            </div>
         </div>
 
-        <div class="setup-group">
-            <label>교육 기간 (시작일 ~ 종료일)</label>
+        <div class="setup-group" style="margin-bottom:20px;">
+            <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">교육 기간 (시작일 ~ 종료일)</label>
             <div style="display:flex; gap:10px; align-items:center;">
                 <input type="date" id="setup-start-date" class="setup-input"> 
                 <span style="font-weight:bold;">~</span>
@@ -1030,36 +984,35 @@
             </div>
         </div>
 
-        <div class="setup-group">
-            <label>강의실 상세 위치 선택</label>
-            <select id="setup-room-select" class="setup-input">
-                <optgroup label="하늘관">
-                    <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
-                    <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
-                    <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
-                    <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
-                    <option value="하늘관 2층 D강의실">하늘관 2층 D강의실</option>
-                    <option value="하늘관 2층 E강의실">하늘관 2층 E강의실</option>
-                    <option value="하늘관 2층 F강의실">하늘관 2층 F강의실</option>
-                </optgroup>
-                <optgroup label="국제동">
-                    <option value="국제동 1층 A강의실">국제동 1층 A강의실</option>
-                    <option value="국제동 1층 B강의실">국제동 1층 B강의실</option>
-                    <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
-                    <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
-                    <option value="국제동 2층 ILS 실습실">국제동 2층 ILS 실습실</option>
-                    <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
-                </optgroup>
-                <optgroup label="관제교육동">
-                    <option value="관제교육동 1층">관제교육동 1층</option>
-                    <option value="관제교육동 2층">관제교육동 2층</option>
-                </optgroup>
-            </select>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom:20px;">
+            <div class="setup-group">
+                <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">강의실 상세 위치</label>
+                <select id="setup-room-select" class="setup-input">
+                    <optgroup label="하늘관"><option value="하늘관 1층 대강당">하늘관 1층 대강당</option><option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option><option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option></optgroup>
+                    <optgroup label="국제동"><option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option><option value="국제동 2층 실습실">국제동 2층 실습실</option></optgroup>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">담임 교수</label>
+                <div style="display:flex; gap:5px;">
+                    <select id="setup-prof-select" class="setup-input" style="flex:1;"></select>
+                    <button class="btn-action btn-small btn-dark" onclick="profMgr.openManageModal()" style="width:40px;"><i class="fa-solid fa-gear"></i></button>
+                </div>
+            </div>
         </div>
 
-        <div class="modal-actions" style="margin-top:30px; justify-content:center; gap:10px;">
-            <button class="m-btn m-btn-later" onclick="setupMgr.closeSetupModal()" style="background:#64748b; color:white; min-width:120px; justify-content:center;">취소</button>
-            <button class="m-btn m-btn-done" onclick="setupMgr.saveAll()" style="min-width:200px; justify-content:center;">설정 저장 및 적용</button>
+        <div class="setup-group" style="padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
+            <label style="display:block; font-size:12px; font-weight:900; color:#003366; margin-bottom:10px;">과목(세션) 및 강사 관리</label>
+            <div id="setup-subject-list" style="max-height: 100px; overflow-y: auto; margin-bottom:10px;"></div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="setup-new-subject" class="setup-input" style="flex:1;" placeholder="과목명 또는 강사명">
+                <button class="btn-action btn-primary btn-small" onclick="subjectMgr.addSubjectInModal()" style="width: 60px;">추가</button>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
+            <button class="m-btn m-btn-later" onclick="setupMgr.closeSetupModal()" style="background:#64748b; color:white; min-width:100px; justify-content:center;">취소</button>
+            <button class="m-btn m-btn-done" onclick="setupMgr.saveAll()" style="min-width:200px; justify-content:center; background:#10b981; color:white;">모든 설정 저장 및 적용</button>
         </div>
     </div>
 </div>

@@ -2672,27 +2672,39 @@ const printMgr = {
 };
 
 
-// --- [최종 정리] 객체 정의 및 전역 이벤트 통합 ---
-
-// 1. [정의] 과정 설정 관리 객체 (setupMgr)
+// [최종] 통합 설정 관리 매니저 (setupMgr) - 교수, 과목, 암호 설정 포함
 const setupMgr = {
     openSetupModal: function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 기존 데이터를 팝업 입력창에 로드
-        firebase.database().ref(`courses/${state.room}/settings`).once('value', snap => {
-            const s = snap.val() || {};
-            document.getElementById('setup-course-name').value = s.courseName || "";
+        // 1. 교수 목록 동기화 (팝업창 내 셀렉트 박스 채우기)
+        let options = '<option value="">(선택 안함)</option>';
+        profMgr.list.forEach(p => { 
+            options += `<option value="${p.name}">${p.name} 교수</option>`; 
+        });
+        document.getElementById('setup-prof-select').innerHTML = options;
+
+        // 2. 서버 데이터 불러와서 입력창에 채우기
+        firebase.database().ref(`courses/${state.room}`).once('value', snap => {
+            const data = snap.val() || {};
+            const s = data.settings || {};
+            const st = data.status || {};
             
+            document.getElementById('setup-course-name').value = s.courseName || "";
+            document.getElementById('setup-room-pw').value = s.password ? atob(s.password) : "7777";
+            document.getElementById('setup-prof-select').value = st.professorName || "";
+            document.getElementById('setup-room-select').value = s.roomDetailName || "하늘관 1층 대강당";
+
             if(s.period && s.period.includes(" ~ ")) {
                 const dates = s.period.split(" ~ ");
                 document.getElementById('setup-start-date').value = dates[0];
                 document.getElementById('setup-end-date').value = dates[1];
             }
-            document.getElementById('setup-room-select').value = s.roomDetailName || "하늘관 1층 대강당";
+            
+            // 과목 리스트 새로고침
+            subjectMgr.renderListInModal();
+            document.getElementById('courseSetupModal').style.display = 'flex';
         });
-        
-        document.getElementById('courseSetupModal').style.display = 'flex';
     },
 
     closeSetupModal: function() {
@@ -2701,28 +2713,72 @@ const setupMgr = {
 
     saveAll: function() {
         const name = document.getElementById('setup-course-name').value.trim();
+        const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const roomName = document.getElementById('setup-room-select').value;
+        const profName = document.getElementById('setup-prof-select').value;
+        const statusVal = document.getElementById('roomStatusSelect').value;
 
-        if(!name || !sDate || !eDate) {
-            alert("과정명과 교육기간을 모두 선택해주세요.");
+        if(!name || !sDate || !eDate || !rawPw) {
+            alert("과정명, 비밀번호, 교육기간을 모두 입력해주세요.");
             return;
         }
 
-        // Firebase 업데이트
-        firebase.database().ref(`courses/${state.room}/settings`).update({
-            courseName: name,
-            period: `${sDate} ~ ${eDate}`,
-            roomDetailName: roomName
-        }).then(() => {
+        // Firebase 통합 업데이트 (설정과 상태를 한 번에 저장)
+        const updates = {};
+        updates[`courses/${state.room}/settings/courseName`] = name;
+        updates[`courses/${state.room}/settings/password`] = btoa(rawPw);
+        updates[`courses/${state.room}/settings/period`] = `${sDate} ~ ${eDate}`;
+        updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
+        updates[`courses/${state.room}/status/professorName`] = profName;
+        updates[`courses/${state.room}/status/roomStatus`] = statusVal;
+        updates[`courses/${state.room}/status/ownerSessionId`] = (statusVal === 'active' ? state.sessionId : null);
+
+        firebase.database().ref().update(updates).then(() => {
+            // 사이드바 UI 동기화 및 즉시 반영
             document.getElementById('courseNameInput').value = name;
-            dataMgr.saveSettings(); // 사이드바 설정값들과 함께 최종 저장
-            ui.showAlert("✅ 과정 환경 설정이 저장되었습니다.");
+            document.getElementById('roomPw').value = rawPw;
+            document.getElementById('displayCourseTitle').innerText = name;
+            
+            ui.showAlert("✅ 모든 교육과정 환경 설정이 저장 및 적용되었습니다.");
             this.closeSetupModal();
         });
     }
 };
+
+// [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
+subjectMgr.renderListInModal = function() {
+    const container = document.getElementById('setup-subject-list');
+    if(!container) return;
+    container.innerHTML = "";
+    if(this.list.length === 0) {
+        container.innerHTML = '<div style="color: #94a3b8; font-size: 11px; text-align: center;">등록된 과목이 없습니다.</div>';
+        return;
+    }
+    this.list.forEach(item => {
+        container.innerHTML += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f1f5f9; margin-bottom: 4px; border-radius: 6px; font-size: 12px; color: #1e293b; border: 1px solid #e2e8f0;">
+                <span>${item.name}</span>
+                <i class="fa-solid fa-trash-can" onclick="subjectMgr.deleteSubject('${item.key}')" style="cursor: pointer; color: #ef4444;"></i>
+            </div>`;
+    });
+};
+
+
+
+subjectMgr.addSubjectInModal = function() {
+    const input = document.getElementById('setup-new-subject');
+    const name = input.value.trim();
+    if(!name) return;
+    firebase.database().ref(`courses/${state.room}/settings/subjects`).push(name).then(() => {
+        input.value = "";
+    });
+};
+
+
+
+
 
 // 2. [실행] 페이지 로드 시 초기화 통합
 window.onload = function() { 
