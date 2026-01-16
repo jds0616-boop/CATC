@@ -623,231 +623,186 @@ firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) =>
 
 
 
+function setupListeners() {
+            // 1. 서버 시간 동기화
+            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+                serverTimeOffset = snap.val() || 0;
+            });
 
+            // 2. 과정명 및 기본 설정 감시
+            dbRef.settings.on('value', s => { 
+                const val = s.val() || {}; 
+                const title = val.courseName || `Course ${currentRoom}`; 
+                document.getElementById('roomTitle').innerText = title; 
+                document.getElementById('landingTitle').innerText = title; 
+            });
 
-
-        function setupListeners() {
-firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
-        serverTimeOffset = snap.val() || 0;
-    });
-
-            dbRef.settings.on('value', s => { const val = s.val() || {}; const title = val.courseName || `Course ${currentRoom}`; document.getElementById('roomTitle').innerText = title; document.getElementById('landingTitle').innerText = title; });
+            // 3. 질문 리스트 실시간 감시
             dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
-// [추가] 과목 리스트 실시간 로드
-    firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
-        const data = s.val() || {};
-        const sel = document.getElementById('subjectSelect');
-        if(!sel) return;
-        
-        let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
-        Object.values(data).forEach(name => {
-            html += `<option value="${name}">${name}</option>`;
-        });
-        sel.innerHTML = html;
-    });
+            // [신규 추가] 1분마다 리스트를 강제로 다시 그려서 5분 지난 글의 '수정' 버튼을 자동으로 없앱니다.
+            setInterval(() => {
+                dbRef.qa.once('value', snap => {
+                    if(snap.exists()) renderList(snap.val());
+                });
+            }, 60000);
 
-
-dbRef.status.on('value', snap => {
-    const st = snap.val() || {};
-
-
-    // [추가] 강사가 상태를 'active'가 아닌 다른 것으로 바꾸면 즉시 퇴장시킵니다.
-    if (st.roomStatus !== 'active') {
-        alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
-        location.reload(); // 페이지를 새로고침하여 초기 입장 화면으로 튕겨냄
-        return;
-    }
-    
-    // --- [리셋 로직 강화] ---
-    const serverResetKey = st.resetKey || 'init';
-    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-    if (!myLocalKey) {
-        // 처음 접속한 경우 현재 서버의 키를 내 저장소에 저장
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-    } else if (myLocalKey !== serverResetKey) {
-        // 내 키와 서버의 키가 다르다면 (강사가 리셋을 눌렀다면)
-        localStorage.clear(); // 모든 로컬 데이터 삭제 (이름, 토큰, 좋아요 등)
-        alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
-        location.replace(location.pathname + location.search); // 페이지 완전히 새로고침 (파라미터 유지)
-        return;
-    }
-
-    // 1. Q&A 모드일 때는 퀴즈 창을 완전히 닫음
-    if (st.mode === 'qa') { 
-        forceCloseQuiz(); 
-        return; 
-    }
-
-    // 2. 강사가 퀴즈 모드 탭을 누르는 즉시 교육생에게 오버레이를 보여줌
-    if (st.mode === 'quiz') {
-        // 리포트 요약 화면이 아닐 때만 "준비중" 오버레이 표시
-        if (st.quizStep !== 'summary') {
-            document.getElementById('quizOverlay').style.display = 'flex';
-            document.getElementById('quizActiveBox').style.display = 'block';
-            document.getElementById('quizResultBox').style.display = 'none';
-            
-            // 아직 문제가 도착하지 않았을 때(강사가 문제 선택 중일 때) 보여줄 문구
-            // activeQuiz가 업데이트 되기 전까지 이 문구가 유지됩니다.
-            if (!currentQuizId) {
-                document.getElementById('quizStatusMsg').innerText = "강사님이 퀴즈를 준비하고 있습니다. 잠시만 기다려 주세요...";
-                document.getElementById('btnGroupMultiple').style.display = 'none';
-                document.getElementById('btnGroupOX').style.display = 'none';
-                document.getElementById('quizFeedback').innerText = "";
-            }
-        }
-    }
-    
-    // 3. 퀴즈가 종료되어 결과 리포트가 떴을 때
-    if (st.quizStep === 'summary') { 
-        if(!hasClosedSummary) showFinalRanking(); 
-    }
-});
-
-
-
-
-dbRef.quiz.on('value', s => {
-    const q = s.val(); if(!q) return;
-    
-    // 상태가 바뀔 때마다 타이머는 일단 정지
-    if(studentTimerInterval) clearInterval(studentTimerInterval);
-    const sTimerBox = document.getElementById('studentQuizTimerBox');
-    const sTimerText = document.getElementById('studentTimer');
-    if(sTimerBox) sTimerBox.style.display = 'none';
-
-    dbRef.status.once('value', statusSnap => {
-        const st = statusSnap.val() || {};
-        
-        // [핵심 1] 'ready' 즉, 완전히 새로운 문제가 나올 때만 선택 기록을 지웁니다.
-        // 강사가 일시정지 후 다시 시작하는 것은 ready가 아니므로 기록이 유지됩니다.
-        if (q.status === 'ready') {
-            myLastChoiceIdx = null; 
-            myLastChoice = null;
-        }
-
-        if (st.quizStep === 'summary' && !hasClosedSummary) return; 
-        if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
-
-        document.getElementById('quizOverlay').style.display = 'flex';
-        document.getElementById('quizActiveBox').style.display = 'block';
-        document.getElementById('quizResultBox').style.display = 'none';
-        const multArea = document.getElementById('btnGroupMultiple');
-        const oxArea = document.getElementById('btnGroupOX');
-        const msgBox = document.getElementById('quizStatusMsg');
-        const feedBox = document.getElementById('quizFeedback');
-
-        // [2] 일시정지 상태 (기존 선택 유지 및 클릭 차단)
-        if(q.status === 'pause') {
-            canAnswer = false; 
-            msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
-            if(sTimerBox && sTimerText && q.remainingTime !== undefined) {
-                sTimerBox.style.display = 'flex';
-                sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
-                sTimerText.style.color = "#f59e0b";
-            }
-            // 기존 버튼들에 'locked'를 걸고 내가 눌렀던 버튼에 'selected' 유지
-            document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, idx) => {
-                btn.classList.add('locked');
-                if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
+            // 4. 과목 리스트 실시간 로드
+            firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
+                const data = s.val() || {};
+                const sel = document.getElementById('subjectSelect');
+                if(!sel) return;
+                let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
+                Object.values(data).forEach(name => {
+                    html += `<option value="${name}">${name}</option>`;
+                });
+                sel.innerHTML = html;
             });
-            return; 
-        }
 
-        // [3] 결과 발표 상태
-        if (q.status === 'result') { 
-            multArea.style.display = 'none'; oxArea.style.display = 'none';
-            const correctAns = (q.id === 'TEST') ? 2 : q.correct;
-            if (q.isSurvey) {
-                msgBox.innerText = "📋 설문 결과 요약";
-                feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계가 완료되었습니다."}</span>`;
-            } else {
-                if (myLastChoiceIdx === correctAns) {
-                     msgBox.innerText = "🎉 정답입니다!"; msgBox.style.color = "#10b981";
-                     feedBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> 훌륭합니다!`;
-                } else {
-                     msgBox.innerText = "앗, 틀렸습니다..."; msgBox.style.color = "#ef4444";
-                     const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
-                     feedBox.innerHTML = `정답은 <b style="color:#1e293b; font-size:18px;">[ ${ansText} ]</b> 입니다.`;
+            // 5. 강의실 상태 감시 (리셋 체크 및 퀴즈 모드 전환)
+            dbRef.status.on('value', snap => {
+                const st = snap.val() || {};
+
+                // [중요] 강사가 상태를 바꾸면 즉시 퇴장 처리
+                if (st.roomStatus !== 'active') {
+                    alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
+                    location.reload();
+                    return;
                 }
-            }
-            return; 
-        }
+                
+                // [중요] 리셋 로직 강화 (강사가 리셋 버튼 누르면 학생 앱 초기화)
+                const serverResetKey = st.resetKey || 'init';
+                const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+                if (!myLocalKey) {
+                    localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+                } else if (myLocalKey !== serverResetKey) {
+                    localStorage.clear();
+                    alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
+                    location.replace(location.pathname + location.search);
+                    return;
+                }
 
-        // [4] 대기 상태
-        if(q.status === 'ready') {
-            canAnswer = false;
-            msgBox.innerText = "강사님이 퀴즈를 시작하기를 기다리고 있습니다...";
-            msgBox.style.color = "#1e293b";
-            multArea.style.display = 'none'; oxArea.style.display = 'none';
-            feedBox.innerText = "";
-            currentQuizId = q.id;
-        } 
-        // [5] 퀴즈 진행 상태 (다시 시작했을 때 여기를 탑니다)
-        else if(q.status === 'open') {
-            canAnswer = true; // 클릭 가능하게 변경
-            msgBox.innerText = "정답을 선택하세요!";
-            msgBox.style.color = "#1e293b";
-            
-            // 타이머 로직 (기존 유지)
-            if(q.endTime && sTimerBox && sTimerText) {
-                sTimerBox.style.display = 'flex';
-                studentTimerInterval = setInterval(() => {
-                    const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
-                    const display = remain < 0 ? 0 : remain;
-                    sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
-                    sTimerText.style.color = (remain <= 5) ? "#ef4444" : "#1e293b";
-                    if(remain <= 0) clearInterval(studentTimerInterval);
-                }, 200);
-            }
+                // Q&A 모드 전환
+                if (st.mode === 'qa') { 
+                    forceCloseQuiz(); 
+                    return; 
+                }
 
-            if(q.isOX) {
-                multArea.style.display = 'none'; oxArea.style.display = 'flex';
-                document.querySelectorAll('.ox-btn').forEach((btn, i) => {
-                    btn.classList.remove('locked', 'selected');
-                    // [추가] 내가 이미 눌렀던 버튼이면 다시 파란색 칠하기
-                    if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
-                });
-            } else {
-                oxArea.style.display = 'none'; multArea.style.display = 'flex';
-                multArea.innerHTML = ""; 
-                q.options.forEach((optText, i) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'quiz-opt-btn';
-                    // [추가] 내가 이미 눌렀던 버튼이면 파란색 클래스 추가
-                    if((i + 1) === myLastChoiceIdx) btn.className += ' selected';
-                    btn.innerText = `${i + 1}. ${optText}`; 
-                    btn.onclick = () => sendAns(i + 1);
-                    multArea.appendChild(btn);
-                });
-            }
-        }
-        else if(q.status === 'close') {
-            canAnswer = false;
-            document.querySelectorAll('#quizActiveBox .quiz-opt-btn').forEach((btn, idx) => {
-                btn.classList.add('locked');
-                if((idx + 1) === myLastChoiceIdx) btn.classList.add('selected');
+                // 퀴즈 모드 진입
+                if (st.mode === 'quiz') {
+                    if (st.quizStep !== 'summary') {
+                        document.getElementById('quizOverlay').style.display = 'flex';
+                        document.getElementById('quizActiveBox').style.display = 'block';
+                        document.getElementById('quizResultBox').style.display = 'none';
+                    }
+                }
+                
+                // 퀴즈 결과 발표
+                if (st.quizStep === 'summary') { 
+                    if(!hasClosedSummary) showFinalRanking(); 
+                }
             });
-            if(myLastChoice) {
-                msgBox.innerText = "제출이 마감되었습니다.";
-                feedBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${myLastChoice}로 최종 제출되었습니다.`;
-            } else {
-                msgBox.innerText = "미제출 상태로 마감되었습니다.";
-            }
-        }
-    });
-});
 
+            // 6. 퀴즈 세부 진행 감시
+            dbRef.quiz.on('value', s => {
+                const q = s.val(); if(!q) return;
+                if(studentTimerInterval) clearInterval(studentTimerInterval);
+                const sTimerBox = document.getElementById('studentQuizTimerBox');
+                const sTimerText = document.getElementById('studentTimer');
+                if(sTimerBox) sTimerBox.style.display = 'none';
 
+                dbRef.status.once('value', statusSnap => {
+                    const st = statusSnap.val() || {};
+                    if (q.status === 'ready') { myLastChoiceIdx = null; myLastChoice = null; }
+                    if (st.quizStep === 'summary' && !hasClosedSummary) return; 
+                    if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
 
+                    document.getElementById('quizOverlay').style.display = 'flex';
+                    const msgBox = document.getElementById('quizStatusMsg');
+                    const feedBox = document.getElementById('quizFeedback');
+
+                    if(q.status === 'pause') {
+                        canAnswer = false; 
+                        msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
+                        if(sTimerBox && q.remainingTime !== undefined) {
+                            sTimerBox.style.display = 'flex';
+                            sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
+                        }
+                        return; 
+                    }
+
+                    if (q.status === 'result') { 
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        if (q.isSurvey) {
+                            msgBox.innerText = "📋 설문 결과 요약";
+                            feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계 완료"}</span>`;
+                        } else {
+                            if (myLastChoiceIdx === q.correct) {
+                                 msgBox.innerText = "🎉 정답입니다!"; feedBox.innerHTML = `훌륭합니다!`;
+                            } else {
+                                 msgBox.innerText = "앗, 틀렸습니다...";
+                                 const ansText = q.isOX ? (q.correct===1?'O':'X') : `${q.correct}번`;
+                                 feedBox.innerHTML = `정답은 [ ${ansText} ] 입니다.`;
+                            }
+                        }
+                        return; 
+                    }
+
+                    if(q.status === 'ready') {
+                        canAnswer = false; msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        feedBox.innerText = ""; currentQuizId = q.id;
+                    } 
+                    else if(q.status === 'open') {
+                        canAnswer = true; msgBox.innerText = "정답을 선택하세요!";
+                        if(q.endTime && sTimerBox) {
+                            sTimerBox.style.display = 'flex';
+                            studentTimerInterval = setInterval(() => {
+                                const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
+                                const display = remain < 0 ? 0 : remain;
+                                sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
+                                if(remain <= 0) clearInterval(studentTimerInterval);
+                            }, 200);
+                        }
+                        if(q.isOX) {
+                            document.getElementById('btnGroupMultiple').style.display = 'none';
+                            document.getElementById('btnGroupOX').style.display = 'flex';
+                        } else {
+                            document.getElementById('btnGroupOX').style.display = 'none';
+                            const multArea = document.getElementById('btnGroupMultiple');
+                            multArea.style.display = 'flex'; multArea.innerHTML = ""; 
+                            q.options.forEach((opt, i) => {
+                                const btn = document.createElement('button');
+                                btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
+                                btn.innerText = `${i+1}. ${opt}`; btn.onclick = () => sendAns(i+1);
+                                multArea.appendChild(btn);
+                            });
+                        }
+                    }
+                    else if(q.status === 'close') {
+                        canAnswer = false;
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+                        msgBox.innerText = myLastChoice ? "제출 완료" : "미제출 마감";
+                    }
+                });
+            });
+
+            // 7. 입력창 자동 높이 조절 및 글자수 제한
             const qInputEl = document.getElementById('qInput');
             qInputEl.addEventListener('input', function() {
-                const len = this.value.length; document.getElementById('charCount').innerText = `${len} / 100`;
-                if (len >= 90) document.getElementById('charCount').classList.add('limit'); else document.getElementById('charCount').classList.remove('limit');
-                this.style.height = '1px'; this.style.height = (this.scrollHeight) + 'px';
+                const len = this.value.length; 
+                document.getElementById('charCount').innerText = `${len} / 100`;
+                if (len >= 90) document.getElementById('charCount').classList.add('limit'); 
+                else document.getElementById('charCount').classList.remove('limit');
+                this.style.height = '1px'; 
+                this.style.height = (this.scrollHeight) + 'px';
             });
         }
+
+
+
         function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
 
 // [추가] 누락된 유틸리티 함수 (이게 있어야 질문 목록이 뜹니다)
@@ -868,13 +823,12 @@ dbRef.quiz.on('value', s => {
 
 
 
-// [디자인 완벽 복구] 질문 목록 렌더링 함수
+// [수정] 질문 목록 렌더링 (5분 시간 제한 로직 포함)
         function renderList(data) {
             const list = document.getElementById('qList'); 
             list.innerHTML = ""; 
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
             
-            // 정렬 로직 (최신순/공감순)
             if(currentSort === 'like') {
                 items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
             } else {
@@ -887,35 +841,30 @@ dbRef.quiz.on('value', s => {
                 const isMine = myQs[item.id] ? 'my-q' : ''; 
                 const likedClass = myLikes[item.id] ? 'active' : '';
                 
-                // --- 강사 이름 및 호칭 자동 정리 ---
+                // 강사 성함 호칭 정리
                 let targetName = item.subject || '공통질문';
                 let displayName = "";
                 const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
                 const foundPos = positions.find(pos => targetName.includes(pos));
-                
-                if (foundPos) {
-                    displayName = targetName.includes("님") ? targetName : targetName + "님";
-                } else if (targetName !== '일반' && targetName !== '공통질문') {
-                    displayName = targetName + " 강사님";
-                } else {
-                    displayName = targetName;
-                }
+                if (foundPos) displayName = targetName.includes("님") ? targetName : targetName + "님";
+                else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
+                else displayName = targetName;
 
-                // [신규] 작고 세련된 태그 (기존 텍스트와 자연스럽게 어울림)
                 const instructorTag = `<span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
 
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
+                
+                // [핵심] 내가 쓴 글이고 + 작성한 지 5분(300,000ms)이 안 지났을 때만 버튼 노출
                 if(isMine && (Date.now() - myQs[item.id] < 300000)) {
                     metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
                 }
                 metaHtml += `</div>`;
 
-                // [복구] 기존 index.html의 정통 카드 구조를 그대로 사용
                 list.innerHTML += `
                     <div class="q-card ${isMine}">
                         <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
                         <div class="q-content">
-                            <div class="q-text">${instructorTag}${escapeHtml(item.text)}</div>
+                            <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
                             ${metaHtml}
                         </div>
                         <div class="q-like-area">
@@ -972,13 +921,27 @@ function submitQ() {
 
 
         function toggleLike(key) { if(myLikes[key]) { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; }); delete myLikes[key]; } else { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; }); myLikes[key] = true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
+// [수정] 수정 모드 진입 (5분 경과 여부 재검사)
         function editQ(key) {
+            // 클릭 시점에 다시 한번 시간 체크
+            if (Date.now() - myQs[key] > 300000) {
+                alert("⌛ 작성 후 5분이 경과하여 내용을 수정할 수 없습니다.");
+                // 버튼을 없애기 위해 목록 새로고침
+                dbRef.qa.once('value', s => renderList(s.val() || {}));
+                return;
+            }
+
             dbRef.qa.child(key).once('value', s => {
-                const el = document.getElementById('qInput'); el.value = s.val().text;
-                el.style.height = '1px'; el.style.height = (el.scrollHeight) + 'px';
+                const el = document.getElementById('qInput'); 
+                el.value = s.val().text;
+                el.style.height = '1px'; 
+                el.style.height = (el.scrollHeight) + 'px';
                 document.getElementById('charCount').innerText = `${el.value.length} / 100`;
-                document.getElementById('submitBtn').classList.add('editing'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
-                editingKey = key; el.focus(); checkCooldown(); 
+                document.getElementById('submitBtn').classList.add('editing'); 
+                document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
+                editingKey = key; 
+                el.focus(); 
+                checkCooldown(); 
             });
         }
         function deleteQ(key) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(key).remove(); }
