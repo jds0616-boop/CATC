@@ -910,7 +910,7 @@
 </div>
 
 <!-- [추가] 교수님 명단 관리 모달 -->
-<div id="profManageModal" class="modal-overlay" style="z-index: 5000;">
+<div id="profManageModal" class="modal-overlay" style="z-index: 6000 !important;">
     <div class="modal-box" style="width: 400px;">
         <div class="modal-header"><h3><i class="fa-solid fa-user-tie"></i> 교수님 명단 관리</h3></div>
         
@@ -1004,7 +1004,7 @@
             <div class="setup-group">
                 <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">강의실 상세 위치 (선택 또는 직접입력)</label>
                 <!-- 직접 입력이 가능하도록 Datalist 적용 -->
-                <input type="text" id="setup-room-select" class="setup-input" list="room-list-options" placeholder="강의실 위치 입력">
+                <input type="text" id="setup-room-select" class="setup-input" list="room-list-options" placeholder="강의실 위치 선택 또는 직접 입력" onfocus="this.value=''" onclick="this.showPicker ? this.showPicker() : null">
                 <datalist id="room-list-options">
                     <option value="하늘관 1층 대강당">
                     <option value="하늘관 2층 A강의실">
@@ -1017,7 +1017,7 @@
             </div>
             <div class="setup-group">
                 <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">담임 교수</label>
-                <div style="display:flex; gap:5px;">
+                <div style="display:flex; gap:5px; align-items: center;">
                     <select id="setup-prof-select" class="setup-input" style="flex:1;"></select>
                     <button class="btn-action btn-small btn-dark" onclick="profMgr.openManageModal()" style="width:40px;"><i class="fa-solid fa-gear"></i></button>
                 </div>

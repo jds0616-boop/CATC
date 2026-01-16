@@ -1822,8 +1822,7 @@ loadDinnerSkipData: function() {
 
 
 
-// --- 여기서부터 ui 객체의 끝까지 교체하는 코드입니다 ---
-// [수정] 수강생 명부 로드 (중복 제거 및 정렬 보완)
+// [최종] 수강생 명부 로드 (PC/모바일 중복 로그인 통합 대응 버전)
     loadStudentList: function() {
         if(!state.room) return;
 
@@ -1838,12 +1837,13 @@ loadDinnerSkipData: function() {
                 const tbody = document.getElementById('studentListTableBody');
                 if(!tbody) return;
 
-                // 실제 접속한 학생들 (Key가 이름_번호이므로 자동으로 1인 1행 유지됨)
+                // 1. 실제 접속자 데이터 정리 (ID가 이름_번호이므로 이미 중복 제거된 상태)
                 const actualStudents = Object.keys(data).map(key => ({
                     token: key,
                     ...data[key]
                 })).filter(s => s.name && s.name !== "undefined");
 
+                // 2. 전체 명단 생성 (예정 명단 + 현장 접속자 합치기 및 중복 제거)
                 const actualNames = actualStudents.map(s => s.name);
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
@@ -1851,6 +1851,7 @@ loadDinnerSkipData: function() {
                 let arrivedCount = 0;
 
                 combinedNames.forEach((name, idx) => {
+                    // 성함으로 실제 접속 데이터를 찾음
                     const s = actualStudents.find(student => student.name === name);
                     const isArrived = !!s;
                     if(isArrived) arrivedCount++;
@@ -1858,8 +1859,11 @@ loadDinnerSkipData: function() {
                     const isExpected = expectedNames.includes(name);
                     const sourceIcon = isExpected ? '📄' : '✨';
                     const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
+                    
+                    // 초록불(온라인 상태) 표시
                     const dotColor = isArrived && s.isOnline ? '#22c55e' : '#cbd5e1'; 
                     
+                    // 입장 시간 표시
                     const joinTime = (isArrived && s.joinedAt) 
                         ? new Date(s.joinedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
                         : "-";
@@ -1886,6 +1890,7 @@ loadDinnerSkipData: function() {
                         </tr>`;
                 });
 
+                // 상단 진행바 업데이트
                 const total = combinedNames.length;
                 const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
                 const statusEl = document.getElementById('arrivalStatus');
@@ -1895,6 +1900,7 @@ loadDinnerSkipData: function() {
             });
         });
     },
+
 
     toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
