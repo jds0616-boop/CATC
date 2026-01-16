@@ -868,19 +868,66 @@ dbRef.quiz.on('value', s => {
 
 
 
+// [수정] 질문 목록 렌더링 (강사 태그 "To. 누구" 추가 버전)
         function renderList(data) {
-            const list = document.getElementById('qList'); list.innerHTML = ""; let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            if(currentSort === 'like') items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); else items.sort((a,b) => b.timestamp - a.timestamp);
+            const list = document.getElementById('qList'); 
+            list.innerHTML = ""; 
+            let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+            
+            if(currentSort === 'like') {
+                items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
+            } else {
+                items.sort((a,b) => b.timestamp - a.timestamp);
+            }
+
             items.forEach(item => {
                 if(item.status === 'delete') return;
-                const isMine = myQs[item.id] ? 'my-q' : ''; const likedClass = myLikes[item.id] ? 'active' : '';
+                
+                const isMine = myQs[item.id] ? 'my-q' : ''; 
+                const likedClass = myLikes[item.id] ? 'active' : '';
+                
+                // --- [추가] 강사 이름 포맷팅 로직 ---
+                let targetName = item.subject || '공통질문';
+                let displayName = "";
+                const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
+                const foundPos = positions.find(pos => targetName.includes(pos));
+                
+                if (foundPos) {
+                    displayName = targetName.includes("님") ? targetName : targetName + "님";
+                } else if (targetName !== '일반' && targetName !== '공통질문') {
+                    displayName = targetName + " 강사님";
+                } else {
+                    displayName = targetName;
+                }
+
+                // 강사 태그 HTML (강사 플랫폼과 동일 디자인)
+                const instructorTag = `
+                    <span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:2px 6px; border-radius:4px; margin-right:8px; vertical-align:middle; border:1px solid #dbeafe; font-weight:800;">
+                        To. ${displayName}
+                    </span>
+                `;
+                // ------------------------------------
+
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
-                if(isMine && (Date.now() - myQs[item.id] < 300000)) metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
+                if(isMine && (Date.now() - myQs[item.id] < 300000)) {
+                    metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
+                }
                 metaHtml += `</div>`;
-                list.innerHTML += `<div class="q-card ${isMine}"><div class="q-avatar"><i class="fa-solid fa-user"></i></div><div class="q-content"><div class="q-text">${escapeHtml(item.text)}</div>${metaHtml}</div><div class="q-like-area"><div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div><span class="like-count">${item.likes||0}</span></div></div>`;
+
+                list.innerHTML += `
+                    <div class="q-card ${isMine}">
+                        <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
+                        <div class="q-content">
+                            <div class="q-text">${instructorTag}${escapeHtml(item.text)}</div>
+                            ${metaHtml}
+                        </div>
+                        <div class="q-like-area">
+                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
+                            <span class="like-count">${item.likes||0}</span>
+                        </div>
+                    </div>`;
             });
         }
-
 
 function submitQ() {
     const txt = document.getElementById('qInput').value.trim();
