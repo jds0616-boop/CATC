@@ -320,7 +320,7 @@
         });
     }
 
-    // 수송 요청 등록
+// [6.16차 수정] 수송 요청 등록 (기사 개인일정/점심시간/중복예약 3중 체크)
     async function submitTransportRequest() {
         const loc = document.getElementById('reqLoc').value;
         const dir = selectedDirection;
@@ -330,22 +330,29 @@
 
         if(!dir || !date || !time || !prof) return alert("모든 항목을 입력/선택해주세요.");
 
-        // 1. 점심시간 체크 (12:00 ~ 13:00)
         const hour = parseInt(time.split(':')[0]);
+
+        // 1. 점심시간 체크
         if(hour === 12) return alert("⚠️ 12:00 ~ 13:00은 기사님 휴식시간으로 신청이 불가합니다.");
 
-        // 2. 중복 체크 (장소 다름 + 시간 겹침)
-        const snap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
-        const existing = snap.val() || {};
+        // 2. 기사님 개인 일정(운행불가) 체크
+        const offSnap = await firebase.database().ref(`system/driver_status/${date}/${hour}`).once('value');
+        if(offSnap.exists()) {
+            return alert(`❌ 해당 시간은 기사님 일정(${offSnap.val()})으로 인해 수송이 불가능합니다.`);
+        }
+
+        // 3. 다른 과정 중복 예약 체크 (단, 장소와 시간이 같으면 허용)
+        const reqSnap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
+        const existing = reqSnap.val() || {};
         let isConflict = false;
 
         Object.values(existing).forEach(i => {
             if(i.time === time && i.loc !== loc) isConflict = true;
         });
 
-        if(isConflict) return alert("❌ 운전기사 스케줄과 겹쳐서 신청할 수 없습니다.\n(이미 해당 시간에 다른 장소 운행이 예약되어 있습니다.)");
+        if(isConflict) return alert("❌ 이미 해당 시간에 다른 장소 운행이 예약되어 있습니다.");
 
-        // 3. 등록
+        // 4. 최종 등록
         const newRef = firebase.database().ref('system/transport_requests').push();
         await newRef.set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
         
