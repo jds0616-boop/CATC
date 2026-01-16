@@ -1022,7 +1022,7 @@ const ui = {
 
 
 
-// [6.17차 수정] 공지사항 뷰 로드: 배지 디자인 및 가독성 개선 버전
+// [디자인 고도화] 운영부 공지사항 출력 로직 (배지 및 레이아웃 개선)
     loadNoticeView: async function() {
         if(!state.room) return;
         
@@ -1042,33 +1042,35 @@ const ui = {
                 
                 let html = "";
                 
-                // (1) 코디네이터 과정 공지 (배지 강조)
+                // (1) 코디네이터 과정 공지 - 시원한 블루 스타일
                 if (coordMsg) {
                     html += `
-                        <div style="margin-bottom:18px; padding:18px; background:#ffffff; border-radius:12px; border:1px solid #dbeafe; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.05);">
-                            <span style="display:inline-block; background:#3b82f6; color:white; font-size:11px; font-weight:800; padding:3px 10px; border-radius:50px; margin-bottom:10px;">
-                                <i class="fa-solid fa-user-gear"></i> 과정 운영 공지
-                            </span>
-                            <div style="font-size:14.5px; color:#1e3a8a; font-weight:500; white-space: pre-line;">${coordMsg}</div>
+                        <div style="margin-bottom:20px; padding:20px; background:#f0f7ff; border-radius:15px; border-left:5px solid #3b82f6;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                <span style="background:#3b82f6; color:white; font-size:10px; font-weight:900; padding:3px 10px; border-radius:50px; text-transform:uppercase;">Course Admin</span>
+                                <span style="color:#3b82f6; font-size:12px; font-weight:800;">과정 운영 공지</span>
+                            </div>
+                            <div style="font-size:15px; color:#1e3a8a; font-weight:600; line-height:1.6; white-space: pre-line;">${coordMsg}</div>
                         </div>`;
                 }
                 
-                // (2) 센터 전체 공지 (배지 강조)
-                if (globalMsg) {
+                // (2) 센터 전체 공지 - 깔끔한 그레이 스타일
+                if (globalVal = globalMsg) {
                     html += `
-                        <div style="padding:18px; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);">
-                            <span style="display:inline-block; background:#64748b; color:white; font-size:11px; font-weight:800; padding:3px 10px; border-radius:50px; margin-bottom:10px;">
-                                <i class="fa-solid fa-building-shield"></i> 센터 전체 공지
-                            </span>
-                            <div style="font-size:14.5px; color:#475569; font-weight:500; white-space: pre-line;">${globalMsg}</div>
+                        <div style="padding:20px; background:#f8fafc; border-radius:15px; border-left:5px solid #64748b;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                <span style="background:#64748b; color:white; font-size:10px; font-weight:900; padding:3px 10px; border-radius:50px; text-transform:uppercase;">Center</span>
+                                <span style="color:#64748b; font-size:12px; font-weight:800;">항기원 전체 공지</span>
+                            </div>
+                            <div style="font-size:15px; color:#475569; font-weight:600; line-height:1.6; white-space: pre-line;">${globalVal}</div>
                         </div>`;
                 }
 
                 if (!coordMsg && !globalMsg) {
                     display.innerHTML = `
-                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8;">
-                            <i class="fa-solid fa-envelope-open" style="font-size:40px; margin-bottom:15px; opacity:0.3;"></i>
-                            <p>현재 전달된 운영부 공지가 없습니다.</p>
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#cbd5e1; text-align:center;">
+                            <i class="fa-solid fa-comment-slash" style="font-size:40px; margin-bottom:10px;"></i>
+                            <p style="font-size:14px; font-weight:700;">등록된 운영부 공지가 없습니다.</p>
                         </div>`;
                 } else {
                     display.innerHTML = html;
