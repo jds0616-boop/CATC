@@ -955,16 +955,16 @@ const ui = {
 
 
 
-// [5.5차 수정] 통합 현황 및 3종 공지사항 실시간 연동
+// [6.12차 수정] 대시보드 메인 화면 피드 실시간 연동 (3종 공지 분리 반영)
     loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 날짜 표시
+        // 1. 상단 날짜 및 기본 정보 표시
         const dateDisplay = document.getElementById('dashTodayDateDisplay');
         if(dateDisplay) dateDisplay.innerText = today;
 
-        // 2. 과정 정보 감시
+        // 2. 과정 설정 정보 (과정명, 기간, 장소) 연동
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
             const s = snap.val() || {};
             const titleEl = document.getElementById('dashCourseTitle');
@@ -973,27 +973,34 @@ const ui = {
             if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
         });
 
-        // 3. 3종 공지사항 허브 연동
-        // - 담임 공지
+        // 3. 3종 공지사항 허브 실시간 동기화
+        
+        // (A) 강사 작성 공지 (담임 피드)
         firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
             const el = document.getElementById('dashNoticeInst');
-            if(el) el.innerText = s.val() || "게시된 공지가 없습니다.";
+            if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
         });
-        // - 센터/글로벌 공지
+
+        // (B) 코디네이터 작성 과정 공지 (운영 피드) - [경로 수정됨]
+        firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
+            const el = document.getElementById('dashNoticeAdmin');
+            if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
+        });
+
+        // (C) 센터 전체 공지 (센터 피드)
         firebase.database().ref(`system/globalNotice`).on('value', s => {
             const el = document.getElementById('dashNoticeGlobal');
-            if(el) el.innerText = s.val() || "센터 전체 공지가 없습니다.";
+            if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
         });
-        // - 운영부 공지는 일단 글로벌과 동일하거나 별도 경로 지정 가능 (현재는 예시 문구)
 
-        // 4. 교수 정보
+        // 4. 담당 교수 정보 연동
         firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
             const st = snap.val() || {};
             const profOnlyEl = document.getElementById('dashProfNameOnly');
             if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
         });
 
-        // 5. 통계 데이터 (수강생 + 외출 통합)
+        // 5. 실시간 수강생 및 외출 신청 통계
         firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
             const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
             if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count;
@@ -1003,7 +1010,7 @@ const ui = {
             if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
         });
 
-        // 6. 셔틀 데이터
+        // 6. 셔틀 탑승 수요 통계
         firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
             const d = s.val() || {};
             if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
