@@ -1022,19 +1022,18 @@ const ui = {
 
 
 
-// [수정] 공지사항 뷰 로드: 좌측(강사 공지), 우측(코디 과정 공지 + 센터 전체 공지)
+// [6.17차 수정] 공지사항 뷰 로드: 배지 디자인 및 가독성 개선 버전
     loadNoticeView: async function() {
         if(!state.room) return;
         
-        // 1. 좌측 영역: 강사 본인이 작성한 공지 불러오기 (입력창)
+        // 1. 좌측 영역: 강사 본인 공지 (입력창)
         const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
         document.getElementById('instNoticeInputMain').value = snap.val() || "";
 
-        // 2. 우측 영역: 코디네이터 공지(센터 공지 + 과정 공지) 통합 실시간 조회
+        // 2. 우측 영역: 통합 공지 조회
         const globalRef = firebase.database().ref('system/globalNotice');
         const coordRef = firebase.database().ref(`courses/${state.room}/coordNotice`);
 
-        // 센터 공지와 코디 과정 공지를 합쳐서 표시하기 위한 함수
         const updateRightNotice = () => {
             Promise.all([globalRef.once('value'), coordRef.once('value')]).then(([gSnap, cSnap]) => {
                 const globalMsg = gSnap.val();
@@ -1043,47 +1042,43 @@ const ui = {
                 
                 let html = "";
                 
-                // 코디네이터가 쓴 이 과정만의 공지가 있다면 먼저 표시
+                // (1) 코디네이터 과정 공지 (배지 강조)
                 if (coordMsg) {
-                    html += `<div style="margin-bottom:20px; padding:15px; background:#eff6ff; border-radius:10px; border-left:4px solid #3b82f6;">
-                                <strong style="color:#1d4ed8; font-size:14px; display:block; margin-bottom:5px;">[코디네이터 과정 공지]</strong>
-                                ${coordMsg}
-                             </div>`;
+                    html += `
+                        <div style="margin-bottom:18px; padding:18px; background:#ffffff; border-radius:12px; border:1px solid #dbeafe; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.05);">
+                            <span style="display:inline-block; background:#3b82f6; color:white; font-size:11px; font-weight:800; padding:3px 10px; border-radius:50px; margin-bottom:10px;">
+                                <i class="fa-solid fa-user-gear"></i> 과정 운영 공지
+                            </span>
+                            <div style="font-size:14.5px; color:#1e3a8a; font-weight:500; white-space: pre-line;">${coordMsg}</div>
+                        </div>`;
                 }
                 
-                // 센터 전체 공지가 있다면 그 아래 표시
+                // (2) 센터 전체 공지 (배지 강조)
                 if (globalMsg) {
-                    html += `<div style="padding:15px; background:#f8fafc; border-radius:10px; border-left:4px solid #64748b;">
-                                <strong style="color:#334155; font-size:14px; display:block; margin-bottom:5px;">[센터 전체 공지]</strong>
-                                ${globalMsg}
-                             </div>`;
+                    html += `
+                        <div style="padding:18px; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);">
+                            <span style="display:inline-block; background:#64748b; color:white; font-size:11px; font-weight:800; padding:3px 10px; border-radius:50px; margin-bottom:10px;">
+                                <i class="fa-solid fa-building-shield"></i> 센터 전체 공지
+                            </span>
+                            <div style="font-size:14.5px; color:#475569; font-weight:500; white-space: pre-line;">${globalMsg}</div>
+                        </div>`;
                 }
 
                 if (!coordMsg && !globalMsg) {
-                    display.innerHTML = "<span style='color:#94a3b8;'>현재 확인 가능한 코디네이터/센터 공지가 없습니다.</span>";
+                    display.innerHTML = `
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8;">
+                            <i class="fa-solid fa-envelope-open" style="font-size:40px; margin-bottom:15px; opacity:0.3;"></i>
+                            <p>현재 전달된 운영부 공지가 없습니다.</p>
+                        </div>`;
                 } else {
                     display.innerHTML = html;
                 }
             });
         };
 
-        // 실시간 업데이트 연결
         globalRef.on('value', updateRightNotice);
         coordRef.on('value', updateRightNotice);
     },
-    // 출결 QR 뷰 로드
-    loadAttendanceView: async function() {
-        if(!state.room) return;
-        const snap = await firebase.database().ref(`courses/${state.room}/attendanceQR`).once('value');
-        const img = document.getElementById('attendanceQrImgMain');
-        const msg = document.getElementById('noAttendanceQrMsgMain');
-        if(snap.exists()) {
-            img.src = snap.val(); img.style.display = 'block'; msg.style.display = 'none';
-        } else {
-            img.style.display = 'none'; msg.style.display = 'block';
-        }
-    },
-
 
 
 

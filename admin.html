@@ -418,7 +418,7 @@
 
 
 
-<!-- [6.11차 수정] 공지사항 관리 섹션 - 딥블루 헤더 디자인 적용 -->
+<!-- [6.17차 최종] 공지사항 관리 섹션 - 좌우 대칭 및 디자인 고도화 적용 -->
 <div id="view-notice" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header">
         <h1><i class="fa-solid fa-bullhorn"></i> 통합 공지사항 관리 <span class="header-room-badge room-badge-global"></span></h1>
@@ -428,22 +428,21 @@
     <!-- 좌우 배치를 위한 감싸는 박스 -->
     <div class="notice-flex-container" style="display: flex; justify-content: center; gap: 30px; width: 100%; max-width: 1200px; margin: 0 auto 50px auto; align-items: stretch;">
         
-        <!-- 왼쪽: 강사 공지 작성 (딥블루 디자인 적용) -->
+        <!-- [왼쪽] 강사 전용: 우리 과정 공지 작성 -->
         <div class="notice-card-half" style="flex: 1;">
-            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #003366;">
-                <!-- 딥블루 상단 제목 바 -->
-                <div style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); padding: 20px; color: white;">
-                    <h3 style="margin:0; font-size: 18px;"><i class="fa-solid fa-pen-to-square"></i> 우리 과정 공지 작성</h3>
-                    <p style="font-size: 12px; opacity: 0.8; margin: 5px 0 0 0;">입력 후 하단 버튼을 눌러야 교육생 앱에 반영됩니다.</p>
+            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #003366; box-shadow: 0 10px 30px rgba(0, 51, 102, 0.15);">
+                <!-- 딥블루 상단 헤더 -->
+                <div style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); padding: 22px; color: white;">
+                    <h3 style="margin:0; font-size: 19px; font-weight: 800;"><i class="fa-solid fa-pen-to-square"></i> 우리 과정 공지 작성</h3>
+                    <p style="font-size: 12px; opacity: 0.8; margin: 6px 0 0 0;">입력 후 하단 버튼을 눌러야 교육생 앱에 반영됩니다.</p>
                 </div>
                 
-                <!-- 입력 영역 (배경은 흰색 유지) -->
+                <!-- 입력 영역 -->
                 <div style="padding: 20px;">
                     <textarea id="instNoticeInputMain" 
-                              style="width: 100%; height: 260px; padding: 20px; font-size: 16px; border: 2px solid #f1f5f9; border-radius: 15px; outline:none; background:#ffffff; resize: none; box-sizing: border-box;" 
+                              style="width: 100%; height: 260px; padding: 20px; font-size: 16px; border: 2px solid #f1f5f9; border-radius: 15px; outline:none; background:#ffffff; resize: none; box-sizing: border-box; line-height: 1.6;" 
                               placeholder="교육생에게 전달할 내용을 입력하세요."></textarea>
                     
-                    <!-- 버튼: 딥블루와 대비되는 고대비 오렌지/옐로우 계열 적용 (시인성 확보) -->
                     <button class="btn-action" onclick="dataMgr.saveInstructorNoticeMain()" 
                             style="height:55px; font-size:18px; width:100%; border-radius:12px; margin-top:20px; background: #f59e0b; color: #ffffff; border: none; font-weight: 900; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                         <i class="fa-solid fa-paper-plane"></i> 교육생에게 공지사항 게시하기
@@ -452,17 +451,25 @@
             </div>
         </div>
 
-        <!-- 오른쪽: 운영부/센터 공지 확인 -->
+        <!-- [오른쪽] 운영부 전용: 코디네이터 / 센터 공지 확인 (조회 전용) -->
         <div class="notice-card-half" style="flex: 1;">
-            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #e2e8f0; background: #f8fafc !important;">
-                <!-- 회색 상단 제목 바 -->
-                <div style="background: #edf2f7; padding: 20px; color: #4a5568; border-bottom: 1px solid #e2e8f0;">
-                    <h3 style="margin:0; font-size: 18px;"><i class="fa-solid fa-circle-info"></i> 교육운영부 / 센터 공지</h3>
-                    <p style="font-size: 12px; opacity: 0.8; margin: 5px 0 0 0;">운영자 포털에서 게시한 전체 공지 내용입니다.</p>
+            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #cbd5e1; background: #ffffff !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
+                <!-- 다크그레이 상단 헤더 (관리자 느낌 강조) -->
+                <div style="background: linear-gradient(135deg, #475569 0%, #1e293b 100%); padding: 22px; color: white;">
+                    <h3 style="margin:0; font-size: 19px; font-weight: 800;"><i class="fa-solid fa-circle-info"></i> 교육운영부 / 센터 공지 사항</h3>
+                    <p style="font-size: 12px; opacity: 0.8; margin: 6px 0 0 0;">운영자 포털에서 게시한 중요 정보입니다. (읽기 전용)</p>
                 </div>
+                
+                <!-- 공지 내용 표시 영역 -->
                 <div style="padding: 20px;">
-                    <div id="globalNoticeDisplay" class="global-notice-viewer" style="background: white; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 15px; line-height: 1.8; color: #334155; white-space: pre-line; height: 335px; overflow-y: auto;">
+                    <div id="globalNoticeDisplay" class="global-notice-viewer" 
+                         style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 15px; line-height: 1.8; color: #334155; height: 335px; overflow-y: auto; box-sizing: border-box;">
                         센터 전체 공지사항을 불러오는 중...
+                    </div>
+                    
+                    <!-- 하단 상태 바 -->
+                    <div style="margin-top: 15px; text-align: center; font-size: 12px; color: #94a3b8; font-weight: 700;">
+                        <i class="fa-solid fa-sync fa-spin" style="margin-right:5px; color:#3b82f6;"></i> 실시간 정보 업데이트 중
                     </div>
                 </div>
             </div>
