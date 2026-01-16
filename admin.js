@@ -2685,19 +2685,17 @@ const printMgr = {
 };
 
 
-// [최종] 통합 설정 관리 매니저 (setupMgr) - 교수, 과목, 암호 설정 포함
+// [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
     openSetupModal: function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 1. 교수 목록 동기화 (팝업창 내 셀렉트 박스 채우기)
+        // 1. 교수 목록 동기화
         let options = '<option value="">(선택 안함)</option>';
-        profMgr.list.forEach(p => { 
-            options += `<option value="${p.name}">${p.name} 교수</option>`; 
-        });
+        profMgr.list.forEach(p => { options += `<option value="${p.name}">${p.name} 교수</option>`; });
         document.getElementById('setup-prof-select').innerHTML = options;
 
-        // 2. 서버 데이터 불러와서 입력창에 채우기
+        // 2. 서버 데이터 불러오기
         firebase.database().ref(`courses/${state.room}`).once('value', snap => {
             const data = snap.val() || {};
             const s = data.settings || {};
@@ -2706,7 +2704,28 @@ const setupMgr = {
             document.getElementById('setup-course-name').value = s.courseName || "";
             document.getElementById('setup-room-pw').value = s.password ? atob(s.password) : "7777";
             document.getElementById('setup-prof-select').value = st.professorName || "";
-            document.getElementById('setup-room-select').value = s.roomDetailName || "하늘관 1층 대강당";
+
+            // 강의실 위치 세팅 (기존 값이 목록에 없으면 직접 입력으로 처리)
+            const roomSelect = document.getElementById('setup-room-select');
+            const roomDirect = document.getElementById('setup-room-direct');
+            const currentRoomValue = s.roomDetailName || "하늘관 1층 대강당";
+
+            let found = false;
+            for (let i = 0; i < roomSelect.options.length; i++) {
+                if (roomSelect.options[i].value === currentRoomValue) {
+                    roomSelect.value = currentRoomValue;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                roomSelect.value = "direct";
+                roomDirect.value = currentRoomValue;
+                roomDirect.style.display = "block";
+            } else {
+                roomDirect.style.display = "none";
+            }
 
             if(s.period && s.period.includes(" ~ ")) {
                 const dates = s.period.split(" ~ ");
@@ -2714,10 +2733,20 @@ const setupMgr = {
                 document.getElementById('setup-end-date').value = dates[1];
             }
             
-            // 과목 리스트 새로고침
             subjectMgr.renderListInModal();
             document.getElementById('courseSetupModal').style.display = 'flex';
         });
+    },
+
+    // 선택창 값 변경 감지 함수
+    checkDirectInput: function(val) {
+        const directInput = document.getElementById('setup-room-direct');
+        if (val === "direct") {
+            directInput.style.display = "block";
+            directInput.focus();
+        } else {
+            directInput.style.display = "none";
+        }
     },
 
     closeSetupModal: function() {
@@ -2729,16 +2758,18 @@ const setupMgr = {
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
-        const roomName = document.getElementById('setup-room-select').value;
         const profName = document.getElementById('setup-prof-select').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
 
-        if(!name || !sDate || !eDate || !rawPw) {
-            alert("과정명, 비밀번호, 교육기간을 모두 입력해주세요.");
+        // 강의실 위치 결정 (직접 입력값이 있으면 그 값을 사용)
+        const roomSelectVal = document.getElementById('setup-room-select').value;
+        const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
+
+        if(!name || !sDate || !eDate || !rawPw || !roomName) {
+            alert("모든 필수 항목(과정명, 암호, 기간, 장소)을 입력해주세요.");
             return;
         }
 
-        // Firebase 통합 업데이트 (설정과 상태를 한 번에 저장)
         const updates = {};
         updates[`courses/${state.room}/settings/courseName`] = name;
         updates[`courses/${state.room}/settings/password`] = btoa(rawPw);
@@ -2749,12 +2780,10 @@ const setupMgr = {
         updates[`courses/${state.room}/status/ownerSessionId`] = (statusVal === 'active' ? state.sessionId : null);
 
         firebase.database().ref().update(updates).then(() => {
-            // 사이드바 UI 동기화 및 즉시 반영
             document.getElementById('courseNameInput').value = name;
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
-            
-            ui.showAlert("✅ 모든 교육과정 환경 설정이 저장 및 적용되었습니다.");
+            ui.showAlert("✅ 모든 설정이 저장 및 적용되었습니다.");
             this.closeSetupModal();
         });
     }
