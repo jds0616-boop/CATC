@@ -3,154 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>KAC Driver Monitoring</title>
-
-  <!-- Firebase SDK -->
+  <title>KAC Driver Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Font Awesome & Pretendard Font -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-
-
-
-
-<style>
+  <style>
     :root {
-      --carbon-black: #0f172a;
-      --speed-blue: #2563eb;
-      --road-grey: #f1f5f9;
-      --osong: #3b82f6;
-      --term: #f59e0b;
-      --air: #10b981;
+      --carbon-black: #0f172a; --speed-blue: #2563eb; --road-grey: #f8fafc;
+      --osong: #3b82f6; --term: #f59e0b; --air: #10b981;
     }
-
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
     body {
       margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
       background: #cfd8e3; display: flex; justify-content: center; color: #1e293b;
-      overflow: hidden;
+      height: 100dvh; overflow: hidden; /* 전체 스크롤 차단 */
     }
-
-    .app-container {
-      width: 100%; max-width: 600px; height: 100dvh;
-      background: var(--road-grey); position: relative; display: flex; flex-direction: column;
-      box-shadow: 0 0 50px rgba(0,0,0,0.2);
-    }
-
-    /* --- 상단바 (고정) --- */
-    .app-header {
-      height: 60px; background: var(--carbon-black);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; z-index: 1000; flex-shrink: 0;
-    }
-    .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
-
-    /* --- 인덱스 탭: 시안성 개선 버전 --- */
-    .tab-container {
-        padding: 10px 15px; background: var(--carbon-black); flex-shrink: 0;
-    }
-    .tab-bar {
-        display: flex; background: rgba(255,255,255,0.1); border-radius: 50px; padding: 5px;
-    }
-    .tab-btn {
-        flex: 1; border: none; background: none; color: #94a3b8; font-weight: 800; font-size: 14px;
-        padding: 10px 0; border-radius: 50px; cursor: pointer; transition: 0.3s;
-    }
-    .tab-btn.active { color: #fff; background: var(--speed-blue); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4); }
-
-    /* --- 메인 콘텐츠 --- */
-    .app-content { flex: 1; overflow-y: auto; padding: 20px; position: relative; }
-
-    /* 수송 방향 선택 버튼 (교육생용) */
-    .direction-toggle {
-        display: flex; gap: 10px; margin-bottom: 20px;
-    }
-    .dir-btn {
-        flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0;
-        background: #fff; font-weight: 800; font-size: 13px; color: #64748b; cursor: pointer;
-    }
-    .dir-btn.active { border-color: var(--speed-blue); color: var(--speed-blue); background: #eff6ff; }
-
-    /* 계기판 스타일 요약 카드 */
-    .main-summary {
-      background: var(--carbon-black); border-radius: 18px; padding: 25px;
-      text-align: center; margin-bottom: 25px; 
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-bottom: 5px solid var(--speed-blue);
-    }
-    .summary-label { font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 10px; }
-    .summary-count { font-size: 65px; font-weight: 900; color: #fff; line-height: 1; }
-    .summary-count span { font-size: 24px; color: var(--speed-blue); margin-left: 5px; }
-
-    .dest-card { background: #fff; border-radius: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
-    .dest-header { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-    .dest-info { display: flex; align-items: center; gap: 15px; font-weight: 900; font-size: 17px; color: var(--carbon-black); }
-    .dest-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; }
+    .app-container { width: 100%; max-width: 600px; height: 100%; background: var(--road-grey); display: flex; flex-direction: column; }
     
-    .osong .dest-icon { background: var(--osong); }
-    .term .dest-icon { background: var(--term); }
-    .air .dest-icon { background: var(--air); }
+    /* 상단바 */
+    .app-header { height: 50px; background: var(--carbon-black); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 2px solid var(--speed-blue); }
+    .header-title { color: #fff; font-size: 16px; font-weight: 900; font-style: italic; }
 
-    .val-box { font-size: 22px; font-weight: 900; color: var(--carbon-black); }
+    /* 인덱스 탭 */
+    .tab-container { padding: 8px 12px; background: var(--carbon-black); }
+    .tab-bar { display: flex; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; }
+    .tab-btn { flex: 1; border: none; background: none; color: #94a3b8; font-weight: 800; font-size: 14px; padding: 10px 0; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+    .tab-btn.active { color: #fff; background: var(--speed-blue); }
 
-    /* 주간 일정표 */
-    .week-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .nav-btn { background: var(--carbon-black); color: #fff; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 800; font-size: 12px; }
-    .schedule-table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 2px solid var(--carbon-black); }
-    .schedule-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 10px 5px; text-align: center; font-size: 12px; vertical-align: top; }
-    .schedule-table th { background: var(--carbon-black); color: #fff; font-weight: 900; }
-    .time-col { width: 60px; background: #f8fafc !important; font-weight: 900; vertical-align: middle !important; border-right: 2px solid var(--carbon-black) !important; }
+    .app-content { flex: 1; display: flex; flex-direction: column; padding: 12px; overflow: hidden; }
 
-    .job-box { font-size: 11px; border-radius: 6px; padding: 6px; margin-bottom: 5px; text-align: left; font-weight: 800; }
-    .job-to { background: #dbeafe; color: #1e40af; border-left: 4px solid var(--speed-blue); } 
-    .job-from { background: #ffedd5; color: #9a3412; border-left: 4px solid var(--term); } 
-    .job-off { background: #f1f5f9; color: #64748b; text-align: center; font-style: italic; border: 1px dashed #cbd5e1; }
+    /* 교육생 수송 */
+    .main-summary { background: var(--carbon-black); border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 15px; border-left: 6px solid var(--speed-blue); }
+    .summary-label { font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; }
+    .summary-count { font-size: 50px; font-weight: 900; color: #fff; line-height: 1; }
+    .summary-count span { font-size: 18px; color: var(--speed-blue); margin-left: 3px; }
+
+    .dest-card { background: #fff; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; cursor: pointer; }
+    .dest-info { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 16px; }
+    .dest-icon { width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+    .osong .dest-icon { background: var(--osong); } .term .dest-icon { background: var(--term); } .air .dest-icon { background: var(--air); }
+    .val-box { font-size: 18px; font-weight: 900; color: var(--carbon-black); }
+
+    /* 강사 일정표 (한 화면 고정형) */
+    .week-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .nav-btn { background: var(--carbon-black); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; }
+    
+    .schedule-table-wrapper { flex: 1; background: white; border-radius: 10px; border: 1px solid #000; overflow: hidden; display: flex; flex-direction: column; }
+    .schedule-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+    .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 2px; text-align: center; font-size: 10px; vertical-align: top; }
+    .schedule-table th { background: var(--carbon-black); color: #fff; font-weight: 800; height: 35px; }
+    .time-col { width: 45px; background: #f1f5f9 !important; font-weight: 900; vertical-align: middle !important; border-right: 1px solid #000 !important; }
+    
+    .job-box { font-size: 9px; border-radius: 3px; padding: 2px; margin-bottom: 2px; font-weight: 800; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .job-to { background: #dbeafe; color: #1e40af; border-left: 2px solid var(--speed-blue); } 
+    .job-from { background: #ffedd5; color: #9a3412; border-left: 2px solid var(--term); } 
+    .job-off { background: #f1f5f9; color: #94a3b8; height: 100%; display: flex; align-items: center; justify-content: center; font-style: italic; }
 
     /* 하단바 */
-    .app-footer { height: 50px; background: var(--carbon-black); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 13px; font-weight: 800; flex-shrink: 0; }
-    .footer-logo img { height: 18px; filter: brightness(0) invert(1); }
+    .app-footer { height: 40px; background: var(--carbon-black); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 11px; font-weight: 800; }
+    .footer-logo img { height: 14px; filter: brightness(0) invert(1); }
   </style>
 </head>
-
 <body>
   <div class="app-container">
     <header class="app-header">
-      <i class="fa-solid fa-chevron-left" style="color:#fff; cursor:pointer; font-size:20px;" onclick="location.href='portal.html'"></i>
-      <div class="header-title">수송 관리 시스템</div>
-      <i class="fa-solid fa-rotate-right" style="color:#fff; cursor:pointer; font-size:20px;" onclick="location.reload()"></i>
+      <i class="fa-solid fa-chevron-left" style="color:#fff; cursor:pointer;" onclick="location.href='portal.html'"></i>
+      <div class="header-title">KAC TRANSPORT SYSTEM</div>
+      <i class="fa-solid fa-rotate-right" style="color:#fff; cursor:pointer;" onclick="location.reload()"></i>
     </header>
 
     <div class="tab-container">
         <div class="tab-bar">
             <button id="tab1" class="tab-btn active" onclick="switchTab(1)">교육생 수송</button>
-            <button id="tab2" class="tab-btn" onclick="switchTab(2)">강사 수송 (주간)</button>
+            <button id="tab2" class="tab-btn" onclick="switchTab(2)">강사 일정</button>
         </div>
     </div>
 
     <main class="app-content">
-      <!-- [탭 1] 교육생 수송 -->
-      <div id="view-student">
-          <div class="direction-toggle">
-              <button id="dirOut" class="dir-btn active" onclick="setStudentDir('out')"><i class="fa-solid fa-right-from-bracket"></i> 항기원 → 목적지</button>
-              <button id="dirIn" class="dir-btn" onclick="setStudentDir('in')"><i class="fa-solid fa-right-to-bracket"></i> 목적지 → 항기원</button>
-          </div>
-
+      <!-- 교육생 탭 -->
+      <div id="view-student" style="flex:1;">
           <div class="main-summary">
-              <div class="summary-label" id="summary-title">교육생 퇴소/외출 총원</div>
+              <div class="summary-label">TOTAL PASSENGERS</div>
               <div class="summary-count" id="total-all">0<span>명</span></div>
           </div>
-
           <div id="student-list-container"></div>
       </div>
 
-      <!-- [탭 2] 강사 수송 -->
-      <div id="view-teacher" style="display:none;">
+      <!-- 강사 탭 -->
+      <div id="view-teacher" style="display:none; flex:1; flex-direction:column;">
           <div class="week-nav">
               <button class="nav-btn" onclick="changeWeek(-7)">이전 주</button>
-              <span id="current-week-label">주간 일정표</span>
+              <span id="current-week-label" style="font-weight:900; font-size:13px;">WEEKLY</span>
               <button class="nav-btn" onclick="changeWeek(7)">다음 주</button>
           </div>
           <div class="schedule-table-wrapper">
@@ -169,142 +113,103 @@
 
     <!-- 상세 명단 팝업 -->
     <div id="listModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:white; width:100%; max-width:400px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column; max-height:80vh; border:3px solid var(--carbon-black);">
-            <div style="background:var(--carbon-black); color:white; padding:18px; display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="listModalTitle" style="margin:0; font-size:17px; font-weight:900;">탑승 명단</h3>
-                <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="closeListModal()"></i>
+        <div style="background:white; width:100%; max-width:400px; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; max-height:80vh; border:2px solid #000;">
+            <div style="background:var(--carbon-black); color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="listModalTitle" style="margin:0; font-size:16px;">탑승 명단</h3>
+                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeListModal()"></i>
             </div>
-            <div id="listModalContent" style="padding:25px; overflow-y:auto; font-size:16px; line-height:1.6; color:#1e293b;"></div>
-            <button style="width:100%; padding:20px; border:none; background:#f1f5f9; font-weight:900; font-size:17px; cursor:pointer;" onclick="closeListModal()">닫기</button>
+            <div id="listModalContent" style="padding:20px; overflow-y:auto; font-size:14px; color:#1e293b;"></div>
+            <button style="width:100%; padding:15px; border:none; background:#f1f5f9; font-weight:900; font-size:16px;" onclick="closeListModal()">닫기</button>
         </div>
     </div>
   </div>
 
   <script src="config.js"></script>
   <script>
-    if(sessionStorage.getItem('kac_portal_auth') !== 'driver') {
-        alert("인증이 필요합니다.");
-        location.replace('portal.html');
-    }
-
     let currentBaseDate = new Date();
-    let transportRequests = {}; 
-    let driverOffSlots = {}; 
-    let currentStudentDir = 'out'; // 'out': 항기원발, 'in': 항기원행
+    let transportRequests = {}; let driverOffSlots = {};
+
+    if(sessionStorage.getItem('kac_portal_auth') !== 'driver') {
+        alert("인증 필요"); location.replace('portal.html');
+    }
 
     function switchTab(num) {
         document.getElementById('view-student').style.display = (num === 1) ? 'block' : 'none';
-        document.getElementById('view-teacher').style.display = (num === 2) ? 'block' : 'none';
+        document.getElementById('view-teacher').style.display = (num === 2) ? 'flex' : 'none';
         document.getElementById('tab1').classList.toggle('active', num === 1);
         document.getElementById('tab2').classList.toggle('active', num === 2);
         if(num === 2) renderWeeklySchedule();
     }
 
-    function setStudentDir(dir) {
-        currentStudentDir = dir;
-        document.getElementById('dirOut').classList.toggle('active', dir === 'out');
-        document.getElementById('dirIn').classList.toggle('active', dir === 'in');
-        document.getElementById('summary-title').innerText = (dir === 'out') ? "교육생 퇴소/외출 총원" : "교육생 귀원/입소 총원";
-        initStudentTransport(); // 다시 로드
-    }
+    function initStudentTransport() {
+        firebase.database().ref('courses').on('value', snap => {
+            const data = snap.val() || {};
+            const totals = { osong: 0, terminal: 0, airport: 0 };
+            const details = { osong: [], terminal: [], airport: [] };
 
-// [연동 보정] 교육생 수송 데이터 실시간 로드
-function initStudentTransport() {
-    firebase.database().ref('courses').on('value', snap => {
-        const data = snap.val() || {};
-        const totals = { osong: 0, terminal: 0, airport: 0 };
-        const details = { osong: [], terminal: [], airport: [] };
-
-        Object.keys(data).forEach(rid => {
-            const room = data[rid];
-            // 현재 기사가 선택한 방향(currentStudentDir: out/in)의 데이터만 추출
-            const shuttle = (room.shuttle && room.shuttle[currentStudentDir]) ? room.shuttle[currentStudentDir] : null;
-            
-            if(shuttle) {
-                ['osong', 'terminal', 'airport'].forEach(loc => {
-                    if(shuttle[loc]) {
-                        const names = Object.values(shuttle[loc]);
-                        totals[loc] += names.length;
-                        if(names.length > 0) details[loc].push({ rid, count: names.length, names });
+            Object.keys(data).forEach(rid => {
+                const room = data[rid];
+                // 입소/퇴소 구분 없이 현재 모든 셔틀 데이터 합산 표시
+                ['out', 'in'].forEach(dir => {
+                    const shuttle = room.shuttle ? room.shuttle[dir] : null;
+                    if(shuttle) {
+                        ['osong', 'terminal', 'airport'].forEach(loc => {
+                            if(shuttle[loc]) {
+                                const names = Object.values(shuttle[loc]);
+                                totals[loc] += names.length;
+                                if(names.length > 0) details[loc].push({ rid: rid + (dir==='out'?'(퇴)':'(입)'), count: names.length, names });
+                            }
+                        });
                     }
                 });
-            }
-        });
+            });
 
-        // 합계 업데이트
-        document.getElementById('total-all').innerHTML = `${totals.osong + totals.terminal + totals.airport}<span>명</span>`;
-        
-        const container = document.getElementById('student-list-container');
-        container.innerHTML = "";
-        
-        const locInfo = [
-            { id: 'osong', name: '오송역 6번출구', icon: 'fa-train' },
-            { id: 'terminal', name: '청주 시외터미널', icon: 'fa-bus' },
-            { id: 'airport', name: '청주 국제공항', icon: 'fa-plane-up' }
-        ];
+            document.getElementById('total-all').innerHTML = `${totals.osong + totals.terminal + totals.airport}<span>명</span>`;
+            const container = document.getElementById('student-list-container'); container.innerHTML = "";
+            const locInfo = [{id:'osong', name:'오송역 6번출구', icon:'fa-train'}, {id:'terminal', name:'청주 시외터미널', icon:'fa-bus'}, {id:'airport', name:'청주 국제공항', icon:'fa-plane-up'}];
 
-        locInfo.forEach(loc => {
-            const card = document.createElement('div');
-            card.className = `dest-card ${loc.id.substring(0,3)}`;
-            card.innerHTML = `
-                <div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
-                    <div class="dest-info">
-                        <div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>
-                        ${loc.name}
-                    </div>
-                    <div class="val-box">${totals[loc.id]}명 ></div>
-                </div>
-            `;
-            container.appendChild(card);
+            locInfo.forEach(loc => {
+                const card = document.createElement('div'); card.className = `dest-card ${loc.id.substring(0,3)}`;
+                card.innerHTML = `<div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
+                    <div class="dest-info"><div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>${loc.name}</div>
+                    <div class="val-box">${totals[loc.id]}<span>명 ></span></div></div>`;
+                container.appendChild(card);
+            });
         });
-    });
-}
+    }
 
     function showStudentDetail(title, data) {
         if(data.length === 0) return;
         const modal = document.getElementById('listModal');
         const content = document.getElementById('listModalContent');
-        document.getElementById('listModalTitle').innerText = title + " 탑승객";
-        content.innerHTML = data.map(item => `
-            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <div style="font-weight:900; color:var(--speed-blue);">ROOM ${item.rid}</div>
-                <div style="font-weight:700;">${item.names.join(', ')}</div>
-            </div>
-        `).join('');
+        document.getElementById('listModalTitle').innerText = title;
+        content.innerHTML = data.map(item => `<div style="margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px;">
+            <div style="font-weight:900; color:var(--speed-blue);">ROOM ${item.rid}</div><div>${item.names.join(', ')}</div></div>`).join('');
         modal.style.display = 'flex';
     }
 
     function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
 
     function renderWeeklySchedule() {
-        const monday = getMonday(currentBaseDate);
-        const days = [];
-        for(let i=0; i<7; i++) {
-            const d = new Date(monday); d.setDate(monday.getDate() + i); days.push(d);
-        }
+        const sunday = new Date(currentBaseDate); sunday.setDate(currentBaseDate.getDate() - currentBaseDate.getDay());
+        const days = []; for(let i=0; i<6; i++) { const d = new Date(sunday); d.setDate(sunday.getDate() + i); days.push(d); }
 
         const headerRow = document.getElementById('table-header-days');
-        headerRow.innerHTML = '<th class="time-col">시간</th>';
-        const dayNames = ['월','화','수','목','금','토','일'];
-        days.forEach((d, i) => {
-            headerRow.innerHTML += `<th>${d.getMonth()+1}/${d.getDate()}<br>(${dayNames[i]})</th>`;
-        });
+        headerRow.innerHTML = '<th class="time-col">TIME</th>';
+        const dayNames = ['일','월','화','수','목','금'];
+        days.forEach((d, i) => { headerRow.innerHTML += `<th>${d.getMonth()+1}/${d.getDate()}<br>${dayNames[i]}</th>`; });
 
-        const body = document.getElementById('schedule-body');
-        body.innerHTML = "";
-        for(let h=8; h<=18; h++) {
+        const body = document.getElementById('schedule-body'); body.innerHTML = "";
+        const hours = [8,9,10,11,12,13,14,15,16,17,18];
+        hours.forEach(h => {
             const row = document.createElement('tr');
             row.innerHTML = `<td class="time-col">${h}:00</td>`;
             days.forEach(d => {
-                const dateKey = getTodayString(d);
-                const td = document.createElement('td');
-                if(h === 12) {
-                    td.innerHTML = '<div class="job-box job-off">점심시간</div>';
-                } else {
+                const dateKey = getTodayString(d); const td = document.createElement('td');
+                if(h === 12) { td.innerHTML = '<div class="job-off">LUNCH</div>'; }
+                else {
                     td.onclick = () => toggleDriverOff(dateKey, h);
-                    if(driverOffSlots[dateKey] && driverOffSlots[dateKey][h]) {
-                        td.innerHTML = `<div class="job-box job-off">${driverOffSlots[dateKey][h]}</div>`;
-                    }
+                    if(driverOffSlots[dateKey] && driverOffSlots[dateKey][h]) { td.innerHTML = `<div class="job-off">${driverOffSlots[dateKey][h]}</div>`; }
                     const dayReqs = Object.values(transportRequests).filter(r => r.date === dateKey && parseInt(r.time.split(':')[0]) === h);
                     dayReqs.forEach(req => {
                         const isTo = req.dir.includes('목적지→');
@@ -314,52 +219,24 @@ function initStudentTransport() {
                 row.appendChild(td);
             });
             body.appendChild(row);
-        }
+        });
     }
 
-    function getMonday(d) {
-        d = new Date(d); const day = d.getDay();
-        const diff = d.getDate() - day + (day == 0 ? -6 : 1); 
-        return new Date(d.setDate(diff));
-    }
-
-    function changeWeek(days) {
-        currentBaseDate.setDate(currentBaseDate.getDate() + days);
-        renderWeeklySchedule();
-    }
+    function changeWeek(days) { currentBaseDate.setDate(currentBaseDate.getDate() + days); renderWeeklySchedule(); }
 
     function toggleDriverOff(date, hour) {
         const current = (driverOffSlots[date] && driverOffSlots[date][hour]) ? driverOffSlots[date][hour] : null;
-        if(current) {
-            if(confirm("운행불가 설정을 해제할까요?")) firebase.database().ref(`system/driver_status/${date}/${hour}`).remove();
-        } else {
-            const reason = prompt("사유를 입력하세요 (예: 개인용무, 검진)");
-            if(reason) firebase.database().ref(`system/driver_status/${date}/${hour}`).set(reason);
-        }
+        if(current) { if(confirm("해제할까요?")) firebase.database().ref(`system/driver_status/${date}/${hour}`).remove(); }
+        else { const reason = prompt("사유(검진, 정비 등)"); if(reason) firebase.database().ref(`system/driver_status/${date}/${hour}`).set(reason); }
     }
 
-    function startDataMonitor() {
-        firebase.database().ref('system/transport_requests').on('value', s => {
-            transportRequests = s.val() || {};
-            if(document.getElementById('view-teacher').style.display === 'block') renderWeeklySchedule();
-        });
-        firebase.database().ref('system/driver_status').on('value', s => {
-            driverOffSlots = s.val() || {};
-            if(document.getElementById('view-teacher').style.display === 'block') renderWeeklySchedule();
-        });
-    }
-
-    function getTodayString(d = new Date()) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    function runClock() {
-        const now = new Date();
-        document.getElementById('footer-time').innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    }
-    setInterval(runClock, 1000); runClock();
+    function getTodayString(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    function runClock() { const now = new Date(); document.getElementById('footer-time').innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`; }
+    
     initStudentTransport();
-    startDataMonitor();
+    firebase.database().ref('system/transport_requests').on('value', s => { transportRequests = s.val() || {}; if(document.getElementById('view-teacher').style.display === 'flex') renderWeeklySchedule(); });
+    firebase.database().ref('system/driver_status').on('value', s => { driverOffSlots = s.val() || {}; if(document.getElementById('view-teacher').style.display === 'flex') renderWeeklySchedule(); });
+    setInterval(runClock, 1000); runClock();
   </script>
 </body>
 </html>
