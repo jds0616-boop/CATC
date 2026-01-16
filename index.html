@@ -1474,46 +1474,51 @@ async function openAttendanceQR() {
 
 
 
-// [수정] 모바일 키보드 가림 방지 로직 (VisualViewport API 활용)
+// [최종 최적화] 아이폰/안드로이드 키보드 가림 완벽 방지 로직
 function initKeyboardFix() {
+    const inputDock = document.getElementById('inputDock');
+    const scrollContainer = document.getElementById('scrollContainer');
+    const qInput = document.getElementById('qInput');
+
+    // 1. VisualViewport 지원 브라우저 (최신 아이폰/안드로이드)
     if (window.visualViewport) {
-        const inputDock = document.getElementById('inputDock');
-        const scrollContainer = document.getElementById('scrollContainer');
-
-        const adjustLayout = () => {
-            // 현재 화면에서 키보드를 제외하고 실제로 보이는 영역의 높이 계산
-            const viewportHeight = window.visualViewport.height;
-            const windowHeight = window.innerHeight;
-            const offset = windowHeight - viewportHeight;
-
-            if (offset > 0) {
-                // 키보드가 올라온 경우: 입력창을 키보드 높이만큼 정확히 올림
+        window.visualViewport.addEventListener('resize', () => {
+            const offset = window.innerHeight - window.visualViewport.height;
+            if (offset > 50) { // 키보드가 올라왔다고 판단되는 높이
                 inputDock.style.bottom = offset + 'px';
+                // 채팅 목록 하단에 여백을 줘서 마지막 메시지가 키보드 위로 보이게 함
+                scrollContainer.style.paddingBottom = (offset + 150) + 'px';
                 
-                // 입력창이 올라올 때 채팅 목록도 같이 위로 밀어줌 (입력 중인 내용 가리지 않게)
+                // 글 쓰는 칸이 바로 보이도록 스크롤 아래로 고정
                 setTimeout(() => {
+                    window.scrollTo(0, 0);
                     scrollContainer.scrollTop = scrollContainer.scrollHeight;
                 }, 100);
             } else {
-                // 키보드가 내려간 경우: 원래 위치로 복구
                 inputDock.style.bottom = '0px';
+                scrollContainer.style.paddingBottom = '150px';
             }
-        };
-
-        // 키보드 상태 변화 감지 (리사이즈, 스크롤 모두 대응)
-        window.visualViewport.addEventListener('resize', adjustLayout);
-        window.visualViewport.addEventListener('scroll', adjustLayout);
+        });
     }
-    
-    // 입력창 클릭 시 자동으로 맨 아래로 스크롤
-    document.getElementById('qInput').addEventListener('focus', () => {
+
+    // 2. 입력창 클릭 시 강제 화면 보정 (아이폰 사파리 전용)
+    qInput.addEventListener('focus', () => {
+        // 키보드가 올라오는 시간을 고려해 약간의 지연 후 실행
         setTimeout(() => {
-            const scrollContainer = document.getElementById('scrollContainer');
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            // 입력창이 화면 중앙에 오도록 강제 스크롤
+            qInput.scrollIntoView({ block: "center", behavior: "smooth" });
+            
+            // 전체 윈도우 스크롤이 튀는 현상 방지
+            window.scrollTo(0, 0);
         }, 300);
     });
-}
 
+    qInput.addEventListener('blur', () => {
+        inputDock.style.bottom = '0px';
+        scrollContainer.style.paddingBottom = '150px';
+        window.scrollTo(0, 0);
+    });
+}
 
 
 
