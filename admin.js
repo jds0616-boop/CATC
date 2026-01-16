@@ -962,70 +962,61 @@ const ui = {
 
 
 
-// [6.12차 수정] 대시보드 메인 화면 피드 실시간 연동 (3종 공지 분리 반영)
-    loadDashboardStats: function() {
-        if(!state.room) return;
-        const today = getTodayString();
+// [수정] 메인 대시보드 통계 연동 (퇴교 수송 인원만 카운트)
+loadDashboardStats: function() {
+    if(!state.room) return;
+    const today = getTodayString();
 
-        // 1. 상단 날짜 및 기본 정보 표시
-        const dateDisplay = document.getElementById('dashTodayDateDisplay');
-        if(dateDisplay) dateDisplay.innerText = today;
+    const dateDisplay = document.getElementById('dashTodayDateDisplay');
+    if(dateDisplay) dateDisplay.innerText = today;
 
-        // 2. 과정 설정 정보 (과정명, 기간, 장소) 연동
-        firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
-            const s = snap.val() || {};
-            const titleEl = document.getElementById('dashCourseTitle');
-            if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
-            if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
-            if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
-        });
+    firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
+        const s = snap.val() || {};
+        const titleEl = document.getElementById('dashCourseTitle');
+        if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
+        if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
+        if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
+    });
 
-        // 3. 3종 공지사항 허브 실시간 동기화
-        
-        // (A) 강사 작성 공지 (담임 피드)
-        firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
-            const el = document.getElementById('dashNoticeInst');
-            if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
-        });
+    firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
+        const el = document.getElementById('dashNoticeInst');
+        if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
+    });
 
-        // (B) 코디네이터 작성 과정 공지 (운영 피드) - [경로 수정됨]
-        firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
-            const el = document.getElementById('dashNoticeAdmin');
-            if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
-        });
+    firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
+        const el = document.getElementById('dashNoticeAdmin');
+        if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
+    });
 
-        // (C) 센터 전체 공지 (센터 피드)
-        firebase.database().ref(`system/globalNotice`).on('value', s => {
-            const el = document.getElementById('dashNoticeGlobal');
-            if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
-        });
+    firebase.database().ref(`system/globalNotice`).on('value', s => {
+        const el = document.getElementById('dashNoticeGlobal');
+        if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
+    });
 
-        // 4. 담당 교수 정보 연동
-        firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
-            const st = snap.val() || {};
-            const profOnlyEl = document.getElementById('dashProfNameOnly');
-            if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
-        });
+    firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
+        const st = snap.val() || {};
+        const profOnlyEl = document.getElementById('dashProfNameOnly');
+        if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
+    });
 
-        // 5. 실시간 수강생 및 외출 신청 통계
-        firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-            const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-            if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count;
-        });
-        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
-            const count = Object.keys(s.val() || {}).length;
-            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
-        });
+    firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
+        const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
+        if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count;
+    });
 
-        // 6. 셔틀 탑승 수요 통계
-        firebase.database().ref(`courses/${state.room}/shuttle`).on('value', s => {
-            const d = s.val() || {};
-            if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-            if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-            if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
-        });
-    },
+    firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
+        const count = Object.keys(s.val() || {}).length;
+        if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
+    });
 
+    // [이 부분 수정] shuttle/out 경로의 인원을 가져와 대시보드 숫자를 업데이트합니다.
+    firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
+        const d = s.val() || {};
+        if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
+        if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+        if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
+    });
+},
 
 
 
@@ -1441,67 +1432,64 @@ setMode: function(mode) {
         }
     },
 
-// [리포트 반영] 차량 수요조사: 동일 이름 신청자 중복 제거 로직
-    loadShuttleData: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/shuttle`).on('value', snap => {
-            const data = snap.val() || {};
-            const container = document.getElementById('shuttleCardContainer');
-            if(!container) return;
 
-            const locations = [
-                { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-                { id: 'terminal', name: '청주터미널', icon: 'fa-bus-simple' }, 
-                { id: 'airport', name: '청주공항', icon: 'fa-plane' },
-                { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
-            ];
+
+
+// [수정] 차량 수요조사 상세 페이지: 항기원 퇴교(out) 명단만 로드
+loadShuttleData: function() {
+    if(!state.room) return;
+    // 경로 끝에 /out 을 붙여서 퇴교 신청자만 가져옵니다.
+    firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
+        const data = snap.val() || {};
+        const container = document.getElementById('shuttleCardContainer');
+        if(!container) return;
+
+        const locations = [
+            { id: 'osong', name: '오송역', icon: 'fa-train' }, 
+            { id: 'terminal', name: '청주터미널', icon: 'fa-bus-simple' }, 
+            { id: 'airport', name: '청주공항', icon: 'fa-plane' },
+            { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
+        ];
+        
+        container.innerHTML = "";
+        locations.forEach(loc => {
+            const locData = data[loc.id] || {};
+            const finalMembers = Object.entries(locData); 
+            const count = finalMembers.length;
             
-            container.innerHTML = "";
-            locations.forEach(loc => {
-                const locData = data[loc.id] || {};
-                const entries = Object.entries(locData); 
-                
-                // --- [중복 제거 로직] ---
-                const uniqueMembers = {};
-                entries.forEach(([token, fullName]) => {
-                    uniqueMembers[fullName] = token; 
-                });
-                const finalMembers = Object.entries(uniqueMembers);
-                const count = finalMembers.length;
-                
-                let membersHtml = "";
-                if (count > 0) {
-                    membersHtml = `<div class="member-tag-container">`;
-                    membersHtml += finalMembers.map(([name, token]) => `
-                        <div class="member-tag">
-                            ${name}
-                            <i class="fa-solid fa-xmark btn-del-shuttle" 
-                               onclick="ui.cancelIndividualShuttle('${loc.id}', '${token}', '${name}')" 
-                               title="취소"></i>
-                        </div>
-                    `).join('');
-                    membersHtml += `</div>`;
-                } else {
-                    membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
-                }
-                
-                container.innerHTML += `
-                    <div class="shuttle-dest-card card-${loc.id}">
-                        <div class="dest-header">
-                            <div class="dest-name-group">
-                                <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
-                                <div class="dest-title">${loc.name}</div>
-                            </div>
-                            <div class="dest-count-badge">${count}명</div>
-                        </div>
-                        <div class="dest-body">
-                            ${membersHtml}
-                        </div>
+            let membersHtml = "";
+            if (count > 0) {
+                membersHtml = `<div class="member-tag-container">`;
+                membersHtml += finalMembers.map(([token, name]) => `
+                    <div class="member-tag">
+                        ${name}
+                        <i class="fa-solid fa-xmark btn-del-shuttle" 
+                           onclick="ui.cancelIndividualShuttle('${loc.id}', '${token}', '${name}')" 
+                           title="취소"></i>
                     </div>
-                `;
-            });
+                `).join('');
+                membersHtml += `</div>`;
+            } else {
+                membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
+            }
+            
+            container.innerHTML += `
+                <div class="shuttle-dest-card card-${loc.id}">
+                    <div class="dest-header">
+                        <div class="dest-name-group">
+                            <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
+                            <div class="dest-title">${loc.name}</div>
+                        </div>
+                        <div class="dest-count-badge">${count}명</div>
+                    </div>
+                    <div class="dest-body">
+                        ${membersHtml}
+                    </div>
+                </div>
+            `;
         });
-    },
+    });
+},
 
 
     filterQa: function(f, event) { 
@@ -1809,15 +1797,16 @@ loadDinnerSkipData: function() {
     },
 
 
-// [신규] 특정 학생의 차량 신청을 관리자가 취소(삭제)
-    cancelIndividualShuttle: function(locId, token, name) {
-        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
-        
-        firebase.database().ref(`courses/${state.room}/shuttle/${locId}/${token}`).remove()
-            .then(() => {
-                ui.showAlert("✅ 차량 신청이 취소되었습니다.");
-            });
-    },
+// [수정] 강사가 차량 신청을 취소할 때 퇴교(out) 폴더에서 삭제하도록 수정
+cancelIndividualShuttle: function(locId, token, name) {
+    if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
+    
+    // 경로에 shuttle/out 추가
+    firebase.database().ref(`courses/${state.room}/shuttle/out/${locId}/${token}`).remove()
+        .then(() => {
+            ui.showAlert("✅ 차량 신청이 취소되었습니다.");
+        });
+},
 
 
 
