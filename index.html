@@ -703,9 +703,22 @@ function setupListeners() {
                 }
             });
 
-            // 6. 퀴즈 세부 진행 감시
+// 6. 퀴즈 세부 진행 감시 (리셋 로직 및 연동 보완)
             dbRef.quiz.on('value', s => {
                 const q = s.val(); if(!q) return;
+
+                // [핵심 수정] 문제 ID가 바뀌면 (즉, 진짜 새 문제가 나오면) 무조건 모든 상태 초기화
+                if (currentQuizId !== q.id) {
+                    currentQuizId = q.id;
+                    myLastChoiceIdx = null;
+                    myLastChoice = null;
+                    canAnswer = false;
+                    // 이전 문제의 모든 선택/잠금 효과 제거
+                    document.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                        b.classList.remove('selected', 'locked');
+                    });
+                }
+
                 if(studentTimerInterval) clearInterval(studentTimerInterval);
                 const sTimerBox = document.getElementById('studentQuizTimerBox');
                 const sTimerText = document.getElementById('studentTimer');
@@ -713,7 +726,6 @@ function setupListeners() {
 
                 dbRef.status.once('value', statusSnap => {
                     const st = statusSnap.val() || {};
-                    if (q.status === 'ready') { myLastChoiceIdx = null; myLastChoice = null; }
                     if (st.quizStep === 'summary' && !hasClosedSummary) return; 
                     if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
 
@@ -721,6 +733,7 @@ function setupListeners() {
                     const msgBox = document.getElementById('quizStatusMsg');
                     const feedBox = document.getElementById('quizFeedback');
 
+                    // [상태: 일시정지]
                     if(q.status === 'pause') {
                         canAnswer = false; 
                         msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
@@ -728,35 +741,45 @@ function setupListeners() {
                             sTimerBox.style.display = 'flex';
                             sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
                         }
+                        // 버튼 잠금 유지
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
                         return; 
                     }
 
+                    // [상태: 결과 발표]
                     if (q.status === 'result') { 
                         document.getElementById('btnGroupMultiple').style.display = 'none';
                         document.getElementById('btnGroupOX').style.display = 'none';
+                        const correctAns = q.correct;
                         if (q.isSurvey) {
                             msgBox.innerText = "📋 설문 결과 요약";
                             feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계 완료"}</span>`;
                         } else {
-                            if (myLastChoiceIdx === q.correct) {
+                            if (myLastChoiceIdx === correctAns) {
                                  msgBox.innerText = "🎉 정답입니다!"; feedBox.innerHTML = `훌륭합니다!`;
                             } else {
                                  msgBox.innerText = "앗, 틀렸습니다...";
-                                 const ansText = q.isOX ? (q.correct===1?'O':'X') : `${q.correct}번`;
+                                 const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
                                  feedBox.innerHTML = `정답은 [ ${ansText} ] 입니다.`;
                             }
                         }
                         return; 
                     }
 
+                    // [상태: 대기 중]
                     if(q.status === 'ready') {
-                        canAnswer = false; msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
+                        canAnswer = false; 
+                        msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
                         document.getElementById('btnGroupMultiple').style.display = 'none';
                         document.getElementById('btnGroupOX').style.display = 'none';
-                        feedBox.innerText = ""; currentQuizId = q.id;
+                        feedBox.innerText = "";
                     } 
+                    // [상태: 진행 중]
                     else if(q.status === 'open') {
-                        canAnswer = true; msgBox.innerText = "정답을 선택하세요!";
+                        canAnswer = true; 
+                        msgBox.innerText = "정답을 선택하세요!";
+                        
+                        // 타이머 작동
                         if(q.endTime && sTimerBox) {
                             sTimerBox.style.display = 'flex';
                             studentTimerInterval = setInterval(() => {
@@ -766,9 +789,16 @@ function setupListeners() {
                                 if(remain <= 0) clearInterval(studentTimerInterval);
                             }, 200);
                         }
+
                         if(q.isOX) {
                             document.getElementById('btnGroupMultiple').style.display = 'none';
-                            document.getElementById('btnGroupOX').style.display = 'flex';
+                            const oxArea = document.getElementById('btnGroupOX');
+                            oxArea.style.display = 'flex';
+                            // 버튼 리셋 후 내 선택 강조
+                            document.querySelectorAll('.ox-btn').forEach((btn, i) => {
+                                btn.classList.remove('locked', 'selected');
+                                if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
+                            });
                         } else {
                             document.getElementById('btnGroupOX').style.display = 'none';
                             const multArea = document.getElementById('btnGroupMultiple');
@@ -776,11 +806,13 @@ function setupListeners() {
                             q.options.forEach((opt, i) => {
                                 const btn = document.createElement('button');
                                 btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
-                                btn.innerText = `${i+1}. ${opt}`; btn.onclick = () => sendAns(i+1);
+                                btn.innerText = `${i+1}. ${opt}`; 
+                                btn.onclick = () => sendAns(i+1);
                                 multArea.appendChild(btn);
                             });
                         }
                     }
+                    // [상태: 시간 종료/마감]
                     else if(q.status === 'close') {
                         canAnswer = false;
                         document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
