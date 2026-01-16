@@ -346,7 +346,6 @@
                         <div class="card-value color-coral"><b id="dashActionCount">0</b><small>명</small></div>
                     </div>
                 </div>
-                <div class="card-status-bar">REAL-TIME ACTIVITY</div>
             </div>
 
             <!-- (2) 공지사항 허브 -->
@@ -359,7 +358,6 @@
                     <div class="notice-item admin"><span class="n-tag">운영</span><p id="dashNoticeAdmin">등록된 운영부 공지가 없습니다.</p></div>
                     <div class="notice-item global"><span class="n-tag">센터</span><p id="dashNoticeGlobal">내용 로딩 중...</p></div>
                 </div>
-                <div class="card-status-bar">NOTICE UPDATES</div>
             </div>
 
             <!-- (3) 셔틀 탑승 수요 -->
@@ -372,7 +370,6 @@
                     <div class="sb-divider"></div>
                     <div class="sb-item"><span class="sb-val" id="s-air-cnt">0</span><span class="sb-txt">청주공항</span></div>
                 </div>
-                <div class="card-status-bar">TRANSPORTATION</div>
             </div>
 
         </div> <!-- dash-premium-grid 끝 -->
@@ -417,25 +414,22 @@
 
 <!-- [오른쪽] 운영부 전용: 교육운영부 / 항기원 전체 공지 (좌측과 크기 100% 일치) -->
         <div class="notice-card-half" style="flex: 1;">
-            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #cbd5e1; background: #ffffff !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); border-radius: 25px;">
-                
-                <!-- [수정] 좌측 헤더와 소수점 단위까지 똑같은 여백(22px)과 텍스트 설정을 적용 -->
-                <div style="background: linear-gradient(135deg, #475569 0%, #1e293b 100%); padding: 22px; color: white;">
-                    <h3 style="margin:0; font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+            <div class="modern-white-card" style="margin:0; padding: 0; overflow: hidden; border: 1px solid #cbd5e1; background: #ffffff !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); border-radius: 25px;">
+                <!-- 헤더: 높이 최적화 -->
+                <div style="background: #1e293b; padding: 18px 22px; color: white;">
+                    <h3 style="margin:0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i> 교육운영부 / 항기원 전체 공지
                     </h3>
-                    <p style="font-size: 12px; opacity: 0.8; margin: 6px 0 0 0;">운영자 포털에서 게시한 전체 공지 내용입니다.</p>
                 </div>
                 
-                <!-- 공지 내용 표시 영역 -->
-                <div style="padding: 20px;">
-                    <div id="globalNoticeDisplay" class="global-notice-viewer" 
-                         style="background: #ffffff; padding: 5px; font-size: 15px; line-height: 1.8; color: #334155; height: 350px; overflow-y: auto; box-sizing: border-box;">
+                <!-- 내용 영역: 고정 높이 제거 (내용물에 따라 상자 크기 자동 조절) -->
+                <div style="padding: 20px; max-height: 450px; overflow-y: auto;">
+                    <div id="globalNoticeDisplay" style="font-size: 14px; line-height: 1.6; color: #334155;">
                         정보를 불러오는 중...
                     </div>
                     
                     <!-- 하단 상태 바 -->
-                    <div style="margin-top: 15px; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                    <div style="margin-top: 15px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px;">
                         <i class="fa-solid fa-sync fa-spin" style="margin-right:5px; color:#3b82f6;"></i> 실시간 정보 업데이트 중
                     </div>
                 </div>
