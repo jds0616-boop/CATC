@@ -8,61 +8,68 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-  <style>
+<style>
     :root {
-      --carbon-black: #0f172a; --speed-blue: #2563eb; --road-grey: #f8fafc;
-      --osong: #3b82f6; --term: #f59e0b; --air: #10b981;
+      /* 시원한 딥 블루 & 레이싱 스타일 컬러 */
+      --deep-navy: #0f172a;
+      --speed-blue: #1d4ed8; /* 더 진하고 시원한 블루 */
+      --racing-blue: #3b82f6;
+      --road-grey: #f8fafc;
+      --osong: #2563eb;
+      --term: #0ea5e9;
+      --air: #10b981;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
-      background: #cfd8e3; display: flex; justify-content: center; color: #1e293b;
-      height: 100dvh; overflow: hidden; /* 전체 스크롤 차단 */
+      background: #cbd5e1; display: flex; justify-content: center; color: #1e293b;
+      height: 100dvh; overflow: hidden;
     }
     .app-container { width: 100%; max-width: 600px; height: 100%; background: var(--road-grey); display: flex; flex-direction: column; }
     
-    /* 상단바 */
-    .app-header { height: 50px; background: var(--carbon-black); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 2px solid var(--speed-blue); }
-    .header-title { color: #fff; font-size: 16px; font-weight: 900; font-style: italic; }
+    .app-header { height: 50px; background: var(--deep-navy); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 3px solid var(--speed-blue); }
+    .header-title { color: #fff; font-size: 17px; font-weight: 900; font-style: italic; letter-spacing: -1px; }
 
-    /* 인덱스 탭 */
-    .tab-container { padding: 8px 12px; background: var(--carbon-black); }
-    .tab-bar { display: flex; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; }
-    .tab-btn { flex: 1; border: none; background: none; color: #94a3b8; font-weight: 800; font-size: 14px; padding: 10px 0; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-    .tab-btn.active { color: #fff; background: var(--speed-blue); }
+    .tab-container { padding: 8px 12px; background: var(--deep-navy); }
+    .tab-bar { display: flex; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 4px; }
+    .tab-btn { flex: 1; border: none; background: none; color: #94a3b8; font-weight: 800; font-size: 14px; padding: 10px 0; border-radius: 8px; cursor: pointer; transition: 0.3s; font-style: italic; }
+    .tab-btn.active { color: #fff; background: var(--speed-blue); box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4); }
 
-    .app-content { flex: 1; display: flex; flex-direction: column; padding: 12px; overflow: hidden; }
+    .app-content { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow: hidden; }
 
-    /* 교육생 수송 */
-    .main-summary { background: var(--carbon-black); border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 15px; border-left: 6px solid var(--speed-blue); }
-    .summary-label { font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; }
-    .summary-count { font-size: 50px; font-weight: 900; color: #fff; line-height: 1; }
-    .summary-count span { font-size: 18px; color: var(--speed-blue); margin-left: 3px; }
+    .main-summary { background: var(--deep-navy); border-radius: 15px; padding: 20px; text-align: center; margin-bottom: 20px; border-left: 8px solid var(--speed-blue); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .summary-label { font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; letter-spacing: 1px; }
+    .summary-count { font-size: 55px; font-weight: 900; color: #fff; line-height: 1; }
+    .summary-count span { font-size: 20px; color: var(--racing-blue); margin-left: 5px; }
 
-    .dest-card { background: #fff; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; cursor: pointer; }
-    .dest-info { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 16px; }
-    .dest-icon { width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
-    .osong .dest-icon { background: var(--osong); } .term .dest-icon { background: var(--term); } .air .dest-icon { background: var(--air); }
-    .val-box { font-size: 18px; font-weight: 900; color: var(--carbon-black); }
-
-    /* 강사 일정표 (한 화면 고정형) */
-    .week-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .nav-btn { background: var(--carbon-black); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; }
+    .dest-card { background: #fff; border-radius: 15px; margin-bottom: 12px; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; cursor: pointer; transition: 0.2s; }
+    .dest-card:active { transform: scale(0.97); background: #f1f5f9; }
+    .dest-info { display: flex; align-items: center; gap: 15px; font-weight: 900; font-size: 18px; color: var(--deep-navy); }
+    .dest-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
-    .schedule-table-wrapper { flex: 1; background: white; border-radius: 10px; border: 1px solid #000; overflow: hidden; display: flex; flex-direction: column; }
+    .osong .dest-icon { background: var(--osong); }
+    .term .dest-icon { background: var(--term); }
+    .air .dest-icon { background: var(--air); }
+
+    .val-box { font-size: 22px; font-weight: 900; color: var(--deep-navy); }
+    .val-box span { font-size: 14px; color: #94a3b8; margin-left: 5px; }
+
+    .week-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .nav-btn { background: var(--deep-navy); color: #fff; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 800; font-size: 12px; flex: 1; }
+    
+    .schedule-table-wrapper { flex: 1; background: white; border-radius: 12px; border: 2px solid var(--deep-navy); overflow: hidden; display: flex; flex-direction: column; }
     .schedule-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
     .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 2px; text-align: center; font-size: 10px; vertical-align: top; }
-    .schedule-table th { background: var(--carbon-black); color: #fff; font-weight: 800; height: 35px; }
-    .time-col { width: 45px; background: #f1f5f9 !important; font-weight: 900; vertical-align: middle !important; border-right: 1px solid #000 !important; }
+    .schedule-table th { background: var(--deep-navy); color: #fff; font-weight: 900; height: 35px; }
+    .time-col { width: 45px; background: #f8fafc !important; font-weight: 900; color: var(--deep-navy); vertical-align: middle !important; border-right: 2px solid var(--deep-navy) !important; }
     
-    .job-box { font-size: 9px; border-radius: 3px; padding: 2px; margin-bottom: 2px; font-weight: 800; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .job-to { background: #dbeafe; color: #1e40af; border-left: 2px solid var(--speed-blue); } 
-    .job-from { background: #ffedd5; color: #9a3412; border-left: 2px solid var(--term); } 
+    .job-box { font-size: 9px; border-radius: 4px; padding: 3px; margin-bottom: 2px; font-weight: 800; text-align: left; border-left: 3px solid transparent; }
+    .job-to { background: #e0f2fe; color: #0369a1; border-left-color: var(--speed-blue); } 
+    .job-from { background: #ffedd5; color: #9a3412; border-left-color: var(--term); } 
     .job-off { background: #f1f5f9; color: #94a3b8; height: 100%; display: flex; align-items: center; justify-content: center; font-style: italic; }
 
-    /* 하단바 */
-    .app-footer { height: 40px; background: var(--carbon-black); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 11px; font-weight: 800; }
-    .footer-logo img { height: 14px; filter: brightness(0) invert(1); }
+    .app-footer { height: 45px; background: var(--deep-navy); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 13px; font-weight: 800; }
+    .footer-logo img { height: 16px; filter: brightness(0) invert(1); }
   </style>
 </head>
 <body>
@@ -141,7 +148,7 @@
         if(num === 2) renderWeeklySchedule();
     }
 
-    function initStudentTransport() {
+function initStudentTransport() {
         firebase.database().ref('courses').on('value', snap => {
             const data = snap.val() || {};
             const totals = { osong: 0, terminal: 0, airport: 0 };
@@ -149,7 +156,6 @@
 
             Object.keys(data).forEach(rid => {
                 const room = data[rid];
-                // 입소/퇴소 구분 없이 현재 모든 셔틀 데이터 합산 표시
                 ['out', 'in'].forEach(dir => {
                     const shuttle = room.shuttle ? room.shuttle[dir] : null;
                     if(shuttle) {
@@ -165,14 +171,27 @@
             });
 
             document.getElementById('total-all').innerHTML = `${totals.osong + totals.terminal + totals.airport}<span>명</span>`;
-            const container = document.getElementById('student-list-container'); container.innerHTML = "";
-            const locInfo = [{id:'osong', name:'오송역 6번출구', icon:'fa-train'}, {id:'terminal', name:'청주 시외터미널', icon:'fa-bus'}, {id:'airport', name:'청주 국제공항', icon:'fa-plane-up'}];
+            const container = document.getElementById('student-list-container'); 
+            container.innerHTML = "";
+            
+            // [수정] 아이콘 매칭 및 명칭 최적화
+            const locInfo = [
+                {id:'osong', name:'오송역', icon:'fa-train'}, 
+                {id:'terminal', name:'청주터미널', icon:'fa-bus'}, 
+                {id:'airport', name:'청주공항', icon:'fa-plane-up'}
+            ];
 
             locInfo.forEach(loc => {
-                const card = document.createElement('div'); card.className = `dest-card ${loc.id.substring(0,3)}`;
-                card.innerHTML = `<div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
-                    <div class="dest-info"><div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>${loc.name}</div>
-                    <div class="val-box">${totals[loc.id]}<span>명 ></span></div></div>`;
+                const card = document.createElement('div'); 
+                card.className = `dest-card ${loc.id.substring(0,3)}`;
+                card.innerHTML = `
+                    <div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
+                        <div class="dest-info">
+                            <div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>
+                            ${loc.name}
+                        </div>
+                        <div class="val-box">${totals[loc.id]}<span>명 ></span></div>
+                    </div>`;
                 container.appendChild(card);
             });
         });
