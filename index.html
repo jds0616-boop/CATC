@@ -868,12 +868,13 @@ dbRef.quiz.on('value', s => {
 
 
 
-// [레이아웃 완벽 복구] 질문 목록 렌더링 함수
+// [디자인 완벽 복구] 질문 목록 렌더링 함수
         function renderList(data) {
             const list = document.getElementById('qList'); 
             list.innerHTML = ""; 
             let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
             
+            // 정렬 로직 (최신순/공감순)
             if(currentSort === 'like') {
                 items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
             } else {
@@ -900,8 +901,8 @@ dbRef.quiz.on('value', s => {
                     displayName = targetName;
                 }
 
-                // [중요] 배지를 아주 작게 만들고 텍스트 바로 앞에 밀착시킴
-                const instructorTag = `<span style="display:inline; background:#eff6ff; color:#3b82f6; font-size:11px; padding:2px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:baseline;">To.${displayName}</span>`;
+                // [신규] 작고 세련된 태그 (기존 텍스트와 자연스럽게 어울림)
+                const instructorTag = `<span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
 
                 let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
                 if(isMine && (Date.now() - myQs[item.id] < 300000)) {
@@ -909,19 +910,17 @@ dbRef.quiz.on('value', s => {
                 }
                 metaHtml += `</div>`;
 
-                // [핵심] 카드 내부 구조를 다시 정돈하여 배지와 텍스트가 한 줄로 나오게 함
+                // [복구] 기존 index.html의 정통 카드 구조를 그대로 사용
                 list.innerHTML += `
-                    <div class="q-card ${isMine}" style="display:flex; align-items:flex-start; gap:12px; padding:15px; background:#fff; border-radius:16px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                        <div class="q-avatar" style="width:35px; height:35px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="fa-solid fa-user" style="color:#94a3b8; font-size:14px;"></i></div>
-                        <div class="q-content" style="flex-grow:1; min-width:0;">
-                            <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.5; margin-bottom:5px; word-break:break-all;">
-                                ${instructorTag}${escapeHtml(item.text)}
-                            </div>
+                    <div class="q-card ${isMine}">
+                        <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
+                        <div class="q-content">
+                            <div class="q-text">${instructorTag}${escapeHtml(item.text)}</div>
                             ${metaHtml}
                         </div>
-                        <div class="q-like-area" style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')" style="font-size:18px; cursor:pointer;"><i class="fa-solid fa-thumbs-up"></i></div>
-                            <span class="like-count" style="font-size:12px; font-weight:700;">${item.likes||0}</span>
+                        <div class="q-like-area">
+                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
+                            <span class="like-count">${item.likes||0}</span>
                         </div>
                     </div>`;
             });
