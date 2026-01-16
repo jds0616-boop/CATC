@@ -804,14 +804,21 @@ const subjectMgr = {
     selectedFilter: 'all', 
     
 init: function() {
-        if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
-            const data = s.val() || {};
-            this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-            this.renderList();
-            this.renderFilters(); 
-        });
-    },
+    if(!state.room) return;
+    firebase.database().ref(`courses/${state.room}/settings/subjects`).on('value', s => {
+        const data = s.val() || {};
+        this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+        
+        // 1. 기존 사이드바/게시판 필터 업데이트
+        this.renderList();
+        this.renderFilters(); 
+        
+        // 2. [추가] 환경 설정 팝업창 내부의 리스트도 실시간으로 다시 그립니다.
+        if (typeof this.renderListInModal === 'function') {
+            this.renderListInModal();
+        }
+    });
+},
 
 // [리포트 반영] 과목 필터 바 렌더링 (공통질문 필터 추가)
     renderFilters: function() {
