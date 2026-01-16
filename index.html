@@ -262,48 +262,36 @@
     </div>
 </div>
 
-<!-- 차량 신청용 팝업 (구분감 확실한 디자인) -->
+
+----------------------------------------------------------------------------------------
+<!-- 차량 신청용 팝업 (방향 선택 기능 추가) -->
 <div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px;">
-        <h3 style="margin-bottom: 5px;">차량 탑승 신청</h3>
-        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">1단계: 목적지 선택 -> 2단계: 성함 입력</p>
+        <h3 style="margin-bottom: 5px; color:#1e293b;">차량 탑승 신청</h3>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">1.방향 선택 -> 2.목적지 선택</p>
         
-
-<!-- 기존 신청 내역 확인 및 취소 영역 -->
-<div id="shuttleCancelArea" style="display:none; background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #fda4af; margin-bottom: 20px;">
-    <p style="font-size: 14px; font-weight: 800; color: #e11d48; margin: 0 0 10px 0;">기존 신청 내역이 있습니다.</p>
-    <p id="myCurrentShuttle" style="font-size: 16px; font-weight: 900; color: #1e293b; margin-bottom: 15px;"></p>
-    <button onclick="cancelShuttleRequest()" 
-            style="width: 100%; padding: 10px; background: #e11d48; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold;">
-        신청 취소하기 (삭제)
-    </button>
-</div>
-
-
-
-        <!-- 1단계: 목적지 버튼 -->
-        <div id="shuttleButtons" style="display:flex; flex-direction:column; gap:10px; margin-bottom: 25px;">
-            <button class="quiz-opt-btn shuttle-btn" id="btn-osong" onclick="selectShuttle('osong', '오송역')" style="justify-content: center;">오송역</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-terminal" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center;">청주터미널</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-airport" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center;">청주공항</button>
-            <button class="quiz-opt-btn shuttle-btn" id="btn-car" onclick="selectShuttle('car', '자차')" style="justify-content: center;">자차 (개별 이동)</button>
+        <!-- 1단계: 방향 선택 버튼 -->
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button id="dirBtnOut" onclick="selectShuttleDirection('out')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">항기원 → 목적지</button>
+            <button id="dirBtnIn" onclick="selectShuttleDirection('in')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">목적지 → 항기원</button>
         </div>
 
-        <!-- 2단계: 이름 입력 영역 (색상으로 확실히 구분) -->
-        <div id="shuttleInputArea" style="display:none; background: #f0f7ff; padding: 20px; border-radius: 15px; border: 2px dashed #3b82f6;">
-            <label style="display:block; font-size:13px; font-weight:800; color:#3b82f6; margin-bottom:10px;">👇 탑승자 성함을 입력해 주세요</label>
-            <input type="text" id="shuttleUserName" placeholder="성함 입력" 
-                   style="width: 100%; padding: 15px; border: 2px solid #3b82f6; border-radius: 10px; font-size: 20px; font-weight: 900; text-align: center; outline: none; background: white; margin-bottom: 10px;">
-            <button onclick="submitShuttleRequest()" 
-                    style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                신청 완료하기
-            </button>
+        <!-- 2단계: 목적지 버튼 (방향을 선택하기 전까진 흐리게 보임) -->
+        <div id="shuttleButtons" style="display:flex; flex-direction:column; gap:10px; opacity:0.3; pointer-events:none;">
+            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('osong', '오송역')" style="justify-content: center;">오송역 6번출구</button>
+            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center;">청주 시외터미널</button>
+            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center;">청주 국제공항</button>
         </div>
 
-        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 20px; font-weight: 900; cursor: pointer;">나가기</button>
+        <!-- 기존 신청 내역 확인 및 취소 -->
+        <div id="shuttleCancelArea" style="display:none; margin-top:20px; background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #fda4af;">
+            <p id="myCurrentShuttle" style="font-size: 14px; font-weight: 800; color: #e11d48; margin-bottom:10px;"></p>
+            <button onclick="cancelShuttleRequest()" style="width: 100%; padding: 10px; background: #e11d48; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold;">신청 취소하기</button>
+        </div>
+
+        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 18px; font-weight: 900; cursor: pointer;">닫기</button>
     </div>
 </div>
-
 
 
 <!-- [신규] 통합 행정 신청 팝업 (외출/외박/석식 제외) -->
@@ -1038,276 +1026,111 @@ function forceCloseQuiz() {
             });
         }
 
-// --- 차량 신청 및 메뉴 관련 함수 정리 ---
 
-let tempSelectedLoc = null; // 선택한 장소를 잠시 담아두는 변수
 
-// [수정] 차량 신청 창 열기 (글로벌 방향 설정에 맞춰 신청 내역 조회)
+
+
+let tempSelectedLoc = null; 
+let tempSelectedDir = null; // 선택한 방향(out/in)을 저장할 변수
+
+// [수정] 방향 버튼 클릭 시 처리
+function selectShuttleDirection(dir) {
+    tempSelectedDir = dir;
+    const title = document.getElementById('shuttleModalTitle');
+    const hint = document.getElementById('shuttleDirectionHint');
+    
+    // 버튼 색상 변경
+    document.getElementById('dirBtnOut').style.borderColor = (dir === 'out') ? '#3b82f6' : '#e2e8f0';
+    document.getElementById('dirBtnOut').style.color = (dir === 'out') ? '#3b82f6' : '#64748b';
+    document.getElementById('dirBtnIn').style.borderColor = (dir === 'in') ? '#3b82f6' : '#e2e8f0';
+    document.getElementById('dirBtnIn').style.color = (dir === 'in') ? '#3b82f6' : '#64748b';
+    
+    // 안내 문구 변경
+    if(dir === 'out') {
+        title.innerText = "차량 신청 (항기원 → 목적지)";
+        hint.innerText = "나가는 길, 목적지를 선택하세요.";
+    } else {
+        title.innerText = "차량 신청 (목적지 → 항기원)";
+        hint.innerText = "들어오는 길, 목적지를 선택하세요.";
+    }
+
+    // 목적지 버튼 활성화
+    document.getElementById('shuttleButtons').style.opacity = "1";
+    document.getElementById('shuttleButtons').style.pointerEvents = "auto";
+}
+
+// [수정] 차량 신청 창 열기 (신청 내역 조회 포함)
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
+    // 초기화
     tempSelectedLoc = null;
+    tempSelectedDir = null;
+    document.getElementById('shuttleModalTitle').innerText = "차량 탑승 신청";
+    document.getElementById('shuttleDirectionHint').innerText = "방향을 먼저 선택해주세요.";
+    document.getElementById('shuttleButtons').style.opacity = "0.3";
+    document.getElementById('shuttleButtons').style.pointerEvents = "none";
+    document.getElementById('dirBtnOut').style.borderColor = '#e2e8f0';
+    document.getElementById('dirBtnIn').style.borderColor = '#e2e8f0';
     document.getElementById('shuttleCancelArea').style.display = 'none';
-    document.getElementById('shuttleButtons').style.display = 'flex';
-    document.getElementById('shuttleInputArea').style.display = 'none';
 
     let uToken = localStorage.getItem('uToken');
     if (!uToken) return;
 
     try {
-        // 1. 코디네이터가 설정한 현재 방향(퇴소 out / 입소 in) 가져오기
-        const dirSnap = await firebase.database().ref('system/shuttle_config/current_direction').once('value');
-        const currentDir = dirSnap.val() || 'out';
-
-        // 2. 해당 방향 폴더에서 내 신청 기록 확인
-        const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle/${currentDir}`);
-        const snap = await shuttleRef.once('value');
+        const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle`).once('value');
         const data = snap.val() || {};
         const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차' };
         
-        let foundLoc = null;
-        for (const locId in data) { 
-            if (data[locId] && data[locId][uToken]) { 
-                foundLoc = locId; 
-                break; 
-            } 
-        }
+        let foundDir = null, foundLoc = null;
+        if(data.out) { for(const loc in data.out) { if(data.out[loc][uToken]) { foundDir='out'; foundLoc=loc; } } }
+        if(data.in && !foundLoc) { for(const loc in data.in) { if(data.in[loc][uToken]) { foundDir='in'; foundLoc=loc; } } }
 
         if (foundLoc) {
             document.getElementById('shuttleButtons').style.display = 'none';
             document.getElementById('shuttleCancelArea').style.display = 'block';
-            document.getElementById('myCurrentShuttle').innerText = `📍 현재 신청: ${locNames[foundLoc]}`;
+            const dirText = (foundDir === 'out') ? '항기원→목적지' : '목적지→항기원';
+            document.getElementById('myCurrentShuttle').innerText = `📍 기신청: [${dirText}] ${locNames[foundLoc]}`;
             tempSelectedLoc = { id: foundLoc, name: locNames[foundLoc] };
+            tempSelectedDir = foundDir;
         }
     } catch (e) { console.error(e); }
 }
 
-// [수정] 차량 신청 취소 함수
-async function cancelShuttleRequest() {
-    if (!tempSelectedLoc) return;
-    if (!confirm(`정말로 ${tempSelectedLoc.name} 신청을 취소하시겠습니까?`)) return;
-
-    const uToken = localStorage.getItem('uToken');
-    
-    try {
-        const dirSnap = await firebase.database().ref('system/shuttle_config/current_direction').once('value');
-        const currentDir = dirSnap.val() || 'out';
-
-        await firebase.database().ref(`courses/${currentRoom}/shuttle/${currentDir}/${tempSelectedLoc.id}/${uToken}`).remove();
-        alert("신청이 취소되었습니다.");
-        closeShuttleModal(); 
-    } catch (error) { alert("취소 중 오류 발생"); }
-}
-
 function selectShuttle(locId, locName) {
-    const savedName = localStorage.getItem('kac_user_name');
-    const savedPhone = localStorage.getItem('kac_user_phone');
-    const msg = `${savedName}(${savedPhone})님,\n${locName}행 셔틀을 신청하시겠습니까?`;
-    
-    showKacConfirm(msg, function() {
+    if(!tempSelectedDir) return;
+    const dirText = (tempSelectedDir === 'out') ? '항기원 → 목적지' : '목적지 → 항기원';
+    showKacConfirm(`[${dirText}]\n${locName}행 셔틀을 신청하시겠습니까?`, function() {
         tempSelectedLoc = { id: locId, name: locName };
-        submitShuttleRequest(); // 아래 함수 호출
+        submitShuttleRequest();
     });
 }
 
-// [수정] 최종 신청 완료 (데이터 경로 연동 보정)
 async function submitShuttleRequest() {
-    if (!tempSelectedLoc) return;
-
     const name = localStorage.getItem('kac_user_name');
     const phone = localStorage.getItem('kac_user_phone');
-    const fullName = `${name}(${phone})`;
-
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = name + "_" + phone + "_" + Date.now().toString().slice(-4); 
-        localStorage.setItem('uToken', uToken); 
-    }
-
-    try {
-        const dirSnap = await firebase.database().ref('system/shuttle_config/current_direction').once('value');
-        const currentDir = dirSnap.val() || 'out';
-
-        const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle/${currentDir}`);
-        await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(fullName);
-
-        alert(`✅ 신청 완료!\n[${currentDir === 'out' ? '퇴소/외출' : '입소/귀원'}] 방향으로 접수되었습니다.`);
-        document.getElementById('shuttleModal').style.display = 'none';
-    } catch (error) { alert("신청 중 오류 발생"); }
-}
-
-function closeShuttleModal() {
-    document.getElementById('shuttleModal').style.display = 'none';
-}
-
-
-
-
-
-// --- [신규] 통합 행정 신청(외출/외박/석식) 로직 ---
-
-let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
-
-// 1. 팝업 열기 & 기존 신청 내역 확인
-async function openAdminAction() {
-    document.getElementById('menuModal').style.display = 'none';
-    const modal = document.getElementById('adminActionModal');
-    modal.style.display = 'flex';
-    
-    // 오늘 날짜 표시 (config.js의 함수 사용)
-    const today = getTodayString();
-    document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
-
-    // 입력폼 초기화
-    selectedAdminType = 'none';
-    updateAdminTypeButtons();
-    document.getElementById('skipDinner').checked = false;
-    document.getElementById('fullPhoneArea').style.display = 'none';
-    document.getElementById('fullPhone').value = "";
-
-    // 기존 신청 내역이 있는지 서버에서 조회
     const uToken = localStorage.getItem('uToken');
-    const dinnerRef = firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`);
-    const actionRef = firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`);
-
-    const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
-    
-    if (dinnerSnap.exists() || actionSnap.exists()) {
-        // 신청 내역이 있으면 현황창 보여주기
-        document.getElementById('adminActionForm').style.display = 'none';
-        document.getElementById('adminStatusArea').style.display = 'block';
-        
-        let statusMsg = "";
-        if(dinnerSnap.exists()) statusMsg += "🍴 오늘 저녁 식사 제외 신청됨<br>";
-        if(actionSnap.exists()) {
-            const data = actionSnap.val();
-            const typeNm = data.type === 'outing' ? '외출' : '외박';
-            statusMsg += `📍 ${typeNm} 신청됨 (비상연락처: ${data.phone})`;
-        }
-        document.getElementById('adminStatusText').innerHTML = statusMsg;
-    } else {
-        document.getElementById('adminActionForm').style.display = 'block';
-        document.getElementById('adminStatusArea').style.display = 'none';
-    }
-}
-
-// 2. 외출/외박 종류 선택 시 로직
-function selectAdminType(type) {
-    selectedAdminType = type;
-    updateAdminTypeButtons();
-
-    // 외출이나 외박을 선택하면 석식 제외를 자동으로 체크해줌 (아이디어 반영)
-    if (type === 'outing' || type === 'overnight') {
-        document.getElementById('skipDinner').checked = true;
-        document.getElementById('fullPhoneArea').style.display = 'block';
-        
-        // 이전에 저장된 전체 번호가 있으면 미리 채워줌
-        const savedFullPhone = localStorage.getItem('kac_user_full_phone');
-        if(savedFullPhone) document.getElementById('fullPhone').value = savedFullPhone;
-    } else {
-        document.getElementById('fullPhoneArea').style.display = 'none';
-    }
-}
-
-// 3. 버튼 선택 디자인 업데이트
-function updateAdminTypeButtons() {
-    const types = ['none', 'outing', 'overnight'];
-    types.forEach(t => {
-        const btn = document.getElementById(`btn-${t}`);
-        if (t === selectedAdminType) {
-            btn.style.background = "#3b82f6";
-            btn.style.color = "white";
-        } else {
-            btn.style.background = "#f8fafc";
-            btn.style.color = "#333";
-        }
-    });
-}
-
-// 4. 최종 신청 제출
-async function submitAdminAction() {
-    const today = getTodayString();
-    const now = new Date();
-    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR; // 16시 경과 여부
-
-    let uToken = localStorage.getItem('uToken');
-    if (!uToken) { 
-        uToken = Math.random().toString(36).substr(2); 
-        localStorage.setItem('uToken', uToken); 
-    }
-
-    const name = localStorage.getItem('kac_user_name');
-    const phoneShort = localStorage.getItem('kac_user_phone');
-    const skipDinner = document.getElementById('skipDinner').checked;
-    const fullPhone = document.getElementById('fullPhone').value.trim();
-
-    // 1. 외출/외박 관련 체크 (시간제한 없음)
-    if ((selectedAdminType === 'outing' || selectedAdminType === 'overnight') && !fullPhone) {
-        alert("외출/외박 신청 시 비상 연락처를 입력해주세요.");
-        return;
-    }
-    
-    if (selectedAdminType !== 'none') localStorage.setItem('kac_user_full_phone', fullPhone);
-
+    const fullName = `${name}(${phone})`;
     try {
-        // (A) 석식 제외 저장 (16시 이전일 때만 작동)
-        if (skipDinner) {
-            if (isAfterDeadline) {
-                // 이미 16시가 지났는데 체크한 경우 경고만 띄우고 저장은 안 함
-                alert("⚠️ 석식 신청/취소는 16시에 마감되었습니다.\n외출·외박 신청만 진행됩니다.");
-            } else {
-                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
-            }
-        } else {
-            // 체크 해제 시 삭제 (이것도 16시 이전만 가능)
-            if (!isAfterDeadline) {
-                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
-            }
-        }
-
-        // (B) 외출/외박 저장 (시간제한 없이 항상 저장)
-        if (selectedAdminType !== 'none') {
-            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
-                name: name,
-                phone: fullPhone,
-                type: selectedAdminType,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        } else {
-            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-        }
-        
-        alert("✅ 행정 신청이 처리되었습니다.");
-        document.getElementById('adminActionModal').style.display = 'none';
-    } catch (e) {
-        alert("저장 중 오류 발생");
-    }
+        await firebase.database().ref(`courses/${currentRoom}/shuttle/${tempSelectedDir}/${tempSelectedLoc.id}/${uToken}`).set(fullName);
+        alert("✅ 신청이 완료되었습니다.");
+        document.getElementById('shuttleModal').style.display = 'none';
+    } catch (e) { alert("오류 발생"); }
 }
 
-// 5. 신청 취소 로직
-async function cancelAdminAction() {
-    const now = new Date();
-    const isAfterDeadline = now.getHours() >= DINNER_DEADLINE_HOUR;
-
-    showKacConfirm("신청된 내역을 취소하시겠습니까?", async function() {
-        const today = getTodayString();
-        const uToken = localStorage.getItem('uToken');
-
-        // 1. 외출·외박 내역은 시간 상관없이 무조건 삭제
-        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-
-        // 2. 석식 제외 내역은 16시 이전일 때만 삭제
-        if (isAfterDeadline) {
-            alert("✅ 외출·외박 신청은 취소되었습니다.\n⚠️ 석식 제외는 16시가 지나 취소되지 않았습니다.");
-        } else {
-            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
-            alert("✅ 모든 신청이 취소되었습니다.");
-        }
-
-        openAdminAction(); // 화면 새로고침
-    });
+async function cancelShuttleRequest() {
+    if (!confirm("신청을 취소하시겠습니까?")) return;
+    const uToken = localStorage.getItem('uToken');
+    try {
+        await firebase.database().ref(`courses/${currentRoom}/shuttle/${tempSelectedDir}/${tempSelectedLoc.id}/${uToken}`).remove();
+        alert("취소되었습니다.");
+        document.getElementById('shuttleModal').style.display = 'none';
+    } catch (e) { alert("취소 오류"); }
 }
+
+function closeShuttleModal() { document.getElementById('shuttleModal').style.display = 'none'; }
+
 
 
 
