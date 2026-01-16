@@ -1020,7 +1020,7 @@ loadDashboardStats: function() {
 
 
 
-// [디자인 최종] 슬림한 공지 상자 + 8px 포인트 컬러바 적용
+// [최종 디자인 보정] 내부 ADMIN/CENTER 배지 크기 축소 및 슬림화
     loadNoticeView: async function() {
         if(!state.room) return;
         
@@ -1040,24 +1040,26 @@ loadDashboardStats: function() {
                 
                 let html = "";
                 
-                // (1) 과정 운영 공지 (8px 블루 바 + 슬림 상자)
+                // (1) 과정 운영 공지 (태그 크기 축소)
                 if (coordMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:15px 20px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe; border-left:8px solid #3b82f6; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.05);">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                                <span style="background:#3b82f6; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:4px;">ADMIN</span>
+                        <div style="margin-bottom:12px; padding:12px 15px; background:#f0f7ff; border-radius:12px; border-left:6px solid #3b82f6; border-top:1px solid #dbeafe; border-right:1px solid #dbeafe; border-bottom:1px solid #dbeafe;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                <!-- 배지 크기를 확 줄임 (padding 1px 6px, font-size 9px) -->
+                                <span style="background:#3b82f6; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:3px; line-height:1;">ADMIN</span>
                                 <span style="color:#3b82f6; font-size:11px; font-weight:800;">과정 운영 공지</span>
                             </div>
                             <div style="font-size:14px; color:#1e3a8a; font-weight:600; line-height:1.5; white-space: pre-line;">${coordMsg}</div>
                         </div>`;
                 }
                 
-                // (2) 항기원 전체 공지 (8px 그레이 바 + 슬림 상자)
+                // (2) 항기원 전체 공지 (태그 크기 축소)
                 if (globalMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:15px 20px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; border-left:8px solid #64748b; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                                <span style="background:#64748b; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:4px;">CENTER</span>
+                        <div style="margin-bottom:12px; padding:12px 15px; background:#f8fafc; border-radius:12px; border-left:6px solid #64748b; border-top:1px solid #e2e8f0; border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                <!-- 배지 크기를 확 줄임 -->
+                                <span style="background:#64748b; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:3px; line-height:1;">CENTER</span>
                                 <span style="color:#64748b; font-size:11px; font-weight:800;">항기원 전체 공지</span>
                             </div>
                             <div style="font-size:14px; color:#475569; font-weight:600; line-height:1.5; white-space: pre-line;">${globalMsg}</div>
