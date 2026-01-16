@@ -4,123 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>KAC Coordinator Dashboard</title>
-
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Font Awesome & Pretendard Font -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-
   <style>
-:root {
-      --navy-dark: #0f172a;
-      --blue-main: #0ea5e9;
-      --blue-deep: #0369a1;
-      --green-save: #10b981;
-      --bg-cool: #f0f9ff;
-      --card-white: #ffffff;
-      --text-dark: #1e293b;
-      --border-blue: #e0f2fe;
+    :root {
+      --navy-dark: #0f172a; --blue-main: #0ea5e9; --blue-deep: #0369a1;
+      --green-save: #10b981; --bg-cool: #f0f9ff; --card-white: #ffffff;
+      --text-dark: #1e293b; --border-blue: #e0f2fe;
     }
-
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
       background: #e2e8f0; display: flex; justify-content: center; color: var(--text-dark);
-      overflow: hidden; /* 스크롤 방지 */
+      overflow: hidden;
     }
-
-    .app-container {
-      width: 100%; max-width: 600px; height: 100dvh;
-      background: var(--bg-cool); position: relative; display: flex; flex-direction: column;
-    }
-
-    /* --- 상단바 --- */
-    .app-header {
-      height: 50px; background: var(--navy-dark); 
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 15px; flex-shrink: 0;
-    }
+    .app-container { width: 100%; max-width: 600px; height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; }
+    .app-header { height: 50px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
     .header-btn { font-size: 18px; color: #fff; cursor: pointer; border:none; background:none; }
     .header-title { color: #fff; font-size: 15px; font-weight: 800; }
-
-    /* --- 콘텐츠 영역 (스크롤 없이 최적화) --- */
-    .app-content { 
-      flex: 1; padding: 10px 12px; 
-      display: flex; flex-direction: column; gap: 8px;
-      overflow-y: auto; /* 내용 많을 때만 내부 스크롤 */
-    }
-
-    .section-card {
-      background: var(--card-white); border-radius: 15px; padding: 12px;
-      border: 1px solid var(--border-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    }
-    .section-title {
-      font-size: 12px; font-weight: 800; color: var(--blue-deep);
-      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
-    }
-
-    .navy-select {
-      width: 100%; height: 44px; border-radius: 10px;
-      border: 1.5px solid var(--border-blue); background: #f8fafc;
-      padding: 0 12px; font-size: 14px; font-weight: 800; color: var(--navy-dark); outline: none;
-    }
-
-    .data-date-label { font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: 700; display: block; }
-
-    /* 셔틀/외출 가로 밀도 높임 */
+    .app-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+    .section-card { background: var(--card-white); border-radius: 15px; padding: 12px; border: 1px solid var(--border-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .section-title { font-size: 12px; font-weight: 800; color: var(--blue-deep); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .navy-select { width: 100%; height: 44px; border-radius: 10px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 12px; font-size: 14px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .shuttle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .mini-stat-box { background: #f0f9ff; border-radius: 10px; padding: 8px 4px; text-align: center; }
     .mini-stat-box span { font-size: 10px; color: var(--blue-deep); font-weight: 700; display: block; }
     .mini-stat-box strong { font-size: 16px; font-weight: 900; color: var(--navy-dark); }
-
     .action-row { display: flex; gap: 8px; }
-    .action-box { flex: 1; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .outing { background: #fff7ed; color: #9a3412; }
-    .overnight { background: #fef2f2; color: #991b1b; }
-
-    /* 공지사항 높이 조절 */
-    .notice-area {
-      width: 100%; height: 60px; border-radius: 10px;
-      border: 1px solid #e2e8f0; padding: 10px;
-      font-size: 13px; resize: none; outline: none; margin-bottom: 8px; background: #fafafa;
-    }
-    .navy-btn { width: 100%; height: 40px; border-radius: 10px; background: var(--blue-main); color: white; border: none; font-weight: 800; font-size: 14px; }
+    .action-box { flex: 1; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .outing { background: #fff7ed; color: #9a3412; } .overnight { background: #fef2f2; color: #991b1b; }
+    .notice-area { width: 100%; height: 60px; border-radius: 10px; border: 1px solid #e2e8f0; padding: 10px; font-size: 13px; resize: none; outline: none; margin-bottom: 8px; background: #fafafa; }
+    .navy-btn { width: 100%; height: 40px; border-radius: 10px; background: var(--blue-main); color: white; border: none; font-weight: 800; font-size: 14px; cursor: pointer; }
     .navy-btn.green { background: var(--green-save); }
-
-    /* --- 우측 메뉴 (사이드바) --- */
-    .side-menu {
-      position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
-      background: white; z-index: 2000; transition: 0.3s;
-      box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px;
-    }
-    .side-menu.open { right: 0; }
-    .menu-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); z-index: 1500; display: none;
-    }
-
-    /* 하단바 고정 */
-    .app-footer {
-      height: 40px; background: var(--navy-dark); color: #94a3b8;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 15px; font-size: 10px; flex-shrink: 0;
-    }
+    .side-menu { position: absolute; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .app-footer { height: 40px; background: var(--navy-dark); color: #94a3b8; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 10px; flex-shrink: 0; }
     .footer-logo img { height: 14px; filter: brightness(0) invert(1); }
   </style>
 </head>
-
-
-
 <body>
   <div class="app-container">
-    <!-- 햄버거 메뉴용 암막 -->
     <div id="menuOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500;" onclick="toggleMenu(false)"></div>
-
+    
     <!-- 우측 사이드 메뉴 -->
-    <div id="sideMenu" style="position:fixed; top:0; right:-280px; width:280px; height:100%; background:white; z-index:2000; transition:0.3s; padding:20px; box-shadow:-5px 0 15px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:15px;">
+    <div id="sideMenu" class="side-menu">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="margin:0; font-size:16px; color:#0f172a;">행정 지원 메뉴</h3>
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="toggleMenu(false)"></i>
@@ -140,16 +68,27 @@
       <button class="navy-btn" style="background:#6366f1; text-align:left; padding-left:15px;" onclick="openTransportModal()">
           <i class="fa-solid fa-car-side"></i> 강사 수송 요청
       </button>
+
+      <!-- [신규] 교육생 수송 방향 설정 -->
+      <div style="margin-top:10px; padding:15px; background:#f0f9ff; border-radius:15px; border:1px solid #e0f2fe;">
+          <label style="font-size:12px; font-weight:900; color:#1e293b; display:block; margin-bottom:12px;">
+              <i class="fa-solid fa-arrows-left-right"></i> 수송 신청 방향 설정
+          </label>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+              <button id="setDirOut" class="navy-btn" style="background:#fff; color:#475569; border:1px solid #cbd5e1; height:38px; font-size:12px;" onclick="updateStudentShuttleDir('out')">항기원 → 목적지 (퇴소)</button>
+              <button id="setDirIn" class="navy-btn" style="background:#fff; color:#475569; border:1px solid #cbd5e1; height:38px; font-size:12px;" onclick="updateStudentShuttleDir('in')">목적지 → 항기원 (입소)</button>
+          </div>
+          <p style="font-size:10px; color:#94a3b8; margin-top:10px; line-height:1.4;">* 여기서 설정한 방향에 따라<br>학생 앱 및 기사 앱의 현황이 바뀝니다.</p>
+      </div>
     </div>
 
     <header class="app-header">
-      <button class="header-btn" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="header-btn" onclick="location.href='portal.html'"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="header-title">Coordinator Dashboard</div>
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <main class="app-content" style="overflow-y: auto; padding-bottom: 20px;">
-      <!-- 과정 선택 섹션 -->
+    <main class="app-content">
       <div class="section-card">
           <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> <span id="selectionLabel">전체 과정 현황</span></div>
           <select id="roomSelect" class="navy-select" onchange="handleRoomSelection()">
@@ -160,9 +99,8 @@
           </div>
       </div>
 
-      <!-- 통계 지표 -->
       <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-bus"></i> 실시간 수송/외출 신청 지표</div>
+          <div class="section-title"><i class="fa-solid fa-bus"></i> <span id="shuttleDirTitle">수송 신청 지표 (항기원 발)</span></div>
           <div class="shuttle-stats">
               <div class="mini-stat-box" id="stat-osong"><span>오송역</span><strong id="s-osong">0</strong></div>
               <div class="mini-stat-box" id="stat-term"><span>터미널</span><strong id="s-term">0</strong></div>
@@ -171,33 +109,29 @@
           <div class="action-row" style="margin-top:8px;">
               <div class="action-box outing" id="stat-outing">
                   <span style="font-weight: 800; font-size:12px;">외출</span>
-                  <strong style="font-size: 16px;"><span id="o-cnt">0</span>명</strong>
+                  <strong id="o-cnt">0</strong>
               </div>
               <div class="action-box overnight" id="stat-overnight">
                   <span style="font-weight: 800; font-size:12px;">외박</span>
-                  <strong style="font-size: 16px;"><span id="n-cnt">0</span>명</strong>
+                  <strong id="n-cnt">0</strong>
               </div>
           </div>
       </div>
 
-      <!-- [모드 1] 전체 현황 시: 운영 중인 과정 리스트 -->
       <div id="view-total-list" class="section-card">
           <div class="section-title"><i class="fa-solid fa-list-check"></i> 현재 운영 중인 과정 목록</div>
-          <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;">
-              <!-- JS 동적 생성 -->
-          </div>
+          <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
 
-      <!-- [모드 2] 개별 과정 시: 공지사항 관리 -->
       <div id="view-individual-notice" style="display:none; flex-direction:column; gap:8px;">
           <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 우리 과정 공지 (강사에게 보임)</div>
-              <textarea id="courseNotice" class="notice-area" style="height:60px;" placeholder="내용을 입력하세요."></textarea>
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 우리 과정 공지</div>
+              <textarea id="courseNotice" class="notice-area" placeholder="내용을 입력하세요."></textarea>
               <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
           </div>
           <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지 (모든 방)</div>
-              <textarea id="globalNotice" class="notice-area" style="height:60px;" placeholder="모든 교육생 앱에 게시됩니다."></textarea>
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지</div>
+              <textarea id="globalNotice" class="notice-area" placeholder="모든 교육생 앱에 게시됩니다."></textarea>
               <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
           </div>
       </div>
@@ -209,7 +143,7 @@
     </footer>
   </div>
 
-  <!-- [팝업] 강사 수송 요청 모달 -->
+  <!-- 수송 요청 모달 -->
   <div id="transportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:20px;">
       <div style="background:white; width:100%; max-width:450px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column;">
           <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center;">
@@ -219,27 +153,24 @@
           <div style="padding:20px; overflow-y:auto; max-height:70vh;">
               <label style="font-size:12px; font-weight:800; color:#6366f1;">1. 픽업 장소 선택</label>
               <select id="reqLoc" class="navy-select" style="margin:8px 0 15px 0;">
-                  <option value="오송역 6번출구">오송역 6번출구 (40분 소요)</option>
-                  <option value="청주터미널">청주터미널 (30분 소요)</option>
-                  <option value="청주공항">청주공항 (40분 소요)</option>
+                  <option value="오송역 6번출구">오송역 6번출구</option>
+                  <option value="청주터미널">청주터미널</option>
+                  <option value="청주공항">청주공항</option>
               </select>
-
               <label style="font-size:12px; font-weight:800; color:#6366f1;">2. 운행 방향</label>
               <div style="display:flex; gap:10px; margin:8px 0 15px 0;">
                   <button id="dirTo" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('목적지→항기원')">목적지→항기원</button>
                   <button id="dirFrom" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('항기원→목적지')">항기원→목적지</button>
               </div>
-
               <label style="font-size:12px; font-weight:800; color:#6366f1;">3. 요청 시간 및 강사명</label>
               <div style="display:flex; gap:5px; margin-top:8px;">
                   <input type="date" id="reqDate" class="navy-select" style="flex:1.5;">
                   <input type="time" id="reqTime" class="navy-select" style="flex:1;">
               </div>
-              <input type="text" id="reqProf" class="navy-select" style="margin-top:10px;" placeholder="강사 성함 (예: 김철수 교수)">
-
+              <input type="text" id="reqProf" class="navy-select" style="margin-top:10px;" placeholder="강사 성함">
               <div id="driverScheduleBox" style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                  <span style="font-size:11px; font-weight:800; color:#64748b;">📅 선택한 날짜의 기사님 스케줄</span>
-                  <div id="scheduleList" style="font-size:12px; margin-top:10px; color:#1e293b; line-height:1.6;">날짜를 선택하면 일정이 표시됩니다.</div>
+                  <span style="font-size:11px; font-weight:800; color:#64748b;">📅 기사님 스케줄 미리보기</span>
+                  <div id="scheduleList" style="font-size:12px; margin-top:10px; color:#1e293b; line-height:1.6;">날짜 선택 시 표시됨</div>
               </div>
           </div>
           <div style="padding:15px; display:flex; gap:10px; background:#f8fafc;">
@@ -263,14 +194,13 @@
 
   <script src="config.js"></script>
   <script>
-    // 인증 및 데이터 관리
-    if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
-        alert("인증이 필요합니다.");
-        location.replace('portal.html');
-    }
-
     let globalAllData = {}; 
     let selectedDirection = "";
+    let currentShuttleDir = "out"; // 글로벌 수송 방향
+
+    if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
+        alert("인증이 필요합니다."); location.replace('portal.html');
+    }
 
     function toggleMenu(isOpen) {
         document.getElementById('sideMenu').style.right = isOpen ? '0' : '-280px';
@@ -283,17 +213,14 @@
     }
 
     function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
+    function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
 
-    // 수송 요청 모달 제어
     function openTransportModal() {
-        toggleMenu(false);
-        document.getElementById('transportModal').style.display = 'flex';
+        toggleMenu(false); document.getElementById('transportModal').style.display = 'flex';
         document.getElementById('reqDate').value = getTodayString();
         updateSchedulePreview();
-        // 날짜 변경 시 스케줄 새로고침
         document.getElementById('reqDate').onchange = updateSchedulePreview;
     }
-    function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
 
     function setDirection(dir) {
         selectedDirection = dir;
@@ -303,7 +230,6 @@
         document.getElementById('dirFrom').style.color = (dir === '항기원→목적지') ? '#fff' : '#475569';
     }
 
-    // 기사 스케줄 미리보기
     function updateSchedulePreview() {
         const date = document.getElementById('reqDate').value;
         if(!date) return;
@@ -311,88 +237,62 @@
             const list = snap.val() || {};
             const display = document.getElementById('scheduleList');
             const items = Object.values(list).sort((a,b) => a.time.localeCompare(b.time));
-            
-            if(items.length === 0) {
-                display.innerHTML = "해당 날짜에 등록된 일정이 없습니다.";
-            } else {
-                display.innerHTML = items.map(i => `• <b>${i.time}</b>: ${i.loc} (${i.dir.split('→')[0]}발)`).join('<br>');
-            }
+            display.innerHTML = items.length ? items.map(i => `• <b>${i.time}</b>: ${i.loc} (${i.dir.split('→')[0]}발)`).join('<br>') : "등록된 일정 없음";
         });
     }
 
-// [6.16차 수정] 수송 요청 등록 (기사 개인일정/점심시간/중복예약 3중 체크)
     async function submitTransportRequest() {
-        const loc = document.getElementById('reqLoc').value;
-        const dir = selectedDirection;
-        const date = document.getElementById('reqDate').value;
-        const time = document.getElementById('reqTime').value;
+        const loc = document.getElementById('reqLoc').value; const dir = selectedDirection;
+        const date = document.getElementById('reqDate').value; const time = document.getElementById('reqTime').value;
         const prof = document.getElementById('reqProf').value.trim();
-
-        if(!dir || !date || !time || !prof) return alert("모든 항목을 입력/선택해주세요.");
-
+        if(!dir || !date || !time || !prof) return alert("필수 입력 누락");
         const hour = parseInt(time.split(':')[0]);
-
-        // 1. 점심시간 체크
-        if(hour === 12) return alert("⚠️ 12:00 ~ 13:00은 기사님 휴식시간으로 신청이 불가합니다.");
-
-        // 2. 기사님 개인 일정(운행불가) 체크
+        if(hour === 12) return alert("점심시간 신청 불가");
         const offSnap = await firebase.database().ref(`system/driver_status/${date}/${hour}`).once('value');
-        if(offSnap.exists()) {
-            return alert(`❌ 해당 시간은 기사님 일정(${offSnap.val()})으로 인해 수송이 불가능합니다.`);
-        }
-
-        // 3. 다른 과정 중복 예약 체크 (단, 장소와 시간이 같으면 허용)
+        if(offSnap.exists()) return alert("기사님 운행불가 시간");
         const reqSnap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
-        const existing = reqSnap.val() || {};
-        let isConflict = false;
+        let conflict = false; Object.values(reqSnap.val() || {}).forEach(i => { if(i.time === time && i.loc !== loc) conflict = true; });
+        if(conflict) return alert("운전기사 스케줄 중복");
+        await firebase.database().ref('system/transport_requests').push().set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
+        alert("등록 완료"); closeTransportModal();
+    }
 
-        Object.values(existing).forEach(i => {
-            if(i.time === time && i.loc !== loc) isConflict = true;
+    // [신규] 교육생 수송 방향 글로벌 설정 저장 함수
+    function updateStudentShuttleDir(dir) {
+        const dirName = (dir === 'out') ? '항기원 → 목적지 (퇴소)' : '목적지 → 항기원 (입소)';
+        if(!confirm(`전체 교육생의 셔틀 신청 방향을\n[${dirName}] 방향으로 변경하시겠습니까?`)) return;
+        firebase.database().ref('system/shuttle_config/current_direction').set(dir).then(() => {
+            alert(`✅ 설정 완료!\n교육생 앱이 [${dirName}] 모드로 전환되었습니다.`);
+            toggleMenu(false);
         });
-
-        if(isConflict) return alert("❌ 이미 해당 시간에 다른 장소 운행이 예약되어 있습니다.");
-
-        // 4. 최종 등록
-        const newRef = firebase.database().ref('system/transport_requests').push();
-        await newRef.set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        
-        alert("✅ 강사픽업 등록이 완료되었습니다.");
-        closeTransportModal();
     }
-
-    function runClock() {
-        const now = new Date();
-        document.getElementById('footer-date').innerText = 
-            `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    }
-    setInterval(runClock, 1000); runClock();
 
     function initActiveRoomList() {
-        firebase.database().ref('courses').on('value', snap => {
-            const data = snap.val() || {};
-            globalAllData = data;
-            const select = document.getElementById('roomSelect');
-            const listContainer = document.getElementById('activeCourseList');
-            const savedVal = select.value;
-            
-            select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
-            listContainer.innerHTML = "";
+        // 수송 방향 글로벌 감시
+        firebase.database().ref('system/shuttle_config/current_direction').on('value', snap => {
+            currentShuttleDir = snap.val() || "out";
+            document.getElementById('shuttleDirTitle').innerText = (currentShuttleDir === 'out') ? "수송 신청 지표 (항기원 발)" : "수송 신청 지표 (항기원 행)";
+            document.getElementById('setDirOut').style.background = (currentShuttleDir === 'out') ? '#3b82f6' : '#fff';
+            document.getElementById('setDirOut').style.color = (currentShuttleDir === 'out') ? '#fff' : '#475569';
+            document.getElementById('setDirIn').style.background = (currentShuttleDir === 'in') ? '#3b82f6' : '#fff';
+            document.getElementById('setDirIn').style.color = (currentShuttleDir === 'in') ? '#fff' : '#475569';
+            if(globalAllData) handleRoomSelection();
+        });
 
+        firebase.database().ref('courses').on('value', snap => {
+            const data = snap.val() || {}; globalAllData = data;
+            const select = document.getElementById('roomSelect'); const listContainer = document.getElementById('activeCourseList');
+            const savedVal = select.value; select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>'; listContainer.innerHTML = "";
             Object.keys(data).sort().forEach(rid => {
                 const room = data[rid];
-                if (room.status && room.status.roomStatus === 'active') {
+                if (room.status?.roomStatus === 'active') {
                     const cName = room.settings?.courseName || `Room ${rid} 과정`;
-                    const pName = room.status?.professorName || "미지정";
-                    
-                    const opt = document.createElement('option');
-                    opt.value = rid; opt.innerText = `Room ${rid} - ${cName}`;
-                    if(rid === savedVal) opt.selected = true;
-                    select.appendChild(opt);
-
+                    const opt = document.createElement('option'); opt.value = rid; opt.innerText = `Room ${rid} - ${cName}`;
+                    if(rid === savedVal) opt.selected = true; select.appendChild(opt);
                     const item = document.createElement('div');
                     item.style = "background:#f8fafc; border:1px solid #e0f2fe; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
                     item.onclick = () => { select.value = rid; handleRoomSelection(); };
-                    item.innerHTML = `<div><span style="font-weight:900; color:#0ea5e9; margin-right:8px;">Room ${rid}</span><span style="font-weight:700; font-size:13px;">${cName}</span></div><div style="font-size:11px; color:#64748b;">${pName} 교수님 ></div>`;
+                    item.innerHTML = `<div><span style="font-weight:900; color:#0ea5e9; margin-right:8px;">Room ${rid}</span><span style="font-weight:700; font-size:13px;">${cName}</span></div><div style="font-size:11px; color:#64748b;">${room.status?.professorName || "미지정"} 교수님 ></div>`;
                     listContainer.appendChild(item);
                 }
             });
@@ -402,31 +302,26 @@
 
     function handleRoomSelection() {
         const rid = document.getElementById('roomSelect').value;
-        const totalView = document.getElementById('view-total-list');
-        const individualView = document.getElementById('view-individual-notice');
-
+        const totalView = document.getElementById('view-total-list'); const individualView = document.getElementById('view-individual-notice');
         if(!rid) {
-            totalView.style.display = 'block';
-            individualView.style.display = 'none';
+            totalView.style.display = 'block'; individualView.style.display = 'none';
             document.getElementById('selectionLabel').innerText = "전체 과정 현황";
             document.getElementById('leaderDisplay').style.display = "none";
             updateStats(globalAllData);
         } else {
-            totalView.style.display = 'none';
-            individualView.style.display = 'flex';
+            totalView.style.display = 'none'; individualView.style.display = 'flex';
             const roomData = globalAllData[rid] || {};
-            const pName = roomData.status?.professorName || "미지정";
-            document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${pName} 교수님 과정`;
+            document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${roomData.status?.professorName || "미지정"} 교수님 과정`;
             document.getElementById('courseNotice').value = roomData.coordNotice || "";
-            
             const leader = Object.values(roomData.students || {}).find(st => st.isLeader === true);
             if(leader) {
                 document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`;
                 document.getElementById('leaderDisplay').style.display = "block";
             } else { document.getElementById('leaderDisplay').style.display = "none"; }
-
-            const singleData = {}; singleData[rid] = roomData;
-            updateStats(singleData);
+            const preview = document.getElementById('qrPreview');
+            if (roomData.attendanceQR) { preview.src = roomData.attendanceQR; preview.style.display = "block"; document.getElementById('qrStatus').innerText = "QR 등록됨"; }
+            else { preview.style.display = "none"; document.getElementById('qrStatus').innerText = "QR 없음"; }
+            const singleData = {}; singleData[rid] = roomData; updateStats(singleData);
         }
     }
 
@@ -435,28 +330,26 @@
         const today = getTodayString();
         Object.keys(dataScope).forEach(rid => {
             const room = dataScope[rid];
-            if(room.shuttle) {
-                if(room.shuttle.osong) Object.values(room.shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
-                if(room.shuttle.terminal) Object.values(room.shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
-                if(room.shuttle.airport) Object.values(room.shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
+            // [수정] 글로벌 방향 설정에 맞춰 해당 데이터만 추출
+            const shuttle = room.shuttle ? room.shuttle[currentShuttleDir] : null;
+            if(shuttle) {
+                if(shuttle.osong) Object.values(shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
+                if(shuttle.terminal) Object.values(shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
+                if(shuttle.airport) Object.values(shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
             }
             if(room.admin_actions && room.admin_actions[today]) {
                 Object.values(room.admin_actions[today]).forEach(v => {
-                    if(v.type === 'outing') outing.push(`${v.name} (R-${rid})`);
-                    if(v.type === 'overnight') overnight.push(`${v.name} (R-${rid})`);
+                    const text = `${v.name} (R-${rid})`;
+                    if(v.type === 'outing') outing.push(text); if(v.type === 'overnight') overnight.push(text);
                 });
             }
         });
-        renderStatItem('s-osong', osong, "오송역 신청자");
-        renderStatItem('s-term', term, "터미널 신청자");
-        renderStatItem('s-air', air, "공항 신청자");
-        renderStatItem('o-cnt', outing, "오늘 외출자");
-        renderStatItem('n-cnt', overnight, "오늘 외박자");
+        renderStatItem('s-osong', osong, "오송역 신청자"); renderStatItem('s-term', term, "터미널 신청자"); renderStatItem('s-air', air, "공항 신청자");
+        renderStatItem('o-cnt', outing, "오늘 외출자"); renderStatItem('n-cnt', overnight, "오늘 외박자");
     }
 
     function renderStatItem(id, list, title) {
-        const el = document.getElementById(id);
-        el.innerText = list.length;
+        const el = document.getElementById(id); el.innerText = list.length;
         const parent = el.closest('.mini-stat-box') || el.closest('.action-box');
         parent.style.cursor = "pointer";
         parent.onclick = () => {
@@ -468,31 +361,24 @@
     }
 
     function saveCourseNotice() {
-        const rid = document.getElementById('roomSelect').value;
-        if(!rid) return;
-        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value).then(() => alert("✅ 과정 공지 저장"));
+        const rid = document.getElementById('roomSelect').value; if(!rid) return;
+        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value).then(() => alert("✅ 저장"));
     }
-
     function saveGlobalNotice() {
-        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(() => alert("✅ 전체 공지 저장"));
+        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(() => alert("✅ 저장"));
     }
-
     async function handleQRUpload(input) {
-        const rid = document.getElementById('roomSelect').value;
-        if(!rid) return alert("과정을 먼저 선택하세요.");
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            await firebase.database().ref(`courses/${rid}/attendanceQR`).set(e.target.result);
-            alert("QR 업로드 완료");
-            toggleMenu(false);
-        };
-        reader.readAsDataURL(input.files[0]);
+        const rid = document.getElementById('roomSelect').value; if(!rid) return alert("과정 선택 필수");
+        const reader = new FileReader(); reader.onload = async (e) => {
+            await firebase.database().ref(`courses/${rid}/attendanceQR`).set(e.target.result); alert("완료"); toggleMenu(false);
+        }; reader.readAsDataURL(input.files[0]);
     }
 
+    function getTodayString(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    function runClock() { const now = new Date(); document.getElementById('footer-date').innerText = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`; }
+    setInterval(runClock, 1000); runClock();
     initActiveRoomList();
-    firebase.database().ref(`system/globalNotice`).once('value', s => {
-        document.getElementById('globalNotice').value = s.val() || "";
-    });
+    firebase.database().ref(`system/globalNotice`).once('value', s => { document.getElementById('globalNotice').value = s.val() || ""; });
   </script>
 </body>
 </html>
