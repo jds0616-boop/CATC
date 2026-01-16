@@ -36,19 +36,19 @@
     .action-box { flex: 1; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #eee; }
     .outing { background: #fff7ed; color: #9a3412; } .overnight { background: #fef2f2; color: #991b1b; }
     .notice-area { width: 100%; height: 60px; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px; font-size: 13px; resize: none; outline: none; margin-bottom: 8px; background: #fafafa; }
-    .navy-btn { width: 100%; height: 38px; border-radius: 8px; background: var(--blue-main); color: white; border: none; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.2s; }
+    .navy-btn { width: 100%; height: 38px; border-radius: 8px; background: var(--blue-main); color: white; border: none; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
     .navy-btn:active { transform: scale(0.98); opacity: 0.8; }
     .navy-btn.green { background: var(--green-save); }
     .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-    .app-footer { height: 40px; background: var(--navy-dark); color: #94a3b8; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 10px; flex-shrink: 0; }
+    .app-footer { height: 40px; background: var(--navy-dark); color: #94a3b8; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 10px; flex-shrink: 0; }
     .footer-logo img { height: 14px; filter: brightness(0) invert(1); }
+    .leader-badge { background: #f59e0b; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 4px rgba(245,158,11,0.3); }
   </style>
 </head>
 <body>
   <div class="app-container">
     <div id="menuOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500;" onclick="toggleMenu(false)"></div>
     
-    <!-- 우측 사이드 메뉴 -->
     <div id="sideMenu" class="side-menu">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="margin:0; font-size:16px; color:#0f172a;">행정 지원 메뉴</h3>
@@ -80,13 +80,17 @@
           <select id="roomSelect" class="navy-select" onchange="handleRoomSelection()">
               <option value="">전체 과정 현황 보기 (기본)</option>
           </select>
-          <div id="leaderDisplay" style="margin-top:8px; display:none; font-size:12px; font-weight:800; color:var(--blue-deep); background:#f0f9ff; padding:8px 12px; border-radius:8px;">
-              <i class="fa-solid fa-crown" style="color:#f59e0b;"></i> 학생장: <span id="leaderInfoText">-</span>
+          <div id="leaderDisplay" style="margin-top:10px; display:none; background:#fff; border:2px solid #f59e0b; padding:10px 15px; border-radius:12px; display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="leader-badge">학생장</span>
+                  <span id="leaderInfoText" style="font-weight:900; color:#1e293b; font-size:14px;">-</span>
+              </div>
+              <i class="fa-solid fa-crown" style="color:#f59e0b; font-size:18px;"></i>
           </div>
       </div>
 
       <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-bus"></i> 실시간 수송/외출 신청 (합계)</div>
+          <div class="section-title"><i class="fa-solid fa-bus"></i> 실시간 수송/외출 신청 (전체합계)</div>
           <div class="shuttle-stats">
               <div class="mini-stat-box" id="stat-osong"><span>오송역</span><strong id="s-osong">0</strong></div>
               <div class="mini-stat-box" id="stat-term"><span>터미널</span><strong id="s-term">0</strong></div>
@@ -95,11 +99,11 @@
           <div class="action-row" style="margin-top:8px;">
               <div class="action-box outing" id="stat-outing">
                   <span style="font-weight: 800; font-size:12px;">외출</span>
-                  <strong style="font-size: 16px;"><span id="o-cnt">0</span>명</strong>
+                  <strong id="o-cnt">0</strong>
               </div>
               <div class="action-box overnight" id="stat-overnight">
                   <span style="font-weight: 800; font-size:12px;">외박</span>
-                  <strong style="font-size: 16px;"><span id="n-cnt">0</span>명</strong>
+                  <strong id="n-cnt">0</strong>
               </div>
           </div>
       </div>
@@ -111,12 +115,12 @@
 
       <div id="view-individual-notice" style="display:none; flex-direction:column; gap:8px;">
           <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 우리 과정 공지 (강사 확인용)</div>
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (강사 확인용)</div>
               <textarea id="courseNotice" class="notice-area" placeholder="내용을 입력하세요."></textarea>
               <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
           </div>
           <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지</div>
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (모든 방)</div>
               <textarea id="globalNotice" class="notice-area" placeholder="모든 교육생 앱에 게시됩니다."></textarea>
               <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
           </div>
@@ -129,42 +133,47 @@
     </footer>
   </div>
 
-  <div id="transportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:20px;">
-      <div style="background:white; width:100%; max-width:450px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column;">
+  <!-- 강사 수송 요청 모달 -->
+  <div id="transportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:15px;">
+      <div style="background:white; width:100%; max-width:450px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;">
           <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center;">
-              <h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청</h3>
-              <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeTransportModal()"></i>
+              <h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청 및 관리</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i>
           </div>
-          <div style="padding:20px; overflow-y:auto; max-height:70vh;">
+          <div style="padding:20px; overflow-y:auto; flex:1;">
               <label style="font-size:12px; font-weight:800; color:#6366f1;">1. 픽업 장소 선택</label>
-              <select id="reqLoc" class="navy-select" style="margin:8px 0 15px 0;">
-                  <option value="오송역 6번출구">오송역 6번출구</option>
+              <select id="reqLoc" class="navy-select" style="margin:8px 0 15px 0;" onchange="updateDirectionButtons()">
+                  <option value="오송역">오송역</option>
                   <option value="청주터미널">청주터미널</option>
                   <option value="청주공항">청주공항</option>
               </select>
-              <label style="font-size:12px; font-weight:800; color:#6366f1;">2. 운행 방향</label>
-              <div style="display:flex; gap:10px; margin:8px 0 15px 0;">
-                  <button id="dirTo" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('목적지→항기원')">목적지→항기원</button>
-                  <button id="dirFrom" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('항기원→목적지')">항기원→목적지</button>
-              </div>
-              <label style="font-size:12px; font-weight:800; color:#6366f1;">3. 요청 시간 및 강사명</label>
-              <div style="display:flex; gap:5px; margin-top:8px;">
+              <div style="display:flex; gap:5px; margin-bottom:10px;">
                   <input type="date" id="reqDate" class="navy-select" style="flex:1.5;">
                   <input type="time" id="reqTime" class="navy-select" style="flex:1;">
               </div>
-              <input type="text" id="reqProf" class="navy-select" style="margin-top:10px;" placeholder="강사 성함">
-              <div id="driverScheduleBox" style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                  <span style="font-size:11px; font-weight:800; color:#64748b;">📅 기사님 스케줄 미리보기</span>
-                  <div id="scheduleList" style="font-size:12px; margin-top:10px; color:#1e293b; line-height:1.6;">날짜 선택 시 표시됨</div>
+              <input type="text" id="reqProf" class="navy-select" style="margin-bottom:15px;" placeholder="강사 성함">
+              <label style="font-size:12px; font-weight:800; color:#6366f1;">2. 운행 방향 선택</label>
+              <div style="display:flex; gap:10px; margin:8px 0 20px 0;">
+                  <button id="dirTo" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1; font-size:11px;" onclick="setDirection('to')">목적지 → 항기원</button>
+                  <button id="dirFrom" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1; font-size:11px;" onclick="setDirection('from')">항기원 → 목적지</button>
+              </div>
+              <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:20px;">
+                  <span style="font-size:11px; font-weight:800; color:#64748b;">📅 픽업신청 당일 스케줄 미리보기</span>
+                  <div id="scheduleList" style="font-size:11px; margin-top:8px; color:#1e293b; line-height:1.6;">날짜 선택 시 표시됨</div>
+              </div>
+              <div style="border-top:1px dashed #cbd5e1; padding-top:15px;">
+                  <span style="font-size:11px; font-weight:800; color:#ef4444;">📜 내 수송 신청 현황</span>
+                  <div id="myRequestList" style="font-size:11px; margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
               </div>
           </div>
           <div style="padding:15px; display:flex; gap:10px; background:#f8fafc;">
-              <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeTransportModal()">취소</button>
+              <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeTransportModal()">닫기</button>
               <button class="navy-btn" style="background:#6366f1; flex:2;" onclick="submitTransportRequest()">수송 요청 등록</button>
           </div>
       </div>
   </div>
 
+  <!-- 명단 확인 팝업 -->
   <div id="listModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:20px;">
       <div style="background:white; width:100%; max-width:400px; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; max-height:80vh;">
           <div style="background:#0f172a; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
@@ -180,9 +189,10 @@
   <script>
     let globalAllData = {}; 
     let selectedDirection = "";
+    let currentRoomId = "";
 
     if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
-        alert("인증 필요"); location.replace('portal.html');
+        alert("인증 정보가 없습니다."); location.replace('portal.html');
     }
 
     function toggleMenu(isOpen) {
@@ -198,19 +208,27 @@
     function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
     function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
 
+    function updateDirectionButtons() {
+        const loc = document.getElementById('reqLoc').value;
+        document.getElementById('dirTo').innerText = `${loc} → 항기원`;
+        document.getElementById('dirFrom').innerText = `항기원 → ${loc}`;
+    }
+
     function openTransportModal() {
+        if(!currentRoomId) return alert("담당 과정을 먼저 리스트에서 선택한 후 신청해주세요.");
         toggleMenu(false); document.getElementById('transportModal').style.display = 'flex';
         document.getElementById('reqDate').value = getTodayString();
-        updateSchedulePreview();
+        selectedDirection = ""; updateDirectionButtons(); updateSchedulePreview(); loadMyRequestList();
         document.getElementById('reqDate').onchange = updateSchedulePreview;
     }
 
     function setDirection(dir) {
-        selectedDirection = dir;
-        document.getElementById('dirTo').style.background = (dir === '목적지→항기원') ? '#6366f1' : '#f1f5f9';
-        document.getElementById('dirTo').style.color = (dir === '목적지→항기원') ? '#fff' : '#475569';
-        document.getElementById('dirFrom').style.background = (dir === '항기원→목적지') ? '#6366f1' : '#f1f5f9';
-        document.getElementById('dirFrom').style.color = (dir === '항기원→목적지') ? '#fff' : '#475569';
+        const loc = document.getElementById('reqLoc').value;
+        selectedDirection = (dir === 'to') ? `${loc}→항기원` : `항기원→${loc}`;
+        document.getElementById('dirTo').style.background = (dir === 'to') ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirTo').style.color = (dir === 'to') ? '#fff' : '#475569';
+        document.getElementById('dirFrom').style.background = (dir === 'from') ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirFrom').style.color = (dir === 'from') ? '#fff' : '#475569';
     }
 
     function updateSchedulePreview() {
@@ -218,9 +236,25 @@
         firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value', snap => {
             const list = snap.val() || {}; const display = document.getElementById('scheduleList');
             const items = Object.values(list).sort((a,b) => a.time.localeCompare(b.time));
-            display.innerHTML = items.length ? items.map(i => `• <b>${i.time}</b>: ${i.loc} (${i.dir.split('→')[0]}발)`).join('<br>') : "등록된 일정 없음";
+            display.innerHTML = items.length ? items.map(i => `• <b>${i.time}</b> (${i.dir}) 예약완료`).join('<br>') : "등록된 일정 없음";
         });
     }
+
+    function loadMyRequestList() {
+        const listDiv = document.getElementById('myRequestList'); const todayStr = getTodayString();
+        firebase.database().ref('system/transport_requests').on('value', snap => {
+            const data = snap.val() || {};
+            const myRequests = Object.keys(data).map(key => ({id: key, ...data[key]}))
+                .filter(req => req.date >= todayStr).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+            listDiv.innerHTML = myRequests.length ? myRequests.map(req => `
+                <div style="background:#fff; border:1px solid #e2e8f0; padding:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${req.date.slice(5)} ${req.time}</b><br>${req.prof} (${req.dir})</div>
+                    <button onclick="deleteRequest('${req.id}')" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:5px 8px; font-size:10px;">삭제</button>
+                </div>`).join('') : "<div style='text-align:center; color:#94a3b8;'>내역 없음</div>";
+        });
+    }
+
+    function deleteRequest(id) { if(confirm("삭제하시겠습니까?")) firebase.database().ref(`system/transport_requests/${id}`).remove(); }
 
     async function submitTransportRequest() {
         const loc = document.getElementById('reqLoc').value; const dir = selectedDirection;
@@ -228,17 +262,14 @@
         const prof = document.getElementById('reqProf').value.trim();
         if(!dir || !date || !time || !prof) return alert("필수 입력 누락");
         const hour = parseInt(time.split(':')[0]);
-        if(hour === 12) return alert("점심시간(12-13시)은 신청 불가");
-        
+        if(hour === 12) return alert("⚠️ 점심시간(12-13시) 신청 불가");
         const offSnap = await firebase.database().ref(`system/driver_status/${date}/${hour}`).once('value');
-        if(offSnap.exists()) return alert(`기사님 일정(${offSnap.val()})으로 신청 불가`);
-        
+        if(offSnap.exists()) return alert("❌ 기사님 휴무/점검 시간입니다.");
         const reqSnap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
         let conflict = false; Object.values(reqSnap.val() || {}).forEach(i => { if(i.time === time && i.loc !== loc) conflict = true; });
-        if(conflict) return alert("이미 다른 예약이 있습니다.");
-        
+        if(conflict) return alert("❌ 이미 다른 예약이 있습니다.");
         await firebase.database().ref('system/transport_requests').push().set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        alert("✅ 신청 완료"); closeTransportModal();
+        alert("✅ 등록 완료");
     }
 
     function initActiveRoomList() {
@@ -264,23 +295,17 @@
     }
 
     function handleRoomSelection() {
-        const rid = document.getElementById('roomSelect').value;
+        const rid = document.getElementById('roomSelect').value; currentRoomId = rid;
         const totalView = document.getElementById('view-total-list'); const individualView = document.getElementById('view-individual-notice');
-        if(!rid) {
-            totalView.style.display = 'block'; individualView.style.display = 'none';
-            document.getElementById('selectionLabel').innerText = "전체 과정 현황";
-            document.getElementById('leaderDisplay').style.display = "none";
-            updateStats(globalAllData);
-        } else {
+        if(!rid) { totalView.style.display = 'block'; individualView.style.display = 'none'; document.getElementById('selectionLabel').innerText = "전체 과정 현황"; document.getElementById('leaderDisplay').style.display = "none"; updateStats(globalAllData); }
+        else {
             totalView.style.display = 'none'; individualView.style.display = 'flex';
             const roomData = globalAllData[rid] || {};
             document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${roomData.status?.professorName || "미지정"} 교수님 과정`;
             document.getElementById('courseNotice').value = roomData.coordNotice || "";
             const leader = Object.values(roomData.students || {}).find(st => st.isLeader === true);
-            if(leader) {
-                document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`;
-                document.getElementById('leaderDisplay').style.display = "block";
-            } else { document.getElementById('leaderDisplay').style.display = "none"; }
+            if(leader) { document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`; document.getElementById('leaderDisplay').style.display = "flex"; }
+            else { document.getElementById('leaderDisplay').style.display = "none"; }
             updateStats({[rid]: roomData});
         }
     }
@@ -300,7 +325,8 @@
             }
             if(room.admin_actions && room.admin_actions[today]) {
                 Object.values(room.admin_actions[today]).forEach(v => {
-                    if(v.type === 'outing') outing.push(`${v.name} (R-${rid})`); if(v.type === 'overnight') overnight.push(`${v.name} (R-${rid})`);
+                    const text = `${v.name} (R-${rid})`;
+                    if(v.type === 'outing') outing.push(text); if(v.type === 'overnight') overnight.push(text);
                 });
             }
         });
@@ -312,25 +338,20 @@
         const el = document.getElementById(id); el.innerText = list.length;
         const parent = el.closest('.mini-stat-box') || el.closest('.action-box');
         parent.style.cursor = "pointer";
-        parent.onclick = () => {
-            if(list.length === 0) return;
-            document.getElementById('listModalTitle').innerText = `${title} (${list.length}명)`;
-            document.getElementById('listModalContent').innerHTML = list.map((n, i) => `${i+1}. ${n}`).join('<br>');
-            document.getElementById('listModal').style.display = 'flex';
-        };
+        parent.onclick = () => { if(list.length === 0) return; document.getElementById('listModalTitle').innerText = `${title} (${list.length}명)`; document.getElementById('listModalContent').innerHTML = list.map((n, i) => `${i+1}. ${n}`).join('<br>'); document.getElementById('listModal').style.display = 'flex'; };
     }
 
     function saveCourseNotice() {
         const rid = document.getElementById('roomSelect').value; if(!rid) return;
-        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value).then(() => alert("✅ 과정 공지 저장"));
+        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value).then(() => alert("✅ 저장 완료"));
     }
     function saveGlobalNotice() {
-        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(() => alert("✅ 전체 공지 저장"));
+        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(() => alert("✅ 저장 완료"));
     }
     async function handleQRUpload(input) {
         const rid = document.getElementById('roomSelect').value; if(!rid) return alert("과정 선택 필수");
         const reader = new FileReader(); reader.onload = async (e) => {
-            await firebase.database().ref(`courses/${rid}/attendanceQR`).set(e.target.result); alert("완료"); toggleMenu(false);
+            await firebase.database().ref(`courses/${rid}/attendanceQR`).set(e.target.result); alert("업로드 완료"); toggleMenu(false);
         }; reader.readAsDataURL(input.files[0]);
     }
 
