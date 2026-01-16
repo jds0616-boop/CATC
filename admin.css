@@ -2615,3 +2615,15 @@ body.night-mode .status-table tr.is-my-room {
     cursor: pointer; font-size: 13px; transition: 0.2s;
 }
 .btn-list-clear:hover { background: #fef2f2; }
+
+
+/* 수강생 명부 보정: 기존 스타일보다 우선 적용됩니다 */
+.status-badge {
+    min-width: 70px !important; /* 글자가 길어져도 배지가 찌그러지지 않게 고정 */
+    text-align: center !important;
+}
+
+/* 이름 칸 아이콘과 텍스트 간격 */
+#studentListTableBody td:nth-child(2) {
+    white-space: nowrap;
+}
