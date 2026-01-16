@@ -1028,51 +1028,52 @@ function forceCloseQuiz() {
 
 
 
-
-
 let tempSelectedLoc = null; 
 let tempSelectedDir = null; // 선택한 방향(out/in)을 저장할 변수
 
-// [수정] 방향 버튼 클릭 시 처리
+// [중요] 이 함수가 있어야 버튼이 활성화됩니다!
 function selectShuttleDirection(dir) {
     tempSelectedDir = dir;
     const title = document.getElementById('shuttleModalTitle');
-    const hint = document.getElementById('shuttleDirectionHint');
     
-    // 버튼 색상 변경
+    // 버튼 색상 변경 (클릭한 버튼은 파란색, 나머지는 기본색)
     document.getElementById('dirBtnOut').style.borderColor = (dir === 'out') ? '#3b82f6' : '#e2e8f0';
     document.getElementById('dirBtnOut').style.color = (dir === 'out') ? '#3b82f6' : '#64748b';
     document.getElementById('dirBtnIn').style.borderColor = (dir === 'in') ? '#3b82f6' : '#e2e8f0';
     document.getElementById('dirBtnIn').style.color = (dir === 'in') ? '#3b82f6' : '#64748b';
     
-    // 안내 문구 변경
+    // 제목 변경
     if(dir === 'out') {
-        title.innerText = "차량 신청 (항기원 → 목적지)";
-        hint.innerText = "나가는 길, 목적지를 선택하세요.";
+        if(title) title.innerText = "차량 신청 (항기원 → 목적지)";
     } else {
-        title.innerText = "차량 신청 (목적지 → 항기원)";
-        hint.innerText = "들어오는 길, 목적지를 선택하세요.";
+        if(title) title.innerText = "차량 신청 (목적지 → 항기원)";
     }
 
-    // 목적지 버튼 활성화
-    document.getElementById('shuttleButtons').style.opacity = "1";
-    document.getElementById('shuttleButtons').style.pointerEvents = "auto";
+    // [핵심] 목적지 버튼들을 감싸는 영역의 불투명도를 1로 만들고 클릭 가능하게 변경
+    const buttonsArea = document.getElementById('shuttleButtons');
+    if(buttonsArea) {
+        buttonsArea.style.opacity = "1";
+        buttonsArea.style.pointerEvents = "auto";
+    }
 }
 
-// [수정] 차량 신청 창 열기 (신청 내역 조회 포함)
+// 차량 신청 창 열기 (신청 내역 조회)
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    // 초기화
+    // 창을 열 때마다 초기 상태(버튼 잠금)로 만듦
     tempSelectedLoc = null;
     tempSelectedDir = null;
-    document.getElementById('shuttleModalTitle').innerText = "차량 탑승 신청";
-    document.getElementById('shuttleDirectionHint').innerText = "방향을 먼저 선택해주세요.";
+    const title = document.getElementById('shuttleModalTitle');
+    if(title) title.innerText = "차량 탑승 신청";
+    
     document.getElementById('shuttleButtons').style.opacity = "0.3";
     document.getElementById('shuttleButtons').style.pointerEvents = "none";
     document.getElementById('dirBtnOut').style.borderColor = '#e2e8f0';
+    document.getElementById('dirBtnOut').style.color = '#64748b';
     document.getElementById('dirBtnIn').style.borderColor = '#e2e8f0';
+    document.getElementById('dirBtnIn').style.color = '#64748b';
     document.getElementById('shuttleCancelArea').style.display = 'none';
 
     let uToken = localStorage.getItem('uToken');
@@ -1081,14 +1082,13 @@ async function openShuttleApply() {
     try {
         const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle`).once('value');
         const data = snap.val() || {};
-        const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차' };
+        const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항' };
         
         let foundDir = null, foundLoc = null;
         if(data.out) { for(const loc in data.out) { if(data.out[loc][uToken]) { foundDir='out'; foundLoc=loc; } } }
         if(data.in && !foundLoc) { for(const loc in data.in) { if(data.in[loc][uToken]) { foundDir='in'; foundLoc=loc; } } }
 
         if (foundLoc) {
-            document.getElementById('shuttleButtons').style.display = 'none';
             document.getElementById('shuttleCancelArea').style.display = 'block';
             const dirText = (foundDir === 'out') ? '항기원→목적지' : '목적지→항기원';
             document.getElementById('myCurrentShuttle').innerText = `📍 기신청: [${dirText}] ${locNames[foundLoc]}`;
@@ -1116,7 +1116,7 @@ async function submitShuttleRequest() {
         await firebase.database().ref(`courses/${currentRoom}/shuttle/${tempSelectedDir}/${tempSelectedLoc.id}/${uToken}`).set(fullName);
         alert("✅ 신청이 완료되었습니다.");
         document.getElementById('shuttleModal').style.display = 'none';
-    } catch (e) { alert("오류 발생"); }
+    } catch (e) { alert("저장 오류 발생"); }
 }
 
 async function cancelShuttleRequest() {
@@ -1129,7 +1129,21 @@ async function cancelShuttleRequest() {
     } catch (e) { alert("취소 오류"); }
 }
 
-function closeShuttleModal() { document.getElementById('shuttleModal').style.display = 'none'; }
+function closeShuttleModal() { 
+    document.getElementById('shuttleModal').style.display = 'none'; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

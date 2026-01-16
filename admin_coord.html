@@ -69,18 +69,6 @@
           <i class="fa-solid fa-car-side"></i> 강사 수송 요청
       </button>
 
-      <!-- [신규] 교육생 수송 방향 설정 -->
-      <div style="margin-top:10px; padding:15px; background:#f0f9ff; border-radius:15px; border:1px solid #e0f2fe;">
-          <label style="font-size:12px; font-weight:900; color:#1e293b; display:block; margin-bottom:12px;">
-              <i class="fa-solid fa-arrows-left-right"></i> 수송 신청 방향 설정
-          </label>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-              <button id="setDirOut" class="navy-btn" style="background:#fff; color:#475569; border:1px solid #cbd5e1; height:38px; font-size:12px;" onclick="updateStudentShuttleDir('out')">항기원 → 목적지 (퇴소)</button>
-              <button id="setDirIn" class="navy-btn" style="background:#fff; color:#475569; border:1px solid #cbd5e1; height:38px; font-size:12px;" onclick="updateStudentShuttleDir('in')">목적지 → 항기원 (입소)</button>
-          </div>
-          <p style="font-size:10px; color:#94a3b8; margin-top:10px; line-height:1.4;">* 여기서 설정한 방향에 따라<br>학생 앱 및 기사 앱의 현황이 바뀝니다.</p>
-      </div>
-    </div>
 
     <header class="app-header">
       <button class="header-btn" onclick="location.href='portal.html'"><i class="fa-solid fa-chevron-left"></i></button>
@@ -215,47 +203,99 @@
     function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
     function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
 
+// 1. 수송 요청 모달 열기
     function openTransportModal() {
-        toggleMenu(false); document.getElementById('transportModal').style.display = 'flex';
+        toggleMenu(false);
+        document.getElementById('transportModal').style.display = 'flex';
+        
+        // 날짜를 오늘로 초기화
         document.getElementById('reqDate').value = getTodayString();
+        // 방향 초기화 (미선택 상태)
+        selectedDirection = "";
+        document.getElementById('dirTo').style.background = '#f1f5f9';
+        document.getElementById('dirTo').style.color = '#475569';
+        document.getElementById('dirFrom').style.background = '#f1f5f9';
+        document.getElementById('dirFrom').style.color = '#475569';
+        
         updateSchedulePreview();
         document.getElementById('reqDate').onchange = updateSchedulePreview;
     }
 
+    // 2. 운행 방향 선택 (버튼 클릭 시 작동)
     function setDirection(dir) {
-        selectedDirection = dir;
-        document.getElementById('dirTo').style.background = (dir === '목적지→항기원') ? '#6366f1' : '#f1f5f9';
-        document.getElementById('dirTo').style.color = (dir === '목적지→항기원') ? '#fff' : '#475569';
-        document.getElementById('dirFrom').style.background = (dir === '항기원→목적지') ? '#6366f1' : '#f1f5f9';
-        document.getElementById('dirFrom').style.color = (dir === '항기원→목적지') ? '#fff' : '#475569';
+        selectedDirection = dir; // 전역 변수에 방향 저장
+        
+        // 버튼 색상 변경 (활성화 표시)
+        const isTo = (dir === '목적지→항기원');
+        document.getElementById('dirTo').style.background = isTo ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirTo').style.color = isTo ? '#fff' : '#475569';
+        document.getElementById('dirFrom').style.background = !isTo ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirFrom').style.color = !isTo ? '#fff' : '#475569';
     }
 
-    function updateSchedulePreview() {
-        const date = document.getElementById('reqDate').value;
-        if(!date) return;
-        firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value', snap => {
-            const list = snap.val() || {};
-            const display = document.getElementById('scheduleList');
-            const items = Object.values(list).sort((a,b) => a.time.localeCompare(b.time));
-            display.innerHTML = items.length ? items.map(i => `• <b>${i.time}</b>: ${i.loc} (${i.dir.split('→')[0]}발)`).join('<br>') : "등록된 일정 없음";
-        });
-    }
 
-    async function submitTransportRequest() {
-        const loc = document.getElementById('reqLoc').value; const dir = selectedDirection;
-        const date = document.getElementById('reqDate').value; const time = document.getElementById('reqTime').value;
-        const prof = document.getElementById('reqProf').value.trim();
-        if(!dir || !date || !time || !prof) return alert("필수 입력 누락");
+
+// [수리 완료] 강사 수송 요청 등록 함수
+async function submitTransportRequest() {
+    const loc = document.getElementById('reqLoc').value;
+    const dir = selectedDirection; // 버튼으로 선택된 방향
+    const date = document.getElementById('reqDate').value;
+    const time = document.getElementById('reqTime').value;
+    const prof = document.getElementById('reqProf').value.trim();
+
+    // [체크 1] 입력값 확인
+    if(!dir) return alert("운행 방향(목적지↔항기원)을 선택해주세요.");
+    if(!date || !time) return alert("날짜와 시간을 입력해주세요.");
+    if(!prof) return alert("강사 성함을 입력해주세요.");
+
+    try {
         const hour = parseInt(time.split(':')[0]);
-        if(hour === 12) return alert("점심시간 신청 불가");
+
+        // [체크 2] 점심시간 예약 차단 (12시)
+        if(hour === 12) return alert("⚠️ 12:00 ~ 13:00은 기사님 점심시간으로 신청이 불가합니다.");
+
+        // [체크 3] 기사님 개인 일정(운행불가) 확인
         const offSnap = await firebase.database().ref(`system/driver_status/${date}/${hour}`).once('value');
-        if(offSnap.exists()) return alert("기사님 운행불가 시간");
+        if(offSnap.exists()) {
+            return alert(`❌ 해당 시간은 기사님 일정(${offSnap.val()})으로 인해 신청이 불가능합니다.`);
+        }
+
+        // [체크 4] 중복 예약 확인
         const reqSnap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
-        let conflict = false; Object.values(reqSnap.val() || {}).forEach(i => { if(i.time === time && i.loc !== loc) conflict = true; });
-        if(conflict) return alert("운전기사 스케줄 중복");
-        await firebase.database().ref('system/transport_requests').push().set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        alert("등록 완료"); closeTransportModal();
+        const existingData = reqSnap.val() || {};
+        let isConflict = false;
+
+        Object.values(existingData).forEach(item => {
+            // 시간은 같은데 장소가 다른 경우만 차단 (장소까지 같으면 동승 허용)
+            if(item.time === time && item.loc !== loc) {
+                isConflict = true;
+            }
+        });
+
+        if(isConflict) return alert("❌ 이미 해당 시간에 다른 장소 운행이 예약되어 있습니다.");
+
+        // [저장] 모든 관문 통과 시 등록 실행
+        await firebase.database().ref('system/transport_requests').push().set({
+            loc: loc,
+            dir: dir,
+            date: date,
+            time: time,
+            prof: prof,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        alert("✅ 강사 수송 요청이 등록되었습니다.");
+        closeTransportModal(); // 팝업 닫기
+        
+    } catch (error) {
+        console.error(error);
+        alert("등록 중 오류가 발생했습니다.");
     }
+}
+
+
+
+
 
     // [신규] 교육생 수송 방향 글로벌 설정 저장 함수
     function updateStudentShuttleDir(dir) {
@@ -325,22 +365,32 @@
         }
     }
 
-// [연동 보정] 관리자 통계 합산 로직
+
+// [수정] 교육생 신청 현황 합산 (방향 상관없이 전체 합계 표시)
 function updateStats(dataScope) {
     let osong = [], term = [], air = [], outing = [], overnight = [];
     const today = getTodayString();
 
     Object.keys(dataScope).forEach(rid => {
         const room = dataScope[rid];
-        // 코디네이터가 설정한 글로벌 방향(currentShuttleDir) 폴더에서 데이터 추출
-        const shuttle = (room.shuttle && room.shuttle[currentShuttleDir]) ? room.shuttle[currentShuttleDir] : null;
         
-        if(shuttle) {
-            if(shuttle.osong) Object.values(shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
-            if(shuttle.terminal) Object.values(shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
-            if(shuttle.airport) Object.values(shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
+        // 방향(in/out) 상관없이 모든 셔틀 신청자를 합산
+        if(room.shuttle) {
+            // 항기원 → 목적지(out) 합산
+            if(room.shuttle.out) {
+                if(room.shuttle.out.osong) Object.values(room.shuttle.out.osong).forEach(n => osong.push(`${n} (R-${rid} 퇴소)`));
+                if(room.shuttle.out.terminal) Object.values(room.shuttle.out.terminal).forEach(n => term.push(`${n} (R-${rid} 퇴소)`));
+                if(room.shuttle.out.airport) Object.values(room.shuttle.out.airport).forEach(n => air.push(`${n} (R-${rid} 퇴소)`));
+            }
+            // 목적지 → 항기원(in) 합산
+            if(room.shuttle.in) {
+                if(room.shuttle.in.osong) Object.values(room.shuttle.in.osong).forEach(n => osong.push(`${n} (R-${rid} 입소)`));
+                if(room.shuttle.in.terminal) Object.values(room.shuttle.in.terminal).forEach(n => term.push(`${n} (R-${rid} 입소)`));
+                if(room.shuttle.in.airport) Object.values(room.shuttle.in.airport).forEach(n => air.push(`${n} (R-${rid} 입소)`));
+            }
         }
         
+        // 외출/외박 합산 (기존 로직 유지)
         if(room.admin_actions && room.admin_actions[today]) {
             Object.values(room.admin_actions[today]).forEach(v => {
                 const text = `${v.name} (R-${rid})`;
@@ -350,12 +400,17 @@ function updateStats(dataScope) {
         }
     });
 
+    // 화면에 숫자 출력 및 팝업 연결
     renderStatItem('s-osong', osong, "오송역 신청자");
     renderStatItem('s-term', term, "터미널 신청자");
     renderStatItem('s-air', air, "공항 신청자");
     renderStatItem('o-cnt', outing, "오늘 외출자");
     renderStatItem('n-cnt', overnight, "오늘 외박자");
 }
+
+
+
+
 
     function renderStatItem(id, list, title) {
         const el = document.getElementById(id); el.innerText = list.length;
