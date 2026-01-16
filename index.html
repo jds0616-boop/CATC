@@ -1075,31 +1075,32 @@ function forceCloseQuiz() {
 let tempSelectedLoc = null; 
 let tempSelectedDir = null; // 선택한 방향(out/in)을 저장할 변수
 
-// [중요] 이 함수가 있어야 버튼이 활성화됩니다!
+// [방향 선택] 버튼을 눌렀을 때 목적지 버튼을 깨우는 함수
 function selectShuttleDirection(dir) {
-    tempSelectedDir = dir;
+    tempSelectedDir = dir; // 선택한 방향(out/in) 저장
+    
     const title = document.getElementById('shuttleModalTitle');
+    const outBtn = document.getElementById('dirBtnOut');
+    const inBtn = document.getElementById('dirBtnIn');
+    const buttonsArea = document.getElementById('shuttleButtons');
+
+    // 1. 버튼 색상 강조 (선택한 것만 파랗게)
+    if (outBtn && inBtn) {
+        outBtn.style.borderColor = (dir === 'out') ? '#3b82f6' : '#e2e8f0';
+        outBtn.style.color = (dir === 'out') ? '#3b82f6' : '#64748b';
+        inBtn.style.borderColor = (dir === 'in') ? '#3b82f6' : '#e2e8f0';
+        inBtn.style.color = (dir === 'in') ? '#3b82f6' : '#64748b';
+    }
     
-    // 버튼 색상 변경 (클릭한 버튼은 파란색, 나머지는 기본색)
-    document.getElementById('dirBtnOut').style.borderColor = (dir === 'out') ? '#3b82f6' : '#e2e8f0';
-    document.getElementById('dirBtnOut').style.color = (dir === 'out') ? '#3b82f6' : '#64748b';
-    document.getElementById('dirBtnIn').style.borderColor = (dir === 'in') ? '#3b82f6' : '#e2e8f0';
-    document.getElementById('dirBtnIn').style.color = (dir === 'in') ? '#3b82f6' : '#64748b';
-    
-// 제목 변경
-    if(dir === 'out') {
-        if(title) title.innerText = "[퇴소] 항기원 출발";
-        if(hint) hint.innerText = "목적지(오송역 등)를 선택하세요.";
-    } else {
-        if(title) title.innerText = "[입소] 항기원 도착";
-        if(hint) hint.innerText = "출발지(오송역 등)를 선택하세요.";
+    // 2. 제목 변경 (알기 쉽게)
+    if(title) {
+        title.innerText = (dir === 'out') ? "차량 신청 ([퇴소] 항기원 출발)" : "차량 신청 ([입소] 항기원 도착)";
     }
 
-    // [핵심] 목적지 버튼들을 감싸는 영역의 불투명도를 1로 만들고 클릭 가능하게 변경
-    const buttonsArea = document.getElementById('shuttleButtons');
+    // 3. [핵심] 비활성화된 목적지 버튼들을 활성화 (진하게 만들기)
     if(buttonsArea) {
-        buttonsArea.style.opacity = "1";
-        buttonsArea.style.pointerEvents = "auto";
+        buttonsArea.style.opacity = "1";        // 투명도 해제
+        buttonsArea.style.pointerEvents = "auto"; // 클릭 가능하게 변경
     }
 }
 
