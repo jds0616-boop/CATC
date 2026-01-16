@@ -263,7 +263,7 @@
 </div>
 
 
-----------------------------------------------------------------------------------------
+
 <!-- 차량 신청용 팝업 (방향 선택 기능 추가) -->
 <div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px;">
@@ -272,8 +272,8 @@
         
         <!-- 1단계: 방향 선택 버튼 -->
         <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <button id="dirBtnOut" onclick="selectShuttleDirection('out')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">항기원 → 목적지</button>
-            <button id="dirBtnIn" onclick="selectShuttleDirection('in')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">목적지 → 항기원</button>
+            <button id="dirBtnOut" onclick="selectShuttleDirection('out')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">[퇴소] 항기원 출발</button>
+            <button id="dirBtnIn" onclick="selectShuttleDirection('in')" style="flex:1; padding:12px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; color:#64748b;">[입소] 항기원 도착</button>
         </div>
 
         <!-- 2단계: 목적지 버튼 (방향을 선택하기 전까진 흐리게 보임) -->
@@ -1042,11 +1042,13 @@ function selectShuttleDirection(dir) {
     document.getElementById('dirBtnIn').style.borderColor = (dir === 'in') ? '#3b82f6' : '#e2e8f0';
     document.getElementById('dirBtnIn').style.color = (dir === 'in') ? '#3b82f6' : '#64748b';
     
-    // 제목 변경
+// 제목 변경
     if(dir === 'out') {
-        if(title) title.innerText = "차량 신청 (항기원 → 목적지)";
+        if(title) title.innerText = "[퇴소] 항기원 출발";
+        if(hint) hint.innerText = "목적지(오송역 등)를 선택하세요.";
     } else {
-        if(title) title.innerText = "차량 신청 (목적지 → 항기원)";
+        if(title) title.innerText = "[입소] 항기원 도착";
+        if(hint) hint.innerText = "출발지(오송역 등)를 선택하세요.";
     }
 
     // [핵심] 목적지 버튼들을 감싸는 영역의 불투명도를 1로 만들고 클릭 가능하게 변경
@@ -1090,7 +1092,7 @@ async function openShuttleApply() {
 
         if (foundLoc) {
             document.getElementById('shuttleCancelArea').style.display = 'block';
-            const dirText = (foundDir === 'out') ? '항기원→목적지' : '목적지→항기원';
+            const dirText = (foundDir === 'out') ? '[퇴소] 항기원 출발' : '[입소] 항기원 도착';
             document.getElementById('myCurrentShuttle').innerText = `📍 기신청: [${dirText}] ${locNames[foundLoc]}`;
             tempSelectedLoc = { id: foundLoc, name: locNames[foundLoc] };
             tempSelectedDir = foundDir;
@@ -1100,7 +1102,7 @@ async function openShuttleApply() {
 
 function selectShuttle(locId, locName) {
     if(!tempSelectedDir) return;
-    const dirText = (tempSelectedDir === 'out') ? '항기원 → 목적지' : '목적지 → 항기원';
+    const dirText = (tempSelectedDir === 'out') ? '[퇴소] 항기원 출발' : '[입소] 항기원 도착';
     showKacConfirm(`[${dirText}]\n${locName}행 셔틀을 신청하시겠습니까?`, function() {
         tempSelectedLoc = { id: locId, name: locName };
         submitShuttleRequest();
@@ -1114,7 +1116,7 @@ async function submitShuttleRequest() {
     const fullName = `${name}(${phone})`;
     try {
         await firebase.database().ref(`courses/${currentRoom}/shuttle/${tempSelectedDir}/${tempSelectedLoc.id}/${uToken}`).set(fullName);
-        alert("✅ 신청이 완료되었습니다.");
+        alert(`✅ 신청 완료!\n[${tempSelectedDir === 'out' ? '퇴소' : '입소'}] 차량 탑승 명단에 등록되었습니다.`);
         document.getElementById('shuttleModal').style.display = 'none';
     } catch (e) { alert("저장 오류 발생"); }
 }
