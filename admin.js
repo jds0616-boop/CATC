@@ -2365,13 +2365,13 @@ confirmExitQuiz: function(type) {
 
 
 
-/* --- [입교안내 가이드 관리 로직 - 시네마틱 버전] --- */
+/* --- [수정 2차 - 완결본] 입교안내 가이드 관리 로직 (동적 스케일 및 기존 기능 통합) --- */
 const guideMgr = {
     pdfDoc: null,
     pageNum: 1,
     isRendering: false,
 
-    // 1. 초기화
+    // 1. 초기화 (기존 로직 + 리사이즈 감시 추가)
     init: function() {
         if(!state.room) return;
         
@@ -2379,6 +2379,7 @@ const guideMgr = {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         }
 
+        // 기존 Firebase 리스너 유지
         firebase.database().ref(`courses/${state.room}/entranceGuide`).off(); 
         firebase.database().ref(`system/sharedGuide`).on('value', snap => {
             const data = snap.val();
@@ -2398,23 +2399,29 @@ const guideMgr = {
                 }
             }
         });
+
+        // [추가] 화면 크기가 변하거나 전체화면이 바뀔 때 PDF를 다시 계산해서 그림
+        window.addEventListener('resize', () => {
+            if (document.getElementById('view-guide').style.display !== 'none') {
+                guideMgr.renderPage(guideMgr.pageNum);
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            // 전체화면 전환 애니메이션 시간을 고려해 200ms 뒤에 다시 그림
+            setTimeout(() => guideMgr.renderPage(guideMgr.pageNum), 200);
+        });
     },
 
-
-
-
-// [가이드 업로드 전용 확인 팝업 추가 버전]
+    // 2. 가이드 업로드 (사용자님의 확인 팝업 버전 유지)
     uploadGuide: function(input) {
         const file = input.files[0];
-        
-        // 1. 파일이 비었거나 PDF가 아니면 경고 후 종료
         if(!file || file.type !== 'application/pdf') {
             ui.showAlert("PDF 파일만 업로드 가능합니다.");
             input.value = ""; 
             return;
         }
 
-        // 2. [핵심 추가] 사용자에게 확인창 띄우기
         const userConfirmed = confirm(
             "⚠️ [주의] 새 가이드를 업로드하시겠습니까?\n\n" +
             "업로드 시 기존에 등록되어 있던 가이드 자료는\n" +
@@ -2422,13 +2429,11 @@ const guideMgr = {
             "진행하시겠습니까?"
         );
 
-        // 3. 사용자가 취소를 누르면 실행 중단
         if (!userConfirmed) {
-            input.value = ""; // 선택했던 파일 초기화
+            input.value = ""; 
             return;
         }
 
-        // 4. 확인을 눌렀을 때만 실제 업로드 로직 실행
         const reader = new FileReader();
         reader.onload = (e) => {
             firebase.database().ref(`system/sharedGuide`).set(e.target.result)
@@ -2440,10 +2445,7 @@ const guideMgr = {
         reader.readAsDataURL(file);
     },
 
-
-
-
-    // 3. PDF 로드
+    // 3. PDF 로드 (기존 로직 유지)
     loadPDF: async function(base64) {
         try {
             const raw = atob(base64.split(',')[1]);
@@ -2458,7 +2460,7 @@ const guideMgr = {
         }
     },
 
-    // 4. 화면 렌더링 (페이지 번호 업데이트 에러 방지 처리됨)
+    // 4. 화면 렌더링 (동적 스케일 계산 적용 및 인디케이터 업데이트 포함)
     renderPage: async function(num) {
         if(!guideMgr.pdfDoc || guideMgr.isRendering) return;
         guideMgr.isRendering = true;
@@ -2469,8 +2471,28 @@ const guideMgr = {
             if(!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // 시네마틱 뷰를 위해 스케일을 약간 높임 (품질 향상)
-            const viewport = page.getViewport({scale: 2.0}); 
+            // --- [핵심 수정: 동적 크기 계산] ---
+            // 현재 화면(브라우저 창)의 너비와 높이를 가져옴
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+
+            // PDF 원본 크기 정보를 가져옴
+            const unscaledViewport = page.getViewport({scale: 1.0});
+
+            // 화면에 꽉 차도록(하지만 잘리지 않게 98% 비율로) 계산
+            const ratioW = (winW * 0.98) / unscaledViewport.width;
+            const ratioH = (winH * 0.98) / unscaledViewport.height;
+
+            // 가로와 세로 중 더 작은 비율을 선택해야 화면 밖으로 안 나감 (Fit-to-Screen)
+            let dynamicScale = Math.min(ratioW, ratioH);
+
+            // 전체화면이 아닐 때는 일반 뷰이므로 너무 커지지 않게 최대 1.5배로 제한
+            if (!document.fullscreenElement) {
+                dynamicScale = Math.min(dynamicScale, 1.5);
+            }
+            // ---------------------------------
+
+            const viewport = page.getViewport({scale: dynamicScale}); 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             canvas.height = viewport.height;
@@ -2479,7 +2501,7 @@ const guideMgr = {
             await page.render({canvasContext: ctx, viewport: viewport}).promise;
             guideMgr.isRendering = false;
             
-            // [중요] 페이지 번호 요소가 HTML에서 삭제되었으므로, 존재할 때만 업데이트 하도록 보정
+            // 페이지 번호 인디케이터 업데이트 (기존 로직 유지)
             const indicator = document.getElementById('pageIndicator');
             if(indicator) {
                 indicator.innerText = `Page: ${num} / ${guideMgr.pdfDoc.numPages}`;
@@ -2489,7 +2511,7 @@ const guideMgr = {
         }
     },
 
-    // 5. 페이지 이동
+    // 5. 페이지 이동 (기존 로직 유지)
     changePage: function(offset) {
         if(!guideMgr.pdfDoc || guideMgr.isRendering) return;
         let newPage = guideMgr.pageNum + offset;
@@ -2499,7 +2521,7 @@ const guideMgr = {
         }
     },
 
-    // 6. 진짜 전체화면 모드 (Cinematic View용 보정)
+    // 6. 진짜 전체화면 모드 (기존 로직 유지)
     toggleFullScreen: function() {
         const elem = document.getElementById('view-guide');
         if (!document.fullscreenElement) {
@@ -2511,7 +2533,6 @@ const guideMgr = {
         }
     }
 };
-
 
 
 

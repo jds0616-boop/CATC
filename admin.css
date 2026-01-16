@@ -1344,35 +1344,56 @@ body.night-mode .badge-idle {
     transform: scale(1.1);
 }
 
-/* 7. [핵심] 진짜 몰입형 전체화면 모드 (Presentation) */
+/* ============================================================
+   [수정 2차 - 1단계] PDF 전체화면 몰입형 Presentation 모드 (통합본)
+   ============================================================ */
+
+/* 1. 전체화면 시 컨테이너: 배경은 블랙, 모든 여백 제거, 중앙 정렬 */
 #view-guide:fullscreen {
-    background-color: #000 !important; /* 전체화면 시 배경은 완전한 블랙 */
-    padding: 0;
+    background-color: #000 !important; 
+    padding: 0 !important;
+    margin: 0 !important;
     display: flex !important;
-    justify-content: center; /* 전체화면 시엔 상하좌우 정중앙 */
-    align-items: center;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important;
 }
 
-/* 전체화면 시 제목 영역 자동 숨김 */
-#view-guide:fullscreen .view-header {
+/* 2. 전체화면 시 불필요한 UI(제목, 페이지 표시 등) 자동 숨김 */
+#view-guide:fullscreen .view-header,
+#view-guide:fullscreen #pageIndicator {
     display: none !important;
 }
 
-/* 전체화면 시 슬라이드 크기를 화면에 꽉 맞춤 */
+/* 3. 전체화면 시 메인 래퍼: 화면 전체(100%) 사용 */
 #view-guide:fullscreen .guide-main-container {
-    max-width: 100vw;
-    height: 100vh;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 !important;
 }
 
+/* 4. 전체화면 시 PDF 프레임: 테두리와 그림자 제거하여 몰입감 극대화 */
 #view-guide:fullscreen #pdfWrapper {
-    box-shadow: none; /* 전체화면 시 그림자 제거 */
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: #000 !important;
+    width: auto !important; /* JS에서 계산한 크기에 맞춤 */
+    height: auto !important;
 }
 
-/* 8. 기타 불필요 요소 제거 */
-#pageIndicator {
-    display: none !important;
+/* 5. 캔버스 보정: 화면 비율을 유지하며 꽉 차게 */
+#view-guide:fullscreen #guideCanvas {
+    border-radius: 0 !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    object-fit: contain;
 }
-
 
 /* ============================================================
    [최종] 야간 모드(Night Mode) 시안성 통합 개선 패치
