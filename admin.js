@@ -1020,7 +1020,7 @@ loadDashboardStats: function() {
 
 
 
-// [최종 디자인 보정] 내부 ADMIN/CENTER 배지 크기 축소 및 슬림화
+// [초슬림 배지 적용] 운영부 공지사항 출력 (태그 두께 최소화 및 가변 레이아웃)
     loadNoticeView: async function() {
         if(!state.room) return;
         
@@ -1040,37 +1040,37 @@ loadDashboardStats: function() {
                 
                 let html = "";
                 
-                // (1) 과정 운영 공지 (태그 크기 축소)
+                // (1) 과정 운영 공지 - 8px 바 + 초슬림 배지
                 if (coordMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:12px 15px; background:#f0f7ff; border-radius:12px; border-left:6px solid #3b82f6; border-top:1px solid #dbeafe; border-right:1px solid #dbeafe; border-bottom:1px solid #dbeafe;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                                <!-- 배지 크기를 확 줄임 (padding 1px 6px, font-size 9px) -->
-                                <span style="background:#3b82f6; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:3px; line-height:1;">ADMIN</span>
+                        <div style="margin-bottom:12px; padding:12px 15px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe; border-left:8px solid #3b82f6;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; line-height:1;">
+                                <!-- 배지 두께를 1px로 줄이고 폰트를 9px로 최소화 -->
+                                <span style="background:#3b82f6; color:white; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; display:inline-block; height:14px; line-height:12px;">ADMIN</span>
                                 <span style="color:#3b82f6; font-size:11px; font-weight:800;">과정 운영 공지</span>
                             </div>
-                            <div style="font-size:14px; color:#1e3a8a; font-weight:600; line-height:1.5; white-space: pre-line;">${coordMsg}</div>
+                            <div style="font-size:14px; color:#1e3a8a; font-weight:600; line-height:1.4; white-space: pre-line;">${coordMsg}</div>
                         </div>`;
                 }
                 
-                // (2) 항기원 전체 공지 (태그 크기 축소)
+                // (2) 항기원 전체 공지 - 8px 바 + 초슬림 배지
                 if (globalMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:12px 15px; background:#f8fafc; border-radius:12px; border-left:6px solid #64748b; border-top:1px solid #e2e8f0; border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                                <!-- 배지 크기를 확 줄임 -->
-                                <span style="background:#64748b; color:white; font-size:9px; font-weight:900; padding:1px 6px; border-radius:3px; line-height:1;">CENTER</span>
+                        <div style="margin-bottom:12px; padding:12px 15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; border-left:8px solid #64748b;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; line-height:1;">
+                                <!-- 배지 두께 최소화 -->
+                                <span style="background:#64748b; color:white; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; display:inline-block; height:14px; line-height:12px;">CENTER</span>
                                 <span style="color:#64748b; font-size:11px; font-weight:800;">항기원 전체 공지</span>
                             </div>
-                            <div style="font-size:14px; color:#475569; font-weight:600; line-height:1.5; white-space: pre-line;">${globalMsg}</div>
+                            <div style="font-size:14px; color:#475569; font-weight:600; line-height:1.4; white-space: pre-line;">${globalMsg}</div>
                         </div>`;
                 }
 
                 if (!coordMsg && !globalMsg) {
                     display.innerHTML = `
-                        <div style="padding:60px 0; text-align:center; color:#cbd5e1;">
-                            <i class="fa-solid fa-envelope-open" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i>
-                            <p style="font-size:13px; font-weight:700;">현재 등록된 운영부 공지가 없습니다.</p>
+                        <div style="padding:50px 0; text-align:center; color:#cbd5e1;">
+                            <i class="fa-solid fa-comment-slash" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i>
+                            <p style="font-size:13px; font-weight:700;">등록된 운영부 공지가 없습니다.</p>
                         </div>`;
                 } else {
                     display.innerHTML = html;
@@ -1081,7 +1081,6 @@ loadDashboardStats: function() {
         globalRef.on('value', updateRightNotice);
         coordRef.on('value', updateRightNotice);
     },
-
 
 
 
