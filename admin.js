@@ -1020,11 +1020,11 @@ loadDashboardStats: function() {
 
 
 
-// [초슬림 배지 적용] 운영부 공지사항 출력 (태그 두께 최소화 및 가변 레이아웃)
+// [최종 해결] CSS 클래스 기반으로 구조를 단순화하여 두께 문제를 완벽히 해결
     loadNoticeView: async function() {
         if(!state.room) return;
         
-        // 1. 좌측 영역: 강사 본인 공지
+        // 1. 좌측 영역: 강사 본인 공지 (입력창)
         const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
         document.getElementById('instNoticeInputMain').value = snap.val() || "";
 
@@ -1040,37 +1040,35 @@ loadDashboardStats: function() {
                 
                 let html = "";
                 
-                // (1) 과정 운영 공지 - 8px 바 + 초슬림 배지
+                // (1) 과정 운영 공지
                 if (coordMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:12px 15px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe; border-left:8px solid #3b82f6;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; line-height:1;">
-                                <!-- 배지 두께를 1px로 줄이고 폰트를 9px로 최소화 -->
-                                <span style="background:#3b82f6; color:white; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; display:inline-block; height:14px; line-height:12px;">ADMIN</span>
+                        <div class="slim-notice-card admin">
+                            <div class="slim-tag-row">
+                                <span class="slim-badge" style="background:#3b82f6;">ADMIN</span>
                                 <span style="color:#3b82f6; font-size:11px; font-weight:800;">과정 운영 공지</span>
                             </div>
-                            <div style="font-size:14px; color:#1e3a8a; font-weight:600; line-height:1.4; white-space: pre-line;">${coordMsg}</div>
+                            <div class="slim-content-text" style="color:#1e3a8a;">${coordMsg}</div>
                         </div>`;
                 }
                 
-                // (2) 항기원 전체 공지 - 8px 바 + 초슬림 배지
+                // (2) 항기원 전체 공지
                 if (globalMsg) {
                     html += `
-                        <div style="margin-bottom:12px; padding:12px 15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; border-left:8px solid #64748b;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; line-height:1;">
-                                <!-- 배지 두께 최소화 -->
-                                <span style="background:#64748b; color:white; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; display:inline-block; height:14px; line-height:12px;">CENTER</span>
+                        <div class="slim-notice-card center">
+                            <div class="slim-tag-row">
+                                <span class="slim-badge" style="background:#64748b;">CENTER</span>
                                 <span style="color:#64748b; font-size:11px; font-weight:800;">항기원 전체 공지</span>
                             </div>
-                            <div style="font-size:14px; color:#475569; font-weight:600; line-height:1.4; white-space: pre-line;">${globalMsg}</div>
+                            <div class="slim-content-text" style="color:#475569;">${globalMsg}</div>
                         </div>`;
                 }
 
                 if (!coordMsg && !globalMsg) {
                     display.innerHTML = `
                         <div style="padding:50px 0; text-align:center; color:#cbd5e1;">
-                            <i class="fa-solid fa-comment-slash" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i>
-                            <p style="font-size:13px; font-weight:700;">등록된 운영부 공지가 없습니다.</p>
+                            <i class="fa-solid fa-envelope-open" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i>
+                            <p style="font-size:13px; font-weight:700;">현재 등록된 운영부 공지가 없습니다.</p>
                         </div>`;
                 } else {
                     display.innerHTML = html;
