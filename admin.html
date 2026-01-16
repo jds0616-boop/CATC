@@ -62,14 +62,31 @@
             </div>
         </div>
     </div>
- 
+
+
+  
+
+<!-- 1. 리포트 정보 입력 팝업 (원래대로 복구) -->
     <div id="printInputModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-q-text" style="font-size:22px; text-align:center; margin-bottom:20px;">📜 리포트 정보 입력</div>
             <div class="setting-container">
+                <div class="setting-group"><label class="setting-label">교육 기간</label><input type="text" id="printDateInput" class="setting-input"></div>
+                <div class="setting-group"><label class="setting-label">담임 교수</label><input type="text" id="printProfInput" class="setting-input"></div>
+            </div>
+            <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
+                <button class="m-btn m-btn-later" onclick="printMgr.closeInputModal()" style="background:#64748b; color:white;">취소</button>
+                <button class="m-btn m-btn-done" onclick="printMgr.confirmPrint(false)">미리보기 생성</button>
+            </div>
+        </div>
+    </div>
 
-
-<div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
+    <!-- 2. 사라졌던 사이드바 다시 생성 -->
+    <div class="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-header">KAC Training Platform</div>
+            <div class="setting-container">
+                <div class="setting-group"><label class="setting-label">Select Room</label><select id="roomSelect" class="setting-select"></select></div>
                 <div class="setting-group">
                     <label class="setting-label">Room Status</label>
                     <select id="roomStatusSelect" class="setting-select" style="font-weight:bold; color:#fbbf24;">
@@ -78,15 +95,16 @@
                     </select>
                 </div>
 
-                <!-- [통합] 과정의 모든 설정을 관리하는 마스터 버튼 -->
+                <!-- 통합 설정 마스터 버튼 -->
                 <div class="setting-group" style="margin-top: 10px;">
                     <label class="setting-label">Admin Control</label>
                     <button class="btn-action btn-primary" onclick="setupMgr.openSetupModal()" style="height:50px; font-size:14px; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);">
                         <i class="fa-solid fa-gears"></i> 교육과정 환경 설정 (통합)
                     </button>
-                    <!-- 기존 연동을 위해 숨겨진 상태로 유지되는 입력창들 -->
+                    <!-- 데이터 연동용 숨김 입력창 -->
                     <input type="text" id="courseNameInput" style="display:none;">
                     <input type="password" id="roomPw" style="display:none;">
+                    <select id="profSelect" style="display:none;"></select>
                 </div>
 
                 <div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
@@ -100,11 +118,10 @@
                     </div>
                 </div>
 
-
                 <div class="divider"></div>
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
-                    <div class="qr-box"><div id="qrcode" onclick="ui.openQrModal()"></div><button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()"><i class="fa-solid fa-copy"></i> Copy</button><input type="text" id="studentLink" style="opacity:0;position:absolute;z-index:-1;"></div>
+                    <div class="qr-box"><div id="qrcode"></div><button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()"><i class="fa-solid fa-copy"></i> Copy</button><input type="text" id="studentLink" style="opacity:0;position:absolute;z-index:-1;"></div>
                 </div>
                 <div class="setting-group">
                     <label class="setting-label">Quiz File (.txt)</label>
@@ -112,22 +129,23 @@
                 </div>
             </div>
         </div>
-<!-- sidebar-bottom 내부 수정 -->
-<div class="sidebar-bottom">
-    <div class="action-buttons">
-        <!-- 기존 버튼들의 onclick 함수를 ui.requestAdminAuth로 감쌉니다 -->
-        <button class="btn-action btn-secondary" onclick="ui.requestAdminAuth('pw')"><i class="fa-solid fa-key"></i> Password</button>
-        <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
-        <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Report</button>
-        <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('idle')" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Idle</button>
-        <button id="btnReset" class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
-    </div>
-    <div style="text-align: center; margin-top: 15px;">
-        <span onclick="ui.openSecretModal()" style="font-size:10px; color:#475569; cursor:pointer; text-decoration:underline;">시스템 보안 설정 (Admin PW 변경)</span>
-    </div>
-    <div class="dev-info">(Developed by DooSeok, Jang)</div>
-</div>
-</div> <!-- ★ 이 태그를 추가해서 sidebar 전체를 닫아줘야 합니다 ★ -->
+
+        <div class="sidebar-bottom">
+            <div class="action-buttons">
+                <button class="btn-action btn-secondary" onclick="ui.requestAdminAuth('pw')"><i class="fa-solid fa-key"></i> Password</button>
+                <button class="btn-action btn-secondary" onclick="authMgr.logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+                <button class="btn-action btn-print" onclick="printMgr.openInputModal()"><i class="fa-solid fa-print"></i> Report</button>
+                <button class="btn-action btn-danger" onclick="ui.requestAdminAuth('idle')" style="background:#b91c1c;"><i class="fa-solid fa-power-off"></i> All Idle</button>
+                <button id="btnReset" class="btn-action btn-danger" onclick="dataMgr.resetCourse()"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <span onclick="ui.openSecretModal()" style="font-size:10px; color:#475569; cursor:pointer; text-decoration:underline;">시스템 보안 설정</span>
+            </div>
+            <div class="dev-info">(Developed by DooSeok, Jang)</div>
+        </div>
+    </div> <!-- 사이드바 끝 -->
+
+
 
     <!-- Main Content -->
     <div class="main-stage">
