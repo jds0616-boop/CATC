@@ -116,128 +116,243 @@
 
 <body>
   <div class="app-container">
-    <!-- [추가] 햄버거 메뉴용 암막 레이어 -->
+    <!-- 햄버거 메뉴용 암막 -->
     <div id="menuOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500;" onclick="toggleMenu(false)"></div>
 
-    <!-- [추가] 우측 사이드 메뉴 (QR 관리창) -->
-    <div id="sideMenu" style="position:fixed; top:0; right:-280px; width:280px; height:100%; background:white; z-index:2000; transition:0.3s; padding:20px; box-shadow:-5px 0 15px rgba(0,0,0,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0; font-size:16px; color:#0f172a;">출결 QR 관리</h3>
+    <!-- 우측 사이드 메뉴 -->
+    <div id="sideMenu" style="position:fixed; top:0; right:-280px; width:280px; height:100%; background:white; z-index:2000; transition:0.3s; padding:20px; box-shadow:-5px 0 15px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:15px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0; font-size:16px; color:#0f172a;">행정 지원 메뉴</h3>
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="toggleMenu(false)"></i>
       </div>
-      <div style="text-align:center; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e0f2fe;">
+      
+      <button class="navy-btn" style="background:#3b82f6; text-align:left; padding-left:15px;" onclick="openQrManager()">
+          <i class="fa-solid fa-qrcode"></i> 출결 QR 관리
+      </button>
+      
+      <div id="qrManagerArea" style="display:none; text-align:center; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e0f2fe;">
           <input type="file" id="qrFile" accept="image/*" style="display:none;" onchange="handleQRUpload(this)">
-          <button class="navy-btn" style="background:#64748b; height:35px; font-size:12px; margin-bottom:10px;" onclick="document.getElementById('qrFile').click()">
-              <i class="fa-solid fa-camera"></i> QR 이미지 업로드
-          </button>
-          <img id="qrPreview" style="width:100%; max-height:150px; object-fit:contain; border:1px solid #ddd; display:none; margin:10px 0;">
-          <div id="qrStatus" style="font-size:11px; color:#0ea5e9; font-weight:700;">과정 선택 후 업로드하세요.</div>
+          <button class="navy-btn" style="background:#64748b; height:35px; font-size:12px;" onclick="document.getElementById('qrFile').click()">이미지 선택</button>
+          <img id="qrPreview" style="width:100%; max-height:120px; object-fit:contain; margin:10px 0; border:1px solid #ddd; display:none;">
+          <div id="qrStatus" style="font-size:11px; color:#0ea5e9; font-weight:bold;">과정 선택 후 업로드</div>
       </div>
+
+      <button class="navy-btn" style="background:#6366f1; text-align:left; padding-left:15px;" onclick="openTransportModal()">
+          <i class="fa-solid fa-car-side"></i> 강사 수송 요청
+      </button>
     </div>
 
     <header class="app-header">
       <button class="header-btn" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="header-title">Coordinator Dashboard</div>
-      <!-- [수정] 햄버거 아이콘에 클릭 이벤트 추가 -->
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <main class="app-content">
-      <!-- 1라인: 담당 과정 -->
+    <main class="app-content" style="overflow-y: auto; padding-bottom: 20px;">
+      <!-- 과정 선택 섹션 -->
       <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> <span id="selectionLabel">전체 과정 운영 현황입니다.</span></div>
-          <select id="roomSelect" class="navy-select" onchange="loadRoomSpecificData()">
-              <option value="">전체 과정 현황 보기</option>
+          <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> <span id="selectionLabel">전체 과정 현황</span></div>
+          <select id="roomSelect" class="navy-select" onchange="handleRoomSelection()">
+              <option value="">전체 과정 현황 보기 (기본)</option>
           </select>
-          <div id="leaderDisplay" class="leader-display" style="margin-top:8px; display:none;">
-              <i class="fa-solid fa-crown" style="color:#f59e0b; margin-right:6px;"></i> 학생장 : <span id="leaderInfoText">-</span>
+          <div id="leaderDisplay" style="margin-top:8px; display:none; font-size:12px; font-weight:800; color:var(--blue-deep); background:#f0f9ff; padding:8px 12px; border-radius:8px;">
+              <i class="fa-solid fa-crown" style="color:#f59e0b;"></i> 학생장: <span id="leaderInfoText">-</span>
           </div>
       </div>
 
-      <!-- 2라인: 셔틀 수요조사 (디자인 컴팩트화) -->
+      <!-- 통계 지표 -->
       <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-bus"></i> 셔틀 탑승 현황 (훈련원 발)</div>
+          <div class="section-title"><i class="fa-solid fa-bus"></i> 실시간 수송/외출 신청 지표</div>
           <div class="shuttle-stats">
-              <div class="mini-stat-box"><span>오송역</span><strong id="s-osong">0</strong></div>
-              <div class="mini-stat-box"><span>터미널</span><strong id="s-term">0</strong></div>
-              <div class="mini-stat-box"><span>공항</span><strong id="s-air">0</strong></div>
+              <div class="mini-stat-box" id="stat-osong"><span>오송역</span><strong id="s-osong">0</strong></div>
+              <div class="mini-stat-box" id="stat-term"><span>터미널</span><strong id="s-term">0</strong></div>
+              <div class="mini-stat-box" id="stat-air"><span>공항</span><strong id="s-air">0</strong></div>
           </div>
-      </div>
-
-      <!-- 3라인: 외출/외박 현황 -->
-      <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-user-clock"></i> 외출/외박 현황</div>
-          <div class="action-row">
-              <div class="action-box outing" style="padding:10px;">
+          <div class="action-row" style="margin-top:8px;">
+              <div class="action-box outing" id="stat-outing">
                   <span style="font-weight: 800; font-size:12px;">외출</span>
                   <strong style="font-size: 16px;"><span id="o-cnt">0</span>명</strong>
               </div>
-              <div class="action-box overnight" style="padding:10px;">
+              <div class="action-box overnight" id="stat-overnight">
                   <span style="font-weight: 800; font-size:12px;">외박</span>
                   <strong style="font-size: 16px;"><span id="n-cnt">0</span>명</strong>
               </div>
           </div>
       </div>
 
-      <!-- 4라인: 과정 공지 (과정 선택시에만 활성화) -->
-      <div class="section-card" id="courseNoticeCard">
-          <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 과정별 공지사항</div>
-          <textarea id="courseNotice" class="notice-area" style="height:50px;" placeholder="과정을 선택하면 작성 가능합니다." disabled></textarea>
-          <button id="btnCourseNotice" class="navy-btn" style="height:35px; font-size:13px;" onclick="saveCourseNotice()" disabled>과정 공지 업데이트</button>
+      <!-- [모드 1] 전체 현황 시: 운영 중인 과정 리스트 -->
+      <div id="view-total-list" class="section-card">
+          <div class="section-title"><i class="fa-solid fa-list-check"></i> 현재 운영 중인 과정 목록</div>
+          <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- JS 동적 생성 -->
+          </div>
       </div>
 
-      <!-- 5라인: 센터 전체 공지 -->
-      <div class="section-card">
-          <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지사항</div>
-          <textarea id="globalNotice" class="notice-area" style="height:50px;" placeholder="모든 교육생 앱 공지사항에 게시됩니다."></textarea>
-          <button class="navy-btn green" style="height:35px; font-size:13px;" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+      <!-- [모드 2] 개별 과정 시: 공지사항 관리 -->
+      <div id="view-individual-notice" style="display:none; flex-direction:column; gap:8px;">
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 우리 과정 공지 (강사에게 보임)</div>
+              <textarea id="courseNotice" class="notice-area" style="height:60px;" placeholder="내용을 입력하세요."></textarea>
+              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+          </div>
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 센터 전체 공지 (모든 방)</div>
+              <textarea id="globalNotice" class="notice-area" style="height:60px;" placeholder="모든 교육생 앱에 게시됩니다."></textarea>
+              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+          </div>
       </div>
     </main>
 
-    <footer class="app-footer" style="height:40px;">
-      <div id="footer-date" style="font-size:10px;">0000년 00월 00일 00:00</div>
-      <div class="footer-logo"><img src="logo.png" alt="KAC Logo" style="height:15px;"></div>
-
-
-<!-- [추가] 상세 명단 확인용 팝업 모달 -->
-    <div id="listModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:white; width:100%; max-width:400px; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; max-height:80vh;">
-            <div style="background:#0f172a; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="listModalTitle" style="margin:0; font-size:16px;">상세 명단</h3>
-                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeListModal()"></i>
-            </div>
-            <div id="listModalContent" style="padding:20px; overflow-y:auto; font-size:14px; line-height:1.8; color:#334155;">
-                <!-- 명단이 여기에 표시됨 -->
-            </div>
-            <button style="width:100%; padding:15px; border:none; background:#f1f5f9; font-weight:bold; cursor:pointer;" onclick="closeListModal()">닫기</button>
-        </div>
-    </div>
-
-
+    <footer class="app-footer">
+      <div id="footer-date">0000년 00월 00일 00:00</div>
+      <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
     </footer>
+  </div>
+
+  <!-- [팝업] 강사 수송 요청 모달 -->
+  <div id="transportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:white; width:100%; max-width:450px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column;">
+          <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeTransportModal()"></i>
+          </div>
+          <div style="padding:20px; overflow-y:auto; max-height:70vh;">
+              <label style="font-size:12px; font-weight:800; color:#6366f1;">1. 픽업 장소 선택</label>
+              <select id="reqLoc" class="navy-select" style="margin:8px 0 15px 0;">
+                  <option value="오송역 6번출구">오송역 6번출구 (40분 소요)</option>
+                  <option value="청주터미널">청주터미널 (30분 소요)</option>
+                  <option value="청주공항">청주공항 (40분 소요)</option>
+              </select>
+
+              <label style="font-size:12px; font-weight:800; color:#6366f1;">2. 운행 방향</label>
+              <div style="display:flex; gap:10px; margin:8px 0 15px 0;">
+                  <button id="dirTo" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('목적지→항기원')">목적지→항기원</button>
+                  <button id="dirFrom" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1;" onclick="setDirection('항기원→목적지')">항기원→목적지</button>
+              </div>
+
+              <label style="font-size:12px; font-weight:800; color:#6366f1;">3. 요청 시간 및 강사명</label>
+              <div style="display:flex; gap:5px; margin-top:8px;">
+                  <input type="date" id="reqDate" class="navy-select" style="flex:1.5;">
+                  <input type="time" id="reqTime" class="navy-select" style="flex:1;">
+              </div>
+              <input type="text" id="reqProf" class="navy-select" style="margin-top:10px;" placeholder="강사 성함 (예: 김철수 교수)">
+
+              <div id="driverScheduleBox" style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                  <span style="font-size:11px; font-weight:800; color:#64748b;">📅 선택한 날짜의 기사님 스케줄</span>
+                  <div id="scheduleList" style="font-size:12px; margin-top:10px; color:#1e293b; line-height:1.6;">날짜를 선택하면 일정이 표시됩니다.</div>
+              </div>
+          </div>
+          <div style="padding:15px; display:flex; gap:10px; background:#f8fafc;">
+              <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeTransportModal()">취소</button>
+              <button class="navy-btn" style="background:#6366f1; flex:2;" onclick="submitTransportRequest()">수송 요청 등록</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- 상세 명단 팝업 -->
+  <div id="listModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:white; width:100%; max-width:400px; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; max-height:80vh;">
+          <div style="background:#0f172a; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+              <h3 id="listModalTitle" style="margin:0; font-size:16px;">상세 명단</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeListModal()"></i>
+          </div>
+          <div id="listModalContent" style="padding:20px; overflow-y:auto; font-size:14px; line-height:1.8; color:#334155;"></div>
+          <button style="width:100%; padding:15px; border:none; background:#f1f5f9; font-weight:bold;" onclick="closeListModal()">닫기</button>
+      </div>
   </div>
 
   <script src="config.js"></script>
   <script>
-// [설정] 인증 체크
+    // 인증 및 데이터 관리
     if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
-        alert("정상적인 접근이 아닙니다.");
+        alert("인증이 필요합니다.");
         location.replace('portal.html');
     }
 
-    let globalAllData = {}; // 전체 데이터를 담아둘 변수
+    let globalAllData = {}; 
+    let selectedDirection = "";
 
-    // [기능] 메뉴 및 모달 제어
     function toggleMenu(isOpen) {
         document.getElementById('sideMenu').style.right = isOpen ? '0' : '-280px';
         document.getElementById('menuOverlay').style.display = isOpen ? 'block' : 'none';
     }
 
-    function closeListModal() {
-        document.getElementById('listModal').style.display = 'none';
+    function openQrManager() {
+        const area = document.getElementById('qrManagerArea');
+        area.style.display = (area.style.display === 'none') ? 'block' : 'none';
     }
 
-    // [기능] 시계 실행
+    function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
+
+    // 수송 요청 모달 제어
+    function openTransportModal() {
+        toggleMenu(false);
+        document.getElementById('transportModal').style.display = 'flex';
+        document.getElementById('reqDate').value = getTodayString();
+        updateSchedulePreview();
+        // 날짜 변경 시 스케줄 새로고침
+        document.getElementById('reqDate').onchange = updateSchedulePreview;
+    }
+    function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
+
+    function setDirection(dir) {
+        selectedDirection = dir;
+        document.getElementById('dirTo').style.background = (dir === '목적지→항기원') ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirTo').style.color = (dir === '목적지→항기원') ? '#fff' : '#475569';
+        document.getElementById('dirFrom').style.background = (dir === '항기원→목적지') ? '#6366f1' : '#f1f5f9';
+        document.getElementById('dirFrom').style.color = (dir === '항기원→목적지') ? '#fff' : '#475569';
+    }
+
+    // 기사 스케줄 미리보기
+    function updateSchedulePreview() {
+        const date = document.getElementById('reqDate').value;
+        if(!date) return;
+        firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value', snap => {
+            const list = snap.val() || {};
+            const display = document.getElementById('scheduleList');
+            const items = Object.values(list).sort((a,b) => a.time.localeCompare(b.time));
+            
+            if(items.length === 0) {
+                display.innerHTML = "해당 날짜에 등록된 일정이 없습니다.";
+            } else {
+                display.innerHTML = items.map(i => `• <b>${i.time}</b>: ${i.loc} (${i.dir.split('→')[0]}발)`).join('<br>');
+            }
+        });
+    }
+
+    // 수송 요청 등록
+    async function submitTransportRequest() {
+        const loc = document.getElementById('reqLoc').value;
+        const dir = selectedDirection;
+        const date = document.getElementById('reqDate').value;
+        const time = document.getElementById('reqTime').value;
+        const prof = document.getElementById('reqProf').value.trim();
+
+        if(!dir || !date || !time || !prof) return alert("모든 항목을 입력/선택해주세요.");
+
+        // 1. 점심시간 체크 (12:00 ~ 13:00)
+        const hour = parseInt(time.split(':')[0]);
+        if(hour === 12) return alert("⚠️ 12:00 ~ 13:00은 기사님 휴식시간으로 신청이 불가합니다.");
+
+        // 2. 중복 체크 (장소 다름 + 시간 겹침)
+        const snap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
+        const existing = snap.val() || {};
+        let isConflict = false;
+
+        Object.values(existing).forEach(i => {
+            if(i.time === time && i.loc !== loc) isConflict = true;
+        });
+
+        if(isConflict) return alert("❌ 운전기사 스케줄과 겹쳐서 신청할 수 없습니다.\n(이미 해당 시간에 다른 장소 운행이 예약되어 있습니다.)");
+
+        // 3. 등록
+        const newRef = firebase.database().ref('system/transport_requests').push();
+        await newRef.set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
+        
+        alert("✅ 강사픽업 등록이 완료되었습니다.");
+        closeTransportModal();
+    }
+
     function runClock() {
         const now = new Date();
         document.getElementById('footer-date').innerText = 
@@ -245,102 +360,86 @@
     }
     setInterval(runClock, 1000); runClock();
 
-    // [기능] 과정 리스트 초기화 및 실시간 감시
     function initActiveRoomList() {
         firebase.database().ref('courses').on('value', snap => {
             const data = snap.val() || {};
-            globalAllData = data; // 데이터 저장
+            globalAllData = data;
             const select = document.getElementById('roomSelect');
+            const listContainer = document.getElementById('activeCourseList');
             const savedVal = select.value;
             
-            select.innerHTML = '<option value="">전체 과정 현황 보기</option>';
-            Object.keys(data).forEach(rid => {
+            select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
+            listContainer.innerHTML = "";
+
+            Object.keys(data).sort().forEach(rid => {
                 const room = data[rid];
                 if (room.status && room.status.roomStatus === 'active') {
-                    const cName = room.settings?.courseName || `ROOM ${rid}`;
+                    const cName = room.settings?.courseName || `Room ${rid} 과정`;
+                    const pName = room.status?.professorName || "미지정";
+                    
                     const opt = document.createElement('option');
-                    opt.value = rid; opt.innerText = cName;
+                    opt.value = rid; opt.innerText = `Room ${rid} - ${cName}`;
                     if(rid === savedVal) opt.selected = true;
                     select.appendChild(opt);
+
+                    const item = document.createElement('div');
+                    item.style = "background:#f8fafc; border:1px solid #e0f2fe; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
+                    item.onclick = () => { select.value = rid; handleRoomSelection(); };
+                    item.innerHTML = `<div><span style="font-weight:900; color:#0ea5e9; margin-right:8px;">Room ${rid}</span><span style="font-weight:700; font-size:13px;">${cName}</span></div><div style="font-size:11px; color:#64748b;">${pName} 교수님 ></div>`;
+                    listContainer.appendChild(item);
                 }
             });
-            
-            // 현재 선택된 모드에 따라 화면 업데이트
-            if(!select.value) loadTotalStatus();
-            else loadRoomSpecificData();
+            handleRoomSelection(); 
         });
     }
 
-    // [로직] 1. 전체 과정 현황 합산 (미선택 시)
-    function loadTotalStatus() {
-        document.getElementById('selectionLabel').innerText = "전체 과정 운영 현황입니다.";
-        document.getElementById('leaderDisplay').style.display = "none";
-        document.getElementById('courseNotice').disabled = true;
-        document.getElementById('btnCourseNotice').disabled = true;
-        document.getElementById('courseNotice').value = "";
-        document.getElementById('courseNotice').placeholder = "과정을 선택하면 작성 가능합니다.";
-
-        updateStats(globalAllData);
-    }
-
-    // [로직] 2. 특정 과정 상세 조회 (선택 시)
-    function loadRoomSpecificData() {
+    function handleRoomSelection() {
         const rid = document.getElementById('roomSelect').value;
-        if(!rid) { loadTotalStatus(); return; }
+        const totalView = document.getElementById('view-total-list');
+        const individualView = document.getElementById('view-individual-notice');
 
-        const roomData = globalAllData[rid] || {};
-        const profName = roomData.status?.professorName || "미지정";
-        
-        document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${profName} 교수님 과정`;
-        document.getElementById('courseNotice').disabled = false;
-        document.getElementById('btnCourseNotice').disabled = false;
-        document.getElementById('courseNotice').value = roomData.coordNotice || "";
-        document.getElementById('courseNotice').placeholder = "수강생 앱에 표시될 공지를 입력하세요.";
-
-        // 학생장 표시
-        const students = roomData.students || {};
-        const leader = Object.values(students).find(st => st.isLeader === true);
-        document.getElementById('leaderInfoText').innerText = leader ? `${leader.name} (${leader.phone || '연락처 미등록'})` : "지정된 학생장 없음";
-        document.getElementById('leaderDisplay').style.display = "block";
-
-        // QR 프리뷰 업데이트
-        const preview = document.getElementById('qrPreview');
-        if (roomData.attendanceQR) {
-            preview.src = roomData.attendanceQR;
-            preview.style.display = "block";
-            document.getElementById('qrStatus').innerText = "QR 등록됨";
+        if(!rid) {
+            totalView.style.display = 'block';
+            individualView.style.display = 'none';
+            document.getElementById('selectionLabel').innerText = "전체 과정 현황";
+            document.getElementById('leaderDisplay').style.display = "none";
+            updateStats(globalAllData);
         } else {
-            preview.style.display = "none";
-            document.getElementById('qrStatus').innerText = "QR 없음";
-        }
+            totalView.style.display = 'none';
+            individualView.style.display = 'flex';
+            const roomData = globalAllData[rid] || {};
+            const pName = roomData.status?.professorName || "미지정";
+            document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${pName} 교수님 과정`;
+            document.getElementById('courseNotice').value = roomData.coordNotice || "";
+            
+            const leader = Object.values(roomData.students || {}).find(st => st.isLeader === true);
+            if(leader) {
+                document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`;
+                document.getElementById('leaderDisplay').style.display = "block";
+            } else { document.getElementById('leaderDisplay').style.display = "none"; }
 
-        // 해당 과정 데이터만 추출해서 통계 업데이트
-        const singleData = {}; singleData[rid] = roomData;
-        updateStats(singleData);
+            const singleData = {}; singleData[rid] = roomData;
+            updateStats(singleData);
+        }
     }
 
-    // [공통] 통계 숫자 업데이트 및 클릭 이벤트 연결
     function updateStats(dataScope) {
-        let osong = [], term = [], air = [];
-        let outing = [], overnight = [];
+        let osong = [], term = [], air = [], outing = [], overnight = [];
         const today = getTodayString();
-
         Object.keys(dataScope).forEach(rid => {
             const room = dataScope[rid];
             if(room.shuttle) {
-                if(room.shuttle.osong) osong.push(...Object.values(room.shuttle.osong));
-                if(room.shuttle.terminal) term.push(...Object.values(room.shuttle.terminal));
-                if(room.shuttle.airport) air.push(...Object.values(room.shuttle.airport));
+                if(room.shuttle.osong) Object.values(room.shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
+                if(room.shuttle.terminal) Object.values(room.shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
+                if(room.shuttle.airport) Object.values(room.shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
             }
             if(room.admin_actions && room.admin_actions[today]) {
                 Object.values(room.admin_actions[today]).forEach(v => {
-                    if(v.type === 'outing') outing.push(`${v.name}(Room ${rid})`);
-                    if(v.type === 'overnight') overnight.push(`${v.name}(Room ${rid})`);
+                    if(v.type === 'outing') outing.push(`${v.name} (R-${rid})`);
+                    if(v.type === 'overnight') overnight.push(`${v.name} (R-${rid})`);
                 });
             }
         });
-
-        // 숫자 표시 및 클릭 시 명단 팝업 연결
         renderStatItem('s-osong', osong, "오송역 신청자");
         renderStatItem('s-term', term, "터미널 신청자");
         renderStatItem('s-air', air, "공항 신청자");
@@ -351,41 +450,36 @@
     function renderStatItem(id, list, title) {
         const el = document.getElementById(id);
         el.innerText = list.length;
-        el.parentElement.style.cursor = "pointer";
-        el.parentElement.onclick = () => {
+        const parent = el.closest('.mini-stat-box') || el.closest('.action-box');
+        parent.style.cursor = "pointer";
+        parent.onclick = () => {
             if(list.length === 0) return;
             document.getElementById('listModalTitle').innerText = `${title} (${list.length}명)`;
-            document.getElementById('listModalContent').innerHTML = list.map((name, i) => `${i+1}. ${name}`).join('<br>');
+            document.getElementById('listModalContent').innerHTML = list.map((n, i) => `${i+1}. ${n}`).join('<br>');
             document.getElementById('listModal').style.display = 'flex';
         };
     }
 
-    // [저장] 과정 공지 및 전체 공지
     function saveCourseNotice() {
         const rid = document.getElementById('roomSelect').value;
-        const msg = document.getElementById('courseNotice').value;
         if(!rid) return;
-        firebase.database().ref(`courses/${rid}/coordNotice`).set(msg).then(() => alert("✅ 과정 공지 저장완료"));
+        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value).then(() => alert("✅ 과정 공지 저장"));
     }
 
     function saveGlobalNotice() {
-        const msg = document.getElementById('globalNotice').value;
-        firebase.database().ref(`system/globalNotice`).set(msg).then(() => alert("✅ 전체 공지 저장완료"));
+        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(() => alert("✅ 전체 공지 저장"));
     }
 
-    // [기능] QR 업로드
     async function handleQRUpload(input) {
         const rid = document.getElementById('roomSelect').value;
         if(!rid) return alert("과정을 먼저 선택하세요.");
-        const file = input.files[0];
-        if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
             await firebase.database().ref(`courses/${rid}/attendanceQR`).set(e.target.result);
             alert("QR 업로드 완료");
             toggleMenu(false);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
     }
 
     initActiveRoomList();
