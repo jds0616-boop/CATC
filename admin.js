@@ -128,11 +128,12 @@ const authMgr = {
 
 // --- 2. Data & Room Logic ---
 const dataMgr = {
-    saveInstructorNoticeMain: function() {
+saveInstructorNoticeMain: function() {
         if(!state.room) return;
         const msg = document.getElementById('instNoticeInputMain').value;
+        // 강사는 오직 자신의 notice 경로에만 저장합니다.
         firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
-            ui.showAlert("✅ 공지사항이 게시되었습니다.");
+            ui.showAlert("✅ 강사 공지사항이 교육생에게 게시되었습니다.");
         });
     },
 
@@ -1014,26 +1015,55 @@ const ui = {
 
 
 
-    // 공지사항 뷰 로드
-       loadNoticeView: async function() {
+// [수정] 공지사항 뷰 로드: 좌측(강사 공지), 우측(코디 과정 공지 + 센터 전체 공지)
+    loadNoticeView: async function() {
         if(!state.room) return;
         
-        // 1. 우리 과정 공지 불러오기 (강사 작성분)
+        // 1. 좌측 영역: 강사 본인이 작성한 공지 불러오기 (입력창)
         const snap = await firebase.database().ref(`courses/${state.room}/notice`).once('value');
         document.getElementById('instNoticeInputMain').value = snap.val() || "";
 
-        // 2. 센터 전체 공지 불러오기 (운영자 포털 작성분)
-        firebase.database().ref(`system/globalNotice`).on('value', s => {
-            const globalMsg = s.val();
-            const display = document.getElementById('globalNoticeDisplay');
-            if(globalMsg) {
-                display.innerText = globalMsg;
-            } else {
-                display.innerHTML = "<span style='color:#94a3b8;'>현재 게시된 센터 전체 공지가 없습니다.</span>";
-            }
-        });
-    },
+        // 2. 우측 영역: 코디네이터 공지(센터 공지 + 과정 공지) 통합 실시간 조회
+        const globalRef = firebase.database().ref('system/globalNotice');
+        const coordRef = firebase.database().ref(`courses/${state.room}/coordNotice`);
 
+        // 센터 공지와 코디 과정 공지를 합쳐서 표시하기 위한 함수
+        const updateRightNotice = () => {
+            Promise.all([globalRef.once('value'), coordRef.once('value')]).then(([gSnap, cSnap]) => {
+                const globalMsg = gSnap.val();
+                const coordMsg = cSnap.val();
+                const display = document.getElementById('globalNoticeDisplay');
+                
+                let html = "";
+                
+                // 코디네이터가 쓴 이 과정만의 공지가 있다면 먼저 표시
+                if (coordMsg) {
+                    html += `<div style="margin-bottom:20px; padding:15px; background:#eff6ff; border-radius:10px; border-left:4px solid #3b82f6;">
+                                <strong style="color:#1d4ed8; font-size:14px; display:block; margin-bottom:5px;">[코디네이터 과정 공지]</strong>
+                                ${coordMsg}
+                             </div>`;
+                }
+                
+                // 센터 전체 공지가 있다면 그 아래 표시
+                if (globalMsg) {
+                    html += `<div style="padding:15px; background:#f8fafc; border-radius:10px; border-left:4px solid #64748b;">
+                                <strong style="color:#334155; font-size:14px; display:block; margin-bottom:5px;">[센터 전체 공지]</strong>
+                                ${globalMsg}
+                             </div>`;
+                }
+
+                if (!coordMsg && !globalMsg) {
+                    display.innerHTML = "<span style='color:#94a3b8;'>현재 확인 가능한 코디네이터/센터 공지가 없습니다.</span>";
+                } else {
+                    display.innerHTML = html;
+                }
+            });
+        };
+
+        // 실시간 업데이트 연결
+        globalRef.on('value', updateRightNotice);
+        coordRef.on('value', updateRightNotice);
+    },
     // 출결 QR 뷰 로드
     loadAttendanceView: async function() {
         if(!state.room) return;

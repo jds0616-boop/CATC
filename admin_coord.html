@@ -233,7 +233,7 @@
         });
     }
 
-    function loadRoomSpecificData() {
+function loadRoomSpecificData() {
         const rid = document.getElementById('roomSelect').value;
         const leaderBox = document.getElementById('leaderDisplay');
         const leaderText = document.getElementById('leaderInfoText');
@@ -247,10 +247,9 @@
         }
 
         const today = getTodayString();
-        // 외출/외박 섹션 날짜 명시
         actionLabel.innerText = today + " (당일) 기준 신청 현황";
 
-        // 1. 학생장
+        // 1. 학생장 정보 로드
         firebase.database().ref(`courses/${rid}/students`).on('value', s => {
             const students = s.val() || {};
             const leader = Object.values(students).find(st => st.isLeader === true);
@@ -258,7 +257,7 @@
             leaderBox.style.display = "block";
         });
 
-        // 2. 셔틀
+        // 2. 셔틀 정보 로드
         firebase.database().ref(`courses/${rid}/shuttle`).on('value', s => {
             const d = s.val() || {};
             document.getElementById('s-osong').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -266,7 +265,7 @@
             document.getElementById('s-air').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
 
-        // 3. 외출/외박
+        // 3. 외출/외박 정보 로드
         firebase.database().ref(`courses/${rid}/admin_actions/${today}`).on('value', s => {
             const d = s.val() || {};
             let o = 0, n = 0;
@@ -275,11 +274,11 @@
             document.getElementById('n-cnt').innerText = n;
         });
 
-        // 4. [수정 포인트] 공지사항 및 QR (실시간 .on 대신 .once 사용)
-        // .once('value')를 사용하면 처음 선택할 때 한 번만 가져오므로 입력 중에 지워지지 않습니다.
+        // 4. [수정] 코디네이터 전용 과정 공지 및 QR 불러오기
         firebase.database().ref(`courses/${rid}`).once('value', s => {
             const d = s.val() || {};
-            document.getElementById('courseNotice').value = d.notice || "";
+            // 강사 공지(notice)가 아닌 코디 공지(coordNotice)를 가져옵니다.
+            document.getElementById('courseNotice').value = d.coordNotice || "";
             if (d.attendanceQR) {
                 document.getElementById('qrPreview').src = d.attendanceQR;
                 document.getElementById('qrPreview').style.display = "block";
@@ -302,17 +301,18 @@
         document.getElementById('qrStatus').innerText = "";
     }
 
-    function saveCourseNotice() {
+function saveCourseNotice() {
         const rid = document.getElementById('roomSelect').value;
         const msg = document.getElementById('courseNotice').value;
         if(!rid) return alert("과정을 선택하세요.");
         
-        firebase.database().ref(`courses/${rid}/notice`).set(msg)
+        // [수정] 강사의 notice 경로가 아닌 coordNotice 경로에 저장합니다.
+        firebase.database().ref(`courses/${rid}/coordNotice`).set(msg)
             .then(() => {
-                alert("✅ 과정 공지가 게시되었습니다.");
+                alert("✅ 코디네이터 과정 공지가 업데이트되었습니다.");
             })
             .catch((e) => {
-                alert("❌ 저장 실패: 관리자 인증(로그인)이 필요합니다.\n" + e.message);
+                alert("❌ 저장 실패: " + e.message);
             });
     }
 
