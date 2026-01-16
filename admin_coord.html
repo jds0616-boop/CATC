@@ -325,28 +325,37 @@
         }
     }
 
-    function updateStats(dataScope) {
-        let osong = [], term = [], air = [], outing = [], overnight = [];
-        const today = getTodayString();
-        Object.keys(dataScope).forEach(rid => {
-            const room = dataScope[rid];
-            // [수정] 글로벌 방향 설정에 맞춰 해당 데이터만 추출
-            const shuttle = room.shuttle ? room.shuttle[currentShuttleDir] : null;
-            if(shuttle) {
-                if(shuttle.osong) Object.values(shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
-                if(shuttle.terminal) Object.values(shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
-                if(shuttle.airport) Object.values(shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
-            }
-            if(room.admin_actions && room.admin_actions[today]) {
-                Object.values(room.admin_actions[today]).forEach(v => {
-                    const text = `${v.name} (R-${rid})`;
-                    if(v.type === 'outing') outing.push(text); if(v.type === 'overnight') overnight.push(text);
-                });
-            }
-        });
-        renderStatItem('s-osong', osong, "오송역 신청자"); renderStatItem('s-term', term, "터미널 신청자"); renderStatItem('s-air', air, "공항 신청자");
-        renderStatItem('o-cnt', outing, "오늘 외출자"); renderStatItem('n-cnt', overnight, "오늘 외박자");
-    }
+// [연동 보정] 관리자 통계 합산 로직
+function updateStats(dataScope) {
+    let osong = [], term = [], air = [], outing = [], overnight = [];
+    const today = getTodayString();
+
+    Object.keys(dataScope).forEach(rid => {
+        const room = dataScope[rid];
+        // 코디네이터가 설정한 글로벌 방향(currentShuttleDir) 폴더에서 데이터 추출
+        const shuttle = (room.shuttle && room.shuttle[currentShuttleDir]) ? room.shuttle[currentShuttleDir] : null;
+        
+        if(shuttle) {
+            if(shuttle.osong) Object.values(shuttle.osong).forEach(n => osong.push(`${n} (R-${rid})`));
+            if(shuttle.terminal) Object.values(shuttle.terminal).forEach(n => term.push(`${n} (R-${rid})`));
+            if(shuttle.airport) Object.values(shuttle.airport).forEach(n => air.push(`${n} (R-${rid})`));
+        }
+        
+        if(room.admin_actions && room.admin_actions[today]) {
+            Object.values(room.admin_actions[today]).forEach(v => {
+                const text = `${v.name} (R-${rid})`;
+                if(v.type === 'outing') outing.push(text);
+                if(v.type === 'overnight') overnight.push(text);
+            });
+        }
+    });
+
+    renderStatItem('s-osong', osong, "오송역 신청자");
+    renderStatItem('s-term', term, "터미널 신청자");
+    renderStatItem('s-air', air, "공항 신청자");
+    renderStatItem('o-cnt', outing, "오늘 외출자");
+    renderStatItem('n-cnt', overnight, "오늘 외박자");
+}
 
     function renderStatItem(id, list, title) {
         const el = document.getElementById(id); el.innerText = list.length;

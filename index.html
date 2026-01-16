@@ -1105,26 +1105,34 @@ function selectShuttle(locId, locName) {
 }
 
 
-// 3. 최종 [차량 신청 완료하기] 버튼 클릭 시
-async function submitShuttleRequest() {
+// [연동 보정] 현재 설정된 수송 방향에 맞춰 저장 경로 자동 결정
+async function submitTransportRequest() {
     if (!tempSelectedLoc) return;
 
     const name = localStorage.getItem('kac_user_name');
     const phone = localStorage.getItem('kac_user_phone');
-    const fullName = `${name}(${phone})`; // "홍길동(1234)" 형식으로 저장
+    const fullName = `${name}(${phone})`;
 
     let uToken = localStorage.getItem('uToken');
-    if (!uToken) { uToken = Math.random().toString(36).substr(2); localStorage.setItem('uToken', uToken); }
+    if (!uToken) { uToken = name + "_" + phone; localStorage.setItem('uToken', uToken); }
 
-    const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle`);
     try {
+        // 1. 코디네이터가 설정한 현재 글로벌 방향(out/in) 가져오기
+        const dirSnap = await firebase.database().ref('system/shuttle_config/current_direction').once('value');
+        const currentDir = dirSnap.val() || 'out'; // 기본값은 퇴소(out)
+
+        // 2. 해당 방향 폴더 안에 저장 (예: shuttle/out/osong)
+        const shuttleRef = firebase.database().ref(`courses/${currentRoom}/shuttle/${currentDir}`);
         await shuttleRef.child(tempSelectedLoc.id).child(uToken).set(fullName);
-        alert(`✅ ${tempSelectedLoc.name} 신청이 완료되었습니다!`);
+
+        alert(`✅ 신청 완료!\n방향: ${currentDir === 'out' ? '항기원 → 목적지' : '목적지 → 항기원'}\n장소: ${tempSelectedLoc.name}`);
         document.getElementById('shuttleModal').style.display = 'none';
     } catch (error) {
         alert("신청 중 오류가 발생했습니다.");
     }
 }
+
+
 
 // 창 닫기 함수 추가
 function closeShuttleModal() {

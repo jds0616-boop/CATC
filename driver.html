@@ -208,53 +208,57 @@
         initStudentTransport(); // 다시 로드
     }
 
-    function initStudentTransport() {
-        firebase.database().ref('courses').on('value', snap => {
-            const data = snap.val() || {};
-            const totals = { osong: 0, terminal: 0, airport: 0 };
-            const details = { osong: [], terminal: [], airport: [] };
+// [연동 보정] 교육생 수송 데이터 실시간 로드
+function initStudentTransport() {
+    firebase.database().ref('courses').on('value', snap => {
+        const data = snap.val() || {};
+        const totals = { osong: 0, terminal: 0, airport: 0 };
+        const details = { osong: [], terminal: [], airport: [] };
 
-            Object.keys(data).forEach(rid => {
-                const room = data[rid];
-                // 교육생 수송 데이터 구조가 shuttle/out/osong 과 shuttle/in/osong 으로 분리되었다고 가정
-                const shuttle = room.shuttle ? room.shuttle[currentStudentDir] : null;
-                if(shuttle) {
-                    ['osong', 'terminal', 'airport'].forEach(loc => {
-                        if(shuttle[loc]) {
-                            const names = Object.values(shuttle[loc]);
-                            totals[loc] += names.length;
-                            if(names.length > 0) details[loc].push({ rid, count: names.length, names });
-                        }
-                    });
-                }
-            });
-
-            document.getElementById('total-all').innerHTML = `${totals.osong + totals.terminal + totals.airport}<span>명</span>`;
-            const container = document.getElementById('student-list-container');
-            container.innerHTML = "";
+        Object.keys(data).forEach(rid => {
+            const room = data[rid];
+            // 현재 기사가 선택한 방향(currentStudentDir: out/in)의 데이터만 추출
+            const shuttle = (room.shuttle && room.shuttle[currentStudentDir]) ? room.shuttle[currentStudentDir] : null;
             
-            const locInfo = [
-                { id: 'osong', name: '오송역 6번출구', icon: 'fa-train' },
-                { id: 'terminal', name: '청주 시외터미널', icon: 'fa-bus' },
-                { id: 'airport', name: '청주 국제공항', icon: 'fa-plane-up' }
-            ];
-
-            locInfo.forEach(loc => {
-                const card = document.createElement('div');
-                card.className = `dest-card ${loc.id.substring(0,3)}`;
-                card.innerHTML = `
-                    <div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
-                        <div class="dest-info">
-                            <div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>
-                            ${loc.name}
-                        </div>
-                        <div class="val-box">${totals[loc.id]}명 ></div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            if(shuttle) {
+                ['osong', 'terminal', 'airport'].forEach(loc => {
+                    if(shuttle[loc]) {
+                        const names = Object.values(shuttle[loc]);
+                        totals[loc] += names.length;
+                        if(names.length > 0) details[loc].push({ rid, count: names.length, names });
+                    }
+                });
+            }
         });
-    }
+
+        // 합계 업데이트
+        document.getElementById('total-all').innerHTML = `${totals.osong + totals.terminal + totals.airport}<span>명</span>`;
+        
+        const container = document.getElementById('student-list-container');
+        container.innerHTML = "";
+        
+        const locInfo = [
+            { id: 'osong', name: '오송역 6번출구', icon: 'fa-train' },
+            { id: 'terminal', name: '청주 시외터미널', icon: 'fa-bus' },
+            { id: 'airport', name: '청주 국제공항', icon: 'fa-plane-up' }
+        ];
+
+        locInfo.forEach(loc => {
+            const card = document.createElement('div');
+            card.className = `dest-card ${loc.id.substring(0,3)}`;
+            card.innerHTML = `
+                <div class="dest-header" onclick="showStudentDetail('${loc.name}', ${JSON.stringify(details[loc.id]).replace(/"/g, '&quot;')})">
+                    <div class="dest-info">
+                        <div class="dest-icon"><i class="fa-solid ${loc.icon}"></i></div>
+                        ${loc.name}
+                    </div>
+                    <div class="val-box">${totals[loc.id]}명 ></div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    });
+}
 
     function showStudentDetail(title, data) {
         if(data.length === 0) return;
