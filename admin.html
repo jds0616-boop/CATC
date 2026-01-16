@@ -453,24 +453,22 @@
 
 <!-- [오른쪽] 운영부 전용: 코디네이터 / 센터 공지 확인 (조회 전용) -->
         <div class="notice-card-half" style="flex: 1;">
-            <div class="modern-white-card" style="margin:0; height:100%; padding: 0; overflow: hidden; border: 2px solid #cbd5e1; background: #ffffff !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); border-radius: 25px;">
-                <!-- 헤더: 전문적인 다크 Slate 네이비 톤 (좌측 딥블루와 대칭) -->
-                <div style="background: #1e293b; padding: 22px; color: white;">
-                    <h3 style="margin:0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i> 교육운영부 / 센터 공지
+            <div class="modern-white-card" style="margin:0; min-height:100%; padding: 0; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); border-radius: 20px;">
+                <!-- 헤더: 높이를 줄이고 슬림하게 변경 -->
+                <div style="background: #1e293b; padding: 15px 20px; color: white; display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="margin:0; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-circle-info" style="color: #3b82f6; font-size: 14px;"></i> 교육운영부 / 센터 공지
                     </h3>
-                    <p style="font-size: 12px; opacity: 0.7; margin: 6px 0 0 28px;">운영자 포털에서 게시한 최신 정보입니다.</p>
                 </div>
                 
-                <!-- 공지 내용 표시 영역 (내부 테두리와 배경색을 없애서 깔끔하게 정리) -->
-                <div style="padding: 20px;">
-                    <div id="globalNoticeDisplay" class="global-notice-viewer" 
-                         style="background: transparent; padding: 0; font-size: 15px; line-height: 1.8; color: #334155; height: 350px; overflow-y: auto; box-sizing: border-box;">
+                <!-- 공지 내용 표시 영역: 고정 높이 제거, 자동 조절되도록 설정 -->
+                <div style="padding: 15px; min-height: 400px;">
+                    <div id="globalNoticeDisplay" style="font-size: 14px; line-height: 1.6; color: #334155;">
                         정보를 불러오는 중...
                     </div>
                     
                     <!-- 하단 상태 바 -->
-                    <div style="margin-top: 15px; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                    <div style="margin-top: 15px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px;">
                         <i class="fa-solid fa-sync fa-spin" style="margin-right:5px; color:#3b82f6;"></i> 실시간 정보 업데이트 중
                     </div>
                 </div>
