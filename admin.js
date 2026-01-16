@@ -2747,9 +2747,9 @@ window.onload = function() {
     }
 };
 
-// 3. [실행] 전역 클릭 이벤트 통합
+// [수정] 전역 클릭 이벤트 (설정창 드래그 시 닫힘 버그 해결)
 window.onclick = function(event) {
-    // 메뉴 드롭다운 외 클릭 시 닫기
+    // 1. 메뉴 드롭다운 외 클릭 시 닫기 로직
     if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
@@ -2758,9 +2758,8 @@ window.onclick = function(event) {
             }
         }
     }
-    // 설정 모달 배경 클릭 시 닫기
-    const setupModal = document.getElementById('courseSetupModal');
-    if (event.target == setupModal) {
-        setupMgr.closeSetupModal();
-    }
+
+    // 2. 중요 설정창(Course Setup)은 드래그 실수로 닫히지 않도록 
+    // "배경 클릭 시 자동 닫기" 기능을 제거했습니다.
+    // 이제 오직 [취소] 버튼이나 [설정 저장] 버튼을 눌러야만 닫힙니다.
 };
