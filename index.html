@@ -692,17 +692,17 @@ function setupListeners() {
                 sel.innerHTML = html;
             });
 
-// 5. 강의실 상태 감시 (리셋 체크 및 퀴즈 모드 전환)
+// 5. 강의실 상태 감시 (모드 전환 로직 수정본)
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
 
-                // 강사 상태가 active가 아니면 초기화
+                // 1. 강사 상태 체크
                 if (st.roomStatus !== 'active') {
                     forceCloseQuiz();
                     return;
                 }
                 
-                // 리셋 로직
+                // 2. 초기화(리셋) 체크
                 const serverResetKey = st.resetKey || 'init';
                 const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
                 if (!myLocalKey) {
@@ -713,22 +713,28 @@ function setupListeners() {
                     return;
                 }
 
-                // [중요] 모드 전환 로직
+                // 3. [핵심] 퀴즈 모드 전환
+                // 강사 모드가 정확히 'quiz'일 때만 퀴즈창을 엽니다.
                 if (st.mode === 'quiz') {
-                    // 결과 발표 중이 아닐 때만 퀴즈 오버레이 표시
+                    // 결과 발표 중이 아닐 때만 퀴즈창 표시
                     if (st.quizStep !== 'summary') {
                         document.getElementById('quizOverlay').style.display = 'flex';
                     }
                 } else {
-                    // 퀴즈 모드가 아니면(qa 등) 무조건 퀴즈창 닫기
+                    // 강사가 입교안내, 대시보드 등 다른 메뉴로 가면 퀴즈창을 무조건 닫습니다.
                     forceCloseQuiz();
                 }
                 
-                // 퀴즈 결과 발표
+                // 4. 퀴즈 결과 발표 체크
                 if (st.quizStep === 'summary') { 
                     if(!hasClosedSummary) showFinalRanking(); 
                 }
             });
+
+
+
+
+
 
 // 6. 퀴즈 세부 진행 감시 (리셋 로직 및 연동 보완)
             dbRef.quiz.on('value', s => {

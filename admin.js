@@ -2134,8 +2134,8 @@ loadDinnerSkipData: function() {
 
         // [중요] 교육생 플랫폼 모드 동기화 (DB 저장)
         if (state.room) {
-            // 강사가 관리용 페이지(대시보드, 학생관리 등)에 있을 때는 교육생에겐 'qa' 모드로 보이게 함
-            let studentMode = (['quiz', 'guide'].includes(mode)) ? mode : 'qa';
+        // 퀴즈 모드일 때만 교육생에게 'quiz' 신호를 보내고, 나머지는 모두 'qa'(게시판)로 보냅니다.
+            let studentMode = (mode === 'quiz') ? 'quiz' : 'qa';
             firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
 
             if (mode === 'quiz') { 
