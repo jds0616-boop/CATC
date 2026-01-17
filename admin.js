@@ -1084,6 +1084,40 @@ loadDashboardStats: function() {
 
 
 
+loadAttendanceView: async function() {
+        if(!state.room) return;
+        
+        const imgMain = document.getElementById('attendanceQrImgMain');
+        const msgMain = document.getElementById('noAttendanceQrMsgMain');
+        
+        // 데이터 로드 전 초기화
+        if(imgMain) imgMain.style.display = 'none';
+        if(msgMain) msgMain.style.display = 'block';
+        if(msgMain) msgMain.innerText = "데이터를 불러오는 중...";
+
+        // 실시간 리스너 연결 (코디네이터가 바꾸면 바로 바뀌도록)
+        firebase.database().ref(`courses/${state.room}/attendanceQR`).on('value', snap => {
+            const qrData = snap.val();
+            if(qrData) {
+                if(imgMain) {
+                    imgMain.src = qrData;
+                    imgMain.style.display = 'block';
+                }
+                if(msgMain) msgMain.style.display = 'none';
+            } else {
+                if(imgMain) imgMain.style.display = 'none';
+                if(msgMain) {
+                    msgMain.style.display = 'block';
+                    msgMain.innerText = "등록된 QR 이미지가 없습니다. (운영부 업로드 필요)";
+                }
+            }
+        });
+    },
+
+
+
+
+
 
 
 

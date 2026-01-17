@@ -294,15 +294,38 @@
         });
     }
 
-    function handleRoomSelection() {
+function handleRoomSelection() {
         const rid = document.getElementById('roomSelect').value; currentRoomId = rid;
         const totalView = document.getElementById('view-total-list'); const individualView = document.getElementById('view-individual-notice');
-        if(!rid) { totalView.style.display = 'block'; individualView.style.display = 'none'; document.getElementById('selectionLabel').innerText = "전체 과정 현황"; document.getElementById('leaderDisplay').style.display = "none"; updateStats(globalAllData); }
+        
+        // QR 미리보기 초기화
+        const qrPreview = document.getElementById('qrPreview');
+        const qrStatus = document.getElementById('qrStatus');
+        if(qrPreview) qrPreview.style.display = 'none';
+
+        if(!rid) { 
+            totalView.style.display = 'block'; 
+            individualView.style.display = 'none'; 
+            document.getElementById('selectionLabel').innerText = "전체 과정 현황"; 
+            document.getElementById('leaderDisplay').style.display = "none"; 
+            updateStats(globalAllData); 
+            if(qrStatus) qrStatus.innerText = "과정 선택 후 업로드";
+        }
         else {
             totalView.style.display = 'none'; individualView.style.display = 'flex';
             const roomData = globalAllData[rid] || {};
             document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${roomData.status?.professorName || "미지정"} 교수님 과정`;
             document.getElementById('courseNotice').value = roomData.coordNotice || "";
+            
+            // [추가] 해당 과정의 QR이 이미 있는지 확인하여 미리보기에 표시
+            if(roomData.attendanceQR) {
+                qrPreview.src = roomData.attendanceQR;
+                qrPreview.style.display = 'block';
+                qrStatus.innerText = "✅ 등록된 QR 확인됨";
+            } else {
+                qrStatus.innerText = "❌ 등록된 QR 없음 (업로드 필요)";
+            }
+
             const leader = Object.values(roomData.students || {}).find(st => st.isLeader === true);
             if(leader) { document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`; document.getElementById('leaderDisplay').style.display = "flex"; }
             else { document.getElementById('leaderDisplay').style.display = "none"; }
