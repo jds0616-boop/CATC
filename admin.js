@@ -1282,8 +1282,9 @@ loadAttendanceView: async function() {
                 const st = roomData.status || {};
                 const settings = roomData.settings || {};
                 const studentObj = roomData.students || {};
-                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined" && s.name !== undefined);
-                const userCount = validStudents.length;
+                const validStudents = Object.values(studentObj).filter(s => s.name && s.name !== "undefined");
+                const uniqueNames = new Set(validStudents.map(s => s.name)); 
+                const userCount = uniqueNames.size;
                 const isRoomActive = (st.roomStatus === 'active');
                 
                 const courseName = settings.courseName ? settings.courseName : "-";
