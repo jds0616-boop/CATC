@@ -704,66 +704,54 @@ function setupListeners() {
                 sel.innerHTML = html;
             });
 
-// 5. 강의실 상태 감시 (모드 전환 로직 수정본)
-            dbRef.status.on('value', snap => {
-                const st = snap.val() || {};
-// --- [추가 시작: 리셋 및 삭제 감지 로직] ---
-                const serverResetKey = st.resetKey || 'init';
-                const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-                if (!myLocalKey) {
-                    localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-                } else if (myLocalKey !== serverResetKey) {
-                    localStorage.clear();
-                    alert("강의실 정보가 초기화되었습니다.");
-                    location.replace(location.pathname + location.search);
-                    return;
-                }
+// 5. 강의실 상태 감시 (중복 코드 제거 및 로직 통합 버전)
+dbRef.status.on('value', snap => {
+    const st = snap.val() || {};
 
-                const uToken = localStorage.getItem('uToken');
-                if (uToken && st.roomStatus === 'active') {
-                    firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
-                        if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
-                            localStorage.removeItem('uToken');
-                            alert("정보가 갱신되었거나 삭제되었습니다.");
-                            location.reload();
-                        }
-                    });
-                }
+    // [A] 리셋 및 삭제 체크
+    const serverResetKey = st.resetKey || 'init';
+    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
 
-                // 1. 강사 상태 체크
-                if (st.roomStatus !== 'active') {
-                    forceCloseQuiz();
-                    return;
-                }
-                
-                // 2. 초기화(리셋) 체크
-                const serverResetKey = st.resetKey || 'init';
-                const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-                if (!myLocalKey) {
-                    localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-                } else if (myLocalKey !== serverResetKey) {
-                    localStorage.clear();
-                    location.replace(location.pathname + location.search);
-                    return;
-                }
+    if (!myLocalKey) {
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+    } else if (myLocalKey !== serverResetKey) {
+        localStorage.clear();
+        alert("강의실 정보가 초기화되었습니다.");
+        location.replace(location.pathname + location.search);
+        return;
+    }
 
-                // 3. [핵심] 퀴즈 모드 전환
-                // 강사 모드가 정확히 'quiz'일 때만 퀴즈창을 엽니다.
-                if (st.mode === 'quiz') {
-                    // 결과 발표 중이 아닐 때만 퀴즈창 표시
-                    if (st.quizStep !== 'summary') {
-                        document.getElementById('quizOverlay').style.display = 'flex';
-                    }
-                } else {
-                    // 강사가 입교안내, 대시보드 등 다른 메뉴로 가면 퀴즈창을 무조건 닫습니다.
-                    forceCloseQuiz();
-                }
-                
-                // 4. 퀴즈 결과 발표 체크
-                if (st.quizStep === 'summary') { 
-                    if(!hasClosedSummary) showFinalRanking(); 
-                }
-            });
+    const uToken = localStorage.getItem('uToken');
+    if (uToken && st.roomStatus === 'active') {
+        firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
+            if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
+                localStorage.removeItem('uToken');
+                alert("정보가 갱신되었거나 삭제되었습니다.");
+                location.reload();
+            }
+        });
+    }
+
+    // [B] 강사 상태 체크
+    if (st.roomStatus !== 'active') {
+        forceCloseQuiz();
+        return;
+    }
+
+    // [C] 퀴즈 모드 전환
+    if (st.mode === 'quiz') {
+        if (st.quizStep !== 'summary') {
+            document.getElementById('quizOverlay').style.display = 'flex';
+        }
+    } else {
+        forceCloseQuiz();
+    }
+    
+    // [D] 퀴즈 결과 발표 체크
+    if (st.quizStep === 'summary') { 
+        if(!hasClosedSummary) showFinalRanking(); 
+    }
+});
 
 
 
