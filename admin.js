@@ -1556,128 +1556,122 @@ setMode: function(mode) {
 
 
 
-// [최종 완결본] 차량 수요조사: 3단 세로 배치 로직
-    loadShuttleData: function() {
-        if(!state.room) return;
+
+
+// [최종 수정] 차량 수요조사: 슬림한 레이아웃 및 숫자 강조 디자인 적용
+loadShuttleData: function() {
+    if(!state.room) return;
+    
+    firebase.database().ref(`courses/${state.room}`).on('value', snap => {
+        const roomData = snap.val() || {};
+        const shuttleData = roomData.shuttle?.out || {};
+        const studentData = roomData.students || {};
         
-        firebase.database().ref(`courses/${state.room}`).on('value', snap => {
-            const roomData = snap.val() || {};
-            const shuttleData = roomData.shuttle?.out || {};
-            const studentData = roomData.students || {};
-            
-            // 기둥 비우기
-            const col1 = document.getElementById('col-wave1');
-            const col2 = document.getElementById('col-wave2');
-            const colCar = document.getElementById('col-car');
-            if(!col1 || !col2 || !colCar) return;
-            col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
+        // 기둥 요소 가져오기
+        const col1 = document.getElementById('col-wave1');
+        const col2 = document.getElementById('col-wave2');
+        const colCar = document.getElementById('col-car');
+        if(!col1 || !col2 || !colCar) return;
 
-            // 통계용 변수
-            const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-            let totalShuttle = 0;
-            let totalCar = 0;
+        // 화면 초기화
+        col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
 
-            // 공통 스타일
-            const waveStyle = "padding: 15px; background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 12px; font-weight: 800; font-size: 16px; text-align:center; box-shadow: 0 4px 10px rgba(0,51,102,0.2);";
+        // 통계 계산
+        const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
+        let totalShuttle = 0;
 
-            // 1. 1차 & 2차 기둥 그리기
-            const waves = [
-                { id: 'wave1', name: '1차 수송 (13:00)', target: col1 },
-                { id: 'wave2', name: '2차 수송 (15:00)', target: col2 }
+        // 차수 헤더 스타일 (슬림하게 변경)
+        const waveStyle = "padding: 10px; background: #003366; color: white; border-radius: 10px; font-weight: 800; font-size: 14px; text-align:center; margin-bottom:10px;";
+
+        const waves = [
+            {id: 'wave1', n: '1차 (13:00)', t: col1},
+            {id: 'wave2', n: '2차 (15:00)', t: col2}
+        ];
+
+        waves.forEach(w => {
+            w.t.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.n}</div>`;
+            const locations = [
+                {id: 'osong', n: '오송역', i: 'fa-train'},
+                {id: 'terminal', n: '터미널', i: 'fa-bus-simple'},
+                {id: 'airport', n: '청주공항', i: 'fa-plane'}
             ];
 
-            waves.forEach(w => {
-                w.target.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.name}</div>`;
-                const locs = [
-                    { id: 'osong', n: '오송역', i: 'fa-train' },
-                    { id: 'terminal', n: '터미널', i: 'fa-bus-simple' },
-                    { id: 'airport', n: '청주공항', i: 'fa-plane' }
-                ];
-                locs.forEach(loc => {
-                    const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
-                    totalShuttle += members.length;
-                    w.target.innerHTML += `
-                        <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.name}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; transition:0.2s;">
-                            <div class="dest-header" style="border:none; padding:20px;">
-                                <div class="dest-name-group"><div class="dest-icon-box" style="width:36px; height:36px;"><i class="fa-solid ${loc.i}"></i></div><div class="dest-title" style="font-size:16px;">${loc.n}</div></div>
-                                <div class="dest-count-badge" style="background:#003366; color:white; font-size:16px;">${members.length}명</div>
+            locations.forEach(loc => {
+                const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
+                totalShuttle += members.length;
+                w.t.innerHTML += `
+                    <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.n}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; margin-top:8px;">
+                        <div class="dest-header">
+                            <div class="dest-name-group">
+                                <div class="dest-icon-box" style="background:#f1f5f9; color:#64748b;">
+                                    <i class="fa-solid ${loc.i}"></i>
+                                </div>
+                                <div class="dest-title">${loc.n}</div>
                             </div>
-                        </div>`;
-                });
-            });
-
-            // 2. 자차/개별이동 기둥 그리기
-            colCar.innerHTML = `<div style="${waveStyle}; background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
-            const carMembers1 = Object.entries(shuttleData.wave1?.car || {});
-            const carMembers2 = Object.entries(shuttleData.wave2?.car || {});
-            const allCarMembers = [...carMembers1, ...carMembers2];
-            totalCar = allCarMembers.length;
-
-            colCar.innerHTML += `
-                <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(allCarMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; height:200px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;">
-                    <div class="dest-icon-box" style="width:60px; height:60px; font-size:24px; background:#f1f5f9; color:#64748b;"><i class="fa-solid fa-car-side"></i></div>
-                    <div style="text-align:center;">
-                        <div style="font-size:18px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
-                        <div style="font-size:32px; font-weight:900; color:#003366; margin-top:5px;">${totalCar}명</div>
-                    </div>
-                </div>`;
-
-            // 3. 상단 요약 통계 업데이트
-            document.getElementById('total-student-cnt').innerText = totalStudents;
-            document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
-            document.getElementById('total-car-cnt').innerText = totalCar;
-            document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - totalCar);
-        });
-    },
-
-
-
-    // [신규] 차량 신청 상세 명단 팝업 함수
-showShuttleListModal: function(waveId, waveName, locName, members) {
-        // 신청자가 0명일 때는 팝업을 띄우지 않음
-        if (members.length === 0) {
-            ui.showAlert(`${locName}에 신청한 인원이 없습니다.`);
-            return;
-        }
-
-        const modal = document.getElementById('qaModal');
-        const mText = document.getElementById('m-text');
-        const mActions = document.querySelector('#qaModal .modal-actions');
-
-        if(!modal || !mText) return;
-
-        mText.innerHTML = `
-            <div style="text-align:left;">
-                <div style="font-size:13px; color:#64748b; font-weight:800; margin-bottom:5px;">${waveName}</div>
-                <div style="font-size:20px; font-weight:900; color:#003366; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px;">
-                    ${locName} 신청 명단 (${members.length}명)
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; max-height:350px; overflow-y:auto; padding:5px;">
-                    ${members.map(([token, name]) => `
-                        <div class="member-tag" style="padding: 10px 15px; font-size:15px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; border-radius:10px; font-weight:700;">
-                            ${name} 
-                            <i class="fa-solid fa-circle-xmark" 
-                               onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locName.includes('오송') ? 'osong' : locName.includes('터미널') ? 'terminal' : locName.includes('공항') ? 'airport' : 'car'}', '${token}', '${name}')" 
-                               style="margin-left:12px; color:#ef4444; cursor:pointer; font-size:18px;"></i>
+                            <div class="dest-count-badge">${members.length}명</div>
                         </div>
-                    `).join('')}
+                    </div>`;
+            });
+        });
+
+        // 자차/개별 이동 기둥 (슬림하게 변경)
+        const carMembers = [...Object.entries(shuttleData.wave1?.car || {}), ...Object.entries(shuttleData.wave2?.car || {})];
+        colCar.innerHTML = `<div style="${waveStyle} background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
+        colCar.innerHTML += `
+            <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; height:158px; display:flex; flex-direction:column; justify-content:center; align-items:center; margin-top:8px;">
+                <div class="dest-icon-box" style="width:40px; height:40px; font-size:18px; background:#f1f5f9; color:#64748b; margin-bottom:10px;">
+                    <i class="fa-solid fa-car-side"></i>
                 </div>
-                <div style="margin-top:20px; font-size:12px; color:#94a3b8; text-align:center;">이름 옆의 X를 누르면 신청이 취소됩니다.</div>
+                <div style="font-size:15px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
+                <div style="font-size:24px; font-weight:900; color:#003366;">${carMembers.length}명</div>
+            </div>`;
+
+        // 상단 요약 바 숫자 업데이트
+        document.getElementById('total-student-cnt').innerText = totalStudents;
+        document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
+        document.getElementById('total-car-cnt').innerText = carMembers.length;
+        document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - carMembers.length);
+    });
+},
+
+// [수정] 차량 신청 명단 팝업 (디자인 통일)
+showShuttleListModal: function(waveId, waveName, locName, members) {
+    if (members.length === 0) return;
+    const modal = document.getElementById('qaModal');
+    const mText = document.getElementById('m-text');
+    const mActions = document.querySelector('#qaModal .modal-actions');
+    if(!modal || !mText) return;
+
+    mText.innerHTML = `
+        <div style="text-align:left;">
+            <div style="font-size:12px; color:#64748b; font-weight:700;">${waveName}</div>
+            <div style="font-size:18px; font-weight:900; color:#003366; margin-bottom:15px; border-bottom:2px solid #f1f5f9; padding-bottom:8px;">
+                ${locName} 신청 명단 (${members.length}명)
             </div>
-        `;
+            <div style="display:flex; flex-wrap:wrap; gap:8px; max-height:300px; overflow-y:auto; padding:5px;">
+                ${members.map(([token, name]) => `
+                    <div class="member-tag" style="padding: 8px 12px; font-size:14px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; border-radius:8px; font-weight:700;">
+                        ${name} 
+                        <i class="fa-solid fa-circle-xmark" 
+                           onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locName.includes('오송') ? 'osong' : locName.includes('터미널') ? 'terminal' : locName.includes('공항') ? 'airport' : 'car'}', '${token}', '${name}')" 
+                           style="margin-left:10px; color:#ef4444; cursor:pointer; font-size:16px;"></i>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 
-        if(mActions) mActions.style.display = 'none';
-        modal.style.display = 'flex';
-        
-        const closeHandler = (e) => {
-            if (e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') {
-                if(mActions) mActions.style.display = 'flex';
-                modal.removeEventListener('click', closeHandler);
-            }
-        };
-        modal.addEventListener('click', closeHandler);
-    },
-
+    if(mActions) mActions.style.display = 'none';
+    modal.style.display = 'flex';
+    
+    const closeHandler = (e) => { 
+        if (e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') { 
+            if(mActions) mActions.style.display = 'flex'; 
+            modal.removeEventListener('click', closeHandler); 
+        } 
+    };
+    modal.addEventListener('click', closeHandler);
+},
 
 
 

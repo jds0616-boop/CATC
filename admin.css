@@ -2688,35 +2688,83 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
-/* 차량 수요조사 3단 레이아웃 스타일 */
+
+/* --- [수정] 차량 수요조사 슬림 & 클린 스타일 --- */
 .shuttle-3col-container {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr; /* 3등분 */
-    gap: 25px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
     width: 100%;
-    max-width: 1400px; /* 넓게 사용 */
+    max-width: 1000px; /* 너비를 1400에서 1000으로 대폭 축소 */
+    margin: 0 auto;
     align-items: start;
 }
 
 .shuttle-column {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
 }
 
+/* 상단 요약 바 슬림화 */
 .shuttle-summary-bar {
-    grid-column: span 3; /* 3칸 다 차지 */
+    grid-column: span 3;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 15px;
-    padding: 15px 30px;
-    margin-bottom: 10px;
+    padding: 10px 20px;
+    margin-bottom: 15px;
     display: flex;
     justify-content: space-around;
     align-items: center;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-.summary-item { text-align: center; }
-.summary-item label { font-size: 12px; color: #64748b; font-weight: 700; display: block; margin-bottom: 5px; }
-.summary-item b { font-size: 24px; color: #003366; font-weight: 900; }
+.summary-item label { font-size: 11px; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px; }
+.summary-item b { font-size: 20px; color: #003366; font-weight: 900; }
+
+.shuttle-dest-card {
+    background: white;
+    border-radius: 15px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.shuttle-dest-card:hover { transform: translateY(-3px); }
+
+/* 카드 내부 헤더 */
+.dest-header {
+    padding: 15px 20px; /* 패딩 축소 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dest-name-group { display: flex; align-items: center; gap: 10px; }
+.dest-icon-box {
+    width: 32px; height: 32px; /* 아이콘 크기 축소 */
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+}
+
+.dest-title { font-size: 15px; font-weight: 800; color: #1e293b; }
+
+/* [중요] 숫자 배지 배경 제거 및 디자인 수정 */
+.dest-count-badge {
+    background: transparent !important; /* 배경 제거 */
+    color: #003366 !important; /* 남색 숫자 고정 */
+    font-size: 22px !important; /* 숫자 강조 */
+    font-weight: 900;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* 목적지별 포인트 컬러 (테두리만 유지) */
+.card-osong { border-top: 4px solid #3b82f6; }
+.card-terminal { border-top: 4px solid #f59e0b; }
+.card-airport { border-top: 4px solid #10b981; }
+.card-car { border-top: 4px solid #6366f1; }

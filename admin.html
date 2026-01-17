@@ -566,33 +566,54 @@
 
 
 
-<!-- [최종 고도화] 2. 차량 수요조사 상세 명단 (3단 세로 배치) -->
-<div id="view-shuttle" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <div class="view-header" style="margin-bottom: 20px;">
+<!-- [수정] 차량 수요조사 섹션 - 슬림 레이아웃 적용 -->
+<div id="view-shuttle" style="display:none; width:100%; flex-direction:column; align-items:center; padding-top: 10px;">
+    <div class="view-header" style="margin-bottom: 15px;">
         <h1><i class="fa-solid fa-bus-simple"></i> 항기원 퇴교 수송 현황 <span class="header-room-badge room-badge-global"></span></h1>
     </div>
 
     <div class="shuttle-3col-container">
-        <!-- 상단 전체 요약 바 -->
+        <!-- 상단 요약 바 (슬림 버전) -->
         <div class="shuttle-summary-bar">
-            <div class="summary-item"><label>전체 인원</label><b id="total-student-cnt">0</b>명</div>
-            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
-            <div class="summary-item"><label>셔틀 탑승(1차+2차)</label><b id="total-shuttle-cnt">0</b>명</div>
-            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
-            <div class="summary-item"><label>자차/개별 이동</label><b id="total-car-cnt" style="color:#6366f1;">0</b>명</div>
-            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
-            <div class="summary-item"><label>미신청</label><b id="total-none-cnt" style="color:#ef4444;">0</b>명</div>
+            <div class="summary-item">
+                <label>전체 인원</label>
+                <b id="total-student-cnt">0</b><span style="font-size:12px; color:#64748b;">명</span>
+            </div>
+            <div style="width:1px; height:20px; background:#e2e8f0;"></div>
+            <div class="summary-item">
+                <label>셔틀 탑승</label>
+                <b id="total-shuttle-cnt">0</b><span style="font-size:12px; color:#64748b;">명</span>
+            </div>
+            <div style="width:1px; height:20px; background:#e2e8f0;"></div>
+            <div class="summary-item">
+                <label>자차/개별</label>
+                <b id="total-car-cnt" style="color:#6366f1;">0</b><span style="font-size:12px; color:#64748b;">명</span>
+            </div>
+            <div style="width:1px; height:20px; background:#e2e8f0;"></div>
+            <div class="summary-item">
+                <label>미신청</label>
+                <b id="total-none-cnt" style="color:#ef4444;">0</b><span style="font-size:12px; color:#64748b;">명</span>
+            </div>
         </div>
 
-        <!-- 1차 수송 기둥 -->
-        <div class="shuttle-column" id="col-wave1"></div>
+        <!-- 1차 수송 (왼쪽 기둥) -->
+        <div class="shuttle-column" id="col-wave1">
+            <!-- JS에서 카드가 생성됩니다 -->
+        </div>
 
-        <!-- 2차 수송 기둥 -->
-        <div class="shuttle-column" id="col-wave2"></div>
+        <!-- 2차 수송 (가운데 기둥) -->
+        <div class="shuttle-column" id="col-wave2">
+            <!-- JS에서 카드가 생성됩니다 -->
+        </div>
 
-        <!-- 자차 및 통계 기둥 -->
-        <div class="shuttle-column" id="col-car"></div>
+        <!-- 개별 이동 및 통계 (오른쪽 기둥) -->
+        <div class="shuttle-column" id="col-car">
+            <!-- JS에서 카드가 생성됩니다 -->
+        </div>
     </div>
+    
+    <!-- 하단 여백 확보 -->
+    <div style="height: 50px;"></div>
 </div>
 
 
