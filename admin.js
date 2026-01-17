@@ -1555,66 +1555,115 @@ setMode: function(mode) {
 
 
 
-// [고도화 수정] 차량 수요조사 상세 페이지: 1차(13시) / 2차(15시) 명단 분리 로드
-loadShuttleData: function() {
+// [고도화 수정] 차량 수요조사 상세 페이지: 간략한 카드 뷰 + 클릭 시 상세 명단 팝업 (자차 포함)
+    loadShuttleData: function() {
         if(!state.room) return;
+        
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
             const data = snap.val() || {};
             const container = document.getElementById('shuttleCardContainer');
             if(!container) return;
 
-            container.innerHTML = "";
+            container.innerHTML = ""; 
+
             const waves = [
                 { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#3b82f6' },
                 { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#10b981' }
             ];
 
             waves.forEach(wave => {
-                const waveData = data[wave.id] || {};
+                const waveData = data[wave.id] || {}; 
                 const locations = [
                     { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-                    { id: 'terminal', name: '터미널', icon: 'fa-bus' }, 
-                    { id: 'airport', name: '공항', icon: 'fa-plane' }
+                    { id: 'terminal', name: '터미널', icon: 'fa-bus-simple' }, 
+                    { id: 'airport', name: '청주공항', icon: 'fa-plane' },
+                    { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
                 ];
 
-                let waveHtml = `
-                    <div style="grid-column: span 2; margin-top: 20px; padding: 10px 20px; background: ${wave.color}; color: white; border-radius: 12px; font-weight: 800; font-size: 16px;">
+                // 차수 제목 바
+                container.innerHTML += `
+                    <div style="grid-column: span 2; margin-top: 30px; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                         <i class="fa-solid fa-clock"></i> ${wave.name}
                     </div>
                 `;
-                
+
                 locations.forEach(loc => {
-                    const members = waveData[loc.id] ? Object.entries(waveData[loc.id]) : [];
+                    const locData = waveData[loc.id] || {};
+                    const members = Object.entries(locData); 
                     const count = members.length;
                     
-                    let membersHtml = count > 0 
-                        ? `<div class="member-tag-container">${members.map(([token, name]) => `
-                            <div class="member-tag">${name} <i class="fa-solid fa-xmark btn-del-shuttle" onclick="ui.cancelIndividualShuttle('${wave.id}', '${loc.id}', '${token}', '${name}')"></i></div>
-                          `).join('')}</div>`
-                        : `<div class="no-member-text">신청자 없음</div>`;
-
-                    waveHtml += `
-                        <div class="shuttle-dest-card card-${loc.id}">
-                            <div class="dest-header">
-                                <div class="dest-name-group"><div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div><div class="dest-title">${loc.name}</div></div>
-                                <div class="dest-count-badge">${count}명</div>
+                    // 간결한 카드 생성 (클릭 시 팝업 연결)
+                    const cardHtml = `
+                        <div class="shuttle-dest-card card-${loc.id}" 
+                             onclick="ui.showShuttleListModal('${wave.id}', '${wave.name}', '${loc.name}', ${JSON.stringify(members).replace(/"/g, '&quot;')})"
+                             style="cursor:pointer; transition: 0.2s;">
+                            <div class="dest-header" style="border-bottom:none; padding: 25px;">
+                                <div class="dest-name-group">
+                                    <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
+                                    <div class="dest-title" style="font-size:18px;">${loc.name}</div>
+                                </div>
+                                <div class="dest-count-badge" style="font-size:20px; padding: 6px 20px;">${count}명</div>
                             </div>
-                            <div class="dest-body">${membersHtml}</div>
+                            <div style="text-align:center; padding-bottom:15px; color:#94a3b8; font-size:13px;">
+                                ${count > 0 ? '클릭하여 명단 확인 >' : '신청자 없음'}
+                            </div>
                         </div>
                     `;
+                    container.innerHTML += cardHtml;
                 });
-                container.innerHTML += waveHtml;
             });
         });
     },
 
+    // [신규] 차량 신청 상세 명단 팝업 함수
+    showShuttleListModal: function(waveId, waveName, locName, members) {
+        if (members.length === 0) return;
+
+        const modal = document.getElementById('qaModal');
+        const mText = document.getElementById('m-text');
+        const mActions = document.querySelector('#qaModal .modal-actions');
+
+        if(!modal || !mText) return;
+
+        // 모달 내용 구성
+        mText.innerHTML = `
+            <div style="text-align:left;">
+                <div style="font-size:14px; color:#3b82f6; font-weight:800; margin-bottom:5px;">${waveName}</div>
+                <div style="font-size:20px; font-weight:900; color:#1e293b; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px;">
+                    ${locName} 신청자 명단
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; max-height:300px; overflow-y:auto; padding:5px;">
+                    ${members.map(([token, name]) => `
+                        <div class="member-tag" style="padding: 10px 15px; font-size:15px; background:white; border:1.5px solid #e2e8f0; display:flex; align-items:center; border-radius:8px;">
+                            ${name} 
+                            <i class="fa-solid fa-xmark" 
+                               onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locName.includes('오송') ? 'osong' : locName.includes('터미널') ? 'terminal' : locName.includes('공항') ? 'airport' : 'car'}', '${token}', '${name}')" 
+                               style="margin-left:12px; color:#ef4444; cursor:pointer; font-size:16px;"></i>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // 팝업 시 하단 Q&A용 버튼들은 숨김
+        if(mActions) mActions.style.display = 'none';
+        modal.style.display = 'flex';
+        
+        // 닫기 시 버튼 다시 살리기
+        const closeHandler = (e) => {
+            if (e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') {
+                if(mActions) mActions.style.display = 'flex';
+                modal.removeEventListener('click', closeHandler);
+            }
+        };
+        modal.addEventListener('click', closeHandler);
+    },
 
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
-
 
     
 // [6.13차 수정] Q&A 리스트 렌더링 (최신 질문 2분 강조 기능 복구)

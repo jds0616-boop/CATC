@@ -378,27 +378,60 @@
                 </div>
             </div>
 
-<!-- (3) 실시간 Q&A 및 셔틀 탑승 수요 (클릭 시 이동) -->
-            <div class="stat-premium-card card-mint">
-                <!-- Q&A 현황 [신규 추가] -->
-                <div class="stat-row" onclick="ui.setMode('qa')" style="cursor:pointer; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0;">
-                    <span class="card-label-shuttle" style="margin-bottom:0;">실시간 질문 현황</span>
+<!-- (3) 실시간 Q&A 및 셔틀 차수별 탑승 수요 (1차/2차 & 자차 포함) -->
+            <div class="stat-premium-card card-mint" onclick="ui.setMode('shuttle')" style="cursor:pointer;">
+                <!-- Q&A 현황 -->
+                <div class="stat-row" onclick="event.stopPropagation(); ui.setMode('qa');" style="cursor:pointer; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0;">
+                    <span class="card-label-shuttle" style="margin-bottom:0; color:#003366;">실시간 질문 현황</span>
                     <div class="card-value" style="color: #3b82f6;"><b id="dashQaCount">0</b><small>건</small></div>
                 </div>
 
-                <div class="card-label-shuttle">셔틀 탑승 수요 (상세보기)</div>
-                <div class="shuttle-scoreboard" onclick="ui.setMode('shuttle')" style="cursor:pointer;">
-                    <div class="sb-item"><span class="sb-val" id="s-osong-cnt">0</span><span class="sb-txt">오송역</span></div>
-                    <div class="sb-divider"></div>
-                    <div class="sb-item"><span class="sb-val" id="s-term-cnt">0</span><span class="sb-txt">터미널</span></div>
-                    <div class="sb-divider"></div>
-                    <div class="sb-item"><span class="sb-val" id="s-air-cnt">0</span><span class="sb-txt">청주공항</span></div>
-                </div>
-            </div>
+                <div class="card-label-shuttle" style="color:#003366; margin-bottom:10px;">셔틀 탑승 수요 (상세보기)</div>
 
-        </div> 
-    </div> 
-</div>
+                <!-- 기사님 실시간 공지 영역 -->
+                <div id="dashShuttleNotice" style="display:none; font-size:12px; background:#fffbeb; padding:8px 12px; border-radius:10px; color:#92400e; margin-bottom:12px; border-left:4px solid #facc15; border:1px solid #fef3c7;">
+                    <i class="fa-solid fa-bullhorn" style="color:#eab308; margin-right:5px;"></i> 
+                    <span id="dashShuttleNoticeTxt" style="font-weight:700;"></span>
+                </div>
+                
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <!-- 1차(13:00) 요약 박스 (자차 포함 4칸) -->
+                    <div style="background:white; padding:10px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <div style="font-size:11px; font-weight:800; color:#3b82f6; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
+                            <i class="fa-solid fa-clock"></i> 1차 수송 (13:00) <span id="dashWave1Total" style="margin-left:auto; background:#eff6ff; padding:1px 6px; border-radius:4px;">0명</span>
+                        </div>
+                        <div class="shuttle-scoreboard" style="border:none; padding:0; background:transparent;">
+                            <div class="sb-item"><span class="sb-val" id="s1-osong" style="font-size:18px;">0</span><span class="sb-txt">오송</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s1-term" style="font-size:18px;">0</span><span class="sb-txt">터미널</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s1-air" style="font-size:18px;">0</span><span class="sb-txt">공항</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s1-car" style="font-size:18px;">0</span><span class="sb-txt">자차</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 2차(15:00) 요약 박스 (자차 포함 4칸) -->
+                    <div style="background:white; padding:10px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <div style="font-size:11px; font-weight:800; color:#10b981; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
+                            <i class="fa-solid fa-clock"></i> 2차 수송 (15:00) <span id="dashWave2Total" style="margin-left:auto; background:#ecfdf5; padding:1px 6px; border-radius:4px;">0명</span>
+                        </div>
+                        <div class="shuttle-scoreboard" style="border:none; padding:0; background:transparent;">
+                            <div class="sb-item"><span class="sb-val" id="s2-osong" style="font-size:18px;">0</span><span class="sb-txt">오송</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s2-term" style="font-size:18px;">0</span><span class="sb-txt">터미널</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s2-air" style="font-size:18px;">0</span><span class="sb-txt">공항</span></div>
+                            <div class="sb-divider" style="height:15px;"></div>
+                            <div class="sb-item"><span class="sb-val" id="s2-car" style="font-size:18px;">0</span><span class="sb-txt">자차</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- card-mint 끝 -->
+
+        </div> <!-- dash-premium-grid 끝 -->
+    </div> <!-- modern-white-card dash-hero-container 끝 -->
+</div> <!-- view-dashboard 끝 -->
 
 
 
@@ -543,14 +576,16 @@
 
 
 
-<!-- [수정] 2. 차량 수요조사 디자인 개선 -->
+<!-- [최종 수정] 2. 차량 수요조사 상세 명단 (1차/2차 & 자차 포함) -->
 <div id="view-shuttle" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header">
         <h1><i class="fa-solid fa-bus-simple"></i> 항기원 퇴교 수송 신청자 <span class="header-room-badge room-badge-global"></span></h1>
-        <p>교육생들이 앱을 통해 직접 신청한 실시간 명단입니다.</p>
+        <p>기사님이 설정한 차수(1차/2차)별 실시간 명단입니다. (자차 포함)</p>
     </div>
-    <div class="shuttle-card-container" id="shuttleCardContainer" style="display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; max-width:1000px;">
-        <!-- JS가 카드를 여기에 생성합니다 -->
+    
+    <!-- 이 구역(shuttleCardContainer)에 admin.js가 1차/2차 명단 카드를 생성해서 꽂아줍니다 -->
+    <div class="shuttle-card-container" id="shuttleCardContainer" style="display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; max-width:1100px; padding-bottom: 150px;">
+        <!-- 데이터 로딩 전 빈 상태 -->
     </div>
 </div>
 
