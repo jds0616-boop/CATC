@@ -1398,109 +1398,128 @@ body.night-mode .badge-idle {
 
 
 
+
 /* ============================================================
-   [최종 보정] 야간 모드 시 하얀색 구역 강제 어둠 보정 패치
+   [프리미엄 다크 테마] 하얀색 완전 박멸 및 가독성 최적화
    ============================================================ */
 
 body.night-mode {
-    --bg-color: #0f172a;        /* 전체 배경: 진한 네이비 */
-    --card-bg: #1e293b;         /* 카드 배경: 조금 밝은 네이비 */
-    --text-color: #f1f5f9;      /* 기본 글자: 밝은 회색 */
-    --border-color: #334155;    /* 테두리 색상 */
+    --bg-color: #0f172a;        /* 배경: 딥 네이비 */
+    --card-bg: #1e293b;         /* 카드: 미드나잇 블루 */
+    --accent-blue: #60a5fa;     /* 강조: 스카이 블루 */
+    --text-main: #f8fafc;       /* 메인글자: 화이트그레이 */
+    --text-sub: #94a3b8;        /* 보조글자: 뮤트블루 */
+    --border: #334155;          /* 구분선: 다크그레이 */
 }
 
-/* 1. 기본 배경 및 모든 '하얀 카드' 강제 보정 */
+/* 1. 전체 배경 및 메인 컨테이너 */
 body.night-mode, 
 body.night-mode .main-stage,
-body.night-mode .modern-white-card,
-body.night-mode .stat-premium-card {
+body.night-mode .content-area {
     background-color: var(--bg-color) !important;
-    color: var(--text-color) !important;
-    border-color: var(--border-color) !important;
 }
 
-/* 2. [강의실 실시간 현황판] 하얀 배경 박멸 */
-body.night-mode .full-dashboard,
-body.night-mode .full-dashboard .modern-white-card {
-    background-color: #0f172a !important;
-}
-body.night-mode .modern-table, 
-body.night-mode .modern-table td, 
-body.night-mode .modern-table th {
-    background-color: #1e293b !important;
-    color: #cbd5e1 !important;
-    border-bottom: 1px solid #334155 !important;
-}
-
-/* 3. [공지사항 관리] 우측 센터 공지 게시판 하얀 배경 박멸 */
-body.night-mode .notice-card-half:last-child .modern-white-card {
-    background-color: #0f172a !important;
-    border: 1px solid #334155 !important;
-}
-body.night-mode #globalNoticeDisplay {
-    color: #e2e8f0 !important;
+/* 2. 모든 하얀색 카드/박스 통합 (대시보드, 게시판, 공지 등) */
+body.night-mode .modern-white-card,
+body.night-mode .stat-premium-card,
+body.night-mode .card-notice-hub,
+body.night-mode .shuttle-summary-bar,
+body.night-mode .shuttle-dest-card,
+body.night-mode .notice-card-half .modern-white-card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    color: var(--text-main) !important;
 }
 
-/* 4. [과정현황/셔틀] 수송 예정 및 스코어보드 하얀 배경 박멸 */
-body.night-mode .shuttle-scoreboard,
-body.night-mode .shuttle-mini-stats,
-body.night-mode .shuttle-mini-stats-inner {
-    background-color: #0f172a !important;
-    border-color: #334155 !important;
-}
-body.night-mode .sb-val,
-body.night-mode .shuttle-mini-stats b {
-    color: #3b82f6 !important; /* 숫자는 파란색으로 강조 */
-}
-
-/* 5. [대시보드] 통계 카드 내 글자색 보정 */
+/* 3. 대시보드(과정현황) 내부 요소 보정 */
 body.night-mode .card-label, 
-body.night-mode .card-label-shuttle,
+body.night-mode .card-label-shuttle, 
 body.night-mode .notice-hub-header span {
-    color: #60a5fa !important;
+    color: var(--accent-blue) !important; /* 소제목은 밝은 파란색 */
 }
 body.night-mode .card-value b, 
-body.night-mode .stat-row b {
-    color: #ffffff !important;
+body.night-mode .stat-row b,
+body.night-mode .sb-val,
+body.night-mode .shuttle-mini-stats b {
+    color: #ffffff !important; /* 숫자는 무조건 쨍한 흰색 */
 }
 
-/* 6. 수강생 현황 테이블 및 배지 보정 */
+/* 4. 셔틀 스코어보드 & 통계 박스 (사진 속 하얀 부분) */
+body.night-mode .shuttle-scoreboard,
+body.night-mode .shuttle-mini-stats,
+body.night-mode .dest-icon-box {
+    background-color: #0f172a !important; /* 카드보다 더 진한 배경으로 대비 */
+    border-color: var(--border) !important;
+}
+
+/* 5. 공지사항 피드 리스트 (사진 속 하얀 줄) */
+body.night-mode .notice-item {
+    background-color: #0f172a !important;
+    border: 1px solid var(--border) !important;
+}
+body.night-mode .notice-item p,
+body.night-mode #globalNoticeDisplay {
+    color: #cbd5e1 !important; /* 공지 내용은 눈 안 아픈 연회색 */
+}
+
+/* 6. 테이블(실시간 현황판/수강생 리스트) 완벽 보정 */
+body.night-mode table { border-color: var(--border) !important; }
 body.night-mode table th {
     background-color: #111827 !important;
-    color: #94a3b8 !important;
+    color: var(--text-sub) !important;
+    border-bottom: 2px solid var(--border) !important;
 }
-body.night-mode .status-badge.status-wait {
-    background-color: #334155 !important;
-    color: #94a3b8 !important;
+body.night-mode table td {
+    background-color: transparent !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+/* My 룸 강조 라인 */
+body.night-mode .status-table tr.is-my-room td {
+    background-color: rgba(59, 130, 246, 0.15) !important;
 }
 
-/* 7. 입력창(textarea) 가독성 보정 */
+/* 7. 입력창 및 설정창 (검정 바탕에 흰 글씨) */
 body.night-mode textarea, 
+body.night-mode input[type="text"],
 body.night-mode .setup-input,
 body.night-mode #instNoticeInputMain {
     background-color: #0f172a !important;
-    color: white !important;
+    color: #ffffff !important;
     border: 1px solid #475569 !important;
 }
 
-/* 8. 탭 메뉴 및 버튼 보정 */
+/* 8. 탭 메뉴 버튼 */
 body.night-mode .mode-tabs {
     background-color: #111827 !important;
-    border-bottom: 1px solid #1f2937 !important;
+    border-bottom: 2px solid #1f2937 !important;
 }
 body.night-mode .mode-btn {
-    color: #94a3b8 !important;
+    background: transparent !important;
+    color: var(--text-sub) !important;
     border-color: #374151 !important;
 }
+body.night-mode .mode-btn.active {
+    background: #3b82f6 !important;
+    color: white !important;
+}
 
-/* 9. 퀴즈 모드 완전 어둠 보정 */
-body.night-mode .quiz-card { background-color: #0f172a !important; }
-body.night-mode .quiz-opt { background-color: #1e293b !important; border-color: #334155 !important; }
+/* 9. 퀴즈 모드 */
+body.night-mode .quiz-card { background-color: #0f172a !important; border:none !important; }
+body.night-mode .quiz-opt { background-color: var(--card-bg) !important; border-color: var(--border) !important; color: white !important; }
 body.night-mode .quiz-opt .opt-num { background-color: #0f172a !important; }
 
-/* 10. 제목 및 공통 UI */
-body.night-mode .view-header h1 { color: white !important; }
-body.night-mode .header-room-badge { background-color: #3b82f6 !important; color: white !important; }
+/* 10. 제목 및 공통 가독성 */
+body.night-mode .view-header h1 { color: #ffffff !important; }
+body.night-mode .view-header p { color: var(--text-sub) !important; }
+body.night-mode .header-room-badge { background-color: #003366 !important; border: 1px solid #3b82f6 !important; }
+
+
+
+
+
+
 
 
 
