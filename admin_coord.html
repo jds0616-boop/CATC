@@ -339,44 +339,69 @@ async function submitTransportRequest() {
     }
 
 function handleRoomSelection() {
-        const rid = document.getElementById('roomSelect').value; currentRoomId = rid;
-        const totalView = document.getElementById('view-total-list'); const individualView = document.getElementById('view-individual-notice');
-        
-        // QR 미리보기 초기화
-        const qrPreview = document.getElementById('qrPreview');
-        const qrStatus = document.getElementById('qrStatus');
-        if(qrPreview) qrPreview.style.display = 'none';
+    const rid = document.getElementById('roomSelect').value; 
+    currentRoomId = rid;
+    const totalView = document.getElementById('view-total-list'); 
+    const individualView = document.getElementById('view-individual-notice');
+    
+    // QR 미리보기 초기화
+    const qrPreview = document.getElementById('qrPreview');
+    const qrStatus = document.getElementById('qrStatus');
+    if(qrPreview) qrPreview.style.display = 'none';
 
-        if(!rid) { 
-            totalView.style.display = 'block'; 
-            individualView.style.display = 'none'; 
-            document.getElementById('selectionLabel').innerText = "전체 과정 현황"; 
-            document.getElementById('leaderDisplay').style.display = "none"; 
-            updateStats(globalAllData); 
-            if(qrStatus) qrStatus.innerText = "과정 선택 후 업로드";
-        }
-        else {
-            totalView.style.display = 'none'; individualView.style.display = 'flex';
-            const roomData = globalAllData[rid] || {};
-            document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${roomData.status?.professorName || "미지정"} 교수님 과정`;
-            document.getElementById('courseNotice').value = roomData.coordNotice || "";
-            
-            // [추가] 해당 과정의 QR이 이미 있는지 확인하여 미리보기에 표시
-            if(roomData.attendanceQR) {
-                qrPreview.src = roomData.attendanceQR;
-                qrPreview.style.display = 'block';
-                qrStatus.innerText = "✅ 등록된 QR 확인됨";
-            } else {
-                qrStatus.innerText = "❌ 등록된 QR 없음 (업로드 필요)";
-            }
-
-            const leader = Object.values(roomData.students || {}).find(st => st.isLeader === true);
-            if(leader) { document.getElementById('leaderInfoText').innerText = `${leader.name} (${leader.phone || '연락처 미등록'})`; document.getElementById('leaderDisplay').style.display = "flex"; }
-            else { document.getElementById('leaderDisplay').style.display = "none"; }
-            updateStats({[rid]: roomData});
-        }
+    if(!rid) { 
+        totalView.style.display = 'block'; 
+        individualView.style.display = 'none'; 
+        document.getElementById('selectionLabel').innerText = "전체 과정 현황"; 
+        document.getElementById('leaderDisplay').style.display = "none"; 
+        updateStats(globalAllData); 
+        if(qrStatus) qrStatus.innerText = "과정 선택 후 업로드";
     }
+    else {
+        totalView.style.display = 'none'; 
+        individualView.style.display = 'flex';
+        const roomData = globalAllData[rid] || {};
+        document.getElementById('selectionLabel').innerHTML = `<span style="color:#0ea5e9;">[Room ${rid}]</span> ${roomData.status?.professorName || "미지정"} 교수님 과정`;
+        document.getElementById('courseNotice').value = roomData.coordNotice || "";
+        
+        // [추가] 해당 과정의 QR이 이미 있는지 확인하여 미리보기에 표시
+        if(roomData.attendanceQR) {
+            qrPreview.src = roomData.attendanceQR;
+            qrPreview.style.display = 'block';
+            qrStatus.innerText = "✅ 등록된 QR 확인됨";
+        } else {
+            qrStatus.innerText = "❌ 등록된 QR 없음 (업로드 필요)";
+        }
 
+        // --- 학생장 다수 표시 로직 수정 ---
+        // 1. 모든 학생장(isLeader === true)을 필터링하여 가져옵니다.
+        const leaders = Object.values(roomData.students || {}).filter(st => st.isLeader === true);
+        const leaderDisplay = document.getElementById('leaderDisplay');
+        const leaderInfoText = document.getElementById('leaderInfoText');
+
+        if(leaders.length > 0) {
+            // 2. 학생장 명단을 HTML 리스트로 생성합니다.
+            leaderInfoText.innerHTML = leaders.map(l => `
+                <div style="margin-bottom: 6px; border-bottom: 1px solid #fef3c7; padding-bottom: 4px; width: 100%;">
+                    <b style="color:#1e293b; font-size:14px;">${l.name}</b> 
+                    <span style="font-size:12px; color:#64748b; margin-left:5px;">(${l.phone || '연락처 미등록'})</span>
+                </div>
+            `).join('');
+
+            // 3. 레이아웃 조정 (여러 줄이므로 flex-direction을 column으로, 높이는 auto로)
+            leaderDisplay.style.display = "flex";
+            leaderDisplay.style.flexDirection = "column";
+            leaderDisplay.style.alignItems = "flex-start";
+            leaderDisplay.style.height = "auto";
+            leaderDisplay.style.padding = "12px 15px";
+        } else {
+            leaderDisplay.style.display = "none";
+        }
+        // --------------------------------
+
+        updateStats({[rid]: roomData});
+    }
+}
     function updateStats(dataScope) {
         let osong = [], term = [], air = [], outing = [], overnight = [];
         const today = getTodayString();
