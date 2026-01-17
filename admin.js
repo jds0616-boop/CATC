@@ -442,71 +442,64 @@ dbRef.status.on('value', s => {
         }
     },
 
+// [최종 수정] 리셋 시 교육생 퇴출용 resetKey를 포함한 초기화 로직
 resetCourse: function() {
-        if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
-            return;
-        }
-        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
-            const rPath = `courses/${state.room}`;
+    if (!state.room) {
+        ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
+        return;
+    }
+    if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
+        const rPath = `courses/${state.room}`;
 
-            // 1. 초기화할 데이터들을 묶어서 처리 (가이드는 건드리지 않음)
-            const updates = {};
+        // 1. 초기화할 데이터들을 묶어서 처리
+        const updates = {};
 
-            // [삭제 항목] - null을 넣으면 해당 경로가 삭제됩니다.
-            updates[`${rPath}/questions`] = null;
-            updates[`${rPath}/students`] = null;
-            updates[`${rPath}/expectedStudents`] = null; 
-            updates[`${rPath}/activeQuiz`] = null;
-            updates[`${rPath}/quizAnswers`] = null;
-            updates[`${rPath}/quizFinalResults`] = null;
-            updates[`${rPath}/admin_actions`] = null;
-            updates[`${rPath}/dinner_skips`] = null;
-            updates[`${rPath}/shuttle`] = null;
-            updates[`${rPath}/notice`] = null;
-            updates[`${rPath}/attendanceQR`] = null;
-            updates[`${rPath}/connections`] = null;
+        // [데이터 삭제 항목]
+        updates[`${rPath}/questions`] = null;
+        updates[`${rPath}/students`] = null;
+        updates[`${rPath}/expectedStudents`] = null; 
+        updates[`${rPath}/activeQuiz`] = null;
+        updates[`${rPath}/quizAnswers`] = null;
+        updates[`${rPath}/quizFinalResults`] = null;
+        updates[`${rPath}/admin_actions`] = null;
+        updates[`${rPath}/dinner_skips`] = null;
+        updates[`${rPath}/shuttle`] = null;
+        updates[`${rPath}/notice`] = null;
+        updates[`${rPath}/attendanceQR`] = null;
+        updates[`${rPath}/connections`] = null;
 
-            // [초기값 항목] - 빈칸이나 기본값으로 되돌립니다.
-            updates[`${rPath}/settings/courseName`] = "";
-            updates[`${rPath}/settings/subjects`] = null;
-            updates[`${rPath}/status/roomStatus`] = "idle";
-            updates[`${rPath}/status/professorName`] = "";
-            updates[`${rPath}/status/ownerSessionId`] = null;
-            updates[`${rPath}/status/mode`] = "qa";
-            updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
+        // [기본값 설정 항목]
+        updates[`${rPath}/settings/courseName`] = "";
+        updates[`${rPath}/settings/subjects`] = null;
+        updates[`${rPath}/status/roomStatus`] = "idle";
+        updates[`${rPath}/status/professorName`] = "";
+        updates[`${rPath}/status/ownerSessionId`] = null;
+        updates[`${rPath}/status/mode`] = "qa";
 
-            // 2. 서버 업데이트 실행
-            firebase.database().ref().update(updates).then(() => {
+        // [가장 중요 - 핵심 추가!] 교육생 앱이 이 값을 보고 즉시 튕겨나갑니다.
+        updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
 
-                // 3. [UI 잔여물 제거] 현재 화면에 떠 있는 표(Table) 내용 비움
-                const tableIds = [
-                    'studentListTableBody',
-                    'adminActionTableBody',
-                    'dinnerSkipTableBody',
-                    'dormitoryTableBody'
-                ];
-                tableIds.forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.innerHTML = "";
-                });
-
-                // 4. 좌측 사이드바 입력창 비우기
-                document.getElementById('courseNameInput').value = "";
-                document.getElementById('profSelect').value = "";
-                document.getElementById('roomStatusSelect').value = 'idle';
-                document.getElementById('displayCourseTitle').innerText = "";
-
-                const subContainer = document.getElementById('subjectListContainer');
-                if(subContainer) subContainer.innerHTML = "";
-
-                ui.showAlert("✅ 가이드를 제외한 모든 정보가 초기화되었습니다.");
-
-                // 5. 완벽한 초기 화면 반영을 위해 새로고침
-                setTimeout(() => location.reload(), 500);
+        // 2. 서버 업데이트 실행
+        firebase.database().ref().update(updates).then(() => {
+            // 강사 화면 UI 비우기
+            const tableIds = ['studentListTableBody', 'adminActionTableBody', 'dinnerSkipTableBody', 'dormitoryTableBody'];
+            tableIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerHTML = "";
             });
-        }
-    },
+
+            document.getElementById('courseNameInput').value = "";
+            document.getElementById('profSelect').value = "";
+            document.getElementById('roomStatusSelect').value = 'idle';
+            document.getElementById('displayCourseTitle').innerText = "";
+
+            ui.showAlert("✅ 초기화되었습니다. 모든 교육생이 퇴출됩니다.");
+
+            // 완벽한 반영을 위해 강사 페이지도 0.5초 뒤 새로고침
+            setTimeout(() => location.reload(), 500);
+        });
+    }
+},
 
 
 // [추가] 공지사항 관리창 열기
