@@ -300,7 +300,7 @@
 
 <!-- [신규] 질문 대상(과목) 선택창 -->
 <div style="padding: 0 15px 8px 15px;">
-    <select id="subjectSelect" onchange="checkCooldown()" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
+    <select id="subjectSelect" onchange="handleSubjectChange()" style="width:100%; padding:10px; border-radius:12px; border:2px solid #e2e8f0; font-size:14px; font-weight:800; color:var(--accent-color); background:white; outline:none;">
         <option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>
     </select>
 </div>
@@ -524,7 +524,7 @@ let confirmCallback = null;
 
 
 
-        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null;
+        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null; let currentFilter = "공통질문"; 
 
 
 function sendAns(idx) {
@@ -996,57 +996,102 @@ dbRef.status.on('value', snap => {
 
 
 
-// [수정] 질문 목록 렌더링 (5분 시간 제한 로직 포함)
-        function renderList(data) {
-            const list = document.getElementById('qList'); 
-            list.innerHTML = ""; 
-            let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            
-            if(currentSort === 'like') {
-                items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
-            } else {
-                items.sort((a,b) => b.timestamp - a.timestamp);
-            }
+// [수정] 질문 목록 렌더링 (필터링 및 5분 시간 제한 로직 포함)
+function renderList(data) {
+    const list = document.getElementById('qList'); 
+    list.innerHTML = ""; 
+    
+    // 1. 전체 데이터를 배열로 변환
+    let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+    
+    // 2. [추가] 강사별 필터링 로직
+    // currentFilter가 "공통질문"이 아닐 경우에만 해당 강사(subject)와 일치하는 질문만 남깁니다.
+    if (currentFilter !== "공통질문") {
+        items = items.filter(item => item.subject === currentFilter);
+    }
+    
+    // 3. 정렬 로직 (기존 유지)
+    if(currentSort === 'like') {
+        items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
+    } else {
+        items.sort((a,b) => b.timestamp - a.timestamp);
+    }
 
-            items.forEach(item => {
-                if(item.status === 'delete') return;
-                
-                const isMine = myQs[item.id] ? 'my-q' : ''; 
-                const likedClass = myLikes[item.id] ? 'active' : '';
-                
-                // 강사 성함 호칭 정리
-                let targetName = item.subject || '공통질문';
-                let displayName = "";
-                const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
-                const foundPos = positions.find(pos => targetName.includes(pos));
-                if (foundPos) displayName = targetName.includes("님") ? targetName : targetName + "님";
-                else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
-                else displayName = targetName;
+    // 4. [추가] 질문이 없을 때 안내 문구
+    if (items.length === 0) {
+        const emptyMsg = currentFilter === "공통질문" 
+            ? "등록된 질문이 없습니다." 
+            : `'${currentFilter}'님께 등록된 질문이 없습니다.`;
+        list.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-size:14px;">${emptyMsg}</div>`;
+        return;
+    }
 
-                const instructorTag = `<span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
+    // 5. 질문 카드 그리기
+    items.forEach(item => {
+        if(item.status === 'delete') return;
+        
+        const isMine = myQs[item.id] ? 'my-q' : ''; 
+        const likedClass = myLikes[item.id] ? 'active' : '';
+        
+        // 강사 성함 호칭 정리
+        let targetName = item.subject || '공통질문';
+        let displayName = "";
+        const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
+        const foundPos = positions.find(pos => targetName.includes(pos));
+        if (foundPos) displayName = targetName.includes("님") ? targetName : targetName + "님";
+        else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
+        else displayName = targetName;
 
-                let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
-                
-                // [핵심] 내가 쓴 글이고 + 작성한 지 5분(300,000ms)이 안 지났을 때만 버튼 노출
-                if(isMine && (Date.now() - myQs[item.id] < 300000)) {
-                    metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
-                }
-                metaHtml += `</div>`;
+        const instructorTag = `<span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
 
-                list.innerHTML += `
-                    <div class="q-card ${isMine}">
-                        <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
-                        <div class="q-content">
-                            <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
-                            ${metaHtml}
-                        </div>
-                        <div class="q-like-area">
-                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
-                            <span class="like-count">${item.likes||0}</span>
-                        </div>
-                    </div>`;
-            });
+        let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
+        
+        // 내가 쓴 글이고 + 작성한 지 5분(300,000ms)이 안 지났을 때만 수정/삭제 버튼 노출
+        if(isMine && (Date.now() - myQs[item.id] < 300000)) {
+            metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
         }
+        metaHtml += `</div>`;
+
+        list.innerHTML += `
+            <div class="q-card ${isMine}">
+                <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="q-content">
+                    <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
+                    ${metaHtml}
+                </div>
+                <div class="q-like-area">
+                    <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
+                    <span class="like-count">${item.likes||0}</span>
+                </div>
+            </div>`;
+    });
+}
+
+
+
+// 강사 선택 시 호출되는 함수
+function handleSubjectChange() {
+    currentFilter = document.getElementById('subjectSelect').value;
+    checkCooldown(); // 기존 쿨타임 체크 유지
+    
+    // 리스트 즉시 새로고침
+    dbRef.qa.once('value', snap => {
+        renderList(snap.val() || {});
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function submitQ() {
     const txt = document.getElementById('qInput').value.trim();
