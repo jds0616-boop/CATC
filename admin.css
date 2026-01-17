@@ -1397,10 +1397,8 @@ body.night-mode .badge-idle {
 
 
 
-
-
 /* ============================================================
-   [최종 정밀] 전 게시판 야간 모드(Night Mode) 최적화 패치
+   [최종 보정] 야간 모드(Night Mode) 가독성 및 색상 완벽 패치
    ============================================================ */
 
 body.night-mode {
@@ -1410,61 +1408,122 @@ body.night-mode {
     --border-color: #334155;    /* 테두리 색상 */
 }
 
-/* 1. 공통 배경 및 글자색 */
-body.night-mode { background-color: var(--bg-color) !important; color: var(--text-color) !important; }
-body.night-mode .modern-white-card { background: var(--card-bg) !important; border-color: var(--border-color) !important; color: white !important; }
+/* 1. 하얀색 박스 강제 어둡게 보정 (대시보드, 공지관리 등 모든 카드) */
+body.night-mode .modern-white-card,
+body.night-mode .stat-premium-card,
+body.night-mode .card-notice-hub {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4) !important;
+}
 
-/* 2. 상단 탭 메뉴 버튼 보정 */
-body.night-mode .mode-tabs { background: #111827 !important; border-bottom: 1px solid #1f2937 !important; }
-body.night-mode .mode-btn { color: #94a3b8 !important; border-color: #374151 !important; }
-body.night-mode .mode-btn.active { background: #3b82f6 !important; color: white !important; }
+/* 2. 대시보드(과정현황) 내 텍스트 보정 */
+body.night-mode .card-label, 
+body.night-mode .card-label-shuttle, 
+body.night-mode .notice-hub-header span {
+    color: #60a5fa !important; /* 소제목들을 밝은 파란색으로 */
+}
+body.night-mode .card-value b, 
+body.night-mode .stat-row b,
+body.night-mode .sb-val {
+    color: #ffffff !important; /* 핵심 숫자들을 순백색으로 */
+}
 
-/* 3. 과정 현황 (대시보드) 정밀 보정 */
-body.night-mode .stat-premium-card { background: #0f172a !important; border: 1px solid #1e293b !important; }
-body.night-mode .card-label, body.night-mode .card-label-shuttle, body.night-mode .notice-hub-header { color: #60a5fa !important; } /* 제목을 밝은 파란색으로 */
-body.night-mode .card-value b, body.night-mode .sb-val, body.night-mode .stat-row b { color: #ffffff !important; }
-body.night-mode .notice-item { background: #1e293b !important; border: 1px solid #334155 !important; }
-body.night-mode .notice-item p { color: #cbd5e1 !important; }
+/* 3. 공지사항 허브 및 관리 페이지 보정 */
+body.night-mode .notice-item {
+    background-color: #111827 !important; /* 공지 리스트 배경 더 어둡게 */
+    border: 1px solid #1f2937 !important;
+}
+body.night-mode .notice-item p {
+    color: #cbd5e1 !important;
+}
+body.night-mode #globalNoticeDisplay {
+    color: #e2e8f0 !important; /* 센터 공지 내용 글자색 */
+}
 
-/* 4. 공지사항 관리 (Notice) 정밀 보정 */
-body.night-mode #instNoticeInputMain { background: #0f172a !important; color: #ffffff !important; border: 1px solid #475569 !important; }
-body.night-mode .notice-card-half:last-child .modern-white-card { background: #0f172a !important; border-style: solid !important; }
-body.night-mode #globalNoticeDisplay { color: #e2e8f0 !important; }
+/* 4. 테이블(수강생/석식/외출/현황판) 보정 */
+body.night-mode table th {
+    background-color: #111827 !important;
+    color: #94a3b8 !important;
+    border-bottom: 2px solid #334155 !important;
+}
+body.night-mode table td {
+    border-bottom: 1px solid #334155 !important;
+    color: #cbd5e1 !important;
+}
+body.night-mode tr:hover td {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
 
-/* 5. 수강생/석식/외출 테이블(Table) 보정 */
-body.night-mode table th { color: #94a3b8 !important; border-bottom: 2px solid #334155 !important; background: rgba(0,0,0,0.2) !important; }
-body.night-mode table td { color: #cbd5e1 !important; border-bottom: 1px solid #1e293b !important; }
-body.night-mode .status-badge.status-wait { background: #334155 !important; color: #94a3b8 !important; }
-body.night-mode tr:hover td { background-color: rgba(255, 255, 255, 0.03) !important; }
+/* 5. 셔틀 수요조사 카드 보정 */
+body.night-mode .shuttle-summary-bar {
+    background-color: #111827 !important;
+    border: 1px solid #334155 !important;
+}
+body.night-mode .shuttle-dest-card {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+body.night-mode .dest-title {
+    color: #ffffff !important;
+}
+body.night-mode .dest-count-badge {
+    color: #60a5fa !important; /* 숫자가 배경에 묻히지 않게 파란색 적용 */
+}
 
-/* 6. 질문 및 답변 (Q&A) 보정 */
-body.night-mode .qa-filters { background: var(--bg-color) !important; }
-body.night-mode .filter-chip { background: #1e293b !important; border-color: #334155 !important; color: #94a3b8 !important; }
-body.night-mode .filter-chip.active { background: #3b82f6 !important; color: white !important; }
-body.night-mode .q-card { background: #1e293b !important; border-left-color: #334155 !important; }
-body.night-mode .q-card .q-content { color: #f1f5f9 !important; }
+/* 6. 입력창(Textarea) 및 설정창 보정 */
+body.night-mode textarea, 
+body.night-mode input[type="text"],
+body.night-mode .setup-input {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #475569 !important;
+}
+body.night-mode textarea::placeholder {
+    color: #475569 !important;
+}
 
-/* 7. 퀴즈 모드 (Quiz) 보정 */
-body.night-mode .quiz-card { background: #0f172a !important; border-color: #1e293b !important; }
-body.night-mode .quiz-opt { background: #1e293b !important; border-color: #334155 !important; color: #ffffff !important; }
-body.night-mode .quiz-opt .opt-num { background: #0f172a !important; color: #3b82f6 !important; }
-body.night-mode .quiz-top-bar { background: #1e293b !important; border-bottom-color: #334155 !important; }
-body.night-mode .quiz-timer-box { background: #0f172a !important; border-color: #475569 !important; color: white !important; }
+/* 7. 버튼 보정 */
+body.night-mode .btn-list-clear {
+    background-color: #334155 !important;
+    color: #f87171 !important;
+    border: 1px solid #450a0a !important;
+}
 
-/* 8. 셔틀 수요조사 정밀 보정 */
-body.night-mode .shuttle-summary-bar { background: #1e293b !important; border-color: #334155 !important; }
-body.night-mode .shuttle-summary-bar b { color: #ffffff !important; }
-body.night-mode .shuttle-dest-card { background: #1e293b !important; border-color: #334155 !important; }
-body.night-mode .dest-title { color: #e2e8f0 !important; }
-body.night-mode .dest-count-badge { color: #60a5fa !important; }
+/* 8. 팝업(모달) 및 제목 보정 */
+body.night-mode .modal-box {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+body.night-mode .view-header h1 {
+    color: #ffffff !important;
+}
+body.night-mode .header-room-badge {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
 
-/* 9. 실시간 현황판 (Waiting) My 룸 강조 보정 */
-body.night-mode .status-table tr.is-my-room td { background-color: rgba(59, 130, 246, 0.15) !important; border-top-color: #3b82f6 !important; border-bottom-color: #3b82f6 !important; }
+/* 9. 퀴즈 모드 보정 */
+body.night-mode .quiz-card {
+    background-color: #0f172a !important;
+}
+body.night-mode .quiz-opt {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+}
+body.night-mode .quiz-opt .opt-num {
+    background-color: #0f172a !important;
+    color: #3b82f6 !important;
+}
 
-/* 10. 제목 및 하단 버튼 */
-body.night-mode .view-header h1 { color: #ffffff !important; }
-body.night-mode .view-header i { color: #3b82f6 !important; }
-body.night-mode .btn-list-clear { background: #334155 !important; color: #f87171 !important; border-color: #450a0a !important; }
+
+
+
+
+
+
 
 /* ============================================================
    [개선] 뷰 영역 독립화 및 교수 프로필 프리미엄 디자인
