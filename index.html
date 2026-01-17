@@ -1069,17 +1069,26 @@ function renderList(data) {
 
 
 
-// 강사 선택 시 호출되는 함수
 function handleSubjectChange() {
+    // 1. 선택된 강사명을 가져와서 필터 변수에 저장
     currentFilter = document.getElementById('subjectSelect').value;
-    checkCooldown(); // 기존 쿨타임 체크 유지
     
-    // 리스트 즉시 새로고침
+    // 2. [추가] 입력창의 안내 문구(Placeholder)를 선택한 강사에 맞춰 변경
+    const inputEl = document.getElementById('qInput');
+    if (currentFilter === "공통질문") {
+        inputEl.placeholder = "✎ 질문 입력 (무례한 표현은 삼가주세요)";
+    } else {
+        inputEl.placeholder = `✎ ${currentFilter}님께 질문 입력...`;
+    }
+    
+    // 3. 쿨타임 체크 (기존 기능 유지)
+    checkCooldown();
+    
+    // 4. 리스트 새로고침 (필터 적용된 renderList 호출)
     dbRef.qa.once('value', snap => {
         renderList(snap.val() || {});
     });
 }
-
 
 
 
