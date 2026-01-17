@@ -332,18 +332,29 @@
         <!-- 하단 프리미엄 그리드 (통계 + 공지 + 셔틀) -->
         <div class="dash-premium-grid">
             
-            <!-- (1) 수강생 현황 (클릭 시 수강생 탭으로 이동) -->
-            <div class="stat-premium-card card-blue" onclick="ui.setMode('students')" style="cursor:pointer;">
+<!-- (1) 수강생 현황 및 행정 신청 (클릭 시 각각의 탭으로 이동) -->
+            <div class="stat-premium-card card-blue">
                 <div class="card-content combined-stats">
-                    <div class="stat-row">
+                    <!-- 수강생 현황 -->
+                    <div class="stat-row" onclick="ui.setMode('students')" style="cursor:pointer;">
                         <span class="card-label">수강생 현황 (입교/전체)</span>
                         <div class="card-value"><b id="dashArrivalRatio">0 / 0</b><small>명</small></div>
                     </div>
+                    
                     <div class="stat-divider"></div>
-                    <!-- (2) 외출/외박 현황 (클릭 시 외출 탭으로 이동) -->
-                    <div class="stat-row" onclick="event.stopPropagation(); ui.setMode('admin-action');" style="cursor:pointer;">
+                    
+                    <!-- 외출/외박 현황 -->
+                    <div class="stat-row" onclick="ui.setMode('admin-action')" style="cursor:pointer;">
                         <span class="card-label">금일 외출/외박 신청</span>
                         <div class="card-value color-coral"><b id="dashActionCount">0</b><small>명</small></div>
+                    </div>
+
+                    <div class="stat-divider" style="border-top: 1px dashed #e2e8f0; margin: 8px 0;"></div>
+
+                    <!-- 석식 제외 현황 [추가됨] -->
+                    <div class="stat-row" onclick="ui.setMode('dinner-skip')" style="cursor:pointer;">
+                        <span class="card-label">금일 석식 제외 신청</span>
+                        <div class="card-value" style="color: #10b981;"><b id="dashDinnerSkipCount">0</b><small>명</small></div>
                     </div>
                 </div>
             </div>

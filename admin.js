@@ -1002,7 +1002,7 @@ loadDashboardStats: function() {
             if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
         });
 
-        // 5. [중요] 수강생 현황 (게시판 로직과 100% 일치)
+        // 5. 수강생 현황 (입교 완료 / 전체 명단)
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
@@ -1012,17 +1012,12 @@ loadDashboardStats: function() {
                 const data = snap.val() || {};
                 const actualStudents = Object.values(data).filter(s => s.name && s.name !== "undefined");
                 const actualNames = actualStudents.map(s => s.name);
-                
-                // 중복을 제거한 전체 관리 대상 명단 생성
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames]));
                 const total = combinedNames.length;
                 let arrived = 0;
-                
-                // 실제 명단에 성함이 있는지 확인하여 입교 인원 체크
                 combinedNames.forEach(name => {
                     if (actualNames.includes(name)) arrived++;
                 });
-
                 const ratioEl = document.getElementById('dashArrivalRatio');
                 if(ratioEl) ratioEl.innerText = `${arrived} / ${total}`;
             });
@@ -1034,7 +1029,14 @@ loadDashboardStats: function() {
             if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
         });
 
-        // 7. 셔틀 탑승 수요 카운트
+        // 7. 석식 제외 신청자 카운트 [신규 추가]
+        firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', s => {
+            const count = Object.keys(s.val() || {}).length;
+            const skipEl = document.getElementById('dashDinnerSkipCount');
+            if(skipEl) skipEl.innerText = count;
+        });
+
+        // 8. 셔틀 탑승 수요 카운트
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
             const d = s.val() || {};
             if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
