@@ -59,6 +59,70 @@
     flex-direction: column; 
     gap: 4px;
 }
+
+
+/* 미니 공지 바 스타일 */
+.mini-notice-bar {
+    display: none; /* 초기에는 숨김 */
+    background: #fef3c7; /* 연한 황금색 */
+    height: 36px;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #fde68a;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    z-index: 90;
+    flex-shrink: 0;
+}
+
+.notice-icon {
+    color: #d97706;
+    font-size: 14px;
+    margin-right: 8px;
+    z-index: 2;
+    background: #fef3c7;
+    padding-right: 5px;
+}
+
+.notice-ticker {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+}
+
+.notice-text {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 20s linear infinite;
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+.notice-close {
+    padding: 5px 8px;
+    color: #b45309;
+    font-size: 14px;
+    z-index: 2;
+    background: #fef3c7;
+}
+
+
+
+
+
+
+
+
+
+
         .input-box { background: white; border-radius: 20px; padding: 10px 10px 10px 15px; display: flex; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 48px; height: auto; }
         .real-input { flex-grow: 1; border: none; background: transparent; font-size: 16px; line-height: 1.4; color: var(--text-color); outline: none; resize: none; height: 24px; max-height: 120px; padding: 0; margin-bottom: 2px; overflow-y: hidden; font-family: 'Pretendard', sans-serif; }
 
@@ -201,18 +265,36 @@
         <img src="logo.png" alt="KAC" class="landing-logo">
     </div>
     <div class="app-container" id="mainApp">
-        <div class="header">
-            <!-- [수정] 나가기 버튼 기능 변경 (완전 퇴장) -->
-            <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
-            <div class="header-center"><div class="header-title" id="roomTitle">Course Name</div><div class="header-sub"><span class="live-dot"></span><span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span></div></div>
-            <div class="header-btn" onclick="openMainMenu()">
-    <i class="fa-solid fa-bars"></i>
+<div class="header">
+    <div class="header-btn" onclick="exitApp()"><i class="fa-solid fa-chevron-left"></i></div>
+    <div class="header-center">
+        <div class="header-title" id="roomTitle">Course Name</div>
+        <div class="header-sub">
+            <span class="live-dot"></span>
+            <span id="realUserCount">0명 접속</span> · <span id="roomBadge">Room A</span>
+        </div>
+    </div>
+    <div class="header-btn" onclick="openMainMenu()">
+        <i class="fa-solid fa-bars"></i>
+    </div>
 </div>
-        </div>
-        <div class="sort-bar">
-            <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
-            <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
-        </div>
+
+<!-- [신규] 미니 공지 바 (공지가 있을 때만 노출됨) -->
+<div id="miniNoticeBar" class="mini-notice-bar" onclick="openNotice()">
+    <i class="fa-solid fa-bullhorn notice-icon"></i>
+    <div class="notice-ticker">
+        <span id="miniNoticeText" class="notice-text"></span>
+    </div>
+    <div class="notice-close" onclick="event.stopPropagation(); closeMiniNotice()">
+        <i class="fa-solid fa-xmark"></i>
+    </div>
+</div>
+
+<!-- 정렬 바 영역 -->
+<div class="sort-bar">
+    <div class="sort-chip active" id="sortNew" onclick="setSort('new')">🕒 최신순</div>
+    <div class="sort-chip" id="sortLike" onclick="setSort('like')">👍 공감순</div>
+</div>
         <div class="scroll-container" id="scrollContainer"><div id="qList" class="q-list"></div></div>
         <div class="input-dock" id="inputDock">
 
@@ -673,6 +755,10 @@ function setupListeners() {
             firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
                 serverTimeOffset = snap.val() || 0;
             });
+
+
+            watchNotices(); 
+
 
             // 2. 과정명 및 기본 설정 감시
             dbRef.settings.on('value', s => { 
@@ -1667,6 +1753,61 @@ function initKeyboardFix() {
         window.scrollTo(0, 0);
     });
 }
+
+
+
+
+// --- 미니 공지 바 관련 함수 시작 ---
+async function updateMiniNotice() {
+    const bar = document.getElementById('miniNoticeBar');
+    const textEl = document.getElementById('miniNoticeText');
+    if(!bar || !textEl) return;
+
+    const [inst, coord, global] = await Promise.all([
+        firebase.database().ref(`courses/${currentRoom}/notice`).once('value'),
+        firebase.database().ref(`courses/${currentRoom}/coordNotice`).once('value'),
+        firebase.database().ref('system/globalNotice').once('value')
+    ]);
+
+    const notice = inst.val() || coord.val() || global.val();
+
+    if (notice) {
+        const cleanNotice = notice.replace(/<[^>]*>?/gm, '').replace(/\n/g, '  |  ');
+        if (localStorage.getItem('lastClosedNotice') !== cleanNotice) {
+            textEl.innerText = cleanNotice;
+            bar.style.display = 'flex';
+        } else {
+            bar.style.display = 'none';
+        }
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function closeMiniNotice() {
+    const text = document.getElementById('miniNoticeText').innerText;
+    localStorage.setItem('lastClosedNotice', text);
+    document.getElementById('miniNoticeBar').style.display = 'none';
+}
+
+function watchNotices() {
+    if(!currentRoom) return;
+    firebase.database().ref(`courses/${currentRoom}/notice`).on('value', updateMiniNotice);
+    firebase.database().ref(`courses/${currentRoom}/coordNotice`).on('value', updateMiniNotice);
+    firebase.database().ref('system/globalNotice').on('value', updateMiniNotice);
+}
+// --- 미니 공지 바 관련 함수 끝 ---
+
+
+
+
+
+
+
+
+
+
+
 
 
 
