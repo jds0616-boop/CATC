@@ -692,42 +692,36 @@ function setupListeners() {
                 sel.innerHTML = html;
             });
 
-            // 5. 강의실 상태 감시 (리셋 체크 및 퀴즈 모드 전환)
+// 5. 강의실 상태 감시 (리셋 체크 및 퀴즈 모드 전환)
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
 
-                // [중요] 강사가 상태를 바꾸면 즉시 퇴장 처리
+                // 강사 상태가 active가 아니면 초기화
                 if (st.roomStatus !== 'active') {
-                    alert("📴 강사님이 강의를 종료했거나 준비 상태로 전환했습니다.\n메인 화면으로 이동합니다.");
-                    location.reload();
+                    forceCloseQuiz();
                     return;
                 }
                 
-                // [중요] 리셋 로직 강화 (강사가 리셋 버튼 누르면 학생 앱 초기화)
+                // 리셋 로직
                 const serverResetKey = st.resetKey || 'init';
                 const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
                 if (!myLocalKey) {
                     localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
                 } else if (myLocalKey !== serverResetKey) {
                     localStorage.clear();
-                    alert("강사가 강의실을 초기화했습니다.\n초기 화면으로 이동합니다.");
                     location.replace(location.pathname + location.search);
                     return;
                 }
 
-                // Q&A 모드 전환
-                if (st.mode === 'qa') { 
-                    forceCloseQuiz(); 
-                    return; 
-                }
-
-                // 퀴즈 모드 진입
+                // [중요] 모드 전환 로직
                 if (st.mode === 'quiz') {
+                    // 결과 발표 중이 아닐 때만 퀴즈 오버레이 표시
                     if (st.quizStep !== 'summary') {
                         document.getElementById('quizOverlay').style.display = 'flex';
-                        document.getElementById('quizActiveBox').style.display = 'block';
-                        document.getElementById('quizResultBox').style.display = 'none';
                     }
+                } else {
+                    // 퀴즈 모드가 아니면(qa 등) 무조건 퀴즈창 닫기
+                    forceCloseQuiz();
                 }
                 
                 // 퀴즈 결과 발표

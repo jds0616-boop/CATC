@@ -2109,26 +2109,39 @@ loadDinnerSkipData: function() {
         });
     },
 
-    // [추가 2] 화면 전환 및 버튼 제어 함수
+
+// [추가 2] 화면 전환 및 버튼 제어 함수 (교체본)
     setMode: function(mode) {
         const homeBtn = document.getElementById('floatingHomeBtn');
         if (homeBtn) homeBtn.style.display = (mode === 'dashboard') ? 'none' : 'flex';
 
+        // 모든 뷰 숨기기
         document.querySelectorAll('[id^="view-"]').forEach(v => { v.style.display = 'none'; });
         
+        // 대상 뷰 보이기
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
         const targetEl = document.getElementById(targetView);
         if(targetEl) {
             targetEl.style.display = (['prof-presentation', 'quiz', 'qa', 'guide', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'notice', 'attendance', 'dormitory'].includes(mode)) ? 'flex' : 'block';
         }
 
+        // 상단 탭 활성화
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         const targetTab = document.getElementById(`tab-${mode}`);
         if(targetTab) targetTab.classList.add('active');
+        
         localStorage.setItem('kac_last_mode', mode);
 
+        // [중요] 교육생 플랫폼 모드 동기화 (DB 저장)
         if (state.room) {
-            if (mode === 'quiz') { document.getElementById('quizSelectModal').style.display = 'flex'; quizMgr.loadSavedQuizList(); }
+            // 강사가 관리용 페이지(대시보드, 학생관리 등)에 있을 때는 교육생에겐 'qa' 모드로 보이게 함
+            let studentMode = (['quiz', 'guide'].includes(mode)) ? mode : 'qa';
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
+
+            if (mode === 'quiz') { 
+                document.getElementById('quizSelectModal').style.display = 'flex'; 
+                quizMgr.loadSavedQuizList(); 
+            }
             if (mode === 'dashboard') this.loadDashboardStats(); 
             if (mode === 'notice') this.loadNoticeView(); 
             if (mode === 'attendance') this.loadAttendanceView();
