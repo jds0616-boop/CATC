@@ -2029,34 +2029,30 @@ cancelIndividualShuttle: function(waveId, locId, token, name) {
 
 
 
-// [최종] 수강생 현황: 실시간 감지 버그 수정 + 학생장 디자인(회색/파랑) 개선 합본
 loadStudentList: function() {
     if(!state.room) return;
 
-    // 1. 기존에 돌고 있던 감시자(Listener)를 모두 꺼서 충돌 방지
+    // 1. 기존 리스너 정리
     const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
     const actualRef = firebase.database().ref(`courses/${state.room}/students`);
     expectedRef.off();
     actualRef.off();
 
-    // 2. 예정 명단 데이터 감시 시작
+    // 2. 데이터 감시 시작
     expectedRef.on('value', expSnap => {
         const expectedNames = expSnap.val() || [];
         
-        // 3. 실제 입실 학생 데이터 실시간 감시 (입장/퇴장 시 즉시 실행됨)
         actualRef.on('value', snap => {
             const data = snap.val() || {};
             const tbody = document.getElementById('studentListTableBody');
             if(!tbody) return;
 
-            // 실제 데이터를 배열로 변환하고 이름이 없는 데이터는 필터링
             const actualStudents = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
             })).filter(s => s.name && s.name !== "undefined");
 
             const actualNames = actualStudents.map(s => s.name);
-            // 예정 명단과 실제 명단을 합치고 가나다순으로 정렬
             const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
             tbody.innerHTML = ""; 
@@ -2065,15 +2061,29 @@ loadStudentList: function() {
             combinedNames.forEach((name, idx) => {
                 const sList = actualStudents.filter(student => student.name === name);
                 const isArrived = sList.length > 0;
+                const isExpected = expectedNames.includes(name); // 명단에 있는지 확인
                 
-                // 실시간 상태 값 추출 (중요!)
+                // [복구] 입장 경로 아이콘 판별
+                let joinTypeIcon = "";
+                if (isArrived) {
+                    if (isExpected) {
+                        // 명단에 있는 사람이 입장 (파란색 체크 유저)
+                        joinTypeIcon = '<i class="fa-solid fa-user-check" style="color:#3b82f6; margin-right:8px;" title="명단 내 입장"></i>';
+                    } else {
+                        // 명단에 없는데 QR로 들어옴 (초록색 QR 아이콘)
+                        joinTypeIcon = '<i class="fa-solid fa-qrcode" style="color:#10b981; margin-right:8px;" title="QR 직접 입장"></i>';
+                    }
+                } else {
+                    // 미입장 (회색 대기 아이콘)
+                    joinTypeIcon = '<i class="fa-solid fa-user-clock" style="color:#cbd5e1; margin-right:8px;" title="입장 대기"></i>';
+                }
+
                 const studentData = isArrived ? sList[0] : null;
-                const isOnline = isArrived && studentData.isOnline === true; // 실시간 접속 여부
-                const isLeader = isArrived && studentData.isLeader === true; // 학생장 여부
+                const isOnline = isArrived && studentData.isOnline === true;
+                const isLeader = isArrived && studentData.isLeader === true;
 
                 if(isArrived) arrivedCount++;
 
-                // 디자인 설정: 학생장이면 파란색 버튼, 아니면 회색 버튼
                 const leaderBtnStyle = isLeader 
                     ? "background:#3b82f6; color:white; border:none;" 
                     : "background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;";
@@ -2082,9 +2092,10 @@ loadStudentList: function() {
                 tbody.innerHTML += `
                     <tr style="${isLeader ? 'background-color:#eff6ff;' : ''}">
                         <td>${idx + 1}</td>
-                        <td style="text-align:left; padding-left:20px;">
-                            <div style="display:inline-flex; align-items:center;">
-                                <!-- 접속 중이면 초록불(22c55e), 아니면 회색불 -->
+                        <!-- 중앙 정렬 및 아이콘 배치를 위해 td 스타일 수정 -->
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; min-width:150px;">
+                                ${joinTypeIcon}
                                 <span style="color:${isOnline ? '#22c55e' : '#cbd5e1'}; margin-right:8px; font-size:12px;">●</span>
                                 <span style="font-weight:800; color:#1e293b;">${name}</span>
                                 ${isLeader ? '<span style="color:#3b82f6; margin-left:6px; font-size:14px; font-weight:bold;">[학생장 👑]</span>' : ''}
@@ -2109,7 +2120,6 @@ loadStudentList: function() {
                     </tr>`;
             });
 
-            // 상단 요약 배지 실시간 업데이트 (0/0명)
             const total = combinedNames.length;
             const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
             const statusEl = document.getElementById('arrivalStatusSmall');
