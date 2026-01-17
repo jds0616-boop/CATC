@@ -2686,3 +2686,37 @@ body.night-mode .status-table tr.is-my-room {
 .floating-home-btn i {
     font-size: 18px;
 }
+
+
+/* 차량 수요조사 3단 레이아웃 스타일 */
+.shuttle-3col-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* 3등분 */
+    gap: 25px;
+    width: 100%;
+    max-width: 1400px; /* 넓게 사용 */
+    align-items: start;
+}
+
+.shuttle-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.shuttle-summary-bar {
+    grid-column: span 3; /* 3칸 다 차지 */
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 15px;
+    padding: 15px 30px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.summary-item { text-align: center; }
+.summary-item label { font-size: 12px; color: #64748b; font-weight: 700; display: block; margin-bottom: 5px; }
+.summary-item b { font-size: 24px; color: #003366; font-weight: 900; }
