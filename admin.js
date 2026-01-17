@@ -1555,7 +1555,7 @@ setMode: function(mode) {
 
 
 
-// [최종 고도화] 차량 수요조사 상세 페이지: 딥블루 테마 및 클릭 팝업 전용 뷰
+// [최종 고도화] 차량 수요조사 상세 페이지: 명단/문구 완전 제거 버전
     loadShuttleData: function() {
         if(!state.room) return;
         
@@ -1566,7 +1566,7 @@ setMode: function(mode) {
 
             container.innerHTML = ""; 
 
-            // 과정 현황(대시보드)과 동일한 딥블루 그라데이션 적용
+            // 대시보드와 동일한 프리미엄 딥블루 그라데이션
             const waveStyle = "background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.2);";
 
             const waves = [
@@ -1583,8 +1583,8 @@ setMode: function(mode) {
                     { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
                 ];
 
-                // [간격 보정] 첫 번째 바의 마진을 10px로 설정하여 다른 게시판(공지 등)과 제목 높이를 맞춤
-                const topMargin = (index === 0) ? '10px' : '40px';
+                // 다른 게시판과 높이를 맞추기 위한 간격 보정
+                const topMargin = (index === 0) ? '10px' : '30px';
 
                 container.innerHTML += `
                     <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 15px 25px; ${waveStyle}">
@@ -1597,20 +1597,17 @@ setMode: function(mode) {
                     const members = Object.entries(locData); 
                     const count = members.length;
                     
-                    // 명단 노출 없이 인원수만 보여주는 간결한 카드 (클릭 시 팝업)
+                    // [수정] 카드 내부에 명단이나 '신청자 없음' 문구를 아예 넣지 않음
                     container.innerHTML += `
                         <div class="shuttle-dest-card card-${loc.id}" 
                              onclick="ui.showShuttleListModal('${wave.id}', '${wave.name}', '${loc.name}', ${JSON.stringify(members).replace(/"/g, '&quot;')})"
-                             style="cursor:pointer; transition: all 0.2s; border: 1px solid #e2e8f0;">
-                            <div class="dest-header" style="border-bottom:none; padding: 25px;">
+                             style="cursor:pointer; transition: all 0.2s; border: 1px solid #e2e8f0; height: 100px; display: flex; align-items: center;">
+                            <div class="dest-header" style="border-bottom:none; padding: 0 25px; width: 100%;">
                                 <div class="dest-name-group">
                                     <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
                                     <div class="dest-title" style="font-size:18px; color:#1e293b;">${loc.name}</div>
                                 </div>
                                 <div class="dest-count-badge" style="font-size:20px; padding: 6px 20px; background:#003366; color:white;">${count}명</div>
-                            </div>
-                            <div style="text-align:center; padding-bottom:18px; color:#94a3b8; font-size:13px; font-weight:600;">
-                                ${count > 0 ? '탭하여 명단 확인 및 관리 >' : '신청자 없음'}
                             </div>
                         </div>
                     `;
@@ -1619,9 +1616,16 @@ setMode: function(mode) {
         });
     },
 
+
+
+
     // [신규] 차량 신청 상세 명단 팝업 함수
 showShuttleListModal: function(waveId, waveName, locName, members) {
-        if (members.length === 0) return;
+        // 신청자가 0명일 때는 팝업을 띄우지 않음
+        if (members.length === 0) {
+            ui.showAlert(`${locName}에 신청한 인원이 없습니다.`);
+            return;
+        }
 
         const modal = document.getElementById('qaModal');
         const mText = document.getElementById('m-text');
@@ -1629,7 +1633,6 @@ showShuttleListModal: function(waveId, waveName, locName, members) {
 
         if(!modal || !mText) return;
 
-        // 명단 팝업 내용 (삭제 버튼 포함)
         mText.innerHTML = `
             <div style="text-align:left;">
                 <div style="font-size:13px; color:#64748b; font-weight:800; margin-bottom:5px;">${waveName}</div>
@@ -1661,6 +1664,13 @@ showShuttleListModal: function(waveId, waveName, locName, members) {
         };
         modal.addEventListener('click', closeHandler);
     },
+
+
+
+
+
+
+
 
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
