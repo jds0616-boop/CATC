@@ -1757,29 +1757,45 @@ function initKeyboardFix() {
 
 
 
-// --- 미니 공지 바 관련 함수 시작 ---
+// 1. 미니 공지 바 업데이트 함수 (3가지 공지 통합 버전)
 async function updateMiniNotice() {
     const bar = document.getElementById('miniNoticeBar');
     const textEl = document.getElementById('miniNoticeText');
     if(!bar || !textEl) return;
 
-    const [inst, coord, global] = await Promise.all([
+    // 세 군데 공지 데이터를 한 번에 가져옴
+    const [instSnap, coordSnap, globalSnap] = await Promise.all([
         firebase.database().ref(`courses/${currentRoom}/notice`).once('value'),
         firebase.database().ref(`courses/${currentRoom}/coordNotice`).once('value'),
         firebase.database().ref('system/globalNotice').once('value')
     ]);
 
-    const notice = inst.val() || coord.val() || global.val();
+    // 텍스트 정제 함수 (태그 제거 및 줄바꿈 정리)
+    const clean = (txt) => txt ? txt.replace(/<[^>]*>?/gm, '').replace(/\n/g, ' ').trim() : "";
 
-    if (notice) {
-        const cleanNotice = notice.replace(/<[^>]*>?/gm, '').replace(/\n/g, '  |  ');
-        if (localStorage.getItem('lastClosedNotice') !== cleanNotice) {
-            textEl.innerText = cleanNotice;
+    const t_inst = clean(instSnap.val());   // 우리 과정
+    const t_coord = clean(coordSnap.val()); // 운영부
+    const t_global = clean(globalSnap.val()); // 센터
+
+    // 내용이 있는 공지만 모아서 합침
+    let combinedParts = [];
+    if (t_inst) combinedParts.push(`📢 [우리과정] ${t_inst}`);
+    if (t_coord) combinedParts.push(`🔔 [운영부] ${t_coord}`);
+    if (t_global) combinedParts.push(`🏢 [센터공지] ${t_global}`);
+
+    // 공지들 사이에 구분선을 넣어 하나로 합침
+    const finalNoticeText = combinedParts.join(" 　 | 　 ");
+
+    if (finalNoticeText) {
+        // 이전에 'X' 눌러서 닫은 공지와 내용이 다를 때만 표시
+        if (localStorage.getItem('lastClosedNotice') !== finalNoticeText) {
+            textEl.innerText = finalNoticeText;
             bar.style.display = 'flex';
         } else {
             bar.style.display = 'none';
         }
     } else {
+        // 공지가 아무것도 없으면 바를 숨김
         bar.style.display = 'none';
     }
 }
