@@ -2814,13 +2814,17 @@ const setupMgr = {
         document.getElementById('courseSetupModal').style.display = 'none';
     },
 
-    saveAll: function() {
+saveAll: function() {
         const name = document.getElementById('setup-course-name').value.trim();
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const profName = document.getElementById('setup-prof-select').value;
-        const statusVal = document.getElementById('roomStatusSelect').value;
+
+        // [중요] 저장 버튼을 누르면 상태를 무조건 '사용중(active)'으로 변경함
+        const statusSelect = document.getElementById('roomStatusSelect');
+        if(statusSelect) statusSelect.value = 'active';
+        const statusVal = 'active'; 
 
         // 강의실 위치 결정 (직접 입력값이 있으면 그 값을 사용)
         const roomSelectVal = document.getElementById('setup-room-select').value;
@@ -2837,14 +2841,21 @@ const setupMgr = {
         updates[`courses/${state.room}/settings/period`] = `${sDate} ~ ${eDate}`;
         updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
         updates[`courses/${state.room}/status/professorName`] = profName;
+        
+        // 서버에도 '사용중' 상태와 현재 세션ID를 저장하여 즉시 잠금 해제
         updates[`courses/${state.room}/status/roomStatus`] = statusVal;
-        updates[`courses/${state.room}/status/ownerSessionId`] = (statusVal === 'active' ? state.sessionId : null);
+        updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
         firebase.database().ref().update(updates).then(() => {
+            // 사이드바 및 헤더 정보 동기화
             document.getElementById('courseNameInput').value = name;
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
-            ui.showAlert("✅ 모든 설정이 저장 및 적용되었습니다.");
+            
+            // 로컬 저장소에 현재 소유권 저장
+            localStorage.setItem('last_owned_room', state.room);
+            
+            ui.showAlert("✅ 설정이 저장되었으며, 강의실이 활성화되었습니다.");
             this.closeSetupModal();
         });
     }
