@@ -151,7 +151,8 @@
                   <input type="date" id="reqDate" class="navy-select" style="flex:1.5;">
                   <input type="time" id="reqTime" class="navy-select" style="flex:1;">
               </div>
-              <input type="text" id="reqProf" class="navy-select" style="margin-bottom:15px;" placeholder="강사 성함">
+              <input type="text" id="reqProf" class="navy-select" style="margin-bottom:8px;" placeholder="강사 성함">
+              <input type="tel" id="reqPhone" class="navy-select" style="margin-bottom:15px;" placeholder="강사 연락처 (예: 010-1234-5678)">
               <label style="font-size:12px; font-weight:800; color:#6366f1;">2. 운행 방향 선택</label>
               <div style="display:flex; gap:10px; margin:8px 0 20px 0;">
                   <button id="dirTo" class="navy-btn" style="background:#f1f5f9; color:#475569; flex:1; font-size:11px;" onclick="setDirection('to')">목적지 → 항기원</button>
@@ -240,37 +241,80 @@
         });
     }
 
-    function loadMyRequestList() {
+function loadMyRequestList() {
         const listDiv = document.getElementById('myRequestList'); const todayStr = getTodayString();
         firebase.database().ref('system/transport_requests').on('value', snap => {
             const data = snap.val() || {};
             const myRequests = Object.keys(data).map(key => ({id: key, ...data[key]}))
                 .filter(req => req.date >= todayStr).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+            
             listDiv.innerHTML = myRequests.length ? myRequests.map(req => `
-                <div style="background:#fff; border:1px solid #e2e8f0; padding:8px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${req.date.slice(5)} ${req.time}</b><br>${req.prof} (${req.dir})</div>
-                    <button onclick="deleteRequest('${req.id}')" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:5px 8px; font-size:10px;">삭제</button>
-                </div>`).join('') : "<div style='text-align:center; color:#94a3b8;'>내역 없음</div>";
+                <div style="background:#fff; border:1px solid #e2e8f0; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="font-size:12px; line-height:1.5;">
+                        <b style="color:#6366f1;">${req.date.slice(5)} ${req.time}</b><br>
+                        <span style="font-weight:800; font-size:13px;">${req.prof} 강사님</span> (${req.dir})<br>
+                        <span style="color:#94a3b8;">📞 ${req.phone}</span>
+                    </div>
+                    <button onclick="deleteRequest('${req.id}')" style="background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:8px 12px; font-size:11px; font-weight:800; cursor:pointer;">삭제</button>
+                </div>`).join('') : "<div style='text-align:center; padding:20px; color:#94a3b8;'>예정된 수송 내역이 없습니다.</div>";
         });
     }
 
     function deleteRequest(id) { if(confirm("삭제하시겠습니까?")) firebase.database().ref(`system/transport_requests/${id}`).remove(); }
 
-    async function submitTransportRequest() {
-        const loc = document.getElementById('reqLoc').value; const dir = selectedDirection;
-        const date = document.getElementById('reqDate').value; const time = document.getElementById('reqTime').value;
+async function submitTransportRequest() {
+        const loc = document.getElementById('reqLoc').value; 
+        const dir = selectedDirection;
+        const date = document.getElementById('reqDate').value; 
+        const time = document.getElementById('reqTime').value;
         const prof = document.getElementById('reqProf').value.trim();
-        if(!dir || !date || !time || !prof) return alert("필수 입력 누락");
+        const phone = document.getElementById('reqPhone').value.trim();
+
+        if(!dir || !date || !time || !prof || !phone) return alert("모든 항목을 입력해주세요.");
+        
+        const reqDateObj = new Date(date);
+        const dayNum = reqDateObj.getDay(); // 1:월, 5:금
         const hour = parseInt(time.split(':')[0]);
-        if(hour === 12) return alert("⚠️ 점심시간(12-13시) 신청 불가");
+
+        // [신규] 기사님의 교육생 수송 설정 확인
+        const settingsSnap = await firebase.database().ref('system/shuttle_settings').once('value');
+        const shuttleSettings = settingsSnap.val() || {};
+
+        // 1. 월요일 오전 입교수송 시간대 체크
+        if (dayNum === 1 && (hour === 9 || hour === 10) && shuttleSettings.monday_entrance) {
+            return alert("❌ 해당 시간은 기사님이 [교육생 입교 수송] 중이므로 강사 예약이 불가합니다.");
+        }
+        // 2. 금요일 오후 퇴교수송 시간대 체크
+        if (dayNum === 5) {
+            if (hour === 13 && shuttleSettings.friday_wave1) return alert("❌ 해당 시간은 기사님이 [교육생 퇴교 1차 수송] 중이므로 예약이 불가합니다.");
+            if (hour === 15 && shuttleSettings.friday_wave2) return alert("❌ 해당 시간은 기사님이 [교육생 퇴교 2차 수송] 중이므로 예약이 불가합니다.");
+        }
+
+        // 기존 점심시간 및 기사님 개인일정 체크 유지
+        if(hour === 12) return alert("⚠️ 점심시간(12-13시)은 기사님 식사 시간으로 신청이 불가합니다.");
         const offSnap = await firebase.database().ref(`system/driver_status/${date}/${hour}`).once('value');
-        if(offSnap.exists()) return alert("❌ 기사님 휴무/점검 시간입니다.");
+        if(offSnap.exists()) return alert("❌ 해당 시간은 기사님 휴무 또는 차량 점검 시간입니다.");
+        
         const reqSnap = await firebase.database().ref('system/transport_requests').orderByChild('date').equalTo(date).once('value');
-        let conflict = false; Object.values(reqSnap.val() || {}).forEach(i => { if(i.time === time && i.loc !== loc) conflict = true; });
-        if(conflict) return alert("❌ 이미 다른 예약이 있습니다.");
-        await firebase.database().ref('system/transport_requests').push().set({ loc, dir, date, time, prof, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        alert("✅ 등록 완료");
+        let conflict = false; 
+        Object.values(reqSnap.val() || {}).forEach(i => { if(i.time === time && i.loc !== loc) conflict = true; });
+        if(conflict) return alert("❌ 이미 해당 시간에 다른 장소 예약이 존재합니다.");
+
+        await firebase.database().ref('system/transport_requests').push().set({ 
+            loc, dir, date, time, prof, phone, timestamp: firebase.database.ServerValue.TIMESTAMP 
+        });
+
+        alert("✅ 강사 수송 요청이 등록되었습니다.");
+        document.getElementById('reqProf').value = "";
+        document.getElementById('reqPhone').value = "";
     }
+
+
+
+
+
+
+
 
     function initActiveRoomList() {
         firebase.database().ref('courses').on('value', snap => {

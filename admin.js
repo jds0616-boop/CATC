@@ -1041,6 +1041,28 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
+
+// [신규] 기사님 수송 공지 로드
+        firebase.database().ref('system/shuttle_notice').on('value', s => {
+            const msg = s.val();
+            const bar = document.getElementById('dashShuttleNotice');
+            const txt = document.getElementById('dashShuttleNoticeTxt');
+            if(msg && bar && txt) {
+                bar.style.display = "block";
+                txt.innerText = msg;
+            } else if(bar) {
+                bar.style.display = "none";
+            }
+        });
+
+
+
+
+
+
+
+
+
         // 8. 실시간 질문(Q&A) 건수 카운트
         firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
             const data = s.val() || {};
@@ -1049,12 +1071,26 @@ loadDashboardStats: function() {
             if(qaEl) qaEl.innerText = count;
         });
 
-        // 9. 셔틀 탑승 수요 카운트
+// 9. [수정] 셔틀 탑승 수요 차수별 카운트
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
-            const d = s.val() || {};
-            if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-            if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-            if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
+            const data = s.val() || {};
+            
+            // 초기화 함수
+            const updateWave = (waveId, prefix) => {
+                const waveData = data[waveId] || {};
+                const osong = waveData.osong ? Object.keys(waveData.osong).length : 0;
+                const term = waveData.terminal ? Object.keys(waveData.terminal).length : 0;
+                const air = waveData.airport ? Object.keys(waveData.airport).length : 0;
+                const total = osong + term + air;
+
+                document.getElementById(`${prefix}-osong`).innerText = osong;
+                document.getElementById(`${prefix}-term`).innerText = term;
+                document.getElementById(`${prefix}-air`).innerText = air;
+                document.getElementById(`dash${waveId.charAt(0).toUpperCase() + waveId.slice(1)}Total`).innerText = total + "명";
+            };
+
+            updateWave('wave1', 's1');
+            updateWave('wave2', 's2');
         });
     },
 
@@ -1519,69 +1555,87 @@ setMode: function(mode) {
 
 
 
-// [수정] 차량 수요조사 상세 페이지: 항기원 퇴교(out) 명단만 로드
-loadShuttleData: function() {
-    if(!state.room) return;
-    // 경로 끝에 /out 을 붙여서 퇴교 신청자만 가져옵니다.
-    firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
-        const data = snap.val() || {};
-        const container = document.getElementById('shuttleCardContainer');
-        if(!container) return;
-
-        const locations = [
-            { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-            { id: 'terminal', name: '청주터미널', icon: 'fa-bus-simple' }, 
-            { id: 'airport', name: '청주공항', icon: 'fa-plane' },
-            { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
-        ];
+// [고도화 수정] 차량 수요조사 상세 페이지: 1차(13시) / 2차(15시) 명단 분리 로드
+    loadShuttleData: function() {
+        if(!state.room) return;
         
-        container.innerHTML = "";
-        locations.forEach(loc => {
-            const locData = data[loc.id] || {};
-            const finalMembers = Object.entries(locData); 
-            const count = finalMembers.length;
-            
-            let membersHtml = "";
-            if (count > 0) {
-                membersHtml = `<div class="member-tag-container">`;
-                membersHtml += finalMembers.map(([token, name]) => `
-                    <div class="member-tag">
-                        ${name}
-                        <i class="fa-solid fa-xmark btn-del-shuttle" 
-                           onclick="ui.cancelIndividualShuttle('${loc.id}', '${token}', '${name}')" 
-                           title="취소"></i>
-                    </div>
-                `).join('');
-                membersHtml += `</div>`;
-            } else {
-                membersHtml = `<div class="no-member-text">현재 신청자가 없습니다.</div>`;
-            }
-            
-            container.innerHTML += `
-                <div class="shuttle-dest-card card-${loc.id}">
-                    <div class="dest-header">
-                        <div class="dest-name-group">
-                            <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
-                            <div class="dest-title">${loc.name}</div>
-                        </div>
-                        <div class="dest-count-badge">${count}명</div>
-                    </div>
-                    <div class="dest-body">
-                        ${membersHtml}
-                    </div>
-                </div>
-            `;
-        });
-    });
-},
+        // 퇴교(out) 경로 전체를 감시 (안에 wave1, wave2가 있음)
+        firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
+            const data = snap.val() || {};
+            const container = document.getElementById('shuttleCardContainer');
+            if(!container) return;
 
+            container.innerHTML = ""; // 기존 목록 초기화
+
+            // 화면에 뿌려줄 차수(Wave) 정의
+            const waves = [
+                { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#3b82f6' },
+                { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#10b981' }
+            ];
+
+            // 1차 먼저 그리고, 그 다음 2차를 그림
+            waves.forEach(wave => {
+                const waveData = data[wave.id] || {}; // 해당 차수의 데이터
+                const locations = [
+                    { id: 'osong', name: '오송역', icon: 'fa-train' }, 
+                    { id: 'terminal', name: '터미널', icon: 'fa-bus-simple' }, 
+                    { id: 'airport', name: '청주공항', icon: 'fa-plane' }
+                ];
+
+                // 차수 제목(Header) 추가
+                let waveHeaderHtml = `
+                    <div style="grid-column: span 2; margin-top: 30px; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        <i class="fa-solid fa-clock"></i> ${wave.name}
+                    </div>
+                `;
+                container.innerHTML += waveHeaderHtml;
+
+                // 해당 차수 내 목적지별 카드 생성
+                locations.forEach(loc => {
+                    const locData = waveData[loc.id] || {};
+                    const members = Object.entries(locData); 
+                    const count = members.length;
+                    
+                    let membersHtml = "";
+                    if (count > 0) {
+                        membersHtml = `<div class="member-tag-container">`;
+                        membersHtml += members.map(([token, name]) => `
+                            <div class="member-tag">
+                                ${name}
+                                <i class="fa-solid fa-xmark btn-del-shuttle" 
+                                   onclick="ui.cancelIndividualShuttle('${wave.id}', '${loc.id}', '${token}', '${name}')" 
+                                   title="취소"></i>
+                            </div>
+                        `).join('');
+                        membersHtml += `</div>`;
+                    } else {
+                        membersHtml = `<div class="no-member-text">신청자가 없습니다.</div>`;
+                    }
+                    
+                    container.innerHTML += `
+                        <div class="shuttle-dest-card card-${loc.id}">
+                            <div class="dest-header">
+                                <div class="dest-name-group">
+                                    <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
+                                    <div class="dest-title">${loc.name}</div>
+                                </div>
+                                <div class="dest-count-badge">${count}명</div>
+                            </div>
+                            <div class="dest-body">
+                                ${membersHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        });
+    },
 
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
         this.renderQaList(f); 
     },
-
 
 
     
@@ -1881,16 +1935,20 @@ loadDinnerSkipData: function() {
     },
 
 
-// [수정] 강사가 차량 신청을 취소할 때 퇴교(out) 폴더에서 삭제하도록 수정
-cancelIndividualShuttle: function(locId, token, name) {
-    if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
-    
-    // 경로에 shuttle/out 추가
-    firebase.database().ref(`courses/${state.room}/shuttle/out/${locId}/${token}`).remove()
-        .then(() => {
-            ui.showAlert("✅ 차량 신청이 취소되었습니다.");
-        });
-},
+// [수정] 강사가 차량 신청을 취소할 때 차수(wave1/2)를 구분하여 삭제
+    cancelIndividualShuttle: function(waveId, locId, token, name) {
+        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
+        
+        // 경로에 waveId(wave1 또는 wave2)를 포함하여 정확한 위치의 데이터를 삭제합니다.
+        firebase.database().ref(`courses/${state.room}/shuttle/out/${waveId}/${locId}/${token}`).remove()
+            .then(() => {
+                ui.showAlert("✅ 해당 차수의 차량 신청이 취소되었습니다.");
+            })
+            .catch(err => {
+                ui.showAlert("❌ 취소 중 오류가 발생했습니다.");
+                console.error(err);
+            });
+    },
 
 
 
