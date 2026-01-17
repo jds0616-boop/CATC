@@ -1557,78 +1557,70 @@ setMode: function(mode) {
 
 
 // [최종 완결본] 차량 수요조사: 3단 세로 배치 로직
-    loadShuttleData: function() {
-        if(!state.room) return;
+loadShuttleData: function() {
+    if(!state.room) return;
+    
+    firebase.database().ref(`courses/${state.room}`).on('value', snap => {
+        const roomData = snap.val() || {};
+        const shuttleData = roomData.shuttle?.out || {};
+        const studentData = roomData.students || {};
         
-        firebase.database().ref(`courses/${state.room}`).on('value', snap => {
-            const roomData = snap.val() || {};
-            const shuttleData = roomData.shuttle?.out || {};
-            const studentData = roomData.students || {};
+        const col1 = document.getElementById('col-wave1');
+        const col2 = document.getElementById('col-wave2');
+        const colCar = document.getElementById('col-car');
+        if(!col1 || !col2 || !colCar) return;
+
+        const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
+        let totalShuttle = 0;
+
+        // 1, 2차 렌더링 (리스트/표 형식)
+        const renderColumn = (waveId, waveTitle, targetEl) => {
+            let html = `<div class="column-header-clean ${waveId === 'wave1' ? 'header-wave1' : 'header-wave2'}">
+                            <i class="fa-solid fa-clock"></i> ${waveTitle}
+                        </div>`;
             
-            // 기둥 비우기
-            const col1 = document.getElementById('col-wave1');
-            const col2 = document.getElementById('col-wave2');
-            const colCar = document.getElementById('col-car');
-            if(!col1 || !col2 || !colCar) return;
-            col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
-
-            // 통계용 변수
-            const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-            let totalShuttle = 0;
-            let totalCar = 0;
-
-            // 공통 스타일
-            const waveStyle = "padding: 15px; background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 12px; font-weight: 800; font-size: 16px; text-align:center; box-shadow: 0 4px 10px rgba(0,51,102,0.2);";
-
-            // 1. 1차 & 2차 기둥 그리기
-            const waves = [
-                { id: 'wave1', name: '1차 수송 (13:00)', target: col1 },
-                { id: 'wave2', name: '2차 수송 (15:00)', target: col2 }
+            const locs = [
+                { id: 'osong', n: '오송역', i: 'fa-train' },
+                { id: 'terminal', n: '터미널', i: 'fa-bus' },
+                { id: 'airport', n: '청주공항', i: 'fa-plane' }
             ];
 
-            waves.forEach(w => {
-                w.target.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.name}</div>`;
-                const locs = [
-                    { id: 'osong', n: '오송역', i: 'fa-train' },
-                    { id: 'terminal', n: '터미널', i: 'fa-bus-simple' },
-                    { id: 'airport', n: '청주공항', i: 'fa-plane' }
-                ];
-                locs.forEach(loc => {
-                    const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
-                    totalShuttle += members.length;
-                    w.target.innerHTML += `
-                        <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.name}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; transition:0.2s;">
-                            <div class="dest-header" style="border:none; padding:20px;">
-                                <div class="dest-name-group"><div class="dest-icon-box" style="width:36px; height:36px;"><i class="fa-solid ${loc.i}"></i></div><div class="dest-title" style="font-size:16px;">${loc.n}</div></div>
-                                <div class="dest-count-badge" style="background:#003366; color:white; font-size:16px;">${members.length}명</div>
-                            </div>
-                        </div>`;
-                });
+            locs.forEach(loc => {
+                const members = Object.entries(shuttleData[waveId]?.[loc.id] || {});
+                totalShuttle += members.length;
+                const hasCount = members.length > 0 ? 'has-count' : '';
+                
+                html += `
+                    <div class="shuttle-dest-row ${hasCount}" onclick="ui.showShuttleListModal('${waveId}', '${waveTitle}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})">
+                        <div class="dest-name-area">
+                            <i class="fa-solid ${loc.i}"></i> ${loc.n}
+                        </div>
+                        <div class="dest-count-pill">${members.length}명</div>
+                    </div>`;
             });
+            targetEl.innerHTML = html;
+        };
 
-            // 2. 자차/개별이동 기둥 그리기
-            colCar.innerHTML = `<div style="${waveStyle}; background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
-            const carMembers1 = Object.entries(shuttleData.wave1?.car || {});
-            const carMembers2 = Object.entries(shuttleData.wave2?.car || {});
-            const allCarMembers = [...carMembers1, ...carMembers2];
-            totalCar = allCarMembers.length;
+        renderColumn('wave1', '1차 수송 (13:00)', col1);
+        renderColumn('wave2', '2차 수송 (15:00)', col2);
 
-            colCar.innerHTML += `
-                <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(allCarMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; height:200px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;">
-                    <div class="dest-icon-box" style="width:60px; height:60px; font-size:24px; background:#f1f5f9; color:#64748b;"><i class="fa-solid fa-car-side"></i></div>
-                    <div style="text-align:center;">
-                        <div style="font-size:18px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
-                        <div style="font-size:32px; font-weight:900; color:#003366; margin-top:5px;">${totalCar}명</div>
-                    </div>
-                </div>`;
+        // 자차/개별이동 렌더링
+        const carMembers = [...Object.entries(shuttleData.wave1?.car || {}), ...Object.entries(shuttleData.wave2?.car || {})];
+        colCar.innerHTML = `
+            <div class="column-header-clean header-car"><i class="fa-solid fa-car"></i> 개별 이동</div>
+            <div class="car-box-clean" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})">
+                <div style="font-size:14px; font-weight:700; color:#64748b;">자차 / 개별이동</div>
+                <b>${carMembers.length}명</b>
+                <div style="font-size:12px; color:#94a3b8;">상세보기 <i class="fa-solid fa-chevron-right"></i></div>
+            </div>`;
 
-            // 3. 상단 요약 통계 업데이트
-            document.getElementById('total-student-cnt').innerText = totalStudents;
-            document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
-            document.getElementById('total-car-cnt').innerText = totalCar;
-            document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - totalCar);
-        });
-    },
+        // 상단 요약 바 업데이트
+        document.getElementById('total-student-cnt').innerText = totalStudents;
+        document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
+        document.getElementById('total-car-cnt').innerText = carMembers.length;
+        document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - carMembers.length);
+    });
+},
 
 
 
