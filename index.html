@@ -277,18 +277,28 @@
 
         <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">기사님이 지정한 시간(차수)을 먼저 선택하세요.</p>
         
-<!-- 1단계: 차수(시간) 선택 또는 자차 신청 -->
+<!-- 1단계: 차수(시간) 선택 또는 자차 신청 (디자인 개선 버전) -->
         <div id="waveSelectionArea" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
-            <!-- 기사님이 열어준 경우에만 보이는 셔틀 버튼 -->
-            <button id="btnWave1" onclick="selectShuttleWave('wave1', '1차 (13:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
-                <i class="fa-solid fa-clock"></i> 1차 셔틀 (13:00 출발)
-            </button>
-            <button id="btnWave2" onclick="selectShuttleWave('wave2', '2차 (15:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
-                <i class="fa-solid fa-clock"></i> 2차 셔틀 (15:00 출발)
-            </button>
+            
+            <!-- 셔틀버스 그룹 -->
+            <div id="shuttleGroup" style="display:flex; flex-direction:column; gap:8px;">
+                <button id="btnWave1" onclick="selectShuttleWave('wave1', '1차 (13:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
+                    <i class="fa-solid fa-clock"></i> 1차 셔틀 (13:00 출발)
+                </button>
+                <button id="btnWave2" onclick="selectShuttleWave('wave2', '2차 (15:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
+                    <i class="fa-solid fa-clock"></i> 2차 셔틀 (15:00 출발)
+                </button>
+            </div>
 
-            <!-- [항상 노출] 자차 신청 버튼 -->
-            <button id="btnSelfCar" onclick="selectSelfCar()" style="width:100%; padding:15px; border-radius:15px; border:2px solid #6366f1; background:#f5f3ff; font-weight:800; font-size:15px; color:#6366f1;">
+            <!-- 구분선 -->
+            <div id="shuttleDivider" style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 5px 0;">
+                <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+                <span style="font-size:11px; color:#cbd5e1; font-weight:700;">OR</span>
+                <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+            </div>
+
+            <!-- 자차 신청 (초기 상태 중립화) -->
+            <button id="btnSelfCar" onclick="selectSelfCar()" style="width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
                 <i class="fa-solid fa-car"></i> 자차 / 개별이동 신청
             </button>
 
@@ -1094,41 +1104,80 @@ let tempSelectedLoc = null;
 let tempSelectedWave = null; // wave1 또는 wave2 저장
 let tempSelectedWaveName = ""; // 화면 표시용 (예: 1차 13:00)
 
-// [신규] 자차 신청 시 바로 실행되는 함수
+// [수정] 자차 신청 시 강조색 입히고 확인
 function selectSelfCar() {
+    // 1. 자차 버튼 강조 (보라색)
+    const btn = document.getElementById('btnSelfCar');
+    btn.style.borderColor = "#6366f1";
+    btn.style.background = "#f5f3ff";
+    btn.style.color = "#6366f1";
+
+    // 2. 셔틀 버튼들은 강조 해제 (흰색으로 초기화)
+    const w1 = document.getElementById('btnWave1');
+    const w2 = document.getElementById('btnWave2');
+    if(w1) { w1.style.borderColor = "#e2e8f0"; w1.style.background = "#fff"; w1.style.color = "#64748b"; }
+    if(w2) { w2.style.borderColor = "#e2e8f0"; w2.style.background = "#fff"; w2.style.color = "#64748b"; }
+
     showKacConfirm("자차 또는 개별이동으로\n퇴교하시겠습니까?", function() {
-        tempSelectedWave = 'wave1'; // 자차는 통계 합산을 위해 임의의 차수로 지정
+        tempSelectedWave = 'wave1'; 
         tempSelectedLoc = { id: 'car', name: '자차(개별이동)' };
         tempSelectedWaveName = '개별이동';
         submitShuttleRequest();
     });
 }
 
+// [수정] 셔틀 차수 선택 시 자차 버튼 강조 해제
 function selectShuttleWave(waveId, waveName) {
     tempSelectedWave = waveId;
     tempSelectedWaveName = waveName;
     
-    document.getElementById('btnWave1').style.border = (waveId === 'wave1') ? '2px solid #3b82f6' : '2px solid #e2e8f0';
-    document.getElementById('btnWave2').style.border = (waveId === 'wave2') ? '2px solid #3b82f6' : '2px solid #e2e8f0';
-    document.getElementById('btnSelfCar').style.border = '2px solid #6366f1'; // 자차 버튼은 유지
+    // 1. 선택한 셔틀 버튼 강조 (파란색)
+    document.getElementById('btnWave1').style.borderColor = (waveId === 'wave1') ? '#3b82f6' : '#e2e8f0';
+    document.getElementById('btnWave1').style.color = (waveId === 'wave1') ? '#3b82f6' : '#64748b';
+    document.getElementById('btnWave1').style.background = (waveId === 'wave1') ? '#eff6ff' : '#fff';
+    
+    document.getElementById('btnWave2').style.borderColor = (waveId === 'wave2') ? '#3b82f6' : '#e2e8f0';
+    document.getElementById('btnWave2').style.color = (waveId === 'wave2') ? '#3b82f6' : '#64748b';
+    document.getElementById('btnWave2').style.background = (waveId === 'wave2') ? '#eff6ff' : '#fff';
+
+    // 2. 자차 버튼 강조 해제 (흰색으로 원복)
+    const carBtn = document.getElementById('btnSelfCar');
+    carBtn.style.borderColor = "#e2e8f0";
+    carBtn.style.background = "#fff";
+    carBtn.style.color = "#64748b";
 
     document.getElementById('shuttleButtons').style.display = "flex";
 }
 
+// [수정] 차량 신청 창 열기 (중립 디자인으로 시작)
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    // 초기화
+    // 1. 모든 버튼 디자인 초기화 (중립 상태로 시작)
+    const resetBtnStyle = (id) => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.style.borderColor = "#e2e8f0";
+            el.style.background = "#fff";
+            el.style.color = "#64748b";
+            el.style.display = "none"; 
+        }
+    };
+    resetBtnStyle('btnWave1'); resetBtnStyle('btnWave2');
+    const carBtn = document.getElementById('btnSelfCar');
+    carBtn.style.borderColor = "#e2e8f0";
+    carBtn.style.background = "#fff";
+    carBtn.style.color = "#64748b";
+    carBtn.style.display = "block"; 
+
+    // 2. 변수 초기화
     tempSelectedLoc = null; tempSelectedWave = null;
     document.getElementById('shuttleButtons').style.display = "none";
     document.getElementById('shuttleCancelArea').style.display = 'none';
-    document.getElementById('btnWave1').style.display = "none";
-    document.getElementById('btnWave2').style.display = "none";
-    document.getElementById('btnSelfCar').style.display = "block"; // 자차는 항상 보임
     document.getElementById('noShuttleMsg').style.display = "none";
 
-    // 기사님 공지 및 설정 로드
+    // 3. 기사님 수송 일정 리스너
     const settingsSnap = await firebase.database().ref('system/shuttle_settings').once('value');
     const settings = settingsSnap.val() || {};
     
@@ -1139,7 +1188,7 @@ async function openShuttleApply() {
         document.getElementById('noShuttleMsg').style.display = "block";
     }
 
-    // 기존 신청 내역 조회
+    // 4. 기존 신청 내역 조회 및 해당 버튼 강조
     let uToken = localStorage.getItem('uToken');
     const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/out`).once('value');
     const data = snap.val() || {};
@@ -1160,6 +1209,14 @@ async function openShuttleApply() {
         document.getElementById('myCurrentShuttle').innerText = `${waveTxt} - ${locNames[foundLoc]}`;
         tempSelectedWave = foundWave || 'wave1';
         tempSelectedLoc = { id: foundLoc };
+        
+        // 신청 내역 강조 로직 (여기서 괄호가 늘어납니다)
+        if(foundLoc === 'car') {
+            carBtn.style.borderColor = "#6366f1"; carBtn.style.background = "#f5f3ff"; carBtn.style.color = "#6366f1";
+        } else {
+            const activeWBtn = document.getElementById(foundWave === 'wave1' ? 'btnWave1' : 'btnWave2');
+            if(activeWBtn) { activeWBtn.style.borderColor = "#3b82f6"; activeWBtn.style.background = "#eff6ff"; activeWBtn.style.color = "#3b82f6"; }
+        }
     }
 }
 
