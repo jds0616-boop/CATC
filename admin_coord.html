@@ -382,11 +382,13 @@ function handleRoomSelection() {
         const leaderInfoText = document.getElementById('leaderInfoText');
 
         if(leaders.length > 0) {
-            // 1. 기존 고정되어 있던 배지와 왕관 아이콘을 숨깁니다.
-            leaderDisplay.querySelector('.leader-badge').style.display = 'none';
-            leaderDisplay.querySelector('.fa-crown').style.display = 'none';
+            // [중요 수정] 기존 HTML에 해당 클래스가 없을 경우를 대비해 에러 방지 처리
+            const oldBadge = leaderDisplay.querySelector('.leader-badge');
+            const oldCrown = leaderDisplay.querySelector('.fa-crown');
+            if(oldBadge) oldBadge.style.display = 'none';
+            if(oldCrown) oldCrown.style.display = 'none';
 
-            // 2. 리스트 생성 (왕관 - 학생장 배지 - 이름 - 전화번호 일렬 배치)
+            // 리스트 생성 (왕관 - 학생장 배지 - 이름 - 전화번호 일렬 배치)
             leaderInfoText.innerHTML = leaders.map(l => `
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #fff7ed; width: 100%;">
                     <i class="fa-solid fa-crown" style="color: #f59e0b; font-size: 14px; flex-shrink: 0;"></i>
@@ -396,13 +398,10 @@ function handleRoomSelection() {
                 </div>
             `).join('');
 
-            // 3. 컨테이너 스타일 조정 (세로 나열 및 왼쪽 정렬)
             leaderDisplay.style.display = "flex";
             leaderDisplay.style.flexDirection = "column";
             leaderDisplay.style.alignItems = "flex-start";
-            leaderDisplay.style.justifyContent = "flex-start";
             leaderDisplay.style.height = "auto";
-            leaderInfoText.style.width = "100%";
         } else {
             leaderDisplay.style.display = "none";
         }
@@ -415,36 +414,104 @@ function handleRoomSelection() {
 
 
 
-    function updateStats(dataScope) {
-        let osong = [], term = [], air = [], outing = [], overnight = [];
-        const today = getTodayString();
-        Object.keys(dataScope).forEach(rid => {
-            const room = dataScope[rid];
-            if(room.shuttle) {
-                ['out', 'in'].forEach(dir => {
-                    const s = room.shuttle[dir]; if(!s) return;
-                    if(s.osong) Object.values(s.osong).forEach(n => osong.push(`${n} (R-${rid})`));
-                    if(s.terminal) Object.values(s.terminal).forEach(n => term.push(`${n} (R-${rid})`));
-                    if(s.airport) Object.values(s.airport).forEach(n => air.push(`${n} (R-${rid})`));
-                });
-            }
-            if(room.admin_actions && room.admin_actions[today]) {
-                Object.values(room.admin_actions[today]).forEach(v => {
-                    const text = `${v.name} (R-${rid})`;
-                    if(v.type === 'outing') outing.push(text); if(v.type === 'overnight') overnight.push(text);
-                });
-            }
-        });
-        renderStatItem('s-osong', osong, "오송역 신청자"); renderStatItem('s-term', term, "터미널 신청자"); renderStatItem('s-air', air, "공항 신청자");
-        renderStatItem('o-cnt', outing, "오늘 외출자"); renderStatItem('n-cnt', overnight, "오늘 외박자");
-    }
 
-    function renderStatItem(id, list, title) {
-        const el = document.getElementById(id); el.innerText = list.length;
-        const parent = el.closest('.mini-stat-box') || el.closest('.action-box');
-        parent.style.cursor = "pointer";
-        parent.onclick = () => { if(list.length === 0) return; document.getElementById('listModalTitle').innerText = `${title} (${list.length}명)`; document.getElementById('listModalContent').innerHTML = list.map((n, i) => `${i+1}. ${n}`).join('<br>'); document.getElementById('listModal').style.display = 'flex'; };
+
+
+
+function updateStats(dataScope) {
+    let osong = [], term = [], air = [], outing = [], overnight = [];
+    const today = getTodayString();
+
+    Object.keys(dataScope).forEach(rid => {
+        const room = dataScope[rid];
+
+        // 1. 셔틀 수송 데이터 집계 (13시/15시 차수 통합)
+        if (room.shuttle) {
+            ['out', 'in'].forEach(dirType => {
+                const dirData = room.shuttle[dirType];
+                if (!dirData) return;
+
+                ['wave1', 'wave2'].forEach(waveKey => {
+                    const waveData = dirData[waveKey];
+                    if (!waveData) return;
+
+                    const timeTxt = (waveKey === 'wave1') ? "13:00" : "15:00";
+                    const typeTxt = (dirType === 'out') ? "퇴교" : "입교";
+
+                    if (waveData.osong) Object.values(waveData.osong).forEach(n => 
+                        osong.push(`${n} <small style="color:#64748b;">(${timeTxt} ${typeTxt}, R-${rid})</small>`)
+                    );
+                    if (waveData.terminal) Object.values(waveData.terminal).forEach(n => 
+                        term.push(`${n} <small style="color:#64748b;">(${timeTxt} ${typeTxt}, R-${rid})</small>`)
+                    );
+                    if (waveData.airport) Object.values(waveData.airport).forEach(n => 
+                        air.push(`${n} <small style="color:#64748b;">(${timeTxt} ${typeTxt}, R-${rid})</small>`)
+                    );
+                });
+            });
+        }
+
+        // 2. 외출/외박 데이터 집계
+        if (room.admin_actions && room.admin_actions[today]) {
+            Object.values(room.admin_actions[today]).forEach(v => {
+                const text = `${v.name} <small style="color:#64748b;">(Room ${rid})</small>`;
+                if (v.type === 'outing') outing.push(text);
+                if (v.type === 'overnight') overnight.push(text);
+            });
+        }
+    });
+
+    renderStatItem('s-osong', osong, "오송역 신청 현황");
+    renderStatItem('s-term', term, "터미널 신청 현황");
+    renderStatItem('s-air', air, "공항 신청 현황");
+    renderStatItem('o-cnt', outing, "오늘 외출자 명단");
+    renderStatItem('n-cnt', overnight, "오늘 외박자 명단");
+}
+
+
+
+
+
+function renderStatItem(id, list, title) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // 1. 숫자를 실시간으로 변경
+    el.innerText = list.length;
+    
+    // 2. 숫자가 들어있는 부모 박스(오송역, 외출 등)를 찾음
+    const parent = el.closest('.mini-stat-box') || el.closest('.action-box');
+    
+    if (list.length > 0) {
+        // [신청자가 1명이라도 있을 때]
+        parent.style.cursor = "pointer"; // 마우스 손가락 모양
+        parent.style.opacity = "1";      // 선명하게
+        
+        parent.onclick = () => {
+            document.getElementById('listModalTitle').innerText = `${title} (총 ${list.length}명)`;
+            
+            // 가나다순 정렬 후 리스트 생성
+            const sortedList = [...list].sort(); 
+            document.getElementById('listModalContent').innerHTML = sortedList.map((item, i) => 
+                `<div style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px;">
+                    ${i + 1}. <b>${item}</b>
+                </div>`
+            ).join('');
+            
+            // 팝업창 열기
+            document.getElementById('listModal').style.display = 'flex';
+        };
+    } else {
+        // [신청자가 0명일 때]
+        parent.style.cursor = "default"; // 일반 화살표 마우스
+        parent.style.opacity = "0.5";    // 반투명하게 (흐리게)
+        parent.onclick = null;           // 클릭해도 아무 반응 없게 설정 (중요)
     }
+}
+
+
+
+
 
     function saveCourseNotice() {
         const rid = document.getElementById('roomSelect').value; if(!rid) return;
