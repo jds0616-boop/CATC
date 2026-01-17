@@ -566,26 +566,32 @@
 
 
 
-<!-- [개편] 차량 수요조사 섹션 - 표(Table) 스타일 -->
+<!-- [최종 고도화] 2. 차량 수요조사 상세 명단 (3단 세로 배치) -->
 <div id="view-shuttle" style="display:none; width:100%; flex-direction:column; align-items:center;">
-    <div class="view-header">
-        <h1><i class="fa-solid fa-bus-simple"></i> 퇴교 수송 수요조사 현황 <span class="header-room-badge room-badge-global"></span></h1>
-        <p>외출 현황판과 동일한 리스트 형식으로 데이터를 출력합니다.</p>
+    <div class="view-header" style="margin-bottom: 20px;">
+        <h1><i class="fa-solid fa-bus-simple"></i> 항기원 퇴교 수송 현황 <span class="header-room-badge room-badge-global"></span></h1>
     </div>
 
-    <!-- 상단 통합 요약 바 -->
-    <div class="shuttle-summary-bar">
-        <div class="summary-item"><label>전체 인원</label><b id="total-student-cnt">0</b>명</div>
-        <div class="summary-item"><label>셔틀 탑승</label><b id="total-shuttle-cnt">0</b>명</div>
-        <div class="summary-item"><label>개별 이동</label><b id="total-car-cnt">0</b>명</div>
-        <div class="summary-item"><label>미신청</label><b id="total-none-cnt" class="highlight-red">0</b>명</div>
-    </div>
-
-    <!-- 3단 표 레이아웃 -->
     <div class="shuttle-3col-container">
-        <div class="shuttle-table-column" id="col-wave1"></div>
-        <div class="shuttle-table-column" id="col-wave2"></div>
-        <div class="shuttle-table-column" id="col-car"></div>
+        <!-- 상단 전체 요약 바 -->
+        <div class="shuttle-summary-bar">
+            <div class="summary-item"><label>전체 인원</label><b id="total-student-cnt">0</b>명</div>
+            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
+            <div class="summary-item"><label>셔틀 탑승(1차+2차)</label><b id="total-shuttle-cnt">0</b>명</div>
+            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
+            <div class="summary-item"><label>자차/개별 이동</label><b id="total-car-cnt" style="color:#6366f1;">0</b>명</div>
+            <div style="width:1px; height:30px; background:#e2e8f0;"></div>
+            <div class="summary-item"><label>미신청</label><b id="total-none-cnt" style="color:#ef4444;">0</b>명</div>
+        </div>
+
+        <!-- 1차 수송 기둥 -->
+        <div class="shuttle-column" id="col-wave1"></div>
+
+        <!-- 2차 수송 기둥 -->
+        <div class="shuttle-column" id="col-wave2"></div>
+
+        <!-- 자차 및 통계 기둥 -->
+        <div class="shuttle-column" id="col-car"></div>
     </div>
 </div>
 

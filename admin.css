@@ -2688,133 +2688,35 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
-
-
-/* --- 차량 수요조사: 외출 현황판 스타일 (최종 정돈본) --- */
-
-/* 1. 상단 요약 바 (긴 흰색 막대 형태) */
-.shuttle-summary-bar {
-    grid-column: span 3;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 15px;
-    padding: 20px 0;
-    margin-bottom: 25px;
-    display: flex;
-    width: 100%;
-    max-width: 1300px;
-    justify-content: space-around;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}
-
-.summary-item {
-    flex: 1;
-    text-align: center;
-    border-right: 1px solid #f1f5f9;
-}
-
-.summary-item:last-child {
-    border-right: none;
-}
-
-.summary-item label {
-    display: block;
-    font-size: 13px;
-    color: #94a3b8;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.summary-item b {
-    font-size: 22px;
-    color: #1e293b;
-    font-weight: 800;
-}
-
-.summary-item .highlight-red {
-    color: #ef4444 !important;
-}
-
-/* 2. 3단 기둥 레이아웃 */
+/* 차량 수요조사 3단 레이아웃 스타일 */
 .shuttle-3col-container {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr 1fr 1fr; /* 3등분 */
+    gap: 25px;
     width: 100%;
-    max-width: 1300px;
-    margin-top: 10px;
+    max-width: 1400px; /* 넓게 사용 */
+    align-items: start;
 }
 
-.shuttle-table-column {
+.shuttle-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.shuttle-summary-bar {
+    grid-column: span 3; /* 3칸 다 차지 */
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-}
-
-/* 3. 표(Table) 스타일 */
-.shuttle-official-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.shuttle-official-table th {
-    background: #f8fafc;
-    padding: 15px;
-    font-size: 14px;
-    font-weight: 800;
-    color: #003366; /* 딥블루 포인트 */
-    border-bottom: 2px solid #e2e8f0;
-    text-align: center;
-}
-
-.shuttle-official-table td {
-    padding: 18px 15px;
-    border-bottom: 1px solid #f1f5f9;
-    text-align: center;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.shuttle-official-table tr:last-child td { border-bottom: none; }
-.shuttle-official-table tr:hover td { background-color: #fcfdfe; }
-
-/* 4. 내부 텍스트 및 인원 강조 */
-.st-loc { 
-    font-weight: 700; 
-    color: #64748b; 
-    text-align: left !important; 
-    padding-left: 25px !important; 
-}
-.st-cnt { 
-    font-weight: 900; 
-    color: #cbd5e1; 
-    font-size: 18px; 
-}
-
-/* 데이터가 있는 행만 진하게 강조 */
-.row-has-data .st-loc { color: #1e293b; }
-.row-has-data .st-cnt { color: #3b82f6; }
-
-/* 5. 자차 박스 전용 디자인 */
-.car-box-official {
-    height: 195px; /* 셔틀 표 높이와 비슷하게 맞춤 */
+    padding: 15px 30px;
+    margin-bottom: 10px;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
-    gap: 12px;
-    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
-.car-box-official b { 
-    font-size: 40px; 
-    color: #003366; 
-    line-height: 1;
-}
-.car-box-official span {
-    font-size: 14px;
-    font-weight: 700;
-    color: #64748b;
-}
+
+.summary-item { text-align: center; }
+.summary-item label { font-size: 12px; color: #64748b; font-weight: 700; display: block; margin-bottom: 5px; }
+.summary-item b { font-size: 24px; color: #003366; font-weight: 900; }

@@ -1556,75 +1556,79 @@ setMode: function(mode) {
 
 
 
-// admin.js 내 loadShuttleData 함수 교체
-loadShuttleData: function() {
-    if(!state.room) return;
-    
-    firebase.database().ref(`courses/${state.room}`).on('value', snap => {
-        const roomData = snap.val() || {};
-        const shuttleData = roomData.shuttle?.out || {};
-        const studentData = roomData.students || {};
+// [최종 완결본] 차량 수요조사: 3단 세로 배치 로직
+    loadShuttleData: function() {
+        if(!state.room) return;
         
-        const col1 = document.getElementById('col-wave1');
-        const col2 = document.getElementById('col-wave2');
-        const colCar = document.getElementById('col-car');
-        if(!col1 || !col2 || !colCar) return;
-
-        const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-        let totalShuttleSum = 0;
-
-        const createTable = (waveId, waveTitle) => {
-            const locs = [{id:'osong', n:'오송역'}, {id:'terminal', n:'터미널'}, {id:'airport', n:'청주공항'}];
-            let rows = "";
+        firebase.database().ref(`courses/${state.room}`).on('value', snap => {
+            const roomData = snap.val() || {};
+            const shuttleData = roomData.shuttle?.out || {};
+            const studentData = roomData.students || {};
             
-            locs.forEach(loc => {
-                const members = Object.entries(shuttleData[waveId]?.[loc.id] || {});
-                const count = members.length;
-                totalShuttleSum += count;
-                const rowClass = count > 0 ? 'row-has-data' : '';
-                
-                rows += `
-                    <tr class="${rowClass}" onclick="ui.showShuttleListModal('${waveId}', '${waveTitle}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})">
-                        <td class="st-loc" style="padding:20px; font-weight:700;">${loc.n}</td>
-                        <td class="st-cnt" style="text-align:center; font-weight:900; font-size:18px;">${count}명</td>
-                        <td style="text-align:right; padding-right:20px; color:#cbd5e1; font-size:11px;">상세보기 ></td>
-                    </tr>`;
+            // 기둥 비우기
+            const col1 = document.getElementById('col-wave1');
+            const col2 = document.getElementById('col-wave2');
+            const colCar = document.getElementById('col-car');
+            if(!col1 || !col2 || !colCar) return;
+            col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
+
+            // 통계용 변수
+            const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
+            let totalShuttle = 0;
+            let totalCar = 0;
+
+            // 공통 스타일
+            const waveStyle = "padding: 15px; background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 12px; font-weight: 800; font-size: 16px; text-align:center; box-shadow: 0 4px 10px rgba(0,51,102,0.2);";
+
+            // 1. 1차 & 2차 기둥 그리기
+            const waves = [
+                { id: 'wave1', name: '1차 수송 (13:00)', target: col1 },
+                { id: 'wave2', name: '2차 수송 (15:00)', target: col2 }
+            ];
+
+            waves.forEach(w => {
+                w.target.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.name}</div>`;
+                const locs = [
+                    { id: 'osong', n: '오송역', i: 'fa-train' },
+                    { id: 'terminal', n: '터미널', i: 'fa-bus-simple' },
+                    { id: 'airport', n: '청주공항', i: 'fa-plane' }
+                ];
+                locs.forEach(loc => {
+                    const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
+                    totalShuttle += members.length;
+                    w.target.innerHTML += `
+                        <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.name}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; transition:0.2s;">
+                            <div class="dest-header" style="border:none; padding:20px;">
+                                <div class="dest-name-group"><div class="dest-icon-box" style="width:36px; height:36px;"><i class="fa-solid ${loc.i}"></i></div><div class="dest-title" style="font-size:16px;">${loc.n}</div></div>
+                                <div class="dest-count-badge" style="background:#003366; color:white; font-size:16px;">${members.length}명</div>
+                            </div>
+                        </div>`;
+                });
             });
 
-            return `<table class="shuttle-official-table" style="width:100%; border-collapse:collapse;">
-                        <thead><tr><th colspan="3" style="background:#f8fafc; padding:15px; border-bottom:2px solid #e2e8f0; color:#003366;">${waveTitle}</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>`;
-        };
+            // 2. 자차/개별이동 기둥 그리기
+            colCar.innerHTML = `<div style="${waveStyle}; background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
+            const carMembers1 = Object.entries(shuttleData.wave1?.car || {});
+            const carMembers2 = Object.entries(shuttleData.wave2?.car || {});
+            const allCarMembers = [...carMembers1, ...carMembers2];
+            totalCar = allCarMembers.length;
 
-        col1.innerHTML = createTable('wave1', '1차 수송 (13:00)');
-        col2.innerHTML = createTable('wave2', '2차 수송 (15:00)');
+            colCar.innerHTML += `
+                <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(allCarMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; height:200px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;">
+                    <div class="dest-icon-box" style="width:60px; height:60px; font-size:24px; background:#f1f5f9; color:#64748b;"><i class="fa-solid fa-car-side"></i></div>
+                    <div style="text-align:center;">
+                        <div style="font-size:18px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
+                        <div style="font-size:32px; font-weight:900; color:#003366; margin-top:5px;">${totalCar}명</div>
+                    </div>
+                </div>`;
 
-        const car1 = Object.entries(shuttleData.wave1?.car || {});
-        const car2 = Object.entries(shuttleData.wave2?.car || {});
-        const carMembers = [...car1, ...car2];
-
-        colCar.innerHTML = `
-            <table class="shuttle-official-table" style="width:100%; border-collapse:collapse;">
-                <thead><tr><th style="background:#f8fafc; padding:15px; border-bottom:2px solid #e2e8f0; color:#475569;">개별 이동</th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td class="car-box-official" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})" style="height:195px; text-align:center; cursor:pointer;">
-                            <div style="font-size:15px; font-weight:700; color:#64748b; margin-bottom:10px;">자차 / 개별이동</div>
-                            <b style="font-size:40px; color:#003366;">${carMembers.length}명</b>
-                            <div style="font-size:12px; color:#94a3b8; margin-top:10px;">명단 확인하기 ></div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>`;
-
-        // 숫자 업데이트
-        document.getElementById('total-student-cnt').innerText = totalStudents;
-        document.getElementById('total-shuttle-cnt').innerText = totalShuttleSum;
-        document.getElementById('total-car-cnt').innerText = carMembers.length;
-        document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttleSum - carMembers.length);
-    });
-}
+            // 3. 상단 요약 통계 업데이트
+            document.getElementById('total-student-cnt').innerText = totalStudents;
+            document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
+            document.getElementById('total-car-cnt').innerText = totalCar;
+            document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - totalCar);
+        });
+    },
 
 
 
@@ -2003,7 +2007,7 @@ loadDinnerSkipData: function() {
 
 
 
-// [안정성 복구] 수강생 명부 로드 (학생장 지정 시인성 개선 최종본)
+// [안정성 복구] 수강생 명부 로드 (학생장 지정 버튼 추가 버전)
 loadStudentList: function() {
     if(!state.room) return;
 
@@ -2029,61 +2033,35 @@ loadStudentList: function() {
             tbody.innerHTML = ""; 
             let arrivedCount = 0;
 
-            combinedNames.forEach((name, idx) => {
-                const sList = actualStudents.filter(student => student.name === name);
-                const isArrived = sList.length > 0;
-                if(isArrived) arrivedCount++;
+combinedNames.forEach((name, idx) => {
+    const sList = actualStudents.filter(student => student.name === name);
+    const isArrived = sList.length > 0;
+    if(isArrived) arrivedCount++;
 
-                // 학생장 여부 변수화
-                const isLeader = isArrived && sList.some(s => s.isLeader);
-                
-                const isExpected = expectedNames.includes(name);
-                const sourceIcon = isExpected ? '📄' : '✨';
-                const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
-                
-                const isOnline = isArrived && sList.some(s => s.isOnline);
-                const dotColor = isOnline ? '#22c55e' : '#cbd5e1'; 
+    const isLeader = isArrived && sList.some(s => s.isLeader); // 입실했고 학생장인 경우
 
-                tbody.innerHTML += `
-                    <tr style="${isLeader ? 'background-color:#fefce8;' : ''}">
-                        <td style="font-weight:700; color:#cbd5e1;">${idx + 1}</td>
-                        <td style="text-align:left; padding-left:20px;">
-                            <div style="display:inline-flex; align-items:center; vertical-align:middle;">
-                                ${sourceIcon} <span style="color:${dotColor}; margin-right:8px;">●</span>
-                                <span style="font-weight:800; color:#1e293b; font-size:15px;">${name}</span>
-                                ${isLeader ? '<span style="color:#f59e0b; margin-left:6px;" title="학생장">👑</span>' : ''}
-                            </div>
-                        </td>
-                        <td>${statusHtml}</td>
-                        <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
-                        <td>
-                            <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
-                                ${isArrived ? `
-                                    <!-- 학생장 지정 전: 흰색 배경에 연한 글씨 / 지정 후: 주황색 배경에 흰색 글씨 -->
-                                    <button class="btn-table-action" 
-                                            onclick="dataMgr.toggleLeader('${sList[0].token}', '${name}')" 
-                                            style="
-                                                background: ${isLeader ? '#f59e0b' : '#ffffff'}; 
-                                                color: ${isLeader ? '#ffffff' : '#cbd5e1'}; 
-                                                border: 1px solid ${isLeader ? '#f59e0b' : '#e2e8f0'};
-                                                border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s;
-                                                display: flex; align-items: center; gap: 4px;
-                                            ">
-                                        <i class="fa-solid ${isLeader ? 'fa-user-check' : 'fa-user-plus'}"></i>
-                                        ${isLeader ? '학생장 해제' : '지정'}
-                                    </button>
-
-                                    <!-- 삭제 버튼: 배경을 아주 연하게 처리 -->
-                                    <button class="btn-table-action" 
-                                            onclick="dataMgr.deleteStudent('${sList[0].token}')" 
-                                            style="background:#fff1f2; color:#ef4444; border:1px solid #fee2e2; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:800; cursor:pointer;">
-                                        삭제
-                                    </button>
-                                ` : `-`}
-                            </div>
-                        </td>
-                    </tr>`;
-            });
+    tbody.innerHTML += `
+        <tr style="${isLeader ? 'background-color:#fffbeb;' : ''}">
+            <td>${idx + 1}</td>
+            <td style="text-align:left; padding-left:20px;">
+                <div style="display:inline-flex; align-items:center;">
+                    <span style="color:${isOnline ? '#22c55e' : '#cbd5e1'}; margin-right:8px;">●</span>
+                    <span style="font-weight:800; color:#1e293b;">${name}</span>
+                    ${isLeader ? '<span style="color:#f59e0b; margin-left:6px; font-size:14px;">👑</span>' : ''}
+                </div>
+            </td>
+            <td><span class="status-badge ${isArrived ? 'status-arrived' : 'status-wait'}">${isArrived ? '입교 완료' : '미입교'}</span></td>
+            <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
+            <td>
+                ${isArrived ? `
+                    <button class="btn-table-action" onclick="dataMgr.toggleLeader('${sList[0].token}', '${name}')" 
+                            style="background:${isLeader ? '#64748b' : '#f59e0b'}; padding:4px 8px;">
+                        ${isLeader ? '지정 해제' : '학생장 지정'}
+                    </button>
+                ` : `-`}
+            </td>
+        </tr>`;
+});
 
             const total = combinedNames.length;
             const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
@@ -2092,9 +2070,6 @@ loadStudentList: function() {
         });
     });
 },
-
-
-
 
 
 // [추가 1] 생활관 중복 제거 및 데이터 로드 함수
