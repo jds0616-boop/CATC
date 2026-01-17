@@ -2007,7 +2007,7 @@ loadDinnerSkipData: function() {
 
 
 
-// [안정성 복구] 수강생 명부 로드 (학생장 지정 버튼 및 로직 보완)
+// [안정성 복구] 수강생 명부 로드 (학생장 지정 시인성 개선 최종본)
 loadStudentList: function() {
     if(!state.room) return;
 
@@ -2022,7 +2022,6 @@ loadStudentList: function() {
             const tbody = document.getElementById('studentListTableBody');
             if(!tbody) return;
 
-            // 실제 접속한 학생들 데이터 가공
             const actualStudents = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
@@ -2039,14 +2038,13 @@ loadStudentList: function() {
                 const isArrived = sList.length > 0;
                 if(isArrived) arrivedCount++;
 
-                // 학생장 여부 변수화 (가독성 및 정확성)
+                // 학생장 여부 변수화
                 const isLeader = isArrived && sList.some(s => s.isLeader);
                 
                 const isExpected = expectedNames.includes(name);
                 const sourceIcon = isExpected ? '📄' : '✨';
                 const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
                 
-                // 온라인 상태 체크 (초록불)
                 const isOnline = isArrived && sList.some(s => s.isOnline);
                 const dotColor = isOnline ? '#22c55e' : '#cbd5e1'; 
 
@@ -2063,16 +2061,26 @@ loadStudentList: function() {
                         <td>${statusHtml}</td>
                         <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
                         <td>
-                            <div style="display:flex; gap:5px; justify-content:center;">
+                            <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
                                 ${isArrived ? `
+                                    <!-- 학생장 지정 전: 흰색 배경에 연한 글씨 / 지정 후: 주황색 배경에 흰색 글씨 -->
                                     <button class="btn-table-action" 
                                             onclick="dataMgr.toggleLeader('${sList[0].token}', '${name}')" 
-                                            style="background:${isLeader ? '#64748b' : '#f59e0b'}; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">
-                                        ${isLeader ? '해제' : '학생장'}
+                                            style="
+                                                background: ${isLeader ? '#f59e0b' : '#ffffff'}; 
+                                                color: ${isLeader ? '#ffffff' : '#cbd5e1'}; 
+                                                border: 1px solid ${isLeader ? '#f59e0b' : '#e2e8f0'};
+                                                border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.2s;
+                                                display: flex; align-items: center; gap: 4px;
+                                            ">
+                                        <i class="fa-solid ${isLeader ? 'fa-user-check' : 'fa-user-plus'}"></i>
+                                        ${isLeader ? '학생장 해제' : '지정'}
                                     </button>
+
+                                    <!-- 삭제 버튼: 배경을 아주 연하게 처리 -->
                                     <button class="btn-table-action" 
                                             onclick="dataMgr.deleteStudent('${sList[0].token}')" 
-                                            style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">
+                                            style="background:#fff1f2; color:#ef4444; border:1px solid #fee2e2; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:800; cursor:pointer;">
                                         삭제
                                     </button>
                                 ` : `-`}
@@ -2088,6 +2096,9 @@ loadStudentList: function() {
         });
     });
 },
+
+
+
 
 
 // [추가 1] 생활관 중복 제거 및 데이터 로드 함수
