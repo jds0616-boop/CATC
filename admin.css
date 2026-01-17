@@ -1277,7 +1277,7 @@ body.night-mode .badge-idle {
 /* 2. 제목 영역: 수강생 명부 등과 통일된 여백 설정 */
 #view-guide .view-header {
     margin-top: 20px;   /* 계단 현상 방지를 위한 상단 고정 여백 */
-    margin-bottom: 35px; /* 제목과 슬라이드 사이의 간격 */
+    margin-bottom: 10px; /* 제목과 슬라이드 사이의 간격 */
     text-align: center;
 }
 

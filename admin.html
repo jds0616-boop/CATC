@@ -258,21 +258,23 @@
         <div class="content-area">
 
 
-<!-- [개선] 입교안내 가이드 (제목 복구 버전) -->
+
+
+<!-- [개선] 입교안내 가이드 (위치 상향 및 전체화면 버그 수정) -->
 <div id="view-guide">
-    <!-- 상단 표준 헤더 추가 -->
+    <!-- 상단 표준 헤더 -->
     <div class="view-header">
         <h1><i class="fa-solid fa-book-open"></i> 항공기술훈련원 입교안내 <span class="header-room-badge room-badge-global"></span></h1>
         <p>교육생들을 위한 입교 안내 및 시설 이용 가이드 슬라이드입니다.</p>
     </div>
 
-    <div class="guide-main-container" style="padding: 20px 0;">
+    <div class="guide-main-container" style="padding: 0;"> <!-- 상하 여백 20px 제거 -->
         <!-- PDF 화면 구역 -->
         <div id="pdfWrapper" onclick="guideMgr.changePage(1)" oncontextmenu="event.preventDefault(); guideMgr.changePage(-1);">
             <canvas id="guideCanvas"></canvas>
             
-            <!-- 전체화면 버튼 (마우스 올리면 노출) -->
-            <button class="btn-guide-fullscreen" onclick="guideMgr.toggleFullScreen()" title="전체화면 모드">
+            <!-- 전체화면 버튼 (버블링 방지 적용) -->
+            <button class="btn-guide-fullscreen" onclick="event.stopPropagation(); guideMgr.toggleFullScreen()" title="전체화면 모드">
                 <i class="fa-solid fa-expand"></i>
             </button>
         </div>
