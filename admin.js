@@ -1555,7 +1555,7 @@ setMode: function(mode) {
 
 
 
-// [최종 수정] 차량 수요조사 페이지: 간격 축소 및 딥블루 테마 적용
+// [최종 고도화] 차량 수요조사 상세 페이지: 딥블루 테마 및 클릭 팝업 전용 뷰
     loadShuttleData: function() {
         if(!state.room) return;
         
@@ -1566,10 +1566,12 @@ setMode: function(mode) {
 
             container.innerHTML = ""; 
 
-            // 1차, 2차 색상을 모두 헤더와 같은 딥블루(#0f172a)로 통일
+            // 과정 현황(대시보드)과 동일한 딥블루 그라데이션 적용
+            const waveStyle = "background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.2);";
+
             const waves = [
-                { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#0f172a' },
-                { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#0f172a' }
+                { id: 'wave1', name: '1차 수송 (13:00 출발)' },
+                { id: 'wave2', name: '2차 수송 (15:00 출발)' }
             ];
 
             waves.forEach((wave, index) => {
@@ -1581,11 +1583,11 @@ setMode: function(mode) {
                     { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
                 ];
 
-                // margin-top을 30px에서 5px(1차) / 40px(2차)로 조절하여 제목과의 간격을 줄임
-                const topMargin = (index === 0) ? '25px' : '40px';
+                // [간격 보정] 첫 번째 바의 마진을 10px로 설정하여 다른 게시판(공지 등)과 제목 높이를 맞춤
+                const topMargin = (index === 0) ? '10px' : '40px';
 
                 container.innerHTML += `
-                    <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 15px 25px; ${waveStyle}">
                         <i class="fa-solid fa-clock"></i> ${wave.name}
                     </div>
                 `;
@@ -1595,30 +1597,30 @@ setMode: function(mode) {
                     const members = Object.entries(locData); 
                     const count = members.length;
                     
-                    const cardHtml = `
+                    // 명단 노출 없이 인원수만 보여주는 간결한 카드 (클릭 시 팝업)
+                    container.innerHTML += `
                         <div class="shuttle-dest-card card-${loc.id}" 
                              onclick="ui.showShuttleListModal('${wave.id}', '${wave.name}', '${loc.name}', ${JSON.stringify(members).replace(/"/g, '&quot;')})"
-                             style="cursor:pointer; transition: 0.2s;">
+                             style="cursor:pointer; transition: all 0.2s; border: 1px solid #e2e8f0;">
                             <div class="dest-header" style="border-bottom:none; padding: 25px;">
                                 <div class="dest-name-group">
                                     <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
-                                    <div class="dest-title" style="font-size:18px;">${loc.name}</div>
+                                    <div class="dest-title" style="font-size:18px; color:#1e293b;">${loc.name}</div>
                                 </div>
-                                <div class="dest-count-badge" style="font-size:20px; padding: 6px 20px;">${count}명</div>
+                                <div class="dest-count-badge" style="font-size:20px; padding: 6px 20px; background:#003366; color:white;">${count}명</div>
                             </div>
-                            <div style="text-align:center; padding-bottom:15px; color:#94a3b8; font-size:13px;">
-                                ${count > 0 ? '클릭하여 명단 확인 >' : '신청자 없음'}
+                            <div style="text-align:center; padding-bottom:18px; color:#94a3b8; font-size:13px; font-weight:600;">
+                                ${count > 0 ? '탭하여 명단 확인 및 관리 >' : '신청자 없음'}
                             </div>
                         </div>
                     `;
-                    container.innerHTML += cardHtml;
                 });
             });
         });
     },
 
     // [신규] 차량 신청 상세 명단 팝업 함수
-    showShuttleListModal: function(waveId, waveName, locName, members) {
+showShuttleListModal: function(waveId, waveName, locName, members) {
         if (members.length === 0) return;
 
         const modal = document.getElementById('qaModal');
@@ -1627,31 +1629,30 @@ setMode: function(mode) {
 
         if(!modal || !mText) return;
 
-        // 모달 내용 구성
+        // 명단 팝업 내용 (삭제 버튼 포함)
         mText.innerHTML = `
             <div style="text-align:left;">
-                <div style="font-size:14px; color:#3b82f6; font-weight:800; margin-bottom:5px;">${waveName}</div>
-                <div style="font-size:20px; font-weight:900; color:#1e293b; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px;">
-                    ${locName} 신청자 명단
+                <div style="font-size:13px; color:#64748b; font-weight:800; margin-bottom:5px;">${waveName}</div>
+                <div style="font-size:20px; font-weight:900; color:#003366; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px;">
+                    ${locName} 신청 명단 (${members.length}명)
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; max-height:300px; overflow-y:auto; padding:5px;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px; max-height:350px; overflow-y:auto; padding:5px;">
                     ${members.map(([token, name]) => `
-                        <div class="member-tag" style="padding: 10px 15px; font-size:15px; background:white; border:1.5px solid #e2e8f0; display:flex; align-items:center; border-radius:8px;">
+                        <div class="member-tag" style="padding: 10px 15px; font-size:15px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; border-radius:10px; font-weight:700;">
                             ${name} 
-                            <i class="fa-solid fa-xmark" 
+                            <i class="fa-solid fa-circle-xmark" 
                                onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locName.includes('오송') ? 'osong' : locName.includes('터미널') ? 'terminal' : locName.includes('공항') ? 'airport' : 'car'}', '${token}', '${name}')" 
-                               style="margin-left:12px; color:#ef4444; cursor:pointer; font-size:16px;"></i>
+                               style="margin-left:12px; color:#ef4444; cursor:pointer; font-size:18px;"></i>
                         </div>
                     `).join('')}
                 </div>
+                <div style="margin-top:20px; font-size:12px; color:#94a3b8; text-align:center;">이름 옆의 X를 누르면 신청이 취소됩니다.</div>
             </div>
         `;
 
-        // 팝업 시 하단 Q&A용 버튼들은 숨김
         if(mActions) mActions.style.display = 'none';
         modal.style.display = 'flex';
         
-        // 닫기 시 버튼 다시 살리기
         const closeHandler = (e) => {
             if (e.target.id === 'qaModal' || e.target.tagName === 'BUTTON') {
                 if(mActions) mActions.style.display = 'flex';
