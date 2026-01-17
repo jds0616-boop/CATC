@@ -2647,3 +2647,42 @@ body.night-mode .status-table tr.is-my-room {
 #studentListTableBody td:nth-child(2) {
     white-space: nowrap;
 }
+
+
+/* --- [추가] 우측 하단 플로팅 홈 버튼 스타일 --- */
+.floating-home-btn {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background-color: #0f172a; /* 상단바와 동일한 딥블루 */
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px; /* 완벽한 알약 모양 */
+    display: none; /* 기본은 숨김 (JS에서 제어) */
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 9999; /* 최상단 배치 */
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 마우스 올렸을 때 효과 */
+.floating-home-btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    background-color: #1e293b;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* 클릭했을 때 살짝 들어가는 효과 */
+.floating-home-btn:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+/* 아이콘 크기 조절 */
+.floating-home-btn i {
+    font-size: 18px;
+}

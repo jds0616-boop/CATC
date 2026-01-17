@@ -1392,6 +1392,12 @@ if (c === state.room) {
     },
 
 setMode: function(mode) {
+        // [추가] 플로팅 홈 버튼 제어: 대시보드(홈)일 때는 숨기고 나머지는 보여줌
+        const homeBtn = document.getElementById('floatingHomeBtn');
+        if (homeBtn) {
+            homeBtn.style.display = (mode === 'dashboard') ? 'none' : 'flex';
+        }
+
         // 1. 모든 view- 로 시작하는 구역을 일단 숨김
         const allViews = document.querySelectorAll('[id^="view-"]');
         allViews.forEach(v => { 
@@ -1438,7 +1444,7 @@ setMode: function(mode) {
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
-// [리포트 반영] 생활관 배치현황 로직: 이름 우선 매칭 -> 동명이인 시 전화번호 대조
+            // [리포트 반영] 생활관 배치현황 로직: 이름 우선 매칭 -> 동명이인 시 전화번호 대조
             if (mode === 'dormitory') {
                 const tbody = document.getElementById('dormitoryTableBody');
                 if(!tbody) return;
@@ -1490,7 +1496,6 @@ setMode: function(mode) {
             }
         }
     },
-
 
 
 
