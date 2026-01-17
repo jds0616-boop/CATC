@@ -621,7 +621,7 @@ function exitApp() {
 
 
 
-// [수정] 실시간 상태 감지 및 수강생 명부 연동
+// [수정] 실시간 상태 감지 및 삭제 시 자동 퇴출 로직 추가
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
@@ -630,36 +630,40 @@ function startPresence() {
     if (!uToken || !currentRoom || !name) return;
 
     const connectedRef = firebase.database().ref(".info/connected");
-    // [중요] 경로를 isOnline이 아니라 학생 전체 노드로 잡습니다.
     const myFullStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
 
+    // 1. 강사가 나를 삭제했는지 실시간 감시 (삭제 시 즉시 초기화면으로)
+    myFullStatusRef.on('value', snap => {
+        // 앱에 접속 중인데 서버에 내 데이터가 없다면 (강사가 삭제 버튼을 누름)
+        if (!snap.exists()) {
+            alert("강의실 정보가 갱신되었거나 관리자에 의해 삭제되었습니다.\n다시 입장해 주세요.");
+            localStorage.removeItem('uToken'); // 내 토큰 삭제
+            location.reload(); // 페이지 새로고침 -> 본인 확인창 뜸
+        }
+    });
+
+    // 2. 접속 상태(Online/Offline) 업데이트
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
-            // [수정] 온라인이 될 때 이름과 번호를 세트로 함께 저장합니다. 
-            // 이렇게 하면 리셋 직후에도 undefined가 아니라 이름이 바로 다시 채워집니다.
             myFullStatusRef.update({
                 name: name,
                 phone: phone,
                 isOnline: true,
                 lastSeen: firebase.database.ServerValue.TIMESTAMP
             });
-
-            // 연결이 끊기면 온라인 표시만 false로 바꿉니다.
             myFullStatusRef.child('isOnline').onDisconnect().set(false);
         }
     });
 
-// 수강생 명부를 감시하여 실제 온라인인 사람만 카운트
-firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
-    const data = snap.val() || {};
-    const activeUsers = Object.values(data).filter(user => 
-        user.name && user.name !== "undefined" && user.isOnline === true
-    );
-    
-    const count = activeUsers.length;
-    const countEl = document.getElementById('realUserCount');
-    if(countEl) countEl.innerText = `${count}명 접속`;
-});
+    // 3. 전체 접속자 수 감시
+    firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
+        const data = snap.val() || {};
+        const activeUsers = Object.values(data).filter(user => 
+            user.name && user.name !== "undefined" && user.isOnline === true
+        );
+        const countEl = document.getElementById('realUserCount');
+        if(countEl) countEl.innerText = `${activeUsers.length}명 접속`;
+    });
 }
 
 
@@ -703,6 +707,28 @@ function setupListeners() {
 // 5. 강의실 상태 감시 (모드 전환 로직 수정본)
             dbRef.status.on('value', snap => {
                 const st = snap.val() || {};
+// --- [추가 시작: 리셋 및 삭제 감지 로직] ---
+                const serverResetKey = st.resetKey || 'init';
+                const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+                if (!myLocalKey) {
+                    localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+                } else if (myLocalKey !== serverResetKey) {
+                    localStorage.clear();
+                    alert("강의실 정보가 초기화되었습니다.");
+                    location.replace(location.pathname + location.search);
+                    return;
+                }
+
+                const uToken = localStorage.getItem('uToken');
+                if (uToken && st.roomStatus === 'active') {
+                    firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
+                        if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
+                            localStorage.removeItem('uToken');
+                            alert("정보가 갱신되었거나 삭제되었습니다.");
+                            location.reload();
+                        }
+                    });
+                }
 
                 // 1. 강사 상태 체크
                 if (st.roomStatus !== 'active') {
