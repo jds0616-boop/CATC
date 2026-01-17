@@ -2007,74 +2007,87 @@ loadDinnerSkipData: function() {
 
 
 
-// [안정성 복구] 수강생 명부 로드 (기본 리스트 출력 모드)
-    loadStudentList: function() {
-        if(!state.room) return;
+// [안정성 복구] 수강생 명부 로드 (학생장 지정 버튼 및 로직 보완)
+loadStudentList: function() {
+    if(!state.room) return;
 
-        const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
-        const actualRef = firebase.database().ref(`courses/${state.room}/students`);
+    const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
+    const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
-        expectedRef.on('value', expSnap => {
-            const expectedNames = expSnap.val() || [];
-            
-            actualRef.on('value', snap => {
-                const data = snap.val() || {};
-                const tbody = document.getElementById('studentListTableBody');
-                if(!tbody) return;
+    expectedRef.on('value', expSnap => {
+        const expectedNames = expSnap.val() || [];
+        
+        actualRef.on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('studentListTableBody');
+            if(!tbody) return;
 
-                // 실제 접속한 학생들 (기기별 개별 데이터)
-                const actualStudents = Object.keys(data).map(key => ({
-                    token: key,
-                    ...data[key]
-                })).filter(s => s.name && s.name !== "undefined");
+            // 실제 접속한 학생들 데이터 가공
+            const actualStudents = Object.keys(data).map(key => ({
+                token: key,
+                ...data[key]
+            })).filter(s => s.name && s.name !== "undefined");
 
-                const actualNames = actualStudents.map(s => s.name);
-                const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
+            const actualNames = actualStudents.map(s => s.name);
+            const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
-                tbody.innerHTML = ""; 
-                let arrivedCount = 0;
+            tbody.innerHTML = ""; 
+            let arrivedCount = 0;
 
-                combinedNames.forEach((name, idx) => {
-                    const sList = actualStudents.filter(student => student.name === name);
-                    const isArrived = sList.length > 0;
-                    if(isArrived) arrivedCount++;
+            combinedNames.forEach((name, idx) => {
+                const sList = actualStudents.filter(student => student.name === name);
+                const isArrived = sList.length > 0;
+                if(isArrived) arrivedCount++;
 
-                    const isExpected = expectedNames.includes(name);
-                    const sourceIcon = isExpected ? '📄' : '✨';
-                    const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
-                    
-                    // 하나라도 온라인이면 초록불
-                    const isOnline = sList.some(s => s.isOnline);
-                    const dotColor = isOnline ? '#22c55e' : '#cbd5e1'; 
+                // 학생장 여부 변수화 (가독성 및 정확성)
+                const isLeader = isArrived && sList.some(s => s.isLeader);
+                
+                const isExpected = expectedNames.includes(name);
+                const sourceIcon = isExpected ? '📄' : '✨';
+                const statusHtml = isArrived ? `<span class="status-badge status-arrived">입교 완료</span>` : `<span class="status-badge status-wait">미입교</span>`;
+                
+                // 온라인 상태 체크 (초록불)
+                const isOnline = isArrived && sList.some(s => s.isOnline);
+                const dotColor = isOnline ? '#22c55e' : '#cbd5e1'; 
 
-                    tbody.innerHTML += `
-                        <tr style="${isArrived && sList.some(s=>s.isLeader) ? 'background-color:#f5f3ff;' : ''}">
-                            <td style="font-weight:700; color:#cbd5e1;">${idx + 1}</td>
-                            <td style="text-align:left; padding-left:20px;">
-                                <div style="display:inline-flex; align-items:center; vertical-align:middle;">
-                                    ${sourceIcon} <span style="color:${dotColor}; margin-right:8px;">●</span>
-                                    <span style="font-weight:800; color:#1e293b; font-size:15px;">${name}</span>
-                                    ${isArrived && sList.some(s=>s.isLeader) ? '<span style="color:#f59e0b; margin-left:6px;">👑</span>' : ''}
-                                </div>
-                            </td>
-                            <td>${statusHtml}</td>
-                            <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
-                            <td>
+                tbody.innerHTML += `
+                    <tr style="${isLeader ? 'background-color:#fefce8;' : ''}">
+                        <td style="font-weight:700; color:#cbd5e1;">${idx + 1}</td>
+                        <td style="text-align:left; padding-left:20px;">
+                            <div style="display:inline-flex; align-items:center; vertical-align:middle;">
+                                ${sourceIcon} <span style="color:${dotColor}; margin-right:8px;">●</span>
+                                <span style="font-weight:800; color:#1e293b; font-size:15px;">${name}</span>
+                                ${isLeader ? '<span style="color:#f59e0b; margin-left:6px;" title="학생장">👑</span>' : ''}
+                            </div>
+                        </td>
+                        <td>${statusHtml}</td>
+                        <td style="color:#94a3b8; font-size:13px;">${isArrived ? '접속 중' : '-'}</td>
+                        <td>
+                            <div style="display:flex; gap:5px; justify-content:center;">
                                 ${isArrived ? `
-                                    <button class="btn-table-action" onclick="dataMgr.deleteStudent('${sList[0].token}')" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:800; cursor:pointer;">삭제</button>
+                                    <button class="btn-table-action" 
+                                            onclick="dataMgr.toggleLeader('${sList[0].token}', '${name}')" 
+                                            style="background:${isLeader ? '#64748b' : '#f59e0b'}; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">
+                                        ${isLeader ? '해제' : '학생장'}
+                                    </button>
+                                    <button class="btn-table-action" 
+                                            onclick="dataMgr.deleteStudent('${sList[0].token}')" 
+                                            style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">
+                                        삭제
+                                    </button>
                                 ` : `-`}
-                            </td>
-                        </tr>`;
-                });
-
-                const total = combinedNames.length;
-                const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
-                const statusEl = document.getElementById('arrivalStatusSmall');
-                if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
+                            </div>
+                        </td>
+                    </tr>`;
             });
-        });
-    },
 
+            const total = combinedNames.length;
+            const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
+            const statusEl = document.getElementById('arrivalStatusSmall');
+            if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
+        });
+    });
+},
 
 
 // [추가 1] 생활관 중복 제거 및 데이터 로드 함수
