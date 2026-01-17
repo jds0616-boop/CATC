@@ -1556,80 +1556,58 @@ setMode: function(mode) {
 
 
 // [고도화 수정] 차량 수요조사 상세 페이지: 1차(13시) / 2차(15시) 명단 분리 로드
-    loadShuttleData: function() {
+loadShuttleData: function() {
         if(!state.room) return;
-        
-        // 퇴교(out) 경로 전체를 감시 (안에 wave1, wave2가 있음)
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
             const data = snap.val() || {};
             const container = document.getElementById('shuttleCardContainer');
             if(!container) return;
 
-            container.innerHTML = ""; // 기존 목록 초기화
-
-            // 화면에 뿌려줄 차수(Wave) 정의
+            container.innerHTML = "";
             const waves = [
                 { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#3b82f6' },
                 { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#10b981' }
             ];
 
-            // 1차 먼저 그리고, 그 다음 2차를 그림
             waves.forEach(wave => {
-                const waveData = data[wave.id] || {}; // 해당 차수의 데이터
+                const waveData = data[wave.id] || {};
                 const locations = [
                     { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-                    { id: 'terminal', name: '터미널', icon: 'fa-bus-simple' }, 
-                    { id: 'airport', name: '청주공항', icon: 'fa-plane' }
+                    { id: 'terminal', name: '터미널', icon: 'fa-bus' }, 
+                    { id: 'airport', name: '공항', icon: 'fa-plane' }
                 ];
 
-                // 차수 제목(Header) 추가
-                let waveHeaderHtml = `
-                    <div style="grid-column: span 2; margin-top: 30px; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                let waveHtml = `
+                    <div style="grid-column: span 2; margin-top: 20px; padding: 10px 20px; background: ${wave.color}; color: white; border-radius: 12px; font-weight: 800; font-size: 16px;">
                         <i class="fa-solid fa-clock"></i> ${wave.name}
                     </div>
                 `;
-                container.innerHTML += waveHeaderHtml;
-
-                // 해당 차수 내 목적지별 카드 생성
+                
                 locations.forEach(loc => {
-                    const locData = waveData[loc.id] || {};
-                    const members = Object.entries(locData); 
+                    const members = waveData[loc.id] ? Object.entries(waveData[loc.id]) : [];
                     const count = members.length;
                     
-                    let membersHtml = "";
-                    if (count > 0) {
-                        membersHtml = `<div class="member-tag-container">`;
-                        membersHtml += members.map(([token, name]) => `
-                            <div class="member-tag">
-                                ${name}
-                                <i class="fa-solid fa-xmark btn-del-shuttle" 
-                                   onclick="ui.cancelIndividualShuttle('${wave.id}', '${loc.id}', '${token}', '${name}')" 
-                                   title="취소"></i>
-                            </div>
-                        `).join('');
-                        membersHtml += `</div>`;
-                    } else {
-                        membersHtml = `<div class="no-member-text">신청자가 없습니다.</div>`;
-                    }
-                    
-                    container.innerHTML += `
+                    let membersHtml = count > 0 
+                        ? `<div class="member-tag-container">${members.map(([token, name]) => `
+                            <div class="member-tag">${name} <i class="fa-solid fa-xmark btn-del-shuttle" onclick="ui.cancelIndividualShuttle('${wave.id}', '${loc.id}', '${token}', '${name}')"></i></div>
+                          `).join('')}</div>`
+                        : `<div class="no-member-text">신청자 없음</div>`;
+
+                    waveHtml += `
                         <div class="shuttle-dest-card card-${loc.id}">
                             <div class="dest-header">
-                                <div class="dest-name-group">
-                                    <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
-                                    <div class="dest-title">${loc.name}</div>
-                                </div>
+                                <div class="dest-name-group"><div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div><div class="dest-title">${loc.name}</div></div>
                                 <div class="dest-count-badge">${count}명</div>
                             </div>
-                            <div class="dest-body">
-                                ${membersHtml}
-                            </div>
+                            <div class="dest-body">${membersHtml}</div>
                         </div>
                     `;
                 });
+                container.innerHTML += waveHtml;
             });
         });
     },
+
 
     filterQa: function(f, event) { 
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active')); 
@@ -2026,8 +2004,6 @@ loadDinnerSkipData: function() {
         if(dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     }
 }; // <--- ui 객체를 닫는 진짜 문입니다. (이 아래에 quizMgr 등이 나옵니다)
-
-
 
 
 
