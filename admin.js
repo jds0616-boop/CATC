@@ -2001,60 +2001,67 @@ loadDinnerSkipData: function() {
 
 
 
-// [수정] 수강생 현황: 실시간 접속 및 상태 감지 로직 보강
+
+
+// [최종] 수강생 현황: 실시간 감지 버그 수정 + 학생장 디자인(회색/파랑) 개선 합본
 loadStudentList: function() {
     if(!state.room) return;
 
+    // 1. 기존에 돌고 있던 감시자(Listener)를 모두 꺼서 충돌 방지
     const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
     const actualRef = firebase.database().ref(`courses/${state.room}/students`);
-
-    // 기존 리스너 충돌 방지를 위해 일단 끄기
     expectedRef.off();
     actualRef.off();
 
-    // 1. 예정 명단 감시
+    // 2. 예정 명단 데이터 감시 시작
     expectedRef.on('value', expSnap => {
         const expectedNames = expSnap.val() || [];
         
-        // 2. 실제 입실 학생 감시 (중첩 리스너 구조 개선)
+        // 3. 실제 입실 학생 데이터 실시간 감시 (입장/퇴장 시 즉시 실행됨)
         actualRef.on('value', snap => {
             const data = snap.val() || {};
             const tbody = document.getElementById('studentListTableBody');
             if(!tbody) return;
 
-            // 실제 접속/입실 데이터 정리
+            // 실제 데이터를 배열로 변환하고 이름이 없는 데이터는 필터링
             const actualStudents = Object.keys(data).map(key => ({
                 token: key,
                 ...data[key]
             })).filter(s => s.name && s.name !== "undefined");
 
             const actualNames = actualStudents.map(s => s.name);
-            // 예정 명단 + 실제 명단 합치기 (중복 제거 및 가나다순)
+            // 예정 명단과 실제 명단을 합치고 가나다순으로 정렬
             const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
             tbody.innerHTML = ""; 
             let arrivedCount = 0;
 
             combinedNames.forEach((name, idx) => {
-                // 해당 이름을 가진 학생 데이터 찾기
                 const sList = actualStudents.filter(student => student.name === name);
                 const isArrived = sList.length > 0;
                 
-                // [핵심] 접속 상태 및 학생장 여부 추출
+                // 실시간 상태 값 추출 (중요!)
                 const studentData = isArrived ? sList[0] : null;
-                const isOnline = isArrived && studentData.isOnline === true;
-                const isLeader = isArrived && studentData.isLeader === true;
+                const isOnline = isArrived && studentData.isOnline === true; // 실시간 접속 여부
+                const isLeader = isArrived && studentData.isLeader === true; // 학생장 여부
 
                 if(isArrived) arrivedCount++;
 
+                // 디자인 설정: 학생장이면 파란색 버튼, 아니면 회색 버튼
+                const leaderBtnStyle = isLeader 
+                    ? "background:#3b82f6; color:white; border:none;" 
+                    : "background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;";
+                const leaderBtnText = isLeader ? "해제" : "학생장";
+
                 tbody.innerHTML += `
-                    <tr style="${isLeader ? 'background-color:#fffbeb;' : ''}">
+                    <tr style="${isLeader ? 'background-color:#eff6ff;' : ''}">
                         <td>${idx + 1}</td>
                         <td style="text-align:left; padding-left:20px;">
                             <div style="display:inline-flex; align-items:center;">
+                                <!-- 접속 중이면 초록불(22c55e), 아니면 회색불 -->
                                 <span style="color:${isOnline ? '#22c55e' : '#cbd5e1'}; margin-right:8px; font-size:12px;">●</span>
                                 <span style="font-weight:800; color:#1e293b;">${name}</span>
-                                ${isLeader ? '<span style="color:#f59e0b; margin-left:6px; font-size:14px;" title="학생장">👑</span>' : ''}
+                                ${isLeader ? '<span style="color:#3b82f6; margin-left:6px; font-size:14px; font-weight:bold;">[학생장 👑]</span>' : ''}
                             </div>
                         </td>
                         <td><span class="status-badge ${isArrived ? 'status-arrived' : 'status-wait'}">${isArrived ? '입교 완료' : '미입교'}</span></td>
@@ -2063,11 +2070,11 @@ loadStudentList: function() {
                             ${isArrived ? `
                                 <div style="display:flex; gap:5px; justify-content:center;">
                                     <button class="btn-table-action" onclick="dataMgr.toggleLeader('${studentData.token}', '${name}')" 
-                                            style="background:${isLeader ? '#64748b' : '#f59e0b'}; padding:4px 8px; font-size:11px;">
-                                        ${isLeader ? '해제' : '학생장'}
+                                            style="${leaderBtnStyle} padding:4px 10px; font-size:11px; border-radius:6px; font-weight:bold;">
+                                        ${leaderBtnText}
                                     </button>
                                     <button class="btn-table-action" onclick="dataMgr.deleteStudent('${studentData.token}')" 
-                                            style="background:#ef4444; padding:4px 8px; font-size:11px;">
+                                            style="background:#ef4444; color:white; padding:4px 10px; font-size:11px; border-radius:6px; border:none; font-weight:bold;">
                                         삭제
                                     </button>
                                 </div>
@@ -2076,7 +2083,7 @@ loadStudentList: function() {
                     </tr>`;
             });
 
-            // 상단 요약 배지 업데이트
+            // 상단 요약 배지 실시간 업데이트 (0/0명)
             const total = combinedNames.length;
             const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
             const statusEl = document.getElementById('arrivalStatusSmall');
