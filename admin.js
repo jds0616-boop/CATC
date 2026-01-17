@@ -1071,26 +1071,27 @@ loadDashboardStats: function() {
             if(qaEl) qaEl.innerText = count;
         });
 
-// 9. [수정] 셔틀 탑승 수요 차수별 카운트
+// 10. [통합 합산] 셔틀 탑승 수요 통합 카운트 (1차 + 2차 합산)
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
             const data = s.val() || {};
-            
-            // 초기화 함수
-            const updateWave = (waveId, prefix) => {
-                const waveData = data[waveId] || {};
-                const osong = waveData.osong ? Object.keys(waveData.osong).length : 0;
-                const term = waveData.terminal ? Object.keys(waveData.terminal).length : 0;
-                const air = waveData.airport ? Object.keys(waveData.airport).length : 0;
-                const total = osong + term + air;
+            const w1 = data.wave1 || {};
+            const w2 = data.wave2 || {};
 
-                document.getElementById(`${prefix}-osong`).innerText = osong;
-                document.getElementById(`${prefix}-term`).innerText = term;
-                document.getElementById(`${prefix}-air`).innerText = air;
-                document.getElementById(`dash${waveId.charAt(0).toUpperCase() + waveId.slice(1)}Total`).innerText = total + "명";
-            };
+            // 1차와 2차 데이터를 각 장소별로 합산합니다.
+            const osong = (w1.osong ? Object.keys(w1.osong).length : 0) + (w2.osong ? Object.keys(w2.osong).length : 0);
+            const term = (w1.terminal ? Object.keys(w1.terminal).length : 0) + (w2.terminal ? Object.keys(w2.terminal).length : 0);
+            const air = (w1.airport ? Object.keys(w1.airport).length : 0) + (w2.airport ? Object.keys(w2.airport).length : 0);
+            const car = (w1.car ? Object.keys(w1.car).length : 0) + (w2.car ? Object.keys(w2.car).length : 0);
 
-            updateWave('wave1', 's1');
-            updateWave('wave2', 's2');
+            // 수정하신 HTML의 통합 ID 자리에 데이터를 꽂아줍니다.
+            if(document.getElementById('total-osong')) document.getElementById('total-osong').innerText = osong;
+            if(document.getElementById('total-term')) document.getElementById('total-term').innerText = term;
+            if(document.getElementById('total-air')) document.getElementById('total-air').innerText = air;
+            if(document.getElementById('total-car')) document.getElementById('total-car').innerText = car;
+
+            // 전체 합계 (상단 파란색 배지 "전체 수송 예정" 용)
+            const totalSum = osong + term + air + car;
+            if(document.getElementById('dashShuttleTotal')) document.getElementById('dashShuttleTotal').innerText = totalSum + "명";
         });
     },
 
@@ -1555,67 +1556,79 @@ setMode: function(mode) {
 
 
 
-// [최종 고도화] 차량 수요조사 상세 페이지: 명단/문구 완전 제거 버전
+// [최종 완결본] 차량 수요조사: 3단 세로 배치 로직
     loadShuttleData: function() {
         if(!state.room) return;
         
-        firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', snap => {
-            const data = snap.val() || {};
-            const container = document.getElementById('shuttleCardContainer');
-            if(!container) return;
+        firebase.database().ref(`courses/${state.room}`).on('value', snap => {
+            const roomData = snap.val() || {};
+            const shuttleData = roomData.shuttle?.out || {};
+            const studentData = roomData.students || {};
+            
+            // 기둥 비우기
+            const col1 = document.getElementById('col-wave1');
+            const col2 = document.getElementById('col-wave2');
+            const colCar = document.getElementById('col-car');
+            if(!col1 || !col2 || !colCar) return;
+            col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
 
-            container.innerHTML = ""; 
+            // 통계용 변수
+            const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
+            let totalShuttle = 0;
+            let totalCar = 0;
 
-            // 대시보드와 동일한 프리미엄 딥블루 그라데이션
-            const waveStyle = "background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.2);";
+            // 공통 스타일
+            const waveStyle = "padding: 15px; background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 12px; font-weight: 800; font-size: 16px; text-align:center; box-shadow: 0 4px 10px rgba(0,51,102,0.2);";
 
+            // 1. 1차 & 2차 기둥 그리기
             const waves = [
-                { id: 'wave1', name: '1차 수송 (13:00 출발)' },
-                { id: 'wave2', name: '2차 수송 (15:00 출발)' }
+                { id: 'wave1', name: '1차 수송 (13:00)', target: col1 },
+                { id: 'wave2', name: '2차 수송 (15:00)', target: col2 }
             ];
 
-            waves.forEach((wave, index) => {
-                const waveData = data[wave.id] || {}; 
-                const locations = [
-                    { id: 'osong', name: '오송역', icon: 'fa-train' }, 
-                    { id: 'terminal', name: '터미널', icon: 'fa-bus-simple' }, 
-                    { id: 'airport', name: '청주공항', icon: 'fa-plane' },
-                    { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
+            waves.forEach(w => {
+                w.target.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.name}</div>`;
+                const locs = [
+                    { id: 'osong', n: '오송역', i: 'fa-train' },
+                    { id: 'terminal', n: '터미널', i: 'fa-bus-simple' },
+                    { id: 'airport', n: '청주공항', i: 'fa-plane' }
                 ];
-
-                // 다른 게시판과 높이를 맞추기 위한 간격 보정
-                const topMargin = (index === 0) ? '0px' : '30px';
-
-                container.innerHTML += `
-                    <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 15px 25px; ${waveStyle}">
-                        <i class="fa-solid fa-clock"></i> ${wave.name}
-                    </div>
-                `;
-
-                locations.forEach(loc => {
-                    const locData = waveData[loc.id] || {};
-                    const members = Object.entries(locData); 
-                    const count = members.length;
-                    
-                    // [수정] 카드 내부에 명단이나 '신청자 없음' 문구를 아예 넣지 않음
-                    container.innerHTML += `
-                        <div class="shuttle-dest-card card-${loc.id}" 
-                             onclick="ui.showShuttleListModal('${wave.id}', '${wave.name}', '${loc.name}', ${JSON.stringify(members).replace(/"/g, '&quot;')})"
-                             style="cursor:pointer; transition: all 0.2s; border: 1px solid #e2e8f0; height: 100px; display: flex; align-items: center;">
-                            <div class="dest-header" style="border-bottom:none; padding: 0 25px; width: 100%;">
-                                <div class="dest-name-group">
-                                    <div class="dest-icon-box"><i class="fa-solid ${loc.icon}"></i></div>
-                                    <div class="dest-title" style="font-size:18px; color:#1e293b;">${loc.name}</div>
-                                </div>
-                                <div class="dest-count-badge" style="font-size:20px; padding: 6px 20px; background:#003366; color:white;">${count}명</div>
+                locs.forEach(loc => {
+                    const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
+                    totalShuttle += members.length;
+                    w.target.innerHTML += `
+                        <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.name}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; transition:0.2s;">
+                            <div class="dest-header" style="border:none; padding:20px;">
+                                <div class="dest-name-group"><div class="dest-icon-box" style="width:36px; height:36px;"><i class="fa-solid ${loc.i}"></i></div><div class="dest-title" style="font-size:16px;">${loc.n}</div></div>
+                                <div class="dest-count-badge" style="background:#003366; color:white; font-size:16px;">${members.length}명</div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
             });
+
+            // 2. 자차/개별이동 기둥 그리기
+            colCar.innerHTML = `<div style="${waveStyle}; background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
+            const carMembers1 = Object.entries(shuttleData.wave1?.car || {});
+            const carMembers2 = Object.entries(shuttleData.wave2?.car || {});
+            const allCarMembers = [...carMembers1, ...carMembers2];
+            totalCar = allCarMembers.length;
+
+            colCar.innerHTML += `
+                <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(allCarMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; height:200px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;">
+                    <div class="dest-icon-box" style="width:60px; height:60px; font-size:24px; background:#f1f5f9; color:#64748b;"><i class="fa-solid fa-car-side"></i></div>
+                    <div style="text-align:center;">
+                        <div style="font-size:18px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
+                        <div style="font-size:32px; font-weight:900; color:#003366; margin-top:5px;">${totalCar}명</div>
+                    </div>
+                </div>`;
+
+            // 3. 상단 요약 통계 업데이트
+            document.getElementById('total-student-cnt').innerText = totalStudents;
+            document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
+            document.getElementById('total-car-cnt').innerText = totalCar;
+            document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - totalCar);
         });
     },
-
 
 
 
