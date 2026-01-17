@@ -1002,7 +1002,7 @@ loadDashboardStats: function() {
             if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
         });
 
-        // 5. 수강생 현황 (입교 완료 / 전체 명단)
+        // 5. [수정] 수강생 현황 (숫자 분리 업데이트)
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
@@ -1013,13 +1013,18 @@ loadDashboardStats: function() {
                 const actualStudents = Object.values(data).filter(s => s.name && s.name !== "undefined");
                 const actualNames = actualStudents.map(s => s.name);
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames]));
+                
                 const total = combinedNames.length;
                 let arrived = 0;
                 combinedNames.forEach(name => {
                     if (actualNames.includes(name)) arrived++;
                 });
-                const ratioEl = document.getElementById('dashArrivalRatio');
-                if(ratioEl) ratioEl.innerText = `${arrived} / ${total}`;
+
+                // 숫자 분리 입력
+                const arrivedEl = document.getElementById('dashArrivedCount');
+                const totalEl = document.getElementById('dashTotalCount');
+                if(arrivedEl) arrivedEl.innerText = arrived;
+                if(totalEl) totalEl.innerText = total;
             });
         });
 
@@ -1036,10 +1041,9 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
-        // 8. [신규] 실시간 질문(Q&A) 건수 카운트
+        // 8. 실시간 질문(Q&A) 건수 카운트
         firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
             const data = s.val() || {};
-            // 삭제되지 않은 질문만 필터링하여 카운트
             const count = Object.values(data).filter(q => q.status !== 'delete').length;
             const qaEl = document.getElementById('dashQaCount');
             if(qaEl) qaEl.innerText = count;
@@ -1053,6 +1057,14 @@ loadDashboardStats: function() {
             if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
+
+
+
+
+
+
+
+
 
 // [완성형 디자인] 운영부 공지사항 출력 (한 줄 정렬 및 가변 높이 적용)
     loadNoticeView: async function() {

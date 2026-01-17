@@ -337,10 +337,15 @@
 <!-- (1) 수강생 현황 및 행정 신청 (클릭 시 각각의 탭으로 이동) -->
             <div class="stat-premium-card card-blue">
                 <div class="card-content combined-stats">
-                    <!-- 수강생 현황 -->
+<!-- 수강생 현황 (입교 인원 강조형) -->
                     <div class="stat-row" onclick="ui.setMode('students')" style="cursor:pointer;">
-                        <span class="card-label">수강생 현황 (입교/전체)</span>
-                        <div class="card-value"><b id="dashArrivalRatio">0 / 0</b><small>명</small></div>
+                        <span class="card-label">수강생 입교 현황</span>
+                        <div class="card-value">
+                            <b id="dashArrivedCount">0</b>
+                            <span style="font-size: 14px; color: #94a3b8; font-weight: 600; margin-left: 2px;">
+                                / <span id="dashTotalCount">0</span>명
+                            </span>
+                        </div>
                     </div>
                     
                     <div class="stat-divider"></div>
