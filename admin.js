@@ -1584,7 +1584,7 @@ setMode: function(mode) {
                 ];
 
                 // 다른 게시판과 높이를 맞추기 위한 간격 보정
-                const topMargin = (index === 0) ? '10px' : '30px';
+                const topMargin = (index === 0) ? '0px' : '30px';
 
                 container.innerHTML += `
                     <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 15px 25px; ${waveStyle}">
