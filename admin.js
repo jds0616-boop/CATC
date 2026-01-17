@@ -962,62 +962,86 @@ const ui = {
 
 
 
-// [수정] 메인 대시보드 통계 연동 (퇴교 수송 인원만 카운트)
+
+
 loadDashboardStats: function() {
-    if(!state.room) return;
-    const today = getTodayString();
+        if(!state.room) return;
+        const today = getTodayString();
 
-    const dateDisplay = document.getElementById('dashTodayDateDisplay');
-    if(dateDisplay) dateDisplay.innerText = today;
+        // 1. 오늘 날짜 표시
+        const dateDisplay = document.getElementById('dashTodayDateDisplay');
+        if(dateDisplay) dateDisplay.innerText = today;
 
-    firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
-        const s = snap.val() || {};
-        const titleEl = document.getElementById('dashCourseTitle');
-        if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
-        if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
-        if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
-    });
+        // 2. 과정 기본 정보 로드 (과정명, 기간, 장소)
+        firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
+            const s = snap.val() || {};
+            const titleEl = document.getElementById('dashCourseTitle');
+            if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
+            if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
+            if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
+        });
 
-    firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
-        const el = document.getElementById('dashNoticeInst');
-        if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
-    });
+        // 3. 공지사항 피드 로드
+        firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
+            const el = document.getElementById('dashNoticeInst');
+            if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
+        });
+        firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
+            const el = document.getElementById('dashNoticeAdmin');
+            if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
+        });
+        firebase.database().ref(`system/globalNotice`).on('value', s => {
+            const el = document.getElementById('dashNoticeGlobal');
+            if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
+        });
 
-    firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
-        const el = document.getElementById('dashNoticeAdmin');
-        if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
-    });
+        // 4. 담당 교수님 성함 로드
+        firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
+            const st = snap.val() || {};
+            const profOnlyEl = document.getElementById('dashProfNameOnly');
+            if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
+        });
 
-    firebase.database().ref(`system/globalNotice`).on('value', s => {
-        const el = document.getElementById('dashNoticeGlobal');
-        if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
-    });
+        // 5. [중요] 수강생 현황 (게시판 로직과 100% 일치)
+        const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
+        const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
-    firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
-        const st = snap.val() || {};
-        const profOnlyEl = document.getElementById('dashProfNameOnly');
-        if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
-    });
+        expectedRef.on('value', expSnap => {
+            const expectedNames = expSnap.val() || [];
+            actualRef.on('value', snap => {
+                const data = snap.val() || {};
+                const actualStudents = Object.values(data).filter(s => s.name && s.name !== "undefined");
+                const actualNames = actualStudents.map(s => s.name);
+                
+                // 중복을 제거한 전체 관리 대상 명단 생성
+                const combinedNames = Array.from(new Set([...expectedNames, ...actualNames]));
+                const total = combinedNames.length;
+                let arrived = 0;
+                
+                // 실제 명단에 성함이 있는지 확인하여 입교 인원 체크
+                combinedNames.forEach(name => {
+                    if (actualNames.includes(name)) arrived++;
+                });
 
-    firebase.database().ref(`courses/${state.room}/students`).on('value', s => {
-        const count = Object.values(s.val() || {}).filter(u => u.name && u.name !== "undefined").length;
-        if(document.getElementById('dashStudentCount')) document.getElementById('dashStudentCount').innerText = count;
-    });
+                const ratioEl = document.getElementById('dashArrivalRatio');
+                if(ratioEl) ratioEl.innerText = `${arrived} / ${total}`;
+            });
+        });
 
-    firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
-        const count = Object.keys(s.val() || {}).length;
-        if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
-    });
+        // 6. 외출/외박 신청자 카운트
+        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
+            const count = Object.keys(s.val() || {}).length;
+            if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
+        });
 
-    // [이 부분 수정] shuttle/out 경로의 인원을 가져와 대시보드 숫자를 업데이트합니다.
-    firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
-        const d = s.val() || {};
-        if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
-        if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
-        if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
-    });
-},
-
+        // 7. 셔틀 탑승 수요 카운트
+        firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
+            const d = s.val() || {};
+            if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
+            if(document.getElementById('s-term-cnt')) document.getElementById('s-term-cnt').innerText = d.terminal ? Object.keys(d.terminal).length : 0;
+            if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
+        });
+    },
 
 
 // [완성형 디자인] 운영부 공지사항 출력 (한 줄 정렬 및 가변 높이 적용)

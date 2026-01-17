@@ -291,7 +291,6 @@
             <h1>
                 <i class="fa-solid fa-school-flag"></i> 
                 현재과정 운영 현황 
-                <!-- room-badge-global 클래스가 있어야 모든 페이지 배지가 동시에 바뀝니다 -->
                 <span id="dashRoomBadge" class="header-room-badge room-badge-global"></span>
             </h1>
         </div>
@@ -328,30 +327,31 @@
                     <i class="fa-regular fa-clock"></i> <span id="dashTodayDateDisplay"></span>
                 </div>
             </div>
-        </div> <!-- course-hero-banner 끝 -->
+        </div> 
 
         <!-- 하단 프리미엄 그리드 (통계 + 공지 + 셔틀) -->
         <div class="dash-premium-grid">
             
-            <!-- (1) 수강생 및 외출 현황 -->
-            <div class="stat-premium-card card-blue">
+            <!-- (1) 수강생 현황 (클릭 시 수강생 탭으로 이동) -->
+            <div class="stat-premium-card card-blue" onclick="ui.setMode('students')" style="cursor:pointer;">
                 <div class="card-content combined-stats">
                     <div class="stat-row">
-                        <span class="card-label">현재 강의실 수강생</span>
-                        <div class="card-value"><b id="dashStudentCount">0</b><small>명</small></div>
+                        <span class="card-label">수강생 현황 (입교/전체)</span>
+                        <div class="card-value"><b id="dashArrivalRatio">0 / 0</b><small>명</small></div>
                     </div>
                     <div class="stat-divider"></div>
-                    <div class="stat-row">
+                    <!-- (2) 외출/외박 현황 (클릭 시 외출 탭으로 이동) -->
+                    <div class="stat-row" onclick="event.stopPropagation(); ui.setMode('admin-action');" style="cursor:pointer;">
                         <span class="card-label">금일 외출/외박 신청</span>
                         <div class="card-value color-coral"><b id="dashActionCount">0</b><small>명</small></div>
                     </div>
                 </div>
             </div>
 
-            <!-- (2) 공지사항 허브 -->
-            <div class="stat-premium-card card-notice-hub">
+            <!-- (3) 공지사항 허브 -->
+            <div class="stat-premium-card card-notice-hub" onclick="ui.setMode('notice')" style="cursor:pointer;">
                 <div class="notice-hub-header">
-                    <i class="fa-solid fa-bullhorn"></i> <span>주요 공지 피드</span>
+                    <i class="fa-solid fa-bullhorn"></i> <span>주요 공지 피드 (상세보기)</span>
                 </div>
                 <div class="notice-hub-content">
                     <div class="notice-item instructor"><span class="n-tag">담임</span><p id="dashNoticeInst">내용 로딩 중...</p></div>
@@ -360,9 +360,9 @@
                 </div>
             </div>
 
-            <!-- (3) 셔틀 탑승 수요 -->
-            <div class="stat-premium-card card-mint">
-                <div class="card-label-shuttle">셔틀 탑승 수요 (항기원 발)</div>
+            <!-- (4) 셔틀 탑승 수요 (클릭 시 셔틀 탭으로 이동) -->
+            <div class="stat-premium-card card-mint" onclick="ui.setMode('shuttle')" style="cursor:pointer;">
+                <div class="card-label-shuttle">셔틀 탑승 수요 (상세보기)</div>
                 <div class="shuttle-scoreboard">
                     <div class="sb-item"><span class="sb-val" id="s-osong-cnt">0</span><span class="sb-txt">오송역</span></div>
                     <div class="sb-divider"></div>
@@ -372,9 +372,9 @@
                 </div>
             </div>
 
-        </div> <!-- dash-premium-grid 끝 -->
-    </div> <!-- modern-white-card 끝 -->
-</div> <!-- view-dashboard 끝 -->
+        </div> 
+    </div> 
+</div>
 
 
 
