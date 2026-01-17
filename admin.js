@@ -1852,7 +1852,7 @@ function renderAdminList(todayData, yesterdayData) {
                     </tr>
                 `;
             }
-        //장두석 } 삭제함 
+        } 
     },
 
 loadDinnerSkipData: function() {
