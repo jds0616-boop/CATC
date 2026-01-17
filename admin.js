@@ -1555,7 +1555,7 @@ setMode: function(mode) {
 
 
 
-// [고도화 수정] 차량 수요조사 상세 페이지: 간략한 카드 뷰 + 클릭 시 상세 명단 팝업 (자차 포함)
+// [최종 수정] 차량 수요조사 페이지: 간격 축소 및 딥블루 테마 적용
     loadShuttleData: function() {
         if(!state.room) return;
         
@@ -1566,12 +1566,13 @@ setMode: function(mode) {
 
             container.innerHTML = ""; 
 
+            // 1차, 2차 색상을 모두 헤더와 같은 딥블루(#0f172a)로 통일
             const waves = [
-                { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#3b82f6' },
-                { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#10b981' }
+                { id: 'wave1', name: '1차 수송 (13:00 출발)', color: '#0f172a' },
+                { id: 'wave2', name: '2차 수송 (15:00 출발)', color: '#0f172a' }
             ];
 
-            waves.forEach(wave => {
+            waves.forEach((wave, index) => {
                 const waveData = data[wave.id] || {}; 
                 const locations = [
                     { id: 'osong', name: '오송역', icon: 'fa-train' }, 
@@ -1580,9 +1581,11 @@ setMode: function(mode) {
                     { id: 'car', name: '자차(개별이동)', icon: 'fa-car' }
                 ];
 
-                // 차수 제목 바
+                // margin-top을 30px에서 5px(1차) / 40px(2차)로 조절하여 제목과의 간격을 줄임
+                const topMargin = (index === 0) ? '25px' : '40px';
+
                 container.innerHTML += `
-                    <div style="grid-column: span 2; margin-top: 30px; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div style="grid-column: span 2; margin-top: ${topMargin}; padding: 12px 20px; background: ${wave.color}; color: white; border-radius: 15px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                         <i class="fa-solid fa-clock"></i> ${wave.name}
                     </div>
                 `;
@@ -1592,7 +1595,6 @@ setMode: function(mode) {
                     const members = Object.entries(locData); 
                     const count = members.length;
                     
-                    // 간결한 카드 생성 (클릭 시 팝업 연결)
                     const cardHtml = `
                         <div class="shuttle-dest-card card-${loc.id}" 
                              onclick="ui.showShuttleListModal('${wave.id}', '${wave.name}', '${loc.name}', ${JSON.stringify(members).replace(/"/g, '&quot;')})"
