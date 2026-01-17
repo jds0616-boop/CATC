@@ -2688,56 +2688,32 @@ body.night-mode .status-table tr.is-my-room {
 }
 
 
-
-
-/* --- 차량 수요조사 현황판 (외출 신청 현황과 같은 표 스타일) --- */
-
+/* --- 차량 수요조사: 외출 현황판 스타일 복제 --- */
 .shuttle-3col-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 15px;
+    gap: 20px;
     width: 100%;
     max-width: 1300px;
-    align-items: start;
     margin-top: 10px;
 }
 
-/* 상단 요약 바: 화려함 제거, 실선 위주 */
-.shuttle-summary-bar {
-    grid-column: span 3;
+.shuttle-table-column {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 15px 30px;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-}
-
-.summary-item { text-align: center; border-right: 1px solid #f1f5f9; flex: 1; }
-.summary-item:last-child { border-right: none; }
-.summary-item label { font-size: 12px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 2px; }
-.summary-item b { font-size: 20px; color: #1e293b; font-weight: 800; }
-.summary-item .highlight-red { color: #ef4444; }
-
-/* 표 전체 박스 */
-.shuttle-column-table-box {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 15px;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 }
 
-/* 표 내부 스타일 */
-.shuttle-mini-table {
+.shuttle-official-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.shuttle-mini-table th {
+.shuttle-official-table th {
     background: #f8fafc;
-    padding: 12px;
+    padding: 15px;
     font-size: 14px;
     font-weight: 800;
     color: #475569;
@@ -2745,24 +2721,33 @@ body.night-mode .status-table tr.is-my-room {
     text-align: center;
 }
 
-.shuttle-mini-table td {
-    padding: 15px 12px;
+.shuttle-official-table td {
+    padding: 18px 15px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 15px;
     text-align: center;
+    font-size: 15px;
     cursor: pointer;
 }
 
-.shuttle-mini-table tr:last-child td { border-bottom: none; }
-.shuttle-mini-table tr:hover td { background: #f8fbff; }
+.shuttle-official-table tr:last-child td { border-bottom: none; }
+.shuttle-official-table tr:hover td { background-color: #fcfdfe; }
 
-/* 장소 이름 강조 */
-.td-loc-name { font-weight: 700; color: #475569; text-align: left !important; padding-left: 20px !important; }
+/* 장소/인원 강조 */
+.st-loc { font-weight: 700; color: #64748b; text-align: left !important; padding-left: 25px !important; }
+.st-cnt { font-weight: 900; color: #cbd5e1; font-size: 16px; }
 
-/* 인원수 강조 */
-.td-count-val { font-weight: 900; color: #cbd5e1; font-size: 16px; }
-.has-data .td-count-val { color: #3b82f6; } /* 신청자가 있으면 파란색 */
-.has-data .td-loc-name { color: #1e293b; }
+/* 데이터가 있을 때만 강조색 적용 */
+.row-has-data .st-loc { color: #1e293b; }
+.row-has-data .st-cnt { color: #3b82f6; }
 
-/* 하단 명단보기 텍스트 */
-.td-btn-view { font-size: 11px; color: #94a3b8; font-weight: 600; text-decoration: underline; }
+/* 자차 박스 전용 */
+.car-box-official {
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+.car-box-official b { font-size: 38px; color: #003366; }

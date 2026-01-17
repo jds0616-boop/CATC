@@ -1571,70 +1571,65 @@ loadShuttleData: function() {
         if(!col1 || !col2 || !colCar) return;
 
         const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-        let totalShuttleSum = 0;
+        let totalShuttle = 0;
 
-        // 테이블 생성 함수
-        const createTableHtml = (waveId, waveTitle) => {
+        // 테이블 생성 헬퍼 함수
+        const buildTable = (waveId, waveTitle) => {
             const locs = [
                 { id: 'osong', n: '오송역' },
                 { id: 'terminal', n: '터미널' },
                 { id: 'airport', n: '청주공항' }
             ];
-
-            let rowsHtml = "";
+            
+            let rows = "";
             locs.forEach(loc => {
                 const members = Object.entries(shuttleData[waveId]?.[loc.id] || {});
                 const count = members.length;
-                totalShuttleSum += count;
-                const rowClass = count > 0 ? 'has-data' : '';
+                totalShuttle += count;
+                const rowCls = count > 0 ? 'row-has-data' : '';
                 
-                rowsHtml += `
-                    <tr class="${rowClass}" onclick="ui.showShuttleListModal('${waveId}', '${waveTitle}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})">
-                        <td class="td-loc-name">${loc.n}</td>
-                        <td class="td-count-val">${count}명</td>
-                        <td class="td-btn-view">상세보기</td>
+                rows += `
+                    <tr class="${rowCls}" onclick="ui.showShuttleListModal('${waveId}', '${waveTitle}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})">
+                        <td class="st-loc">${loc.n}</td>
+                        <td class="st-cnt">${count}명</td>
+                        <td style="color:#cbd5e1; font-size:11px;">상세보기 ></td>
                     </tr>`;
             });
 
             return `
-                <div class="shuttle-column-table-box">
-                    <table class="shuttle-mini-table">
-                        <thead><tr><th colspan="3">${waveTitle}</th></tr></thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                </div>`;
+                <table class="shuttle-official-table">
+                    <thead><tr><th colspan="3">${waveTitle}</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
         };
 
-        // 1차, 2차 테이블 삽입
-        col1.innerHTML = createTableHtml('wave1', '1차 수송 (13:00)');
-        col2.innerHTML = createTableHtml('wave2', '2차 수송 (15:00)');
+        col1.innerHTML = buildTable('wave1', '1차 수송 (13:00)');
+        col2.innerHTML = buildTable('wave2', '2차 수송 (15:00)');
 
-        // 자차/개별이동 테이블 삽입
+        // 자차 구역
         const car1 = Object.entries(shuttleData.wave1?.car || {});
         const car2 = Object.entries(shuttleData.wave2?.car || {});
-        const carMembers = [...car1, ...car2];
+        const allCar = [...car1, ...car2];
         
         colCar.innerHTML = `
-            <div class="shuttle-column-table-box">
-                <table class="shuttle-mini-table">
-                    <thead><tr><th colspan="2">개별 이동</th></tr></thead>
-                    <tbody>
-                        <tr class="${carMembers.length > 0 ? 'has-data' : ''}" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})">
-                            <td class="td-loc-name" style="padding:40px 20px !important;">자차 / 개별이동</td>
-                            <td class="td-count-val" style="font-size:24px;">${carMembers.length}명</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>`;
+            <table class="shuttle-official-table">
+                <thead><tr><th>개별 이동</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td class="car-box-official" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(allCar).replace(/"/g, '&quot;')})">
+                            <span style="font-size:14px; font-weight:700; color:#64748b;">자차 / 개별이동</span>
+                            <b>${allCar.length}명</b>
+                            <span style="font-size:12px; color:#94a3b8;">전체 명단보기 ></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>`;
 
-        // 상단 요약 바 업데이트
+        // 요약 바 업데이트
         document.getElementById('total-student-cnt').innerText = totalStudents;
-        document.getElementById('total-shuttle-cnt').innerText = totalShuttleSum;
-        document.getElementById('total-car-cnt').innerText = carMembers.length;
-        
-        // 미신청자 계산 (전체 - 셔틀 - 자차)
-        const noneCount = Math.max(0, totalStudents - totalShuttleSum - carMembers.length);
-        document.getElementById('total-none-cnt').innerText = noneCount;
+        document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
+        document.getElementById('total-car-cnt').innerText = allCar.length;
+        document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - allCar.length);
     });
 },
 
