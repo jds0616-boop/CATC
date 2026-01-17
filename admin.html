@@ -373,10 +373,16 @@
                 </div>
             </div>
 
-            <!-- (4) 셔틀 탑승 수요 (클릭 시 셔틀 탭으로 이동) -->
-            <div class="stat-premium-card card-mint" onclick="ui.setMode('shuttle')" style="cursor:pointer;">
+<!-- (3) 실시간 Q&A 및 셔틀 탑승 수요 (클릭 시 이동) -->
+            <div class="stat-premium-card card-mint">
+                <!-- Q&A 현황 [신규 추가] -->
+                <div class="stat-row" onclick="ui.setMode('qa')" style="cursor:pointer; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0;">
+                    <span class="card-label-shuttle" style="margin-bottom:0;">실시간 질문 현황</span>
+                    <div class="card-value" style="color: #3b82f6;"><b id="dashQaCount">0</b><small>건</small></div>
+                </div>
+
                 <div class="card-label-shuttle">셔틀 탑승 수요 (상세보기)</div>
-                <div class="shuttle-scoreboard">
+                <div class="shuttle-scoreboard" onclick="ui.setMode('shuttle')" style="cursor:pointer;">
                     <div class="sb-item"><span class="sb-val" id="s-osong-cnt">0</span><span class="sb-txt">오송역</span></div>
                     <div class="sb-divider"></div>
                     <div class="sb-item"><span class="sb-val" id="s-term-cnt">0</span><span class="sb-txt">터미널</span></div>

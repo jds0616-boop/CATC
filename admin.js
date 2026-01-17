@@ -1029,14 +1029,23 @@ loadDashboardStats: function() {
             if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
         });
 
-        // 7. 석식 제외 신청자 카운트 [신규 추가]
+        // 7. 석식 제외 신청자 카운트
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', s => {
             const count = Object.keys(s.val() || {}).length;
             const skipEl = document.getElementById('dashDinnerSkipCount');
             if(skipEl) skipEl.innerText = count;
         });
 
-        // 8. 셔틀 탑승 수요 카운트
+        // 8. [신규] 실시간 질문(Q&A) 건수 카운트
+        firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
+            const data = s.val() || {};
+            // 삭제되지 않은 질문만 필터링하여 카운트
+            const count = Object.values(data).filter(q => q.status !== 'delete').length;
+            const qaEl = document.getElementById('dashQaCount');
+            if(qaEl) qaEl.innerText = count;
+        });
+
+        // 9. 셔틀 탑승 수요 카운트
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
             const d = s.val() || {};
             if(document.getElementById('s-osong-cnt')) document.getElementById('s-osong-cnt').innerText = d.osong ? Object.keys(d.osong).length : 0;
@@ -1044,7 +1053,6 @@ loadDashboardStats: function() {
             if(document.getElementById('s-air-cnt')) document.getElementById('s-air-cnt').innerText = d.airport ? Object.keys(d.airport).length : 0;
         });
     },
-
 
 // [완성형 디자인] 운영부 공지사항 출력 (한 줄 정렬 및 가변 높이 적용)
     loadNoticeView: async function() {
