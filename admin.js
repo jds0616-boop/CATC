@@ -567,33 +567,54 @@ resetCourse: function() {
 
 
 
-// [5.8차 수정] 수강생 삭제 시 모든 행정 리스트(셔틀/석식/외출/상생관) 연쇄 삭제
-    deleteStudent: function(token) {
-        if(!state.room) return;
-        
-        if(confirm("🚨 해당 수강생을 명부에서 삭제하시겠습니까?\n\n삭제 시 차량 신청, 석식 제외, 외출 내역 등\n모든 행정 데이터가 함께 즉시 삭제됩니다.")) {
+// [수정] 수강생 삭제: 같은 이름을 가진 모든 중복 세션(PC/모바일 등)을 한꺼번에 삭제
+deleteStudent: function(token) {
+    if(!state.room) return;
+    
+    // 삭제 전 이름 확인을 위해 데이터 가져오기
+    firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
+        const targetStudent = snap.val();
+        if(!targetStudent) return;
+        const targetName = targetStudent.name;
+
+        if(confirm(`🚨 [${targetName}] 수강생의 모든 접속 정보를 삭제하시겠습니까?\n(PC/모바일 등 중복 접속된 정보가 모두 삭제됩니다.)`)) {
             const today = getTodayString();
-            const updates = {};
             
-            updates[`courses/${state.room}/students/${token}`] = null;
-            updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
-            updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
-            
-            const shuttlePaths = ['osong', 'terminal', 'airport', 'car'];
-            shuttlePaths.forEach(path => {
-                updates[`courses/${state.room}/shuttle/${path}/${token}`] = null;
-            });
-            
-            firebase.database().ref().update(updates)
-                .then(() => {
-                    ui.showAlert("✅ 해당 수강생의 모든 정보가 완벽하게 정리되었습니다.");
-                })
-                .catch(err => {
-                    ui.showAlert("❌ 삭제 중 오류가 발생했습니다.");
-                    console.error(err);
+            // 전체 수강생 목록에서 같은 이름을 찾아서 다 지움
+            firebase.database().ref(`courses/${state.room}/students`).once('value', allSnap => {
+                const allData = allSnap.val() || {};
+                const updates = {};
+                
+                Object.keys(allData).forEach(t => {
+                    if(allData[t].name === targetName) {
+                        // 1. 수강생 명부 삭제
+                        updates[`courses/${state.room}/students/${t}`] = null;
+                        // 2. 석식 제외 내역 삭제
+                        updates[`courses/${state.room}/dinner_skips/${today}/${t}`] = null;
+                        // 3. 외출 내역 삭제
+                        updates[`courses/${state.room}/admin_actions/${today}/${t}`] = null;
+                        // 4. 차량 신청 내역 삭제 (모든 경로)
+                        const paths = ['osong', 'terminal', 'airport', 'car'];
+                        ['wave1', 'wave2'].forEach(w => {
+                            paths.forEach(p => {
+                                updates[`courses/${state.room}/shuttle/out/${w}/${p}/${t}`] = null;
+                            });
+                        });
+                    }
                 });
+
+                firebase.database().ref().update(updates).then(() => {
+                    ui.showAlert(`✅ [${targetName}]님의 모든 정보가 정리되었습니다.`);
+                });
+            });
         }
-    },
+    });
+},
+
+
+
+
+
 
     // [7.0차 신규] 수강생 예정 명단 업로드 로직 (텍스트 파일 읽기)
     uploadStudentNames: function(input) {
@@ -1634,13 +1655,18 @@ loadShuttleData: function() {
     });
 },
 
-// [수정] 차량 신청 명단 팝업 (디자인 통일)
+// [수정] 차량 신청 명단 팝업: 취소 로직 연결 보완
 showShuttleListModal: function(waveId, waveName, locName, members) {
     if (members.length === 0) return;
     const modal = document.getElementById('qaModal');
     const mText = document.getElementById('m-text');
     const mActions = document.querySelector('#qaModal .modal-actions');
     if(!modal || !mText) return;
+
+    // 장소 ID 판별 (오송, 터미널, 공항, 자차)
+    const locId = locName.includes('오송') ? 'osong' : 
+                  locName.includes('터미널') ? 'terminal' : 
+                  locName.includes('공항') ? 'airport' : 'car';
 
     mText.innerHTML = `
         <div style="text-align:left;">
@@ -1653,8 +1679,8 @@ showShuttleListModal: function(waveId, waveName, locName, members) {
                     <div class="member-tag" style="padding: 8px 12px; font-size:14px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; border-radius:8px; font-weight:700;">
                         ${name} 
                         <i class="fa-solid fa-circle-xmark" 
-                           onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locName.includes('오송') ? 'osong' : locName.includes('터미널') ? 'terminal' : locName.includes('공항') ? 'airport' : 'car'}', '${token}', '${name}')" 
-                           style="margin-left:10px; color:#ef4444; cursor:pointer; font-size:16px;"></i>
+                           onclick="event.stopPropagation(); ui.cancelIndividualShuttle('${waveId}', '${locId}', '${token}', '${name.split('(')[0]}')" 
+                           style="margin-left:10px; color:#ef4444; cursor:pointer; font-size:18px;"></i>
                     </div>
                 `).join('')}
             </div>
@@ -1672,7 +1698,6 @@ showShuttleListModal: function(waveId, waveName, locName, members) {
     };
     modal.addEventListener('click', closeHandler);
 },
-
 
 
 
@@ -1983,20 +2008,28 @@ loadDinnerSkipData: function() {
     },
 
 
-// [수정] 강사가 차량 신청을 취소할 때 차수(wave1/2)를 구분하여 삭제
-    cancelIndividualShuttle: function(waveId, locId, token, name) {
-        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
-        
-        // 경로에 waveId(wave1 또는 wave2)를 포함하여 정확한 위치의 데이터를 삭제합니다.
-        firebase.database().ref(`courses/${state.room}/shuttle/out/${waveId}/${locId}/${token}`).remove()
-            .then(() => {
-                ui.showAlert("✅ 해당 차수의 차량 신청이 취소되었습니다.");
-            })
-            .catch(err => {
-                ui.showAlert("❌ 취소 중 오류가 발생했습니다.");
-                console.error(err);
-            });
-    },
+// [수정] 차량 신청 개별 취소: 취소 후 즉시 팝업 닫고 화면 갱신
+cancelIndividualShuttle: function(waveId, locId, token, name) {
+    if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?`)) return;
+    
+    const rPath = `courses/${state.room}/shuttle/out`;
+    
+    // 만약 waveId가 'both'(자차)라면 wave1, wave2 양쪽 다 확인해서 삭제
+    if(waveId === 'both') {
+        firebase.database().ref(`${rPath}/wave1/${locId}/${token}`).remove();
+        firebase.database().ref(`${rPath}/wave2/${locId}/${token}`).remove();
+    } else {
+        firebase.database().ref(`${rPath}/${waveId}/${locId}/${token}`).remove();
+    }
+
+    ui.showAlert("✅ 취소되었습니다.");
+    
+    // [핵심] 팝업창을 닫아버려서 데이터가 남은것처럼 보이는 현상 해결
+    document.getElementById('qaModal').style.display = 'none';
+    
+    // 배경 화면 데이터 갱신 (이미 리스너가 작동중이겠지만 확실히 하기 위해 호출)
+    ui.loadShuttleData();
+},
 
 
 
