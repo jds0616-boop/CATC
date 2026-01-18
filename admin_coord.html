@@ -372,7 +372,6 @@
     }
 
 function updateGlobalStatus() {
-    // 1. 전체 강의실의 학생을 통합해서 담을 Set 생성 (중복 자동 제거)
     let globalStudentSet = new Set();
     let todayA = 0; 
     const tStr = getTodayString();
@@ -380,31 +379,39 @@ function updateGlobalStatus() {
     Object.keys(globalAllData).forEach(rid => {
         const room = globalAllData[rid];
         
-        // 해당 강의실에 학생 데이터가 있는 경우
+        // 1. 실제로 입교한 학생 명단 카운팅
         if (room.students) { 
             Object.values(room.students).forEach(s => {
-                // 이름과 전화번호가 유효한 경우만 처리
-                if (s.name && s.name !== "undefined" && s.phone && s.phone !== "undefined") {
-                    // "이름_전화번호" 형태의 키를 생성하여 Set에 추가
-                    // Set은 동일한 값이 들어오면 하나만 남깁니다.
-                    globalStudentSet.add(`${s.name.trim()}_${s.phone.replace(/-/g, '').trim()}`);
+                if (!s) return;
+
+                // 공백 및 특수문자 제거
+                const nameVal = String(s.name || "").replace(/\s/g, "");
+                const phoneVal = String(s.phone || "").replace(/[^0-9]/g, "");
+
+                // [강력한 필터링]
+                // 이름이 2글자 이상이고, 번호가 8자리 이상인 경우만 "실제 수강생"으로 인정
+                if (
+                    nameVal.length >= 2 && 
+                    nameVal !== "undefined" && 
+                    phoneVal.length >= 8
+                ) {
+                    // 동일인이 여러 강의실에 있을 수 있으므로 이름+번호로 중복 제거
+                    globalStudentSet.add(`${nameVal}_${phoneVal}`);
                 }
             });
         }
         
-        // 2. 금일 총 외출/외박 건수 합산
+        // 2. 금일 총 외출/외박 신청 건수 (신청할 때마다 쌓이는 로그 기준)
         if (room.admin_actions?.[tStr]) { 
             todayA += Object.keys(room.admin_actions[tStr]).length; 
         }
     });
 
-    // 중복이 완전히 제거된 전체 인원수
-    const totalS = globalStudentSet.size; 
-    
-    document.getElementById('g-total-students').innerHTML = `${totalS}<span>명</span>`;
+    // 화면에 반영
+    const actualCount = globalStudentSet.size; 
+    document.getElementById('g-total-students').innerHTML = `${actualCount}<span>명</span>`;
     document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
 }
-
     function renderCourseSelectors() {
         const list = document.getElementById('activeCourseList');
         const select = document.getElementById('roomSelect'); // 과정 선택 박스 (개별화면에선 숨김)
