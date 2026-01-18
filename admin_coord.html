@@ -371,47 +371,46 @@
         else { location.href = 'potal.html'; }
     }
 
+
+
+
 function updateGlobalStatus() {
-    let globalStudentSet = new Set();
-    let todayA = 0; 
-    const tStr = getTodayString();
+    // 모든 과정의 입교 학생을 중복 없이 담을 집합
+    let totalStudentSet = new Set();
+    let todayActionsCount = 0;
+    const todayStr = getTodayString();
 
+    // 1. 모든 강의실(Room A, B, C...) 데이터를 순회
     Object.keys(globalAllData).forEach(rid => {
-        const room = globalAllData[rid];
-        
-        // 1. 실제로 입교한 학생 명단 카운팅
-        if (room.students) { 
-            Object.values(room.students).forEach(s => {
-                if (!s) return;
+        const roomData = globalAllData[rid];
 
-                // 공백 및 특수문자 제거
-                const nameVal = String(s.name || "").replace(/\s/g, "");
-                const phoneVal = String(s.phone || "").replace(/[^0-9]/g, "");
-
-                // [강력한 필터링]
-                // 이름이 2글자 이상이고, 번호가 8자리 이상인 경우만 "실제 수강생"으로 인정
-                if (
-                    nameVal.length >= 2 && 
-                    nameVal !== "undefined" && 
-                    phoneVal.length >= 8
-                ) {
-                    // 동일인이 여러 강의실에 있을 수 있으므로 이름+번호로 중복 제거
-                    globalStudentSet.add(`${nameVal}_${phoneVal}`);
+        // 2. 해당 과정의 [수강생 현황/입교 명단] 데이터가 있다면
+        if (roomData.students) {
+            Object.values(roomData.students).forEach(student => {
+                // 이름과 전화번호가 존재하는 데이터만 '입교생'으로 인정
+                if (student.name && student.phone) {
+                    // 동일인이 여러 기기로 접속했을 경우를 대비해 '이름+번호'로 식별
+                    const idKey = `${student.name.trim()}_${student.phone.trim()}`;
+                    totalStudentSet.add(idKey);
                 }
             });
         }
-        
-        // 2. 금일 총 외출/외박 신청 건수 (신청할 때마다 쌓이는 로그 기준)
-        if (room.admin_actions?.[tStr]) { 
-            todayA += Object.keys(room.admin_actions[tStr]).length; 
+
+        // 3. 금일 외출/외박 건수 합산 (이건 신청 기록이므로 별도 계산)
+        if (roomData.admin_actions && roomData.admin_actions[todayStr]) {
+            todayActionsCount += Object.keys(roomData.admin_actions[todayStr]).length;
         }
     });
 
-    // 화면에 반영
-    const actualCount = globalStudentSet.size; 
-    document.getElementById('g-total-students').innerHTML = `${actualCount}<span>명</span>`;
-    document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+    // 4. 결과 출력
+    const totalCount = totalStudentSet.size;
+    document.getElementById('g-total-students').innerHTML = `${totalCount}<span>명</span>`;
+    document.getElementById('g-today-actions').innerHTML = `${todayActionsCount}<span>건</span>`;
 }
+
+
+
+
     function renderCourseSelectors() {
         const list = document.getElementById('activeCourseList');
         const select = document.getElementById('roomSelect'); // 과정 선택 박스 (개별화면에선 숨김)
