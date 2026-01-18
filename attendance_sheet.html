@@ -116,15 +116,20 @@ async function init() {
             const sortedStudents = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
             const tbody = document.getElementById('attendance-body');
 
-            // 4. 테이블 그리기
+            // 4. 테이블 그리기 (매칭 로직 보강)
             sortedStudents.forEach((s, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${idx+1}</td><td class="name-col">${s.name}</td>`;
                 
                 dates.forEach(d => {
                     const td = document.createElement('td');
-                    const attendKey = `${s.name}_${s.phone}`;
-                    // 해당 날짜에 출석 기록이 있는지 확인
+                    
+                    // [보강] 학생 레코드 안에 들어있는 이름과 번호로 직접 대조키 생성
+                    const sName = s.name.trim();
+                    const sPhone = (s.phone || "0000").trim();
+                    const attendKey = `${sName}_${sPhone}`;
+
+                    // 해당 날짜에 이 키로 도장이 찍혔는지 확인
                     if(attendanceData[d] && attendanceData[d][attendKey]) {
                         td.innerHTML = '<div class="stamp">출석</div>';
                     }
