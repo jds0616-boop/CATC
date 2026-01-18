@@ -1883,28 +1883,36 @@ function watchNotices() {
 
 
 
-// [교체] 출석 체크 시 고유 식별값(이름_번호)으로 기록 저장
+// [최종 수정] 입구 튕김 방지 및 자동 출석 로직
 function handleInternalCheckIn(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
     if (isCheckIn && room) {
-        const myToken = localStorage.getItem('uToken'); // 이름_번호 조합
+        const myToken = localStorage.getItem('uToken');
         const myName = localStorage.getItem('kac_user_name');
 
         if (myToken && myName) {
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-            // 서버에 '이름_번호'를 키값으로 저장하여 중복 원천 봉쇄
             firebase.database().ref(`courses/${room}/internal_attendance/${today}/${myToken}`).set(myName)
             .then(() => {
-                alert("✅ 항기원 자체 출석 체크가 완료되었습니다!");
+                // 성공 알림 후 입구 페이지를 즉시 숨기고 메인으로 보냄
+                alert("✅ [" + myName + "]님, 출석 체크가 완료되었습니다.");
+                
+                // 주소창에서 checkin 제거하고 메인 접속 상태로 변경
                 const newUrl = window.location.pathname + `?room=${room}`;
                 window.history.replaceState({}, '', newUrl);
+                
+                // 랜딩 페이지 숨기고 앱 보여주기 (강제)
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                startPresence();
             });
         } else {
-            alert("입교 등록이 필요합니다. 성함 입력 후 자동으로 출석 처리됩니다.");
+            // 정보가 없으면 입구 페이지는 유지하되, 이름 입력창을 띄움
+            alert("입교 등록이 필요합니다. 등록 후 자동으로 출석 처리됩니다.");
             document.getElementById('profileOverlay').style.display = 'flex';
         }
     }

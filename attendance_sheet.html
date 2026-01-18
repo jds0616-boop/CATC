@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>항기원 교육생 출석 관리대장</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background: #f1f5f9; }
+        .sheet-container { background: white; padding: 40px; width: 210mm; min-height: 297mm; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; }
+        .title { text-align: center; font-size: 28px; font-weight: 900; text-decoration: underline; margin-bottom: 30px; }
+        
+        /* 상단 서명란 */
+        .sign-area { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+        .sign-table { border-collapse: collapse; }
+        .sign-table td { border: 1px solid #000; width: 100px; height: 30px; text-align: center; font-size: 12px; font-weight: bold; }
+        .sign-box { height: 60px; cursor: pointer; position: relative; vertical-align: middle; }
+        .sign-box img { max-height: 50px; mix-blend-mode: multiply; }
+
+        /* 메인 테이블 */
+        .main-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .main-table th, .main-table td { border: 1px solid #000; padding: 8px 4px; text-align: center; }
+        .main-table th { background: #f8fafc; }
+        .name-col { width: 80px; font-weight: bold; }
+        
+        /* 도장 스타일 */
+        .stamp { color: #dc2626; font-weight: 900; border: 2px solid #dc2626; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transform: rotate(-10deg); }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .sheet-container { box-shadow: none; margin: 0; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align:center; margin-bottom:20px;">
+        <button onclick="window.print()" style="padding:10px 30px; background:#003366; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">출석부 인쇄하기 (A4)</button>
+    </div>
+
+    <div class="sheet-container" id="print-area">
+        <div class="title">교 육 생 출 석 부</div>
+        
+        <div style="margin-bottom:10px; font-weight:bold;">
+            과정명: <span id="courseName">-</span><br>
+            기간: <span id="coursePeriod">-</span>
+        </div>
+
+        <div class="sign-area">
+            <table class="sign-table">
+                <tr><td rowspan="2" style="width:20px; background:#eee;">결<br>재</td><td>과정담당</td><td>담임교수</td></tr>
+                <tr>
+                    <td class="sign-box" onclick="applySign('coord')"><div id="sign-coord">-</div></td>
+                    <td class="sign-box" onclick="applySign('prof')"><div id="sign-prof">-</div></td>
+                </tr>
+            </table>
+        </div>
+
+        <table class="main-table">
+            <thead>
+                <tr id="date-header">
+                    <th>No</th>
+                    <th>성명</th>
+                    <!-- 날짜 칸이 자동으로 생성됩니다 -->
+                </tr>
+            </thead>
+            <tbody id="attendance-body">
+                <!-- 수강생 목록이 자동으로 생성됩니다 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const room = params.get('room');
+        let courseInfo = {};
+
+        async function init() {
+            if(!room) return;
+            const db = firebase.database();
+            
+            // 1. 과정 정보 가져오기
+            const setSnap = await db.ref(`courses/${room}/settings`).once('value');
+            courseInfo = setSnap.val() || {};
+            document.getElementById('courseName').innerText = courseInfo.courseName || room;
+            document.getElementById('coursePeriod').innerText = courseInfo.period || "-";
+
+            // 2. 날짜 헤더 생성 (월~금 제외 로직)
+            const dates = generateDates(courseInfo.period);
+            const header = document.getElementById('date-header');
+            dates.forEach(d => {
+                const th = document.createElement('th');
+                th.innerHTML = d.split('-')[1] + '/' + d.split('-')[2] + '<br>' + getDayName(d);
+                header.appendChild(th);
+            });
+
+            // 3. 수강생 및 출석 데이터 로드
+            const studentSnap = await db.ref(`courses/${room}/students`).once('value');
+            const attendanceSnap = await db.ref(`courses/${room}/internal_attendance`).once('value');
+            const students = Object.values(studentSnap.val() || {}).filter(s => s.name).sort((a,b) => a.name.localeCompare(b.name));
+            const attendanceData = attendanceSnap.val() || {};
+
+            const tbody = document.getElementById('attendance-body');
+            students.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${idx+1}</td><td class="name-col">${s.name}</td>`;
+                
+                // 각 날짜별로 도장 찍기
+                dates.forEach(d => {
+                    const td = document.createElement('td');
+                    // 이름_번호 조합 식별자 (아까 수정하신 방식)
+                    const uToken = `${s.name}_${s.phone}`;
+                    if(attendanceData[d] && attendanceData[d][uToken]) {
+                        td.innerHTML = '<div class="stamp">출석</div>';
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 기간 문자열(2026-01-19 ~ 2026-01-30)을 받아 월~금 날짜 배열 생성
+        function generateDates(period) {
+            if(!period || !period.includes('~')) return [];
+            const [startStr, endStr] = period.split('~').map(s => s.trim());
+            let current = new Date(startStr);
+            const end = new Date(endStr);
+            const result = [];
+            while(current <= end) {
+                const day = current.getDay();
+                if(day !== 0 && day !== 6) { // 0:일, 6:토 제외
+                    result.push(current.toISOString().split('T')[0]);
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return result;
+        }
+
+        function getDayName(dateStr) {
+            const days = ['일','월','화','수','목','금','토'];
+            return days[new Date(dateStr).getDay()];
+        }
+
+        // 서명 기능 (담당자 이름 표시)
+        async function applySign(type) {
+            const name = prompt("확인자 성함을 입력하세요:");
+            if(!name) return;
+            document.getElementById(`sign-${type}`).innerText = name;
+        }
+
+        init();
+    </script>
+</body>
+</html>

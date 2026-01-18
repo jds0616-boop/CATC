@@ -1331,6 +1331,20 @@ loadDashboardStats: function() {
         });
     },
 
+
+// 전체 출석부(관리대장) 새창 열기
+    openFullAttendanceSheet: function() {
+        if(!state.room) return;
+        // 별도의 attendance_sheet.html 파일을 새창으로 엽니다.
+        const url = `attendance_sheet.html?room=${state.room}`;
+        window.open(url, '_blank', 'width=1200,height=900,scrollbars=yes');
+    },
+
+
+
+
+
+
 // [교체] 자체 출석부 실시간 리스트 (중복 제거 및 동명인 처리 버전)
     loadInternalAttendance: function() {
         if(!state.room) return;
