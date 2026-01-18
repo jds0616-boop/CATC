@@ -23,421 +23,408 @@
     .app-container { width: 100%; max-width: 800px; min-height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); }
     
     /* 상단바 */
-    .app-header { height: 60px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top: 0; z-index: 1500; }
+    .app-header { height: 60px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); }
     .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
     .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
 
     .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
     
-    /* 상황판 레이아웃 (1/3 : 2/3) */
-    .dashboard-split { display: flex; gap: 12px; align-items: stretch; }
-    .col-1-3 { flex: 1.2; }
+    /* 공통 카드 스타일 */
+    .section-card { background: var(--card-white); border-radius: 16px; padding: 18px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+
+    /* 레이아웃 분할 (1/3 : 2/3) */
+    .split-container { display: flex; gap: 12px; align-items: stretch; margin-bottom: 10px; }
+    .col-1-3 { flex: 1; }
     .col-2-3 { flex: 2; }
 
-    .section-card { background: var(--card-white); border-radius: 16px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.03); height: 100%; }
-    .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-    
-    /* 입교현황 미니 리스트 */
-    .entry-mini-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f8fafc; cursor: pointer; }
-    .entry-mini-item:last-child { border: none; }
-    .entry-mini-room { font-weight: 900; color: var(--blue-main); font-size: 12px; min-width: 20px; }
-    .entry-mini-bar { flex: 1; height: 6px; background: #e2e8f0; border-radius: 10px; margin: 0 10px; overflow: hidden; }
-    .entry-mini-fill { height: 100%; background: var(--green-save); }
-    .entry-mini-percent { font-size: 11px; font-weight: 800; color: #64748b; }
+    /* 입교현황 박스 */
+    .entry-box { background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    .entry-label { font-size: 11px; font-weight: 700; color: var(--blue-deep); margin-bottom: 5px; }
+    .entry-val { font-size: 24px; font-weight: 900; color: var(--navy-dark); }
+    .entry-val span { font-size: 14px; color: #94a3b8; margin-left: 3px; }
 
-    /* 통계 박스 */
-    .mini-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .mini-stat-box { background: #f0f9ff; border-radius: 10px; padding: 10px 5px; text-align: center; border: 1px solid #e0f2fe; }
-    .mini-stat-box span { font-size: 10px; color: var(--blue-deep); font-weight: 700; display: block; margin-bottom: 4px; }
-    .mini-stat-box strong { font-size: 20px; font-weight: 900; color: var(--navy-dark); }
+    /* 리스트 테이블 */
+    .navy-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    .navy-table th { background: #f8fafc; padding: 10px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 800; }
+    .navy-table td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; text-align: center; }
 
-    /* 행정 히스토리 테이블 */
-    .history-control { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
-    .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .history-table th { padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 800; }
-    .history-table td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-    .row-outing { color: #ea580c; font-weight: 800; }
-    .row-overnight { color: #dc2626; font-weight: 800; }
+    /* 공지 입력창 자동확장 */
+    .notice-area { width: 100%; min-height: 80px; border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px; font-size: 14px; line-height: 1.6; resize: none; outline: none; margin-bottom: 10px; background: #fafafa; overflow: hidden; }
 
-    /* 텍스트 박스 자동 확장 */
-    .notice-area { width: 100%; min-height: 80px; border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px; font-size: 14px; line-height: 1.6; resize: none; outline: none; margin-bottom: 10px; background: #fafafa; overflow-y: hidden; }
-    .notice-area:focus { border-color: var(--blue-main); background: #fff; }
+    /* 모바일 시계 아이콘 보정 */
+    .time-input-container { position: relative; width: 100%; }
+    .navy-select[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; background: #f8fafc; padding-left: 35px !important; }
+    .time-icon-fix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; }
 
-    /* 모바일 시간 선택기 커스텀 */
-    .time-picker-wrapper { position: relative; width: 100%; }
-    .navy-select[type="time"] { appearance: none; -webkit-appearance: none; padding-left: 35px; background: #f8fafc url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2364748b" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>') no-repeat 12px center; }
+    /* 인쇄 로딩바 */
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    .progress-container { width: 200px; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+    .progress-fill { width: 0%; height: 100%; background: var(--blue-main); transition: width 0.1s; }
 
-    /* 로딩바 */
-    .progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; }
-    .progress-bar-container { width: 200px; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
-    .progress-fill { height: 100%; background: var(--blue-main); width: 0%; transition: width 0.3s; }
-
-    /* 하단바 시간 크기 조정 */
-    .app-footer { height: 54px; background: var(--navy-dark); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
-    #footer-date { font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+    /* 하단바 시간/날짜 */
+    .app-footer { height: 50px; background: var(--navy-dark); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
+    #footer-date { font-size: 16px; font-weight: 800; font-style: italic; opacity: 0.95; letter-spacing: -0.5px; }
     .footer-logo img { height: 18px; filter: brightness(0) invert(1); }
 
-    /* 출력용 (화면에는 안 보임) */
-    #print-area { display: none; }
+    /* 인쇄 전용 스타일 (화면엔 안 보임) */
+    #print-template { display: none; }
     @media print {
       body { background: white; }
-      .app-container { box-shadow: none; max-width: none; }
-      .app-header, .app-footer, .no-print { display: none !important; }
-      #print-area { display: block !important; padding: 20px; }
+      .no-print { display: none !important; }
+      #print-template { display: block !important; padding: 20px; }
+      .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+      .approval-table { border-collapse: collapse; font-size: 11px; }
+      .approval-table th, .approval-table td { border: 1px solid #000; padding: 5px 10px; text-align: center; }
     }
   </style>
 </head>
 <body>
-  <!-- 렌더링 로딩 오버레이 -->
-  <div id="loadingOverlay" class="progress-overlay">
-      <div class="progress-bar-container"><div id="progressFill" class="progress-fill"></div></div>
-      <div id="loadingText" style="font-weight:800; color:var(--navy-dark);">데이터 수집 중... 0%</div>
+  <!-- 로딩 오버레이 -->
+  <div id="loadingOverlay" class="loading-overlay">
+      <div style="font-weight: 800; color: var(--navy-dark); font-size: 16px;">데이터 렌더링 중... <span id="percentText">0</span>%</div>
+      <div class="progress-container"><div id="progressFill" class="progress-fill"></div></div>
   </div>
 
   <div class="app-container">
-    <header class="app-header">
+    <header class="app-header no-print">
       <button class="header-btn" onclick="location.href='potal.html'"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="header-title">항공기술훈련원 교육운영부</div>
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <main class="app-content">
-      <!-- 1. 상단 상황판 (입교현황 / 수송요약) -->
-      <div class="dashboard-split no-print">
-          <!-- 좌측 1/3: 실시간 입교 현황 -->
-          <div class="col-1-3">
-              <div class="section-card">
-                  <div class="section-title"><i class="fa-solid fa-users-viewfinder"></i> 입교 현황</div>
-                  <div id="entryStatusList" style="max-height: 120px; overflow-y: auto;">
-                      <div class="empty-msg" style="font-size:11px; text-align:center; padding:20px; color:#94a3b8;">운영 중인 과정 없음</div>
-                  </div>
-              </div>
-          </div>
-          <!-- 우측 2/3: 수송 및 외출 신청 요약 -->
-          <div class="col-2-3">
-              <div class="section-card">
-                  <div class="section-title"><i class="fa-solid fa-chart-pie"></i> 실시간 행정 요약</div>
-                  <div class="mini-stat-grid">
-                      <div class="mini-stat-box"><span>셔틀(오송)</span><strong id="s-osong">0</strong></div>
-                      <div class="mini-stat-box"><span>셔틀(기타)</span><strong id="s-etc">0</strong></div>
-                      <div class="mini-stat-box" style="background:#fef2f2; border-color:#fee2e2;"><span>외출/외박</span><strong id="s-action" style="color:var(--danger);">0</strong></div>
-                  </div>
-              </div>
-          </div>
-      </div>
-
-      <!-- 2. 외출/외박 행정 관리 및 히스토리 -->
+    <main class="app-content no-print">
+      <!-- 1. 과정 선택창 -->
       <div class="section-card">
-          <div class="section-title">
-              <span><i class="fa-solid fa-calendar-check"></i> <span id="historyTitle">2026-01-18 (일)</span> 신청자 현황</span>
-              <button class="header-btn no-print" style="color:var(--blue-main); font-size:14px; font-weight:800;" onclick="startPrintProcess()">
-                  <i class="fa-solid fa-print"></i> 명단 인쇄
-              </button>
-          </div>
-
-          <div class="history-control no-print">
-              <input type="date" id="historyDate" class="navy-select" style="flex:1;" onchange="loadHistoryByDate()">
-              <select id="quickDate" class="navy-select" style="flex:1;" onchange="loadHistoryByQuick(this.value)">
-                  <option value="">최근 7일 간편조회</option>
-              </select>
-          </div>
-
-          <div style="overflow-x: auto;">
-              <table class="history-table">
-                  <thead>
-                      <tr>
-                          <th>과정명</th><th>성명</th><th>연락처</th><th>구분</th><th>시간</th>
-                      </tr>
-                  </thead>
-                  <tbody id="historyTableBody">
-                      <tr><td colspan="5" style="padding:40px; color:#94a3b8;">날짜를 선택하여 조회해 주세요.</td></tr>
-                  </tbody>
-              </table>
-          </div>
-          <div id="totalActionCount" style="margin-top:15px; text-align:right; font-weight:800; color:var(--blue-deep); font-size:14px;">
-              총 신청: 0명 (외출 0, 외박 0)
-          </div>
-      </div>
-
-      <!-- 3. 공지사항 관리 -->
-      <div class="section-card no-print">
-          <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (담당과정 교수 및 교육생에게 공지됩니다)</div>
-          <select id="roomSelect" class="navy-select" style="margin-bottom:10px;" onchange="handleRoomSelect(this.value)">
-              <option value="">전체 과정 목록에서 선택</option>
+          <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> 현재 운영 중인 과정 선택</div>
+          <select id="roomSelect" class="navy-select" onchange="handleRoomSelection()">
+              <option value="">전체 과정 현황 보기 (기본)</option>
           </select>
-          <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="과정을 선택한 후 공지 내용을 입력하세요."></textarea>
-          <button class="navy-btn" onclick="saveCourseNotice()">선택 과정 공지 업데이트</button>
       </div>
 
-      <div class="section-card no-print">
-          <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (항기원 모든 교수 및 교육생에게 전달됩니다)</div>
-          <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="모든 교육생 앱의 공지사항 상단에 노출됩니다."></textarea>
-          <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+      <!-- 2. 전체 과정 현황일 때 나오는 행정 리스트 -->
+      <div id="total-view-section">
+          <div class="section-card">
+              <div class="section-title">
+                  <span><i class="fa-solid fa-calendar-day"></i> <span id="historyDateLabel">데이터 로드 중...</span></span>
+                  <div style="display:flex; gap:8px;">
+                      <input type="date" id="historyPicker" class="navy-select" style="width:130px; height:30px; font-size:11px;" onchange="loadHistory(this.value)">
+                      <button class="navy-btn" style="width:60px; height:30px; font-size:11px;" onclick="preparePrint()">인쇄</button>
+                  </div>
+              </div>
+              <div style="overflow-x: auto;">
+                  <table class="navy-table">
+                      <thead>
+                          <tr><th>과정명</th><th>신청자</th><th>비상연락처</th><th>구분</th><th>시간</th></tr>
+                      </thead>
+                      <tbody id="historyTableBody"></tbody>
+                  </table>
+              </div>
+              <div id="actionTotalSum" style="margin-top:12px; text-align:right; font-weight:800; color:var(--blue-deep); font-size:14px;">총 0명 신청</div>
+          </div>
+          
+          <div class="section-card" style="margin-top:15px;">
+              <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 목록</div>
+              <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+      </div>
+
+      <!-- 3. 개별 과정 선택 시 나오는 상세 화면 -->
+      <div id="individual-view-section" style="display:none;">
+          <div class="split-container">
+              <!-- 좌측 1/3 입교현황 -->
+              <div class="col-1-3">
+                  <div class="entry-box" onclick="showEntryDetail()">
+                      <div class="entry-label">실시간 입교 현황</div>
+                      <div class="entry-val" id="ind-entry-cnt">0<span>명</span></div>
+                      <div style="font-size:10px; color:#94a3b8; margin-top:5px;">명단 확인 (클릭)</div>
+                  </div>
+              </div>
+              <!-- 우측 2/3 행정현황 -->
+              <div class="col-2-3">
+                  <div class="section-card" style="height:100%;">
+                      <div class="section-title" style="margin-bottom:8px;">수송/외출 요약</div>
+                      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                          <div style="font-size:12px; background:#f8fafc; padding:8px; border-radius:8px;">셔틀(오송): <b id="ind-osong">0</b></div>
+                          <div style="font-size:12px; background:#f8fafc; padding:8px; border-radius:8px;">외출/외박: <b id="ind-action">0</b></div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 과정 공지사항 (담당과정 교수 및 교육생에게 공지됩니다)</div>
+              <textarea id="courseNotice" class="notice-area" placeholder="내용을 입력하세요." oninput="autoGrow(this)"></textarea>
+              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+          </div>
+
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (항기원 모든 교수 및 교육생에게 전달됩니다)</div>
+              <textarea id="globalNotice" class="notice-area" placeholder="내용을 입력하세요." oninput="autoGrow(this)"></textarea>
+              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+          </div>
       </div>
     </main>
 
-    <footer class="app-footer">
-      <div id="footer-date">0000.00.00 00:00</div>
+    <footer class="app-footer no-print">
+      <div id="footer-date">0000.00.00 (요일) 00:00</div>
       <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
     </footer>
   </div>
 
-  <!-- 인쇄 전용 템플릿 (숨겨짐) -->
-  <div id="print-area">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px;">
+  <!-- 인쇄 전용 템플릿 -->
+  <div id="print-template">
+      <div class="print-header">
           <div>
-              <h1 id="print-title" style="margin:0; font-size:24px;">외출/외박 신청자 명단</h1>
-              <p id="print-date-info" style="margin:5px 0; color:#666;"></p>
+              <h2 style="margin:0;">외출/외박 신청자 명단</h2>
+              <p id="print-date-info" style="margin:5px 0; font-size:14px;"></p>
           </div>
-          <!-- 결재란 -->
-          <table border="1" style="border-collapse:collapse; text-align:center; font-size:12px;">
-              <tr>
-                  <th rowspan="2" width="20" style="background:#f1f1f1;">결<br>재</th>
-                  <th width="70" height="20">담 당</th>
-                  <th width="70">팀 장</th>
-                  <th width="70">원 장</th>
-              </tr>
-              <tr>
-                  <td height="50"></td><td></td><td></td>
-              </tr>
+          <table class="approval-table">
+              <tr><th rowspan="2" width="20">결<br>재</th><th width="60">담당</th><th width="60">팀장</th><th width="60">원장</th></tr>
+              <tr><td height="50"></td><td></td><td></td></tr>
           </table>
       </div>
-      <table border="1" style="width:100%; border-collapse:collapse; font-size:14px; text-align:center;">
+      <table border="1" style="width:100%; border-collapse:collapse; font-size:12px; text-align:center;">
           <thead>
-              <tr style="background:#f1f1f1;">
-                  <th width="150">과정명</th><th width="100">성명</th><th width="150">비상연락처</th><th width="80">구분</th><th>신청시간</th>
-              </tr>
+              <tr style="background:#f1f1f1;"><th>과정명</th><th>성명</th><th>비상연락처</th><th>구분</th><th>신청시간</th></tr>
           </thead>
           <tbody id="printTableBody"></tbody>
       </table>
-      <div style="margin-top:20px; text-align:right; font-size:12px; color:#888;">
-          출력일시: <span id="print-now-time"></span> | 항공기술훈련원 교육운영부
-      </div>
+      <div style="margin-top:15px; font-size:11px; text-align:right; color:#888;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
   </div>
 
   <script src="config.js"></script>
   <script>
-    let globalAllData = {};
-    let currentTargetDate = "";
+    let globalData = {}; 
+    let currentRID = "";
+    let selectedHistoryDate = getTodayString();
 
-    if(sessionStorage.getItem('kac_portal_auth') !== 'coord') {
-        alert("인증 정보가 없습니다."); location.replace('portal.html');
+    // 초기화
+    function init() {
+        document.getElementById('historyPicker').value = selectedHistoryDate;
+        cleanOldData(); // 3개월 경과 데이터 삭제 실행
+        
+        firebase.database().ref('courses').on('value', snap => {
+            globalData = snap.val() || {};
+            renderCourseList();
+            renderHistoryTable();
+            if(currentRID) updateIndividualView();
+        });
+
+        firebase.database().ref('system/globalNotice').on('value', snap => {
+            const el = document.getElementById('globalNotice');
+            el.value = snap.val() || "";
+            autoGrow(el);
+        });
     }
 
-    // 텍스트 박스 자동 확장
+    // 시간 업데이트
+    function runClock() {
+        const now = new Date();
+        const week = ['일','월','화','수','목','금','토'];
+        const dateStr = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        document.getElementById('footer-date').innerText = dateStr;
+    }
+    setInterval(runClock, 1000);
+
+    // 공지창 자동 확장
     function autoGrow(element) {
         element.style.height = "5px";
         element.style.height = (element.scrollHeight) + "px";
     }
 
-    function runClock() {
-        const now = new Date();
-        const y = now.getFullYear(); const m = now.getMonth()+1; const d = now.getDate();
-        const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0');
-        document.getElementById('footer-date').innerText = `${y}.${m}.${d} ${hh}:${mm}`;
-    }
-    setInterval(runClock, 1000); runClock();
-
-    // 초기 데이터 로드 및 리스너
-    function init() {
-        const today = getTodayString();
-        document.getElementById('historyDate').value = today;
-        document.getElementById('historyDate').max = today;
+    // 과정 목록 렌더링
+    function renderCourseList() {
+        const select = document.getElementById('roomSelect');
+        const listContainer = document.getElementById('activeCourseList');
+        const savedVal = select.value;
         
-        // 간편조회 7일 생성
-        const quick = document.getElementById('quickDate');
-        for(let i=0; i<7; i++) {
-            let date = new Date(); date.setDate(date.getDate() - i);
-            let dStr = getTodayString(date);
-            let opt = document.createElement('option'); opt.value = dStr;
-            opt.innerText = (i === 0) ? `오늘 (${dStr})` : (i === 1) ? `어제 (${dStr})` : dStr;
-            quick.appendChild(opt);
-        }
+        select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
+        listContainer.innerHTML = "";
 
-        firebase.database().ref('courses').on('value', snap => {
-            const data = snap.val() || {};
-            globalAllData = data;
-            updateDashboard();
-            loadHistoryByDate(); // 실시간 업데이트 반영
-            
-            // 공지용 과정 선택창 업데이트
-            const roomSel = document.getElementById('roomSelect');
-            const savedVal = roomSel.value;
-            roomSel.innerHTML = '<option value="">과정 목록에서 선택</option>';
-            Object.keys(data).sort().forEach(rid => {
-                if(data[rid].status?.roomStatus === 'active') {
-                    let opt = document.createElement('option'); opt.value = rid;
-                    opt.innerText = `Room ${rid} - ${data[rid].settings?.courseName || '과정명 미지정'}`;
-                    roomSel.appendChild(opt);
-                }
-            });
-            roomSel.value = savedVal;
-        });
-
-        firebase.database().ref('system/globalNotice').on('value', s => {
-            document.getElementById('globalNotice').value = s.val() || "";
-            autoGrow(document.getElementById('globalNotice'));
-        });
-    }
-
-    // 대시보드 (1/3 및 2/3) 업데이트
-    function updateDashboard() {
-        const entryList = document.getElementById('entryStatusList');
-        entryList.innerHTML = "";
-        let totalOsong = 0; let totalEtc = 0; let totalAction = 0;
-        const today = getTodayString();
-
-        Object.keys(globalAllData).sort().forEach(rid => {
-            const room = globalAllData[rid];
-            if(room.status?.roomStatus === 'active') {
-                // 입교 현황 (1/3)
-                const expected = room.expectedStudents?.length || 0;
-                const actual = room.students ? Object.values(room.students).filter(s => s.name && s.name !== "undefined").length : 0;
-                const percent = expected > 0 ? Math.round((actual / expected) * 100) : 0;
+        Object.keys(globalData).sort().forEach(rid => {
+            const room = globalData[rid];
+            if (room.status?.roomStatus === 'active') {
+                const cName = room.settings?.courseName || `Room ${rid} 과정`;
+                // 셀렉트 박스
+                const opt = document.createElement('option');
+                opt.value = rid; opt.innerText = `Room ${rid} - ${cName}`;
+                select.appendChild(opt);
                 
-                entryList.innerHTML += `
-                    <div class="entry-mini-item">
-                        <span class="entry-mini-room">${rid}</span>
-                        <div class="entry-mini-bar"><div class="entry-mini-fill" style="width:${Math.min(percent, 100)}%"></div></div>
-                        <span class="entry-mini-percent">${actual}/${expected}</span>
-                    </div>`;
-
-                // 수송 요약
-                if(room.shuttle?.out) {
-                    ['wave1', 'wave2'].forEach(w => {
-                        const wave = room.shuttle.out[w];
-                        if(wave) {
-                            totalOsong += (wave.osong ? Object.keys(wave.osong).length : 0);
-                            totalEtc += (wave.terminal ? Object.keys(wave.terminal).length : 0);
-                            totalEtc += (wave.airport ? Object.keys(wave.airport).length : 0);
-                        }
-                    });
-                }
-                // 외출 요약
-                if(room.admin_actions && room.admin_actions[today]) {
-                    totalAction += Object.keys(room.admin_actions[today]).length;
-                }
+                // 메인 리스트 카드
+                const item = document.createElement('div');
+                item.style = "background:#f8fafc; border:1px solid #e0f2fe; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
+                item.onclick = () => { select.value = rid; handleRoomSelection(); };
+                item.innerHTML = `<div><span style="font-weight:900; color:#0ea5e9; margin-right:8px;">Room ${rid}</span><span style="font-weight:700; font-size:13px;">${cName}</span></div><i class="fa-solid fa-chevron-right" style="font-size:12px; color:#cbd5e1;"></i>`;
+                listContainer.appendChild(item);
             }
         });
-
-        document.getElementById('s-osong').innerText = totalOsong;
-        document.getElementById('s-etc').innerText = totalEtc;
-        document.getElementById('s-action').innerText = totalAction;
+        select.value = savedVal;
     }
 
-    // 행정기록 조회
-    function loadHistoryByDate() {
-        currentTargetDate = document.getElementById('historyDate').value;
-        renderHistory();
-    }
-    function loadHistoryByQuick(val) {
-        if(!val) return;
-        document.getElementById('historyDate').value = val;
-        loadHistoryByDate();
+    // 과정 선택 처리
+    function handleRoomSelection() {
+        const rid = document.getElementById('roomSelect').value;
+        currentRID = rid;
+        const totalSec = document.getElementById('total-view-section');
+        const indSec = document.getElementById('individual-view-section');
+
+        if(!rid) {
+            totalSec.style.display = "block";
+            indSec.style.display = "none";
+        } else {
+            totalSec.style.display = "none";
+            indSec.style.display = "block";
+            updateIndividualView();
+        }
     }
 
-    function renderHistory() {
-        const tbody = document.getElementById('historyTableBody');
-        const dateObj = new Date(currentTargetDate);
-        const week = ['일','월','화','수','목','금','토'];
-        document.getElementById('historyTitle').innerText = `${currentTargetDate} (${week[dateObj.getDay()]})`;
+    // 개별 과정 상세 업데이트
+    function updateIndividualView() {
+        const room = globalData[currentRID];
+        const today = getTodayString();
         
-        tbody.innerHTML = "";
-        let list = [];
+        // 입교 인원
+        const entryCnt = room.students ? Object.values(room.students).filter(s => s.name && s.name !== "undefined").length : 0;
+        document.getElementById('ind-entry-cnt').innerHTML = `${entryCnt}<span>명</span>`;
+        
+        // 수송/행정 요약
+        let osong = 0;
+        if(room.shuttle?.out) {
+            ['wave1','wave2'].forEach(w => { if(room.shuttle.out[w]?.osong) osong += Object.keys(room.shuttle.out[w].osong).length; });
+        }
+        const actionCnt = room.admin_actions?.[today] ? Object.keys(room.admin_actions[today]).length : 0;
+        
+        document.getElementById('ind-osong').innerText = osong + "명";
+        document.getElementById('ind-action').innerText = actionCnt + "명";
+        
+        // 공지 로드
+        const noticeEl = document.getElementById('courseNotice');
+        noticeEl.value = room.coordNotice || "";
+        autoGrow(noticeEl);
+    }
 
-        Object.keys(globalAllData).forEach(rid => {
-            const room = globalAllData[rid];
-            const actions = room.admin_actions ? room.admin_actions[currentTargetDate] : null;
+    // 입교 상세 팝업 (간이)
+    function showEntryDetail() {
+        const room = globalData[currentRID];
+        if(!room.students) return alert("입교한 인원이 없습니다.");
+        const names = Object.values(room.students).filter(s => s.name && s.name !== "undefined").map(s => s.name).sort().join(", ");
+        alert(`[${currentRID} 강의실 입교 명단]\n\n${names}`);
+    }
+
+    // 행정 히스토리 로드
+    function loadHistory(date) {
+        selectedHistoryDate = date;
+        renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+        const tbody = document.getElementById('historyTableBody');
+        const label = document.getElementById('historyDateLabel');
+        const dateObj = new Date(selectedHistoryDate);
+        const week = ['일','월','화','수','목','금','토'];
+        label.innerText = `${selectedHistoryDate} (${week[dateObj.getDay()]}) 신청자 현황`;
+
+        tbody.innerHTML = "";
+        let combinedList = [];
+
+        Object.keys(globalData).forEach(rid => {
+            const actions = globalData[rid].admin_actions?.[selectedHistoryDate];
             if(actions) {
-                Object.values(actions).forEach(item => {
-                    list.push({ ...item, cName: room.settings?.courseName || `Room ${rid}` });
+                Object.values(actions).forEach(a => {
+                    combinedList.push({ ...a, cName: globalData[rid].settings?.courseName || `Room ${rid}` });
                 });
             }
         });
 
-        list.sort((a,b) => a.timestamp - b.timestamp);
-
-        let outCnt = 0; let overCnt = 0;
-        if(list.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='padding:40px; color:#94a3b8;'>해당 날짜에 신청 내역이 없습니다.</td></tr>";
+        if(combinedList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:30px; color:#94a3b8;">신청 내역이 없습니다.</td></tr>';
+            document.getElementById('actionTotalSum').innerText = "총 0명 신청";
         } else {
-            list.forEach(item => {
-                const typeCls = item.type === 'outing' ? 'row-outing' : 'row-overnight';
-                const typeNm = item.type === 'outing' ? '외출' : '외박';
-                if(item.type === 'outing') outCnt++; else overCnt++;
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="text-align:left; font-weight:700;">${item.cName}</td>
-                        <td style="font-weight:800;">${item.name}</td>
-                        <td>${item.phone}</td>
-                        <td class="${typeCls}">${typeNm}</td>
-                        <td style="color:#94a3b8;">${new Date(item.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-                    </tr>`;
+            combinedList.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
+                const typeNm = a.type === 'outing' ? '외출' : '외박';
+                const typeCol = a.type === 'outing' ? '#ea580c' : '#dc2626';
+                tbody.innerHTML += `<tr><td style="text-align:left; font-weight:700;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${typeCol}; font-weight:800;">${typeNm}</td><td style="color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td></tr>`;
             });
+            document.getElementById('actionTotalSum').innerText = `총 ${combinedList.length}명 신청`;
         }
-        document.getElementById('totalActionCount').innerText = `총 신청: ${list.length}명 (외출 ${outCnt}, 외박 ${overCnt})`;
     }
 
-    // 인쇄 프로세스
-    function startPrintProcess() {
+    // 인쇄 프로세스 (로딩 애니메이션)
+    function preparePrint() {
         const overlay = document.getElementById('loadingOverlay');
         const fill = document.getElementById('progressFill');
-        const txt = document.getElementById('loadingText');
+        const text = document.getElementById('percentText');
         
-        overlay.style.display = 'flex';
+        overlay.style.display = "flex";
         let progress = 0;
         
-        const interval = setInterval(() => {
-            progress += 10;
-            fill.style.width = progress + '%';
-            txt.innerText = `문서 렌더링 중... ${progress}%`;
-            
+        const timer = setInterval(() => {
+            progress += Math.floor(Math.random() * 15) + 5;
             if(progress >= 100) {
-                clearInterval(interval);
-                overlay.style.display = 'none';
-                executePrint();
+                progress = 100;
+                clearInterval(timer);
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    executePrint();
+                }, 300);
             }
+            fill.style.width = progress + "%";
+            text.innerText = progress;
         }, 100);
     }
 
     function executePrint() {
-        const printBody = document.getElementById('printTableBody');
-        const dateObj = new Date(currentTargetDate);
+        const dateObj = new Date(selectedHistoryDate);
         const week = ['일','월','화','수','목','금','토'];
-        
-        document.getElementById('print-date-info').innerText = `대상일자: ${currentTargetDate} (${week[dateObj.getDay()]})`;
-        document.getElementById('print-now-time').innerText = new Date().toLocaleString();
-        
-        // 메인 테이블 복사
-        printBody.innerHTML = document.getElementById('historyTableBody').innerHTML;
-        
+        document.getElementById('print-date-info').innerText = `대상일자: ${selectedHistoryDate} (${week[dateObj.getDay()]})`;
+        document.getElementById('print-now').innerText = new Date().toLocaleString();
+        document.getElementById('printTableBody').innerHTML = document.getElementById('historyTableBody').innerHTML;
         window.print();
     }
 
-    function handleRoomSelect(rid) {
-        if(!rid) {
-            document.getElementById('courseNotice').value = "";
-            return;
-        }
-        document.getElementById('courseNotice').value = globalAllData[rid].coordNotice || "";
-        autoGrow(document.getElementById('courseNotice'));
-    }
-
+    // 데이터 저장
     function saveCourseNotice() {
-        const rid = document.getElementById('roomSelect').value;
-        if(!rid) return alert("과정을 먼저 선택하세요.");
-        firebase.database().ref(`courses/${rid}/coordNotice`).set(document.getElementById('courseNotice').value)
-            .then(() => alert("✅ 해당 과정에 공지가 업데이트되었습니다."));
+        if(!currentRID) return;
+        const txt = document.getElementById('courseNotice').value;
+        firebase.database().ref(`courses/${currentRID}/coordNotice`).set(txt).then(() => alert("해당 과정 공지가 업데이트되었습니다."));
     }
-
     function saveGlobalNotice() {
-        firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value)
-            .then(() => alert("✅ 항기원 전체 공지가 업데이트되었습니다."));
+        const txt = document.getElementById('globalNotice').value;
+        firebase.database().ref(`system/globalNotice`).set(txt).then(() => alert("항기원 전체 공지가 업데이트되었습니다."));
     }
 
-    function getTodayString(d = new Date()) { 
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+    // 3개월 경과 데이터 자동 삭제 (강력 권한)
+    function cleanOldData() {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const limitStr = getTodayString(threeMonthsAgo);
+
+        firebase.database().ref('courses').once('value', snap => {
+            const data = snap.val();
+            if(!data) return;
+            Object.keys(data).forEach(rid => {
+                const actions = data[rid].admin_actions;
+                if(actions) {
+                    Object.keys(actions).forEach(dateKey => {
+                        if(dateKey < limitStr) firebase.database().ref(`courses/${rid}/admin_actions/${dateKey}`).remove();
+                    });
+                }
+                const dinner = data[rid].dinner_skips;
+                if(dinner) {
+                    Object.keys(dinner).forEach(dateKey => {
+                        if(dateKey < limitStr) firebase.database().ref(`courses/${rid}/dinner_skips/${dateKey}`).remove();
+                    });
+                }
+            });
+        });
     }
+
+    function getTodayString(d = new Date()) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function toggleMenu(open) { /* 사이드바 구현 필요 시 추가 */ }
 
     init();
   </script>
