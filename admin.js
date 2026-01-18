@@ -982,17 +982,19 @@ loadDashboardStats: function() {
         if(!state.room) return;
         const today = getTodayString();
 
-        // 1. 오늘 날짜 표시
-        const dateDisplay = document.getElementById('dashTodayDateDisplay');
-        if(dateDisplay) dateDisplay.innerText = today;
+        // 1. [수정] 오늘 날짜 표시 부분 삭제 (대신 담당자 이름 표시 로직이 아래 settings listener에 포함됨)
 
-        // 2. 과정 기본 정보 로드 (과정명, 기간, 장소)
+        // 2. 과정 기본 정보 로드 (과정명, 기간, 장소, 담당자)
         firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
             const s = snap.val() || {};
             const titleEl = document.getElementById('dashCourseTitle');
             if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
             if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
             if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
+            
+            // [추가] 과정 담당자 이름 실시간 표시
+            const coordEl = document.getElementById('dashCoordName');
+            if(coordEl) coordEl.innerText = s.coordinatorName || "미지정";
         });
 
         // 3. 공지사항 피드 로드
@@ -1016,7 +1018,7 @@ loadDashboardStats: function() {
             if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
         });
 
-        // 5. [수정] 수강생 현황 (숫자 분리 업데이트)
+        // 5. 수강생 현황 (숫자 분리 업데이트)
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
 
@@ -1034,7 +1036,6 @@ loadDashboardStats: function() {
                     if (actualNames.includes(name)) arrived++;
                 });
 
-                // 숫자 분리 입력
                 const arrivedEl = document.getElementById('dashArrivedCount');
                 const totalEl = document.getElementById('dashTotalCount');
                 if(arrivedEl) arrivedEl.innerText = arrived;
@@ -1055,8 +1056,7 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
-
-// [신규] 기사님 수송 공지 로드
+        // 기사님 수송 공지 로드
         firebase.database().ref('system/shuttle_notice').on('value', s => {
             const msg = s.val();
             const bar = document.getElementById('dashShuttleNotice');
@@ -1069,14 +1069,6 @@ loadDashboardStats: function() {
             }
         });
 
-
-
-
-
-
-
-
-
         // 8. 실시간 질문(Q&A) 건수 카운트
         firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
             const data = s.val() || {};
@@ -1085,29 +1077,27 @@ loadDashboardStats: function() {
             if(qaEl) qaEl.innerText = count;
         });
 
-// 10. [통합 합산] 셔틀 탑승 수요 통합 카운트 (1차 + 2차 합산)
+        // 10. 셔틀 탑승 수요 통합 카운트
         firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
             const data = s.val() || {};
             const w1 = data.wave1 || {};
             const w2 = data.wave2 || {};
 
-            // 1차와 2차 데이터를 각 장소별로 합산합니다.
             const osong = (w1.osong ? Object.keys(w1.osong).length : 0) + (w2.osong ? Object.keys(w2.osong).length : 0);
             const term = (w1.terminal ? Object.keys(w1.terminal).length : 0) + (w2.terminal ? Object.keys(w2.terminal).length : 0);
             const air = (w1.airport ? Object.keys(w1.airport).length : 0) + (w2.airport ? Object.keys(w2.airport).length : 0);
             const car = (w1.car ? Object.keys(w1.car).length : 0) + (w2.car ? Object.keys(w2.car).length : 0);
 
-            // 수정하신 HTML의 통합 ID 자리에 데이터를 꽂아줍니다.
             if(document.getElementById('total-osong')) document.getElementById('total-osong').innerText = osong;
             if(document.getElementById('total-term')) document.getElementById('total-term').innerText = term;
             if(document.getElementById('total-air')) document.getElementById('total-air').innerText = air;
             if(document.getElementById('total-car')) document.getElementById('total-car').innerText = car;
 
-            // 전체 합계 (상단 파란색 배지 "전체 수송 예정" 용)
             const totalSum = osong + term + air + car;
             if(document.getElementById('dashShuttleTotal')) document.getElementById('dashShuttleTotal').innerText = totalSum + "명";
         });
     },
+
 
 
 
@@ -3051,12 +3041,27 @@ const setupMgr = {
     openSetupModal: function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 1. 교수 목록 동기화
-        let options = '<option value="">(선택 안함)</option>';
-        profMgr.list.forEach(p => { options += `<option value="${p.name}">${p.name} 교수</option>`; });
-        document.getElementById('setup-prof-select').innerHTML = options;
+        // 1. 교수 및 담당자 목록 동기화
+        let profOptions = '<option value="">(선택 안함)</option>';
+        profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
+        document.getElementById('setup-prof-select').innerHTML = profOptions;
 
-        // 2. 서버 데이터 불러오기
+        // 행정 담당자 명단 불러오기 (admin_coord와 연동)
+        firebase.database().ref('system/coordinators').once('value', snap => {
+            const coords = snap.val() || {};
+            let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
+            Object.values(coords).forEach(c => {
+                coordOptions += `<option value="${c.name}">${c.name}</option>`;
+            });
+            document.getElementById('setup-coord-select').innerHTML = coordOptions;
+            
+            // 명단을 다 불러온 후 세부 세팅 로드
+            this.loadCurrentSettings();
+        });
+    },
+
+    // 설정을 불러오는 내부 함수 분리
+    loadCurrentSettings: function() {
         firebase.database().ref(`courses/${state.room}`).once('value', snap => {
             const data = snap.val() || {};
             const s = data.settings || {};
@@ -3065,11 +3070,11 @@ const setupMgr = {
             document.getElementById('setup-course-name').value = s.courseName || "";
             document.getElementById('setup-room-pw').value = s.password ? atob(s.password) : "7777";
             document.getElementById('setup-prof-select').value = st.professorName || "";
+            document.getElementById('setup-coord-select').value = s.coordinatorName || "";
 
-            // 강의실 위치 세팅 (기존 값이 목록에 없으면 직접 입력으로 처리)
             const roomSelect = document.getElementById('setup-room-select');
             const roomDirect = document.getElementById('setup-room-direct');
-            const currentRoomValue = s.roomDetailName || "하늘관 1층 대강당";
+            const currentRoomValue = s.roomDetailName || "";
 
             let found = false;
             for (let i = 0; i < roomSelect.options.length; i++) {
@@ -3080,7 +3085,7 @@ const setupMgr = {
                 }
             }
 
-            if (!found) {
+            if (!found && currentRoomValue) {
                 roomSelect.value = "direct";
                 roomDirect.value = currentRoomValue;
                 roomDirect.style.display = "block";
@@ -3120,13 +3125,11 @@ saveAll: function() {
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const profName = document.getElementById('setup-prof-select').value;
+        const coordName = document.getElementById('setup-coord-select').value;
 
-        // [중요] 저장 버튼을 누르면 상태를 무조건 '사용중(active)'으로 변경함
         const statusSelect = document.getElementById('roomStatusSelect');
         if(statusSelect) statusSelect.value = 'active';
-        const statusVal = 'active'; 
-
-        // 강의실 위치 결정 (직접 입력값이 있으면 그 값을 사용)
+        
         const roomSelectVal = document.getElementById('setup-room-select').value;
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
@@ -3140,21 +3143,16 @@ saveAll: function() {
         updates[`courses/${state.room}/settings/password`] = btoa(rawPw);
         updates[`courses/${state.room}/settings/period`] = `${sDate} ~ ${eDate}`;
         updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
+        updates[`courses/${state.room}/settings/coordinatorName`] = coordName; // 담당자 저장 추가
         updates[`courses/${state.room}/status/professorName`] = profName;
-        
-        // 서버에도 '사용중' 상태와 현재 세션ID를 저장하여 즉시 잠금 해제
-        updates[`courses/${state.room}/status/roomStatus`] = statusVal;
+        updates[`courses/${state.room}/status/roomStatus`] = 'active';
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
         firebase.database().ref().update(updates).then(() => {
-            // 사이드바 및 헤더 정보 동기화
             document.getElementById('courseNameInput').value = name;
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
-            
-            // 로컬 저장소에 현재 소유권 저장
             localStorage.setItem('last_owned_room', state.room);
-            
             ui.showAlert("✅ 설정이 저장되었으며, 강의실이 활성화되었습니다.");
             this.closeSetupModal();
         });

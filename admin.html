@@ -325,8 +325,8 @@
                     <i class="fa-solid fa-chevron-right prof-arrow"></i>
                 </div>
                 <!-- 하단 날짜 표시 -->
-                <div class="date-minimal-box">
-                    <i class="fa-regular fa-clock"></i> <span id="dashTodayDateDisplay"></span>
+                <div class="date-minimal-box" style="color: rgba(255,255,255,0.9) !important; font-weight: 800;">
+                    <i class="fa-solid fa-user-tie"></i> 과정담당: <span id="dashCoordName" style="margin-left:5px;">-</span>
                 </div>
             </div>
         </div> 
@@ -1080,32 +1080,33 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom:20px;">
- <div class="setup-group">
-    <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">강의실 상세 위치</label>
-    <div style="display:flex; gap:5px; align-items: center;">
-        <!-- 안정적인 선택창 (항목이 많아도 휠 스크롤이 잘 됩니다) -->
-        <select id="setup-room-select" class="setup-input" style="flex:1;" onchange="setupMgr.checkDirectInput(this.value)">
-            <optgroup label="하늘관">
-                <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
-                <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
-                <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
-                <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
-            </optgroup>
-            <optgroup label="국제동">
-                <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
-                <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
-                <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
-            </optgroup>
-            <optgroup label="관제교육동">
-                <option value="관제교육동 1층">관제교육동 1층</option>
-                <option value="관제교육동 2층">관제교육동 2층</option>
-            </optgroup>
-            <option value="direct">--- 직접 입력 ---</option>
-        </select>
-        <!-- 직접 입력을 선택했을 때만 나타날 입력창 -->
-        <input type="text" id="setup-room-direct" class="setup-input" style="display:none; flex:1;" placeholder="위치 직접 작성">
-    </div>
-</div>           
+            <div class="setup-group">
+                <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">강의실 상세 위치</label>
+                <div style="display:flex; gap:5px; align-items: center;">
+                    <select id="setup-room-select" class="setup-input" style="flex:1;" onchange="setupMgr.checkDirectInput(this.value)">
+                        <option value="">--- 장소 선택 ---</option>
+                        <optgroup label="하늘관">
+                            <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
+                            <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
+                            <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
+                            <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
+                            <option value="하늘관 2층 D강의실">하늘관 2층 D강의실</option>
+                            <option value="하늘관 2층 E강의실">하늘관 2층 E강의실</option>
+                            <option value="하늘관 2층 F강의실">하늘관 2층 F강의실</option>
+                            <option value="하늘관 2층 G강의실">하늘관 2층 G강의실</option>
+                        </optgroup>
+                        <optgroup label="국제동">
+                            <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
+                            <option value="국제동 1층 A강의실">국제동 1층 A강의실</option>
+                            <option value="국제동 1층 B강의실">국제동 1층 B강의실</option>
+                            <option value="국제동 2층 실습실">국제동 2층 실습실</option>
+                            <option value="국제동 2층 VOR/DME/TACAN">국제동 2층 VOR/DME/TACAN</option>
+                        </optgroup>
+                        <option value="direct">--- 직접 입력 ---</option>
+                    </select>
+                    <input type="text" id="setup-room-direct" class="setup-input" style="display:none; flex:1;" placeholder="위치 직접 작성">
+                </div>
+            </div>           
 
             <div class="setup-group">
                 <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">담임 교수</label>
@@ -1114,6 +1115,14 @@
                     <button class="btn-action btn-small btn-dark" onclick="profMgr.openManageModal()" style="width:40px;"><i class="fa-solid fa-gear"></i></button>
                 </div>
             </div>
+        </div>
+
+        <!-- [추가] 과정 담당자 설정 칸 -->
+        <div class="setup-group" style="margin-bottom:20px;">
+            <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">과정 운영 담당자 (행정)</label>
+            <select id="setup-coord-select" class="setup-input">
+                <option value="">--- 담당자 불러오는 중... ---</option>
+            </select>
         </div>
 
         <div class="setup-group" style="padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
