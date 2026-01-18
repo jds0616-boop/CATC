@@ -610,8 +610,65 @@
     // [7. 화면 내비게이션 및 유틸]
     function handleBackNav() { if(currentRID) { currentRID = ""; handleRoomSelection(); } else { location.href = 'potal.html'; } }
     function handleRoomSelection() { const isInd = (currentRID !== ""); document.getElementById('totalStatusView').style.display = isInd ? "none" : "flex"; document.getElementById('individualStatusView').style.display = isInd ? "flex" : "none"; document.getElementById('side-global-menu').style.display = isInd ? "none" : "flex"; document.getElementById('side-individual-menu').style.display = isInd ? "flex" : "none"; if(isInd) { updateIndividualView(); updateQRPreview(); } }
-    function renderCourseSelectors() { const list = document.getElementById('activeCourseList'); const setupRoom = document.getElementById('setup-room-select'); list.innerHTML = ""; setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>'; for(let i=65; i<=90; i++){ const rid = String.fromCharCode(i); const room = globalAllData[rid]; setupRoom.add(new Option(`Room ${rid}` + (room?.status?.roomStatus==='active'?` [사용중 - ${room.status.professorName||''}]`:""), rid)); if(room?.status?.roomStatus==='active'){ const item = document.createElement('div'); item.style = "background:#fff; border:1px solid #e2e8f0; padding:15px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;"; item.onclick = () => { currentRID = rid; handleRoomSelection(); }; item.innerHTML = `<div><b style="color:var(--blue-main); margin-right:10px;">Room ${rid}</b><span style="font-weight:800;">${room.settings?.courseName || rid}</span></div><i class="fa-solid fa-chevron-right" style="color:#cbd5e1;"></i>`; list.appendChild(item); } } }
-    function renderTotalHistory() { const tbody = document.getElementById('historyTableBody'); const label = document.getElementById('historyDateLabel'); label.innerText = `${selectedDate} 신청 명단`; tbody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({...a, cName: globalAllData[rid].settings?.courseName || rid})); }); if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; } list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => { tbody.innerHTML += `<tr><td style="text-align:center; font-size:11px; color:var(--blue-deep);">${a.cName}</td><td style="font-weight:800; text-align:center;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td><td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`; }); }
+    
+
+
+
+
+
+function renderCourseSelectors() {
+    const list = document.getElementById('activeCourseList');
+    const setupRoom = document.getElementById('setup-room-select');
+    if (!list || !setupRoom) return;
+
+    list.innerHTML = "";
+    setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
+
+    for (let i = 65; i <= 90; i++) {
+        const rid = String.fromCharCode(i);
+        const room = globalAllData[rid];
+
+        // 1. 설정창용 드롭다운 옵션 생성
+        let label = `Room ${rid}`;
+        if (room?.status?.roomStatus === 'active') {
+            label += ` [사용중 - ${room.status.professorName || '미정'}]`;
+        }
+        setupRoom.add(new Option(label, rid));
+
+        // 2. 메인 리스트 아이템 생성 (사용중인 방만)
+        if (room?.status?.roomStatus === 'active') {
+            const cName = room.settings?.courseName || rid;
+            const coordName = room.settings?.coordinatorName || "담당 미지정";
+
+            const item = document.createElement('div');
+            item.style = "background:#fff; border:1px solid #e2e8f0; padding:15px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-bottom:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);";
+            
+            item.onclick = () => {
+                currentRID = rid;
+                handleRoomSelection();
+            };
+
+            // HTML 구조: 왼쪽(룸+과정명) <---> 오른쪽(담당자+아이콘)
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px; flex: 1; overflow:hidden;">
+                    <b style="color:var(--blue-main); font-size:14px; white-space:nowrap;">Room ${rid}</b>
+                    <span style="font-weight:800; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cName}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; flex-shrink: 0;">
+                    <span style="font-size:12px; color:#64748b; font-weight:700;">${coordName}</span>
+                    <i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:12px;"></i>
+                </div>
+            `;
+            list.appendChild(item);
+        }
+    }
+}
+
+
+
+
+
+function renderTotalHistory() { const tbody = document.getElementById('historyTableBody'); const label = document.getElementById('historyDateLabel'); label.innerText = `${selectedDate} 신청 명단`; tbody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({...a, cName: globalAllData[rid].settings?.courseName || rid})); }); if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; } list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => { tbody.innerHTML += `<tr><td style="text-align:center; font-size:11px; color:var(--blue-deep);">${a.cName}</td><td style="font-weight:800; text-align:center;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td><td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`; }); }
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
     function renderOutingManager() { const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel'); label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); }); if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; } list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => { const isSigned = a.confirmed === true; const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:32px;">` : "서명하기"; const btnStyle = isSigned ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" : "background: var(--blue-main); color: #fff; border: none;"; tbody.innerHTML += `<tr><td style="width:30%; font-size:10px; text-align:center;">${a.cName}</td><td style="width:18%; font-weight:800; text-align:center;">${a.name}</td><td style="width:12%; color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td><td style="width:20%; font-size:10px; text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td style="width:20%; text-align:center;"><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px 0; font-size:10px; cursor:pointer; width:100%; height:38px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td></tr>`; }); }
