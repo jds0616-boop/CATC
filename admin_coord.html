@@ -22,24 +22,26 @@
     }
     .app-container { width: 100%; max-width: 600px; min-height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); }
     
-    /* 상단바 */
-    .app-header { height: 50px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
+    /* 상단바 확대 (로고 밸런스) */
+    .app-header { height: 60px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
     .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
-    .header-title { color: #fff; font-size: 20px; font-weight: 900; letter-spacing: -1px; }
+    .header-title { color: #fff; font-size: 22px; font-weight: 900; letter-spacing: -1px; }
 
     .app-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .section-card { background: var(--card-white); border-radius: 12px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     
-    .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; }
+    /* 모든 제목 좌측 정렬 고정 */
+    .section-title { font-size: 14px; font-weight: 800; color: var(--blue-deep); margin-bottom: 15px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
+    .section-title.has-btn { justify-content: space-between; }
     
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .navy-input:focus { border-color: var(--blue-main); background: #fff; }
 
-    /* 상황판 (전체 현황판) */
+    /* 상황판 */
     .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
     .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 15px; color: white; text-align: center; }
     .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 5px; font-weight: 700; }
-    .g-stat-val { font-size: 22px; font-weight: 900; color: var(--blue-main); }
+    .g-stat-val { font-size: 24px; font-weight: 900; color: var(--blue-main); }
     .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
 
     /* 상세 화면 레이아웃 (1/3 : 2/3) */
@@ -48,16 +50,16 @@
     .col-2-3 { flex: 2.5; }
     
     .entry-box { background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-    .entry-val { font-size: 24px; font-weight: 900; color: var(--navy-dark); margin-bottom: 2px; }
+    .entry-val { font-size: 26px; font-weight: 900; color: var(--navy-dark); }
     .entry-val span { font-size: 12px; color: #94a3b8; }
 
-    /* 차량 수요조사 (슬림 가로 배치) */
+    /* 차량 수요조사 결과 (슬림형) */
     .shuttle-grid { display: flex; justify-content: space-between; gap: 4px; }
-    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; transition: 0.2s; }
-    .shuttle-item:active { background: #f0fdf4; }
+    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; }
     .shuttle-item span { font-size: 10px; color: #64748b; display: block; margin-bottom: 4px; font-weight: 700; }
     .shuttle-item b { font-size: 16px; color: var(--navy-dark); font-weight: 900; }
 
+    /* 테이블 스타일 */
     .navy-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
     .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 12px; text-align: center; }
     .navy-table td { padding: 14px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 13px; vertical-align: middle; }
@@ -68,13 +70,13 @@
     .navy-btn:active { transform: scale(0.98); opacity: 0.8; }
     .navy-btn.green { background: var(--green-save); }
 
-    /* 하단바 디자인 (이탤릭 적용) */
+    /* 하단바 디자인 */
     .app-footer { height: 45px; background: var(--navy-dark); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
     #footer-date { font-size: 15px; font-weight: 700; font-style: italic; opacity: 0.9; }
     .footer-logo img { height: 16px; filter: brightness(0) invert(1); }
 
-    /* 인쇄 로딩바 */
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    /* 인쇄 로딩 오버레이 */
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
     .progress-bar { width: 180px; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px; }
     .progress-fill { height: 100%; background: var(--blue-main); width: 0%; transition: width 0.1s; }
 
@@ -84,43 +86,41 @@
       body { background: white; }
       .app-container, .no-print { display: none !important; }
       #print-area { display: block !important; padding: 20px; }
-      .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+      .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
       .print-table th, .print-table td { border: 1px solid #333; padding: 10px; text-align: center; font-size: 13px; }
     }
 
-    /* 설정 모달 전용 */
     .setup-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:15px; }
     .setup-box { background:white; width:100%; max-width:500px; border-radius:24px; padding:25px; max-height:90vh; overflow-y:auto; }
   </style>
 </head>
 <body>
-  <!-- 인쇄 로딩 오버레이 -->
+  <!-- 로딩 오버레이 -->
   <div id="loadingOverlay" class="loading-overlay">
-      <div id="loadingText" style="font-weight:900; color:var(--navy-dark); font-size:16px;">데이터 수집 중... 0%</div>
+      <div id="loadingText" style="font-weight:900; color:var(--navy-dark); font-size:16px;">데이터 분석 중... 0%</div>
       <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
   </div>
 
   <div class="app-container">
     <div id="menuOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500;" onclick="toggleMenu(false)"></div>
     
-    <!-- 사이드 메뉴 (상태별 분리) -->
+    <!-- 사이드 메뉴 -->
     <div id="sideMenu" class="side-menu no-print" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="margin:0; font-size:16px; color:#0f172a;">행정 지원 메뉴</h3>
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="toggleMenu(false)"></i>
       </div>
 
-      <!-- [메뉴군 1: 전체화면용] -->
+      <!-- [상태별 메뉴 분리] -->
       <div id="side-global-menu" style="display:none; flex-direction:column; gap:12px;">
           <button class="navy-btn" style="background:#3b82f6; height:45px;" onclick="openSetupModal()">
               <i class="fa-solid fa-gear"></i> 교육과정 추가/설정
           </button>
       </div>
 
-      <!-- [메뉴군 2: 개별과정용] -->
       <div id="side-individual-menu" style="display:none; flex-direction:column; gap:12px;">
           <div class="section-card">
-              <div class="section-title">출결 QR 관리</div>
+              <div class="section-title"><i class="fa-solid fa-qrcode"></i> 출결 QR 관리</div>
               <div id="qrPreviewArea" style="background:#f8fafc; border:1px solid #eee; border-radius:8px; padding:10px; text-align:center; margin-bottom:10px;">
                   <img id="qrPreview" style="max-width:100%; max-height:150px; display:none;">
                   <div id="qrEmpty" style="font-size:11px; color:#94a3b8; padding:15px;">등록된 QR 없음</div>
@@ -128,7 +128,7 @@
               <input type="file" id="qrFile" accept="image/*" style="display:none;" onchange="handleQRUpload(this)">
               <button class="navy-btn" style="background:#64748b;" onclick="document.getElementById('qrFile').click()">QR 이미지 교체</button>
           </div>
-          <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="openTransportModal()">
+          <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="handleSidebarAction('trans')">
               <i class="fa-solid fa-car-side"></i> 강사 수송 요청
           </button>
       </div>
@@ -142,9 +142,8 @@
 
     <main class="app-content no-print">
       
-      <!-- [뷰 1: 전체 과정 현황] -->
+      <!-- [뷰 1] 전체 과정 현황 -->
       <div id="totalStatusView">
-          <!-- 상단 고정 상황판 -->
           <div class="global-status-grid">
               <div class="g-stat-item">
                   <div class="g-stat-label">항기원 전체 교육생</div>
@@ -157,14 +156,19 @@
           </div>
 
           <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;">
+              <div class="section-title has-btn">
                   <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
                   <div style="display:flex; gap:5px;">
                       <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
                       <button class="navy-btn" style="width:50px; height:30px; font-size:11px;" onclick="openPrintModal()">인쇄</button>
                   </div>
               </div>
-              <div style="overflow-x: auto; margin-top:5px;">
+              <div style="margin-bottom:12px;">
+                  <select id="courseFilter" class="navy-select" style="height:35px; font-size:12px;" onchange="renderTotalHistory()">
+                      <option value="all">모든 과정 보기</option>
+                  </select>
+              </div>
+              <div style="overflow-x: auto;">
                   <table class="navy-table">
                       <thead>
                           <tr><th>과정명</th><th>신청자</th><th>비상연락처</th><th>구분</th><th>시간</th></tr>
@@ -181,10 +185,9 @@
           </div>
       </div>
 
-      <!-- [뷰 2: 개별 과정 상세 현황] -->
+      <!-- [뷰 2] 개별 과정 상세 -->
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:10px;">
           <div class="dashboard-split">
-              <!-- 입교 현황 (1/3) -->
               <div class="col-1-3">
                   <div class="entry-box" onclick="showEntryMemberList()">
                       <span style="font-size:11px; font-weight:800; color:var(--blue-deep); margin-bottom:5px;">입교 현황</span>
@@ -192,7 +195,6 @@
                       <span style="font-size:9px; color:#94a3b8; margin-top:4px;">(명단 확인)</span>
                   </div>
               </div>
-              <!-- 수송 현황 (2/3 - 슬림 레이아웃) -->
               <div class="col-2-3">
                   <div class="section-card" style="height:100%; padding:10px; display:flex; flex-direction:column; justify-content:center;">
                       <div class="section-title" style="margin-bottom:8px; font-size:11px;">차량 수요조사 결과</div>
@@ -206,9 +208,8 @@
               </div>
           </div>
 
-          <!-- 개별 행정 리스트 및 인쇄 -->
           <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;">
+              <div class="section-title has-btn">
                   <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span>
                   <button class="navy-btn" style="width:60px; height:28px; font-size:11px;" onclick="startPrint('course')">인쇄</button>
               </div>
@@ -220,32 +221,24 @@
               </div>
           </div>
 
-          <!-- 과정 공지 -->
           <div class="section-card">
               <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (담당과정 교수 및 교육생에게 공지됩니다)</div>
               <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="내용을 입력하세요."></textarea>
               <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
           </div>
-
-          <!-- 항기원 전체 공지 (상세 페이지에서도 노출) -->
-          <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (항기원 모든 교수 및 교육생에게 전달됩니다)</div>
-              <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="내용을 입력하세요."></textarea>
-              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
-          </div>
       </div>
     </main>
 
     <footer class="app-footer no-print">
-      <div id="footer-date">0000.00.00 (요일) 00:00</div>
+      <div id="footer-date">0000.00.00 00:00</div>
       <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
     </footer>
   </div>
 
-  <!-- 인쇄 팝업 모달 -->
+  <!-- 인쇄 옵션 모달 -->
   <div id="printOptionModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:20px;">
       <div style="background:white; width:100%; max-width:400px; border-radius:24px; padding:30px; text-align:center;">
-          <h3 style="margin-top:0;">명단 인쇄 범위 선택</h3>
+          <h3 style="margin-top:0; color:var(--navy-dark);">명단 인쇄 범위 선택</h3>
           <p style="font-size:13px; color:#64748b; margin-bottom:20px;">출력할 대상을 선택해 주세요.</p>
           <button class="navy-btn" style="height:48px; margin-bottom:10px;" onclick="startPrint('total')">전체 과정 통합 인쇄</button>
           <div style="font-size:11px; color:#94a3b8; margin:15px 0 10px 0; border-top:1px solid #eee; padding-top:15px;">--- 개별 과정별 선택 인쇄 ---</div>
@@ -254,7 +247,7 @@
       </div>
   </div>
 
-  <!-- 인쇄 전용 템플릿 (숨겨짐) -->
+  <!-- 출력물 템플릿 (결재란 삭제) -->
   <div id="print-area">
       <div style="text-align:center; border-bottom:3px double #333; padding-bottom:15px; margin-bottom:30px;">
           <h1 style="margin:0; font-size:32px; font-weight:900;">외출/외박 신청자</h1>
@@ -268,10 +261,10 @@
           </thead>
           <tbody id="printBody"></tbody>
       </table>
-      <div style="margin-top:30px; text-align:right; font-size:12px; color:#888;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
+      <div style="margin-top:30px; text-align:right; font-size:12px; color:#666;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
   </div>
 
-  <!-- 과정 설정 모달 -->
+  <!-- 설정 모달 -->
   <div id="setupModal" class="setup-modal">
       <div class="setup-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
@@ -321,10 +314,12 @@
   <script>
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = ""; let tempInstructors = [];
 
+    if(sessionStorage.getItem('kac_portal_auth') !== 'coord') { alert("인증 필요"); location.replace('portal.html'); }
+
     function init() {
         firebase.database().ref('courses').on('value', snap => {
             globalAllData = snap.val() || {};
-            updateGlobalStatus(); renderCourseListCards(); renderTotalHistory();
+            updateGlobalStatus(); renderInitialLists(); renderTotalHistory();
             if(currentRID) updateIndividualView();
             cleanOldData();
         });
@@ -336,9 +331,7 @@
         const now = new Date(); const week = ['일','월','화','수','목','금','토'];
         document.getElementById('footer-date').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
     }
-    setInterval(runClock, 1000); runClock();
-
-    function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
+    setInterval(runClock, 1000);
 
     function updateGlobalStatus() {
         let totalS = 0; let todayA = 0; const tStr = getTodayString();
@@ -356,27 +349,35 @@
         else { location.href = 'potal.html'; }
     }
 
-    function handleSidebarAction(type) {
-        if(!currentRID) { alert("담당 과정을 먼저 리스트에서 선택해주세요."); toggleMenu(false); return; }
-        if(type === 'qr') { document.getElementById('qrFile').click(); }
-        if(type === 'trans') { toggleMenu(false); document.getElementById('transportModal').style.display = "flex"; updateTransDirButtons(); loadCourseTransList(); }
-    }
+    function renderInitialLists() {
+        const select = document.getElementById('roomSelect');
+        const list = document.getElementById('activeCourseList');
+        const setupRoom = document.getElementById('setup-room-select');
+        const filter = document.getElementById('courseFilter');
+        const savedRoom = select.value;
+        const savedFilter = filter.value;
 
-    function renderCourseListCards() {
-        const list = document.getElementById('activeCourseList'); list.innerHTML = "";
-        const setupRoom = document.getElementById('setup-room-select'); setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
+        select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
+        setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
+        filter.innerHTML = '<option value="all">모든 과정 보기</option>';
+        list.innerHTML = "";
+
         for(let i=65; i<=90; i++){
             const rid = String.fromCharCode(i); const room = globalAllData[rid];
             let label = `Room ${rid}`; if(room?.status?.roomStatus==='active') label += ` [사용중 - ${room.status.professorName||'미정'}]`;
             setupRoom.add(new Option(label, rid));
             if(room?.status?.roomStatus==='active'){
                 const cName = room.settings?.courseName || rid;
-                const item = document.createElement('div'); item.style = "background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
+                select.add(new Option(`Room ${rid} - ${cName}`, rid));
+                filter.add(new Option(cName, rid));
+                const item = document.createElement('div');
+                item.style = "background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
                 item.onclick = () => { currentRID = rid; handleRoomSelection(); };
                 item.innerHTML = `<div><b style="color:#0ea5e9; margin-right:8px;">Room ${rid}</b><span style="font-weight:700; font-size:13px;">${cName}</span></div><i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:11px;"></i>`;
                 list.appendChild(item);
             }
         }
+        select.value = savedRoom; filter.value = savedFilter;
     }
 
     function handleRoomSelection() {
@@ -411,8 +412,11 @@
 
     function loadActionHistory(date) { selectedDate = date; renderTotalHistory(); }
     function renderTotalHistory() {
-        const tbody = document.getElementById('historyTableBody'); const filter = document.getElementById('courseFilter').value;
-        const label = document.getElementById('historyDateLabel'); const dateObj = new Date(selectedDate); const week = ['일','월','화','수','목','금','토'];
+        const tbody = document.getElementById('historyTableBody'); 
+        const filterEl = document.getElementById('courseFilter');
+        const filter = filterEl ? filterEl.value : 'all';
+        const label = document.getElementById('historyDateLabel');
+        const dateObj = new Date(selectedDate); const week = ['일','월','화','수','목','금','토'];
         label.innerText = `${selectedDate} (${week[dateObj.getDay()]}) 신청자 현황`;
         tbody.innerHTML = ""; let list = [];
         Object.keys(globalAllData).forEach(rid => {
@@ -470,6 +474,12 @@
         window.print();
     }
 
+    function handleSidebarAction(type) {
+        if(!currentRID) { alert("담당 과정을 먼저 리스트에서 선택해주세요."); toggleMenu(false); return; }
+        if(type === 'qr') { document.getElementById('qrFile').click(); }
+        if(type === 'trans') { toggleMenu(false); document.getElementById('transportModal').style.display = "flex"; updateTransDirButtons(); loadCourseTransList(); }
+    }
+
     async function openSetupModal() {
         toggleMenu(false); const profSelect = document.getElementById('setup-prof-select');
         profSelect.innerHTML = '<option value="">교수 선택</option>';
@@ -517,7 +527,7 @@
         Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined").forEach(s => { const key = `${s.name}_${s.phone}`; if(!uniqueMap.has(key)) uniqueMap.set(key, s.name); });
         alert(`[입교 명단]\n\n${Array.from(uniqueMap.values()).sort().join(", ") || "입교자 없음"}`);
     }
-    function showShuttleMembers(loc) { const room = globalAllData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {}); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`); }
+    function showShuttleMembers(loc) { const room = globalAllData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {}); if(m1.length + m2.length === 0) return alert("신청자 없음"); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`); }
     function checkLocationDirect(v) { document.getElementById('setup-location-direct').style.display = (v === 'direct') ? "block" : "none"; }
     function addTempInstructor() { const i = document.getElementById('setup-new-inst'); if(i.value.trim()){ tempInstructors.push(i.value.trim()); i.value = ""; renderInstructorList(); } }
     function renderInstructorList() {
@@ -525,7 +535,7 @@
         div.innerHTML = tempInstructors.length ? tempInstructors.map((n, i) => `<div class="inst-item"><span>${n}</span><i class="fa-solid fa-trash-can" style="color:#ef4444; cursor:pointer;" onclick="tempInstructors.splice(${i},1); renderInstructorList();"></i></div>`).join('') : '<div style="font-size:11px; color:#94a3b8; text-align:center;">강사 없음</div>';
     }
     function saveCourseNotice() { if(!currentRID) return; firebase.database().ref(`courses/${currentRID}/coordNotice`).set(document.getElementById('courseNotice').value).then(()=>alert("저장 완료")); }
-    function saveGlobalNotice() { firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(()=>alert("전체 공지 저장 완료")); }
+    function saveGlobalNotice() { firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(()=>alert("저장 완료")); }
     function toggleMenu(open) { document.getElementById('sideMenu').style.right = open ? "0" : "-280px"; document.getElementById('menuOverlay').style.display = open ? "block" : "none"; }
     function closeSetupModal() { document.getElementById('setupModal').style.display = "none"; }
     function deleteTrans(id) { if(confirm("삭제?")) firebase.database().ref(`system/transport_requests/${id}`).remove(); }
