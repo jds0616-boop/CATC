@@ -106,7 +106,7 @@
               <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
           </div>
           <div class="g-stat-item">
-              <div class="g-stat-label">금주 총 외출/외박</div>
+              <div class="g-stat-label">금일 총 외출/외박</div>
               <div class="g-stat-val" id="g-weekly-actions" style="color:#fbbf24;">0<span>건</span></div>
           </div>
       </div>
@@ -273,31 +273,38 @@
         document.getElementById('historyDate').value = selectedDate;
     }
 
-    // 항기원 전체 현황 집계
+    // 항기원 전체 현황 집계 (금일 00:00 ~ 24:00 기준)
     function updateGlobalStatus() {
         let totalS = 0;
-        let weeklyA = 0;
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // 이번 주 일요일
+        let todayActions = 0;
+        const todayStr = getTodayString(); // 오늘 날짜 (YYYY-MM-DD) 가져오기
 
         Object.keys(globalData).forEach(rid => {
             const room = globalData[rid];
-            // 교육생 수 (중복 제거)
+            
+            // 1. 항기원 전체 교육생 수 (기기 중복 제거 로직 유지)
             if (room.students) {
-                const uniqueSet = new Set(Object.values(room.students).filter(s => s.name && s.name !== "undefined").map(s => `${s.name}_${s.phone}`));
+                const uniqueSet = new Set(
+                    Object.values(room.students)
+                        .filter(s => s.name && s.name !== "undefined")
+                        .map(s => `${s.name}_${s.phone}`)
+                );
                 totalS += uniqueSet.size;
             }
-            // 이번 주 외출/외박 건수
-            if (room.admin_actions) {
-                Object.keys(room.admin_actions).forEach(date => {
-                    if (new Date(date) >= startOfWeek) {
-                        weeklyA += Object.keys(room.admin_actions[date]).length;
-                    }
-                });
+            
+            // 2. 금일 외출/외박 건수 (오늘 날짜 데이터만 추출)
+            if (room.admin_actions && room.admin_actions[todayStr]) {
+                // 해당 날짜(오늘)에 등록된 신청자 수만 합산
+                todayActions += Object.keys(room.admin_actions[todayStr]).length;
             }
         });
-        document.getElementById('g-total-students').innerHTML = `${totalS}<span>명</span>`;
-        document.getElementById('g-weekly-actions').innerHTML = `${weeklyA}<span>건</span>`;
+
+        // 화면 업데이트
+        const totalStudentsEl = document.getElementById('g-total-students');
+        const dailyActionsEl = document.getElementById('g-weekly-actions');
+        
+        if(totalStudentsEl) totalStudentsEl.innerHTML = `${totalS}<span>명</span>`;
+        if(dailyActionsEl) dailyActionsEl.innerHTML = `${todayActions}<span>건</span>`;
     }
 
     function runClock() {
