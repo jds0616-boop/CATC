@@ -78,7 +78,7 @@
         const room = params.get('room');
         let courseInfo = {};
 
-        async function init() {
+async function init() {
             if(!room) return;
             const db = firebase.database();
             
@@ -88,7 +88,7 @@
             document.getElementById('courseName').innerText = courseInfo.courseName || room;
             document.getElementById('coursePeriod').innerText = courseInfo.period || "-";
 
-            // 2. 날짜 헤더 생성 (월~금 제외 로직)
+            // 2. 날짜 헤더 생성
             const dates = generateDates(courseInfo.period);
             const header = document.getElementById('date-header');
             dates.forEach(d => {
@@ -97,23 +97,35 @@
                 header.appendChild(th);
             });
 
-            // 3. 수강생 및 출석 데이터 로드
+            // 3. 수강생 정보 가져오기 및 중복 제거
             const studentSnap = await db.ref(`courses/${room}/students`).once('value');
             const attendanceSnap = await db.ref(`courses/${room}/internal_attendance`).once('value');
-            const students = Object.values(studentSnap.val() || {}).filter(s => s.name).sort((a,b) => a.name.localeCompare(b.name));
+            const studentsRaw = studentSnap.val() || {};
             const attendanceData = attendanceSnap.val() || {};
 
+            // [핵심] 중복 이름 제거 로직
+            const uniqueStudentsMap = new Map();
+            Object.values(studentsRaw).forEach(s => {
+                if(s.name) {
+                    const cleanPhone = (s.phone || "0000").trim();
+                    const id = `${s.name.trim()}_${cleanPhone}`;
+                    uniqueStudentsMap.set(id, { name: s.name.trim(), phone: cleanPhone });
+                }
+            });
+
+            const sortedStudents = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
             const tbody = document.getElementById('attendance-body');
-            students.forEach((s, idx) => {
+
+            // 4. 테이블 그리기
+            sortedStudents.forEach((s, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${idx+1}</td><td class="name-col">${s.name}</td>`;
                 
-                // 각 날짜별로 도장 찍기
                 dates.forEach(d => {
                     const td = document.createElement('td');
-                    // 이름_번호 조합 식별자 (아까 수정하신 방식)
-                    const uToken = `${s.name}_${s.phone}`;
-                    if(attendanceData[d] && attendanceData[d][uToken]) {
+                    const attendKey = `${s.name}_${s.phone}`;
+                    // 해당 날짜에 출석 기록이 있는지 확인
+                    if(attendanceData[d] && attendanceData[d][attendKey]) {
                         td.innerHTML = '<div class="stamp">출석</div>';
                     }
                     tr.appendChild(td);

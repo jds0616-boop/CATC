@@ -1345,7 +1345,7 @@ loadDashboardStats: function() {
 
 
 
-// [교체] 자체 출석부 실시간 리스트 (중복 제거 및 동명인 처리 버전)
+// [최종보강] 자체 출석부 실시간 리스트 (중복 제거 및 실시간 체크)
     loadInternalAttendance: function() {
         if(!state.room) return;
         const today = getTodayString();
@@ -1355,33 +1355,28 @@ loadDashboardStats: function() {
         firebase.database().ref(`courses/${state.room}/students`).on('value', studentSnap => {
             const students = studentSnap.val() || {};
             
-            // [중요] 이름+번호가 같은 데이터는 하나로 합치기 (중복 방지)
+            // 이름+번호가 같으면 동일인물로 취급하여 중복 제거
             const uniqueStudentsMap = new Map();
             Object.keys(students).forEach(key => {
                 const s = students[key];
                 if (s.name && s.name !== "undefined") {
-                    const identifier = `${s.name.trim()}_${s.phone.trim()}`;
-                    // 이미 등록된 사람이면 온라인 상태인 쪽을 우선함
-                    if (!uniqueStudentsMap.has(identifier) || s.isOnline) {
-                        uniqueStudentsMap.set(identifier, { ...s, token: key });
-                    }
+                    const cleanPhone = (s.phone || "0000").trim();
+                    const identifier = `${s.name.trim()}_${cleanPhone}`;
+                    uniqueStudentsMap.set(identifier, { name: s.name.trim(), phone: cleanPhone });
                 }
             });
 
-            // 가나다순 정렬
             const sortedList = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
 
-            // (2) 오늘 날짜의 출석 완료 데이터 가져오기
+            // (2) 오늘 출석 데이터 가져오기
             firebase.database().ref(`courses/${state.room}/internal_attendance/${today}`).on('value', attendSnap => {
                 const attendees = attendSnap.val() || {};
-                
-                // 화면 업데이트
                 let attendCount = 0;
+                
                 if(listDiv) listDiv.innerHTML = "";
 
                 sortedList.forEach(s => {
-                    // 이 사람이 오늘 출석했는지 확인 (성함_번호 조합으로 대조)
-                    const attendKey = `${s.name.trim()}_${s.phone.trim()}`;
+                    const attendKey = `${s.name}_${s.phone}`;
                     const isAttended = attendees[attendKey] ? true : false;
                     if(isAttended) attendCount++;
 
@@ -1392,9 +1387,9 @@ loadDashboardStats: function() {
 
                     if(listDiv) {
                         listDiv.innerHTML += `
-                            <div style="background:${bgColor}; color:${textColor}; border:1.5px solid ${borderColor}; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:800; display:flex; flex-direction:column; gap:5px; transition: 0.2s;">
+                            <div style="background:${bgColor}; color:${textColor}; border:1.5px solid ${borderColor}; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:800;">
                                 <div style="font-size:16px;">${icon}</div>
-                                <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
+                                <div>${s.name}</div>
                             </div>
                         `;
                     }
