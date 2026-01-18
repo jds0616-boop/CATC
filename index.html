@@ -31,9 +31,23 @@
         .scroll-container { flex-grow: 1; overflow-y: auto; position: relative; padding: 0 15px 120px 15px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .scroll-container::-webkit-scrollbar { display: none; }
         .q-card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
-        .q-card.my-q { border: 2px solid var(--accent-color); background: #f0f9ff; }
-        .q-avatar { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; color: #64748b; }
-        .my-q .q-avatar { background: var(--accent-color); color: white; }
+
+
+/* 내가 작성한 질문 카드 스타일 (녹색으로 변경) */
+.q-card.my-q { 
+    border: 2px solid #10b981; /* 녹색 테두리 */
+    background: #f0fdf4;       /* 연한 녹색 배경 */
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); 
+}
+/* 내가 작성한 카드의 아바타(아이콘) 배경색 */
+.my-q .q-avatar { 
+    background: #10b981; 
+    color: white; 
+}
+
+
+
+
         .q-content { flex-grow: 1; min-width: 0; }
         .q-text { font-size: 15px; line-height: 1.5; color: var(--text-color); margin-bottom: 8px; word-break: break-word; font-weight: 500; white-space: pre-wrap; }
         .q-meta { font-size: 11px; color: #94a3b8; display: flex; gap: 8px; align-items: center; }
@@ -1037,7 +1051,7 @@ dbRef.status.on('value', snap => {
 
 
 
-// [수정] 질문 목록 렌더링 (필터링 및 5분 시간 제한 로직 포함)
+// [최종 수정] 질문 목록 렌더링 (내가 쓴 글 녹색 강조 로직 포함)
 function renderList(data) {
     const list = document.getElementById('qList'); 
     list.innerHTML = ""; 
@@ -1045,20 +1059,19 @@ function renderList(data) {
     // 1. 전체 데이터를 배열로 변환
     let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
     
-    // 2. [추가] 강사별 필터링 로직
-    // currentFilter가 "공통질문"이 아닐 경우에만 해당 강사(subject)와 일치하는 질문만 남깁니다.
+    // 2. 강사별 필터링 로직
     if (currentFilter !== "공통질문") {
         items = items.filter(item => item.subject === currentFilter);
     }
     
-    // 3. 정렬 로직 (기존 유지)
+    // 3. 정렬 로직
     if(currentSort === 'like') {
         items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
     } else {
         items.sort((a,b) => b.timestamp - a.timestamp);
     }
 
-    // 4. [추가] 질문이 없을 때 안내 문구
+    // 4. 질문이 없을 때 안내 문구
     if (items.length === 0) {
         const emptyMsg = currentFilter === "공통질문" 
             ? "등록된 질문이 없습니다." 
@@ -1071,7 +1084,8 @@ function renderList(data) {
     items.forEach(item => {
         if(item.status === 'delete') return;
         
-        const isMine = myQs[item.id] ? 'my-q' : ''; 
+        const isMine = myQs[item.id] ? true : false; // 내가 쓴 글인지 판단
+        const myQClass = isMine ? 'my-q' : '';       // CSS 클래스 적용
         const likedClass = myLikes[item.id] ? 'active' : '';
         
         // 강사 성함 호칭 정리
@@ -1083,7 +1097,12 @@ function renderList(data) {
         else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
         else displayName = targetName;
 
-        const instructorTag = `<span style="display:inline-block; background:#eff6ff; color:#3b82f6; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid #dbeafe; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
+        // [핵심 수정] 내가 쓴 글이면 녹색 배지 색상, 아니면 파란색 배지 색상 적용
+        const tagBg = isMine ? "#d1fae5" : "#eff6ff";
+        const tagColor = isMine ? "#059669" : "#3b82f6";
+        const tagBorder = isMine ? "#a7f3d0" : "#dbeafe";
+
+        const instructorTag = `<span style="display:inline-block; background:${tagBg}; color:${tagColor}; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid ${tagBorder}; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
 
         let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
         
@@ -1094,7 +1113,7 @@ function renderList(data) {
         metaHtml += `</div>`;
 
         list.innerHTML += `
-            <div class="q-card ${isMine}">
+            <div class="q-card ${myQClass}">
                 <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
                 <div class="q-content">
                     <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
