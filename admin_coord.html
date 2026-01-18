@@ -375,37 +375,48 @@
 
 
 function updateGlobalStatus() {
-    // 모든 과정의 입교 학생을 중복 없이 담을 집합
-    let totalStudentSet = new Set();
-    let todayActionsCount = 0;
-    const todayStr = getTodayString();
+    // 중복 제거를 위한 마스터 세트
+    let globalSet = new Set();
+    let totalActions = 0;
+    const today = getTodayString();
 
-    // 1. 모든 강의실(Room A, B, C...) 데이터를 순회
+    // 모든 과정(Room A~Z)을 뒤집니다.
     Object.keys(globalAllData).forEach(rid => {
-        const roomData = globalAllData[rid];
+        const room = globalAllData[rid];
+        
+        // 1. 실제 입교 완료된 수강생 명단 처리
+        if (room.students) { 
+            Object.values(room.students).forEach(s => {
+                // 이름과 번호가 문자열 "undefined"가 아니고, 실제로 값이 존재할 때만 인정
+                if (s && s.name && s.name !== "undefined" && s.phone && s.phone !== "undefined") {
+                    const cleanName = s.name.trim();
+                    const cleanPhone = s.phone.replace(/[^0-9]/g, ''); // 숫자만 남김
 
-        // 2. 해당 과정의 [수강생 현황/입교 명단] 데이터가 있다면
-        if (roomData.students) {
-            Object.values(roomData.students).forEach(student => {
-                // 이름과 전화번호가 존재하는 데이터만 '입교생'으로 인정
-                if (student.name && student.phone) {
-                    // 동일인이 여러 기기로 접속했을 경우를 대비해 '이름+번호'로 식별
-                    const idKey = `${student.name.trim()}_${student.phone.trim()}`;
-                    totalStudentSet.add(idKey);
+                    // 이름이 2글자 이상이고 번호가 있을 때만 '진짜 학생'으로 간주
+                    if (cleanName.length >= 2 && cleanPhone.length >= 4) {
+                        globalSet.add(`${cleanName}_${cleanPhone}`);
+                    }
                 }
             });
         }
-
-        // 3. 금일 외출/외박 건수 합산 (이건 신청 기록이므로 별도 계산)
-        if (roomData.admin_actions && roomData.admin_actions[todayStr]) {
-            todayActionsCount += Object.keys(roomData.admin_actions[todayStr]).length;
+        
+        // 2. 금일 총 외출/외박 신청 건수 합산
+        if (room.admin_actions && room.admin_actions[today]) { 
+            totalActions += Object.keys(room.admin_actions[today]).length; 
         }
     });
 
-    // 4. 결과 출력
-    const totalCount = totalStudentSet.size;
-    document.getElementById('g-total-students').innerHTML = `${totalCount}<span>명</span>`;
-    document.getElementById('g-today-actions').innerHTML = `${todayActionsCount}<span>건</span>`;
+    // 화면 반영
+    const finalCount = globalSet.size;
+    document.getElementById('g-total-students').innerHTML = `${finalCount}<span>명</span>`;
+    document.getElementById('g-today-actions').innerHTML = `${totalActions}<span>건</span>`;
+
+    // [디버깅용] 누가 2명인지 궁금할 때를 위해 클릭하면 명단을 보여주는 기능 부여
+    document.getElementById('g-total-students').parentElement.onclick = function() {
+        if(globalSet.size > 0) {
+            alert("현재 카운트된 명단:\n" + Array.from(globalSet).join("\n"));
+        }
+    };
 }
 
 
