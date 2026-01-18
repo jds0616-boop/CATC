@@ -30,18 +30,13 @@
     .app-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .section-card { background: var(--card-white); border-radius: 12px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     
+    /* 제목 좌측 정렬 */
     .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; }
     
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .navy-input:focus { border-color: var(--blue-main); background: #fff; }
 
-    /* 상황판 레이아웃 */
-    .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
-    .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 15px; color: white; text-align: center; }
-    .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 5px; font-weight: 700; }
-    .g-stat-val { font-size: 22px; font-weight: 900; color: var(--blue-main); }
-    .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
-
+    /* 레이아웃 분할 */
     .dashboard-split { display: flex; gap: 8px; align-items: stretch; margin-bottom: 5px; }
     .col-1-3 { flex: 1; }
     .col-2-3 { flex: 2.5; }
@@ -50,8 +45,9 @@
     .entry-val { font-size: 24px; font-weight: 900; color: var(--navy-dark); margin-bottom: 2px; }
     .entry-val span { font-size: 12px; color: #94a3b8; }
 
+    /* 수송 현황판 */
     .shuttle-grid { display: flex; justify-content: space-between; gap: 4px; }
-    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; }
+    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; transition: 0.2s; }
     .shuttle-item span { font-size: 10px; color: #64748b; display: block; margin-bottom: 4px; font-weight: 700; }
     .shuttle-item b { font-size: 16px; color: var(--navy-dark); font-weight: 900; }
 
@@ -65,52 +61,55 @@
     .navy-btn:active { transform: scale(0.98); opacity: 0.8; }
     .navy-btn.green { background: var(--green-save); }
 
+    /* 하단바 */
     .app-footer { height: 45px; background: var(--navy-dark); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
     #footer-date { font-size: 15px; font-weight: 700; font-style: italic; opacity: 0.9; }
     .footer-logo img { height: 16px; filter: brightness(0) invert(1); }
 
-    /* 설정 팝업 모달 */
+    /* 설정 팝업 모달 전용 */
     .setup-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:15px; }
     .setup-box { background:white; width:100%; max-width:500px; border-radius:24px; padding:25px; max-height:90vh; overflow-y:auto; }
     .setup-group { margin-bottom: 15px; }
     .setup-label { display: block; font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 6px; }
     .instructor-list { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-top: 8px; }
     .inst-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #fff; border: 1px solid #eee; border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+
+    #print-area { display: none; }
+    @media print {
+      body { background: white; }
+      .app-container, .no-print { display: none !important; }
+      #print-area { display: block !important; padding: 20px; }
+      .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+      .print-table th, .print-table td { border: 1px solid #333; padding: 10px; text-align: center; font-size: 13px; }
+    }
   </style>
 </head>
 <body>
   <div class="app-container">
     <div id="menuOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500;" onclick="toggleMenu(false)"></div>
     
+    <!-- 사이드 메뉴 개편 -->
     <div id="sideMenu" class="side-menu no-print" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="margin:0; font-size:16px; color:#0f172a;">행정 지원 메뉴</h3>
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="toggleMenu(false)"></i>
       </div>
+      
       <button class="navy-btn" style="background:#3b82f6; text-align:left; padding-left:15px; height:50px;" onclick="openSetupModal()">
           <i class="fa-solid fa-folder-plus"></i> 교육과정 추가/설정
       </button>
+
+      <div style="font-size:11px; color:#94a3b8; text-align:center; margin-top:auto;">항공기술훈련원 교육운영시스템</div>
     </div>
 
-    <header class="app-header">
+    <header class="app-header no-print">
       <button class="header-btn" onclick="handleBackNav()"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="header-title">항공기술훈련원 교육운영부</div>
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <main class="app-content">
-      <!-- 1. 항기원 전체 현황 상황판 -->
-      <div id="globalStatusArea" class="global-status-grid no-print">
-          <div class="g-stat-item">
-              <div class="g-stat-label">항기원 전체 교육생</div>
-              <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
-          </div>
-          <div class="g-stat-item">
-              <div class="g-stat-label">금주 총 외출/외박</div>
-              <div class="g-stat-val" id="g-weekly-actions" style="color:#fbbf24;">0<span>건</span></div>
-          </div>
-      </div>
-
+    <main class="app-content no-print">
+      <!-- 과정 선택 -->
       <div class="section-card">
           <div class="section-title"><i class="fa-solid fa-chalkboard-user"></i> 운영 과정 선택</div>
           <select id="roomSelect" class="navy-select" onchange="handleRoomSelection()">
@@ -123,7 +122,9 @@
           <div class="section-card">
               <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
-                  <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
+                  <div style="display:flex; gap:5px;">
+                      <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
+                  </div>
               </div>
               <div style="overflow-x: auto; margin-top:10px;">
                   <table class="navy-table">
@@ -136,7 +137,7 @@
               <div id="totalCountSum" style="margin-top:15px; text-align:right; font-weight:900; color:var(--blue-deep); font-size:14px;">총 0명</div>
           </div>
           <div class="section-card" style="margin-top:8px;">
-              <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 리스트</div>
+              <div class="section-title"><i class="fa-solid fa-list-ul"></i> 운영 중인 과정 리스트</div>
               <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
       </div>
@@ -148,7 +149,7 @@
                   <div class="entry-box" onclick="showEntryMemberList()">
                       <span style="font-size:10px; font-weight:800; color:var(--blue-deep); margin-bottom:5px; display:block;">입교 현황</span>
                       <div class="entry-val" id="ind-entry-cnt">0<span>명</span></div>
-                      <span style="font-size:9px; color:#94a3b8;">(명단 확인)</span>
+                      <span style="font-size:9px; color:#94a3b8; margin-top:4px;">(명단 확인)</span>
                   </div>
               </div>
               <div class="col-2-3">
@@ -164,20 +165,31 @@
               </div>
           </div>
           <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 과정 공지사항</div>
+              <div class="section-title" style="justify-content:space-between;">
+                  <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자</span>
+              </div>
+              <div style="overflow-x: auto;">
+                  <table class="navy-table">
+                      <thead><tr><th>신청자</th><th>비상연락처</th><th>구분</th><th>시간</th></tr></thead>
+                      <tbody id="indActionTableBody"></tbody>
+                  </table>
+              </div>
+          </div>
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 과정 공지사항 (담당과정 교수 및 교육생에게 공지됩니다)</div>
               <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="내용을 입력하세요."></textarea>
               <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
           </div>
       </div>
     </main>
 
-    <footer class="app-footer">
+    <footer class="app-footer no-print">
       <div id="footer-date">0000.00.00 00:00</div>
       <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
     </footer>
   </div>
 
-  <!-- 교육과정 설정 모달 -->
+  <!-- 교육과정 추가/설정 모달 -->
   <div id="setupModal" class="setup-modal">
       <div class="setup-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
@@ -206,28 +218,7 @@
 
           <div class="setup-group">
               <label class="setup-label">강의실 상세 위치</label>
-              <div style="display:flex; gap:5px;">
-                  <select id="setup-room-dropdown" class="navy-select" onchange="checkLocationDirect(this.value)" style="flex:1;">
-                      <option value="">--- 장소 선택 ---</option>
-                      <optgroup label="하늘관">
-                          <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
-                          <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
-                          <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
-                          <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
-                      </optgroup>
-                      <optgroup label="국제동">
-                          <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
-                          <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
-                          <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
-                      </optgroup>
-                      <optgroup label="관제교육동">
-                          <option value="관제교육동 1층">관제교육동 1층</option>
-                          <option value="관제교육동 2층">관제교육동 2층</option>
-                      </optgroup>
-                      <option value="direct">--- 직접 입력 ---</option>
-                  </select>
-                  <input type="text" id="setup-location-direct" class="navy-input" style="flex:1; display:none;" placeholder="위치 직접 작성">
-              </div>
+              <input type="text" id="setup-location" class="navy-input" placeholder="예: 하늘관 1층 대강당">
           </div>
 
           <div class="setup-group">
@@ -244,8 +235,10 @@
               </div>
           </div>
 
-          <div style="background:#fff7ed; padding:12px; border-radius:10px; margin-top:15px; border:1px solid #fed7aa; font-size:11px; color:#9a3412; font-weight:800;">
-              보안: 교육생/강사 접속 비밀번호는 7777로 자동 설정됩니다.
+          <div style="background:#fff7ed; padding:12px; border-radius:10px; margin-top:15px; border:1px solid #fed7aa;">
+              <p style="font-size:11px; color:#9a3412; margin:0; font-weight:800;">
+                  <i class="fa-solid fa-shield-halved"></i> 보안: 교육생/강사 접속 비밀번호는 <b style="color:#ef4444;">7777</b>로 자동 설정됩니다.
+              </p>
           </div>
 
           <div style="display:flex; gap:10px; margin-top:20px;">
@@ -265,7 +258,6 @@
     function init() {
         firebase.database().ref('courses').on('value', snap => {
             globalData = snap.val() || {};
-            updateGlobalStatus();
             renderInitialUI();
             renderHistory();
             if(currentRID) updateIndividualView();
@@ -273,38 +265,13 @@
         document.getElementById('historyDate').value = selectedDate;
     }
 
-    // 항기원 전체 현황 집계
-    function updateGlobalStatus() {
-        let totalS = 0;
-        let weeklyA = 0;
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // 이번 주 일요일
-
-        Object.keys(globalData).forEach(rid => {
-            const room = globalData[rid];
-            // 교육생 수 (중복 제거)
-            if (room.students) {
-                const uniqueSet = new Set(Object.values(room.students).filter(s => s.name && s.name !== "undefined").map(s => `${s.name}_${s.phone}`));
-                totalS += uniqueSet.size;
-            }
-            // 이번 주 외출/외박 건수
-            if (room.admin_actions) {
-                Object.keys(room.admin_actions).forEach(date => {
-                    if (new Date(date) >= startOfWeek) {
-                        weeklyA += Object.keys(room.admin_actions[date]).length;
-                    }
-                });
-            }
-        });
-        document.getElementById('g-total-students').innerHTML = `${totalS}<span>명</span>`;
-        document.getElementById('g-weekly-actions').innerHTML = `${weeklyA}<span>건</span>`;
-    }
-
     function runClock() {
         const now = new Date(); const week = ['일','월','화','수','목','금','토'];
         document.getElementById('footer-date').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
     }
     setInterval(runClock, 1000); runClock();
+
+    function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
 
     function handleBackNav() {
         if(currentRID) { currentRID = ""; document.getElementById('roomSelect').value = ""; handleRoomSelection(); }
@@ -314,13 +281,16 @@
     function renderInitialUI() {
         const select = document.getElementById('roomSelect');
         const list = document.getElementById('activeCourseList');
+        const setupRoomSelect = document.getElementById('setup-room-select');
         const savedRoom = select.value;
 
         select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
+        setupRoomSelect.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
         list.innerHTML = "";
 
         for(let i=65; i<=90; i++){
             const rid = String.fromCharCode(i);
+            setupRoomSelect.add(new Option(`Room ${rid}`, rid));
             const room = globalData[rid];
             if(room?.status?.roomStatus === 'active') {
                 const cName = room.settings?.courseName || `Room ${rid}`;
@@ -335,39 +305,6 @@
         select.value = savedRoom;
     }
 
-    async function openSetupModal() {
-        toggleMenu(false);
-        const roomSelect = document.getElementById('setup-room-select');
-        const profSelect = document.getElementById('setup-prof-select');
-        roomSelect.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
-        profSelect.innerHTML = '<option value="">담당 교수 선택</option>';
-
-        // 강의실 옵션 (사용 상태 포함)
-        for(let i=65; i<=90; i++){
-            const rid = String.fromCharCode(i);
-            const room = globalData[rid];
-            let label = `Room ${rid}`;
-            if(room?.status?.roomStatus === 'active') label += ` [사용중 - ${room.status.professorName || '미정'}]`;
-            roomSelect.add(new Option(label, rid));
-        }
-
-        const profSnap = await firebase.database().ref('system/professors').once('value');
-        Object.values(profSnap.val() || {}).forEach(name => profSelect.add(new Option(name, name)));
-        
-        document.getElementById('setup-course-name').value = "";
-        document.getElementById('setup-start').value = "";
-        document.getElementById('setup-end').value = "";
-        document.getElementById('setup-room-dropdown').value = "";
-        document.getElementById('setup-location-direct').style.display = "none";
-        tempInstructors = [];
-        renderInstructorList();
-        document.getElementById('setupModal').style.display = "flex";
-    }
-
-    function checkLocationDirect(val) {
-        document.getElementById('setup-location-direct').style.display = (val === 'direct') ? "block" : "none";
-    }
-
     function handleRoomSelection() {
         const rid = document.getElementById('roomSelect').value;
         currentRID = rid;
@@ -379,8 +316,8 @@
     function updateIndividualView() {
         const room = globalData[currentRID]; const today = getTodayString();
         const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
-        const uniqueSet = new Set(students.map(s => `${s.name}_${s.phone}`));
-        document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSet.size}<span>명</span>`;
+        const uniqueKeys = new Set(students.map(s => `${s.name}_${s.phone}`));
+        document.getElementById('ind-entry-cnt').innerHTML = `${uniqueKeys.size}<span>명</span>`;
         const getSum = (loc) => {
             const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0;
             const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0;
@@ -390,8 +327,11 @@
         document.getElementById('ind-term').innerText = getSum('terminal');
         document.getElementById('ind-air').innerText = getSum('airport');
         document.getElementById('ind-car').innerText = getSum('car');
-        document.getElementById('courseNotice').value = room.coordNotice || "";
-        autoGrow(document.getElementById('courseNotice'));
+        const indActionTbody = document.getElementById('indActionTableBody');
+        const actions = room.admin_actions?.[today] || {};
+        const items = Object.values(actions).sort((a,b)=>a.timestamp - b.timestamp);
+        indActionTbody.innerHTML = items.length ? items.map(a => `<tr><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td style="color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8;">신청자 없음</td></tr>';
+        document.getElementById('courseNotice').value = room.coordNotice || ""; autoGrow(document.getElementById('courseNotice'));
     }
 
     function loadActionHistory(date) { selectedDate = date; renderHistory(); }
@@ -416,6 +356,24 @@
         }
     }
 
+    /* 통합 환경 설정 로직 */
+    async function openSetupModal() {
+        toggleMenu(false);
+        const profSelect = document.getElementById('setup-prof-select');
+        profSelect.innerHTML = '<option value="">담당 교수 선택</option>';
+        const profSnap = await firebase.database().ref('system/professors').once('value');
+        Object.values(profSnap.val() || {}).forEach(name => profSelect.add(new Option(name, name)));
+        
+        // 입력 초기화
+        document.getElementById('setup-course-name').value = "";
+        document.getElementById('setup-start').value = "";
+        document.getElementById('setup-end').value = "";
+        document.getElementById('setup-location').value = "";
+        tempInstructors = [];
+        renderInstructorList();
+        document.getElementById('setupModal').style.display = "flex";
+    }
+
     function addTempInstructor() {
         const input = document.getElementById('setup-new-inst');
         const name = input.value.trim();
@@ -425,10 +383,15 @@
         renderInstructorList();
     }
 
+    function removeTempInstructor(idx) {
+        tempInstructors.splice(idx, 1);
+        renderInstructorList();
+    }
+
     function renderInstructorList() {
         const div = document.getElementById('setup-instructor-list');
         div.innerHTML = tempInstructors.length ? tempInstructors.map((name, i) => `
-            <div class="inst-item"><span>${name}</span><i class="fa-solid fa-trash-can" style="color:#ef4444; cursor:pointer;" onclick="tempInstructors.splice(${i},1); renderInstructorList();"></i></div>
+            <div class="inst-item"><span>${name}</span><i class="fa-solid fa-trash-can" style="color:#ef4444; cursor:pointer;" onclick="removeTempInstructor(${i})"></i></div>
         `).join('') : '<div style="font-size:11px; color:#94a3b8; text-align:center;">등록된 강사 없음</div>';
     }
 
@@ -437,12 +400,10 @@
         const name = document.getElementById('setup-course-name').value.trim();
         const start = document.getElementById('setup-start').value;
         const end = document.getElementById('setup-end').value;
-        const dropLoc = document.getElementById('setup-room-dropdown').value;
-        const directLoc = document.getElementById('setup-location-direct').value.trim();
-        const loc = (dropLoc === 'direct') ? directLoc : dropLoc;
+        const loc = document.getElementById('setup-location').value.trim();
         const prof = document.getElementById('setup-prof-select').value;
 
-        if(!rid || !name || !start || !end || !loc || !prof) return alert("필수 항목을 모두 입력/선택하세요.");
+        if(!rid || !name || !start || !end || !loc || !prof) return alert("모든 항목을 입력/선택하세요.");
 
         const updates = {};
         updates[`courses/${rid}/settings/courseName`] = name;
@@ -452,37 +413,38 @@
         updates[`courses/${rid}/status/professorName`] = prof;
         updates[`courses/${rid}/status/roomStatus`] = "active";
         
+        // 강사 리스트 업로드 (기존 강사 초기화 후 재등록)
         await firebase.database().ref(`courses/${rid}/settings/subjects`).remove();
-        for(let inst of tempInstructors) { await firebase.database().ref(`courses/${rid}/settings/subjects`).push(inst); }
+        for(let inst of tempInstructors) {
+            await firebase.database().ref(`courses/${rid}/settings/subjects`).push(inst);
+        }
 
         await firebase.database().ref().update(updates);
-        alert("과정이 개설되었습니다.");
+        alert("교육과정이 성공적으로 개설되었습니다.");
         closeSetupModal();
-    }
-
-    function showEntryMemberList() {
-        const room = globalData[currentRID];
-        const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
-        const uniqueMap = new Map();
-        students.forEach(s => { const key = `${s.name}_${s.phone}`; if(!uniqueMap.has(key)) uniqueMap.set(key, s.name); });
-        const names = Array.from(uniqueMap.values()).sort().join(", ");
-        alert(`[입교 명단]\n\n${names || "입교자 없음"}`);
-    }
-
-    function showShuttleMembers(loc) {
-        const room = globalData[currentRID];
-        const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {});
-        const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {});
-        if(m1.length + m2.length === 0) return alert("신청자가 없습니다.");
-        alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`);
     }
 
     function closeSetupModal() { document.getElementById('setupModal').style.display = "none"; }
     function toggleMenu(open) { document.getElementById('sideMenu').style.right = open ? "0" : "-280px"; document.getElementById('menuOverlay').style.display = open ? "block" : "none"; }
-    function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
-    function getTodayString(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
     function saveCourseNotice() { if(!currentRID) return; firebase.database().ref(`courses/${currentRID}/coordNotice`).set(document.getElementById('courseNotice').value).then(()=>alert("저장 완료")); }
-    function saveGlobalNotice() { firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(()=>alert("저장 완료")); }
+    function saveGlobalNotice() { firebase.database().ref(`system/globalNotice`).set(document.getElementById('globalNotice').value).then(()=>alert("전체 공지 저장 완료")); }
+    function getTodayString(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    function showShuttleMembers(loc) {
+        const room = globalData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {});
+        if(m1.length + m2.length === 0) return alert("신청자가 없습니다."); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`);
+    }
+    function showEntryMemberList() {
+        const room = globalData[currentRID]; const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
+        const uniqueMap = new Map(); students.forEach(s => { const key = `${s.name}_${s.phone}`; if(!uniqueMap.has(key)) uniqueMap.set(key, s.name); });
+        const names = Array.from(uniqueMap.values()).sort().join(", "); alert(`[입교 명단]\n\n${names || "입교자 없음"}`);
+    }
+    function cleanOldData() {
+        const limit = new Date(); limit.setMonth(limit.getMonth() - 3); const limitStr = getTodayString(limit);
+        Object.keys(globalData).forEach(rid => {
+            const actions = globalData[rid].admin_actions;
+            if(actions) Object.keys(actions).forEach(dk => { if(dk < limitStr) firebase.database().ref(`courses/${rid}/admin_actions/${dk}`).remove(); });
+        });
+    }
 
     init();
   </script>
