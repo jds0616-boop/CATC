@@ -219,27 +219,13 @@
   </div>
 
   <div id="coordManageModal" class="setup-modal" style="z-index: 7000;">
-      <div class="setup-box" style="max-width: 450px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
-              <h3 style="margin:0; font-size:17px; color:var(--navy-dark);"><i class="fa-solid fa-user-gear"></i> 담당자 명단 및 서명 관리</h3>
-              <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="document.getElementById('coordManageModal').style.display='none'"></i>
-          </div>
-          <div id="coordListContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border:1px solid #eee; border-radius:8px; padding:5px; background:#f8fafc;"></div>
-          <div style="padding:15px; background:#fff; border:1px solid #eee; border-radius:12px;">
-              <label class="setup-label">새 담당자 등록</label>
-              <input type="text" id="newCoordInput" class="navy-input" placeholder="성함 직책" style="margin-bottom:8px;">
-              <div style="display:flex; gap:5px;">
-                  <input type="file" id="coordSignFile" accept="image/*" style="display:none;" onchange="coordMgr.handleFile(this)">
-                  <button class="navy-btn" style="background:#64748b; flex:1;" onclick="document.getElementById('coordSignFile').click()">서명 이미지 선택</button>
-                  <button class="navy-btn" style="flex:1;" onclick="coordMgr.add()">등록하기</button>
-              </div>
-              <div id="signPreviewArea" style="margin-top:10px; text-align:center; display:none;">
-                  <span style="font-size:11px; color:#64748b;">선택된 서명:</span><br>
-                  <img id="tempSignPreview" style="height:40px; border:1px solid #eee;">
-              </div>
-          </div>
-          <button class="navy-btn" style="margin-top:20px; background:#1e293b;" onclick="document.getElementById('coordManageModal').style.display='none'">닫기</button>
+      <div class="setup-box" style="max-width: 400px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;"><h3 style="margin:0; font-size:17px; color:var(--navy-dark);"><i class="fa-solid fa-user-gear"></i> 담당자 명단 관리</h3><i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="document.getElementById('coordManageModal').style.display='none'"></i></div>
+          <div id="coordListContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border:1px solid #eee; border-radius:8px; padding:5px; background:#fff;"></div>
+          <div style="display:flex; gap:5px;"><input type="text" id="newCoordInput" class="navy-input" placeholder="성함 직책"><button class="navy-btn" style="width:60px;" onclick="coordMgr.add()">추가</button></div>
+          <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('coordManageModal').style.display='none'">닫기</button>
       </div>
+  </div>
 
   <div id="setupModal" class="setup-modal">
       <div class="setup-box" style="overflow-y: visible;">
@@ -308,52 +294,37 @@
   <script>
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
 
-const coordMgr = {
+    const coordMgr = {
         list: [],
-        tempSign: "",
         init: async function() {
-            firebase.database().ref('system/coordinators').on('value', s => {
+            const ref = firebase.database().ref('system/coordinators');
+            const snap = await ref.once('value');
+            if (!snap.exists()) {
+                const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
+                for (let name of initial) { await ref.push(name); }
+            }
+            ref.on('value', s => {
                 const data = s.val() || {};
-                this.list = Object.keys(data).map(k => ({ key: k, ...data[k] }));
+                this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
                 this.renderSelects(); this.renderManageList();
             });
         },
         renderSelects: function() {
             const sel = document.getElementById('setup-coord-select'); if(!sel) return;
-            const cur = sel.value; sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
-            this.list.forEach(c => { sel.add(new Option(c.name, c.name)); });
-            if(cur) sel.value = cur;
+            const curValue = sel.value; sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
+            this.list.forEach(c => { const opt = new Option(c.name, c.name); if(c.name === curValue) opt.selected = true; sel.add(opt); });
         },
         renderManageList: function() {
             const div = document.getElementById('coordListContainer'); if(!div) return;
-            div.innerHTML = this.list.map(c => `
-                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; align-items:center; background:#fff; margin-bottom:4px; border-radius:6px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-weight:800;">${c.name}</span>
-                        ${c.sign ? `<img src="${c.sign}" style="height:30px; border:1px solid #eee;">` : `<span style="font-size:11px; color:#94a3b8;">(서명 없음)</span>`}
-                    </div>
-                    <i class="fa-solid fa-circle-xmark" style="color:var(--danger); cursor:pointer; font-size:18px;" onclick="coordMgr.delete('${c.key}')"></i>
-                </div>`).join('');
-        },
-        handleFile: function(input) {
-            const file = input.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                this.tempSign = e.target.result; 
-                document.getElementById('tempSignPreview').src = e.target.result;
-                document.getElementById('signPreviewArea').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            if(this.list.length === 0) { div.innerHTML = "<div style='text-align:center; padding:20px; color:#94a3b8;'>담당자가 없습니다.</div>"; return; }
+            div.innerHTML = this.list.map(c => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; align-items:center; background:#fff; margin-bottom:5px; border-radius:8px; color:#1e293b;"><span style="font-weight:800;">${c.name}</span><i class="fa-solid fa-circle-xmark" style="color:#ef4444; cursor:pointer; font-size:20px;" onclick="coordMgr.delete('${c.key}')"></i></div>`).join('');
         },
         add: async function() {
-            const name = document.getElementById('newCoordInput').value.trim();
-            if(!name) return alert("성함을 입력하세요.");
-            if(!this.tempSign) return alert("서명 이미지를 선택하세요.");
-            await firebase.database().ref('system/coordinators').push({ name, sign: this.tempSign });
-            document.getElementById('newCoordInput').value = ""; this.tempSign = "";
-            document.getElementById('signPreviewArea').style.display = 'none';
+            const input = document.getElementById('newCoordInput'); const v = input.value.trim(); if(!v) return; input.disabled = true;
+            try { await firebase.database().ref('system/coordinators').push(v); input.value = ""; } catch(e) { alert("오류: " + e.message); } finally { input.disabled = false; input.focus(); }
         },
-        delete: async function(k) { if(confirm("담당자를 삭제할까요?")) await firebase.database().ref(`system/coordinators/${k}`).remove(); }
+        delete: async function(k) { if(confirm("삭제?")) await firebase.database().ref(`system/coordinators/${k}`).remove(); },
+        openManage: function() { document.getElementById('coordManageModal').style.display = 'flex'; this.renderManageList(); }
     };
 
     function init() {
@@ -381,24 +352,11 @@ const coordMgr = {
         if(isInd) { updateIndividualView(); updateQRPreview(); }
     }
 
-function updateGlobalStatus() {
-        let globalSet = new Set(); // 중복 제거를 위한 바구니
-        let todayA = 0; 
-        const tStr = getTodayString();
-
+    function updateGlobalStatus() {
+        let globalSet = new Set(); let todayA = 0; const tStr = getTodayString();
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
-            // 1. 학생 명단에서 중복 제거하며 카운트
-            if (room.students) { 
-                Object.values(room.students).forEach(s => { 
-                    if (s.name && s.name !== "undefined" && s.phone) { 
-                        // 이름_전화번호 형태의 고유 키 생성 (공백/하이픈 제거)
-                        const key = `${s.name.trim()}_${s.phone.replace(/-/g,'').trim()}`;
-                        globalSet.add(key); 
-                    } 
-                }); 
-            }
-            // 2. 외출/외박 건수 합산
+            if (room.students) { Object.values(room.students).forEach(s => { if (s.name && s.name !== "undefined") { globalSet.add(`${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`); } }); }
             if (room.admin_actions?.[tStr]) todayA += Object.keys(room.admin_actions[tStr]).length;
         });
         document.getElementById('g-total-students').innerHTML = `${globalSet.size}<span>명</span>`;
@@ -427,48 +385,48 @@ function updateGlobalStatus() {
 
 
 function updateIndividualView() {
-        const room = globalAllData[currentRID]; if (!room) return;
+        const room = globalAllData[currentRID]; 
+        if (!room) return;
+
+        // 1. 배너 정보 텍스트 삽입
         document.getElementById('ind-room-id').innerText = currentRID;
         document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
-        const today = getTodayString();
-        
-        // 학생장 실시간 연동
+        document.getElementById('ind-period').innerText = room.settings?.period || "기간 미정";
+        document.getElementById('ind-prof').innerText = (room.status?.professorName || "미지정") + " 교수";
+        document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "미지정";
+        document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "장소 미설정";
+
+        // 2. 학생장 정보 연동 (isLeader 체크)
         let leaderTxt = "지정된 학생장 없음";
-        if(room.students) {
+        if (room.students) {
             const leader = Object.values(room.students).find(s => s.isLeader === true);
-            if(leader) leaderTxt = `${leader.name} (${leader.phone || ''})`;
+            if (leader) leaderTxt = `${leader.name} (${leader.phone || '연락처 없음'})`;
         }
         document.getElementById('ind-leader').innerText = leaderTxt;
 
-        // 입교 현황
+        // 3. 입교/차량 통계 로직 (기존 유지)
+        const today = getTodayString();
         const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
         const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
         document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
-        
-        // 차량 현황
         const getSum = (loc) => { const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; return w1 + w2; };
-        document.getElementById('ind-osong').innerText = getSum('osong'); document.getElementById('ind-term').innerText = getSum('terminal'); document.getElementById('ind-air').innerText = getSum('airport'); document.getElementById('ind-car').innerText = getSum('car');
+        document.getElementById('ind-osong').innerText = getSum('osong');
+        document.getElementById('ind-term').innerText = getSum('terminal');
+        document.getElementById('ind-air').innerText = getSum('airport');
+        document.getElementById('ind-car').innerText = getSum('car');
         
-        // 신청 명단 (서명 이미지 포함)
+        // 4. 명단 테이블 및 서명 버튼 로직 (기존 유지)
         const actionTbody = document.getElementById('indActionTableBody');
         const actions = room.admin_actions?.[today] || {};
         const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
-        
         actionTbody.innerHTML = items.length ? items.map(a => {
             const isSigned = a.confirmed === true;
-            // 서명 완료 시 이미지 출력, 아니면 '서명' 글자 출력
-            const btnContent = isSigned ? `<img src="${a.confirmedBySign}" style="height:30px; mix-blend-mode:multiply;">` : "서명";
-            const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
-            
-            return `<tr>
-                <td style="font-weight:800;">${a.name}</td>
-                <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
-                <td style="color:#94a3b8; font-size:11px;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:80px; height:38px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td>
-            </tr>`;
-        }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 내역 없음</td></tr>';
+            const btnStyle = isSigned ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" : "background: var(--blue-main); color: #fff; border: none;";
+            return `<tr><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:6px 10px; font-size:11px; cursor:pointer; min-width:75px; font-weight:800;">${isSigned ? a.confirmedBy : '서명'}</button></td></tr>`;
+        }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8;">신청자 없음</td></tr>';
         
         document.getElementById('courseNotice').value = room.coordNotice || ""; 
+        autoGrow(document.getElementById('courseNotice'));
     }
 
 
@@ -497,30 +455,12 @@ function updateIndividualView() {
         });
     }
 
-async function toggleConfirm(rid, date, token, currentStatus) {
+    async function toggleConfirm(rid, date, token, currentStatus) {
         const coordName = globalAllData[rid]?.settings?.coordinatorName || "";
-        if (!coordName) { 
-            alert("⚠️ 담당자가 지정되지 않았습니다.\n설정에서 담당자를 먼저 선택해주세요."); 
-            openSetupModalFromIndividual(); 
-            return; 
-        }
-
+        if (!coordName) { alert("⚠️ 담당자가 지정되지 않았습니다.\n설정에서 담당자를 선택해주세요."); openSetupModalFromIndividual(); return; }
         const actionRef = firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}`);
-
-        if (!currentStatus) {
-            // 서명 데이터 찾기
-            const coordinator = coordMgr.list.find(c => c.name === coordName);
-            if(!coordinator || !coordinator.sign) {
-                alert("⚠️ 등록된 서명 이미지가 없습니다.\n담당자 관리(톱니바퀴)에서 서명을 먼저 등록해주세요.");
-                return;
-            }
-            await actionRef.update({ confirmed: true, confirmedBy: coordName, confirmedBySign: coordinator.sign });
-            alert("✅ 서명이 완료되었습니다.");
-        } else {
-            if(confirm("서명을 취소하시겠습니까?")) {
-                await actionRef.update({ confirmed: false, confirmedBy: null, confirmedBySign: null });
-            }
-        }
+        if (!currentStatus) { await actionRef.update({ confirmed: true, confirmedBy: coordName }); alert("✅ 서명 완료"); } 
+        else { if(confirm("취소하시겠습니까?")) { await actionRef.update({ confirmed: false, confirmedBy: null }); alert("취소 완료"); } }
     }
 
     function openSetupModal() { toggleMenu(false); document.getElementById('setupModal').style.display = "flex"; }
@@ -571,32 +511,9 @@ async function toggleConfirm(rid, date, token, currentStatus) {
     function openPrintModal() { startPrint('total'); }
     function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; document.getElementById('progressFill').style.width = progress + "%"; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } }, 150); }
     function executePrintProcess(mode) {
-        const targetBody = document.getElementById('printBody'); 
-        const targetRID = (mode === 'course') ? currentRID : "";
-        document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; 
-        targetBody.innerHTML = ""; 
-        let list = [];
-
-        Object.keys(globalAllData).forEach(rid => { 
-            if (mode === 'course' && rid !== targetRID) return; 
-            const actions = globalAllData[rid].admin_actions?.[selectedDate]; 
-            if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); 
-        });
-
-        list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { 
-            const signImg = a.confirmedBySign ? `<img src="${a.confirmedBySign}" style="height:35px; mix-blend-mode:multiply;">` : ""; 
-            
-            targetBody.innerHTML += `
-                <tr>
-                    <td>${idx+1}</td>
-                    <td style="text-align:left;">${a.cName}</td>
-                    <td>${a.type==='outing'?'외출':'외박'}</td>
-                    <td style="font-weight:bold;">${a.name}</td>
-                    <td>${a.phone}</td>
-                    <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                    <td>${signImg}</td>
-                </tr>`; 
-        });
+        const targetBody = document.getElementById('printBody'); const targetRID = (mode === 'course') ? currentRID : ""; document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; targetBody.innerHTML = ""; let list = [];
+        Object.keys(globalAllData).forEach(rid => { if (mode === 'course' && rid !== targetRID) return; const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); });
+        list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { const coord = globalAllData[a.rid]?.settings?.coordinatorName || ""; targetBody.innerHTML += `<tr><td>${idx+1}</td><td>${a.cName}</td><td>${a.type==='outing'?'외출':'외박'}</td><td>${a.name}</td><td>${a.phone}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${a.confirmed?coord:""}</td></tr>`; });
         window.print();
     }
 
