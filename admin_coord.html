@@ -472,61 +472,60 @@
         coordMgr.init();
     }
 
-    // [3. 중복 제거 1명 카운팅 및 통계]
-// [최종 보강] 항기원 전체 교육생 유니크 카운팅 (중복 1명 처리 및 검증 기능)
+// [최종 보강] 번호 자릿수(4자리 vs 전체번호)가 달라도 동일인으로 인식하는 알고리즘
     function updateGlobalStatus() {
         let globalSet = new Set(); 
         let todayA = 0; 
-        const todayStr = getTodayString();
-
-        // 디버깅을 위해 누가 카운트 되었는지 담아두는 용도
-        let debugNames = [];
+        const tStr = getTodayString();
+        let debugList = [];
 
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
             
-            // 1. 입교 학생 중복 제거 처리
             if (room.students) { 
-                Object.values(room.students).forEach(s => { 
-                    // 이름과 번호가 유효한 데이터만 필터링
-                    if (s && s.name && s.name !== "undefined" && s.name.trim() !== "" && s.phone) { 
-                        // 이름과 번호를 합쳐서 고유 키 생성 (공백 제거, 하이픈 제거)
-                        const cleanName = s.name.trim();
-                        const cleanPhone = s.phone.replace(/[^0-9]/g,'').trim();
-                        const key = `${cleanName}_${cleanPhone}`;
+                Object.values(room.students).forEach(s => {
+                    if (s && s.name && s.name !== "undefined" && s.name.trim() !== "") {
                         
-                        if (!globalSet.has(key)) {
-                            globalSet.add(key);
-                            debugNames.push(`${cleanName}(${cleanPhone})`);
+                        const cleanName = s.name.trim();
+                        // 1. 숫자만 추출
+                        const onlyDigits = (s.phone || "").replace(/[^0-9]/g, "");
+                        // 2. [핵심] 번호가 몇 자리든 상관없이 '마지막 4자리'만 잘라냄
+                        const last4Digits = onlyDigits.length >= 4 ? onlyDigits.slice(-4) : onlyDigits;
+
+                        // 3. 이름 + 마지막 4자리로 유니크 키 생성
+                        // 예: 장두석_3126 (010...3126이든 3126이든 결과는 같음)
+                        const uniqueKey = `${cleanName}_${last4Digits}`;
+
+                        if (!globalSet.has(uniqueKey)) {
+                            globalSet.add(uniqueKey);
+                            debugList.push(`[Room ${rid}] ${cleanName} (끝자리:${last4Digits})`);
                         }
-                    } 
-                }); 
+                    }
+                });
             }
-            // 2. 금일 외출/외박 건수 합산
-            if (room.admin_actions && room.admin_actions[todayStr]) {
-                todayA += Object.keys(room.admin_actions[todayStr]).length;
+            
+            if (room.admin_actions?.[tStr]) {
+                todayA += Object.keys(room.admin_actions[tStr]).length;
             }
         });
 
-        // 화면에 결과 반영
-        const totalUniqueCount = globalSet.size;
+        const finalCount = globalSet.size;
         const totalStudentEl = document.getElementById('g-total-students');
-        const todayActionEl = document.getElementById('g-today-actions');
-
-        if (totalStudentEl) totalStudentEl.innerHTML = `${totalUniqueCount}<span>명</span>`;
-        if (todayActionEl) todayActionEl.innerHTML = `${todayA}<span>건</span>`;
-
-        // [추가 기능] 인원수 박스를 클릭하면 현재 카운트된 실명 리스트를 보여줌 (검증용)
+        
         if (totalStudentEl) {
-            totalStudentEl.parentElement.style.cursor = "pointer";
-            totalStudentEl.parentElement.onclick = function() {
-                if(debugNames.length > 0) {
-                    alert("현재 카운트된 교육생 명단:\n\n" + debugNames.join("\n"));
-                } else {
-                    alert("현재 입교한 교육생이 없습니다.");
-                }
-            };
+            totalStudentEl.innerHTML = `${finalCount}<span>명</span>`;
         }
+        document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+
+        // 검증 클릭 기능 (팝업 내용도 끝자리 기준으로 변경)
+        const statBox = document.getElementById('g-total-students').parentElement;
+        statBox.onclick = function() {
+            if(debugList.length > 0) {
+                alert("--- 현재 집계된 유니크 교육생 명단 (끝자리 기준) ---\n\n" + debugList.join("\n"));
+            } else {
+                alert("현재 입교한 교육생이 없습니다.");
+            }
+        };
     }
 
     // [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
