@@ -116,7 +116,7 @@ async function init() {
             const sortedStudents = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
             const tbody = document.getElementById('attendance-body');
 
-            // 4. 테이블 그리기 (매칭 로직 보강)
+          // 4. 테이블 그리기 (도장 + 시간 표시 보강)
             sortedStudents.forEach((s, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${idx+1}</td><td class="name-col">${s.name}</td>`;
@@ -124,14 +124,22 @@ async function init() {
                 dates.forEach(d => {
                     const td = document.createElement('td');
                     
-                    // [보강] 학생 레코드 안에 들어있는 이름과 번호로 직접 대조키 생성
                     const sName = s.name.trim();
                     const sPhone = (s.phone || "0000").trim();
                     const attendKey = `${sName}_${sPhone}`;
 
-                    // 해당 날짜에 이 키로 도장이 찍혔는지 확인
+                    // 해당 날짜에 출석 데이터가 있는지 확인
                     if(attendanceData[d] && attendanceData[d][attendKey]) {
-                        td.innerHTML = '<div class="stamp">출석</div>';
+                        const info = attendanceData[d][attendKey];
+                        // 예전 데이터(이름만 있음)와 새 데이터(객체형태) 모두 대응
+                        const displayTime = (typeof info === 'object') ? info.time : "";
+                        
+                        td.innerHTML = `
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                                <div class="stamp">출석</div>
+                                <div style="font-size:9px; color:#999; font-weight:normal;">${displayTime}</div>
+                            </div>
+                        `;
                     }
                     tr.appendChild(td);
                 });

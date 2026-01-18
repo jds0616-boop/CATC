@@ -560,44 +560,46 @@ resetCourse: function() {
 
 
 
-// [수정] 수강생 삭제: 같은 이름을 가진 모든 중복 세션(PC/모바일 등)을 한꺼번에 삭제
+// [최종 수정] 수강생 삭제 시 출석부(모든 날짜) 기록까지 완전 삭제
 deleteStudent: function(token) {
     if(!state.room) return;
     
-    // 삭제 전 이름 확인을 위해 데이터 가져오기
     firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
         const targetStudent = snap.val();
         if(!targetStudent) return;
         const targetName = targetStudent.name;
+        const targetPhone = (targetStudent.phone || "0000").trim();
+        const attendKey = `${targetName.trim()}_${targetPhone}`; // 출석부 대조용 키
 
-        if(confirm(`🚨 [${targetName}] 수강생의 모든 접속 정보를 삭제하시겠습니까?\n(PC/모바일 등 중복 접속된 정보가 모두 삭제됩니다.)`)) {
+        if(confirm(`🚨 [${targetName}] 수강생의 모든 정보와 출석 기록을 삭제하시겠습니까?`)) {
             const today = getTodayString();
             
-            // 전체 수강생 목록에서 같은 이름을 찾아서 다 지움
             firebase.database().ref(`courses/${state.room}/students`).once('value', allSnap => {
                 const allData = allSnap.val() || {};
                 const updates = {};
                 
                 Object.keys(allData).forEach(t => {
                     if(allData[t].name === targetName) {
-                        // 1. 수강생 명부 삭제
                         updates[`courses/${state.room}/students/${t}`] = null;
-                        // 2. 석식 제외 내역 삭제
                         updates[`courses/${state.room}/dinner_skips/${today}/${t}`] = null;
-                        // 3. 외출 내역 삭제
                         updates[`courses/${state.room}/admin_actions/${today}/${t}`] = null;
-                        // 4. 차량 신청 내역 삭제 (모든 경로)
-                        const paths = ['osong', 'terminal', 'airport', 'car'];
-                        ['wave1', 'wave2'].forEach(w => {
-                            paths.forEach(p => {
-                                updates[`courses/${state.room}/shuttle/out/${w}/${p}/${t}`] = null;
-                            });
-                        });
                     }
                 });
 
-                firebase.database().ref().update(updates).then(() => {
-                    ui.showAlert(`✅ [${targetName}]님의 모든 정보가 정리되었습니다.`);
+                // [추가] 모든 날짜의 자체 출석부 기록 삭제
+                firebase.database().ref(`courses/${state.room}/internal_attendance`).once('value', attendSnap => {
+                    const allAttendData = attendSnap.val() || {};
+                    Object.keys(allAttendData).forEach(date => {
+                        // 해당 날짜 폴더 안에 삭제 대상의 키(이름_번호)가 있다면 삭제 목록에 추가
+                        if(allAttendData[date][attendKey]) {
+                            updates[`courses/${state.room}/internal_attendance/${date}/${attendKey}`] = null;
+                        }
+                    });
+
+                    // 서버에 일괄 적용
+                    firebase.database().ref().update(updates).then(() => {
+                        ui.showAlert(`✅ [${targetName}]님의 정보와 전체 출석 기록이 삭제되었습니다.`);
+                    });
                 });
             });
         }

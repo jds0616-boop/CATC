@@ -1883,26 +1883,30 @@ function watchNotices() {
 
 
 
-// [기존 학생 구제 버전] 항기원 자체 출석 체크 처리 함수
+// [최종 수정] 출석 시 성함과 시간을 함께 저장하는 로직
 function handleInternalCheckIn(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
     if (isCheckIn && room) {
-        // [핵심] 토큰에 의존하지 않고, 저장된 이름과 번호를 직접 가져옴
         const myName = localStorage.getItem('kac_user_name');
         const myPhone = localStorage.getItem('kac_user_phone');
 
         if (myName && myPhone) {
-            // 출석용 고유 키를 즉석에서 생성 (이름_번호)
             const attendanceKey = `${myName.trim()}_${myPhone.trim()}`;
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            
+            // 시간 포맷 생성 (예: 09:05)
+            const currentTime = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
 
-            // 서버에 저장 (기존 학생이든 새 학생이든 이 이름표로 도장이 찍힘)
-            firebase.database().ref(`courses/${room}/internal_attendance/${today}/${attendanceKey}`).set(myName)
+            // [수정] 이름 대신 {성함, 시간} 객체로 저장
+            firebase.database().ref(`courses/${room}/internal_attendance/${today}/${attendanceKey}`).set({
+                name: myName,
+                time: currentTime
+            })
             .then(() => {
-                alert("✅ [" + myName + "]님, 출석 체크가 완료되었습니다.");
+                alert("✅ [" + myName + "]님, 출석 체크가 완료되었습니다. (" + currentTime + ")");
                 const newUrl = window.location.pathname + `?room=${room}`;
                 window.history.replaceState({}, '', newUrl);
                 
@@ -1911,13 +1915,11 @@ function handleInternalCheckIn(room) {
                 startPresence();
             });
         } else {
-            // 정보가 아예 없는 생판 처음 온 학생인 경우만 입력창 표시
             alert("입교 등록이 필요합니다. 등록 후 자동으로 출석 처리됩니다.");
             document.getElementById('profileOverlay').style.display = 'flex';
         }
     }
 }
-
 
 
 
