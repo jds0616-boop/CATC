@@ -355,32 +355,48 @@
         }
     }
 
-    function updateIndividualView() {
+ function updateIndividualView() {
         const room = globalAllData[currentRID]; if (!room) return;
         document.getElementById('ind-room-id').innerText = currentRID;
         document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
         const today = getTodayString();
+        
+        // 입교 현황
         const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
         const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
         document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
-        const getSum = (loc) => {
-            const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0;
-            const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0;
-            return w1 + w2;
-        };
+        
+        // 차량 현황
+        const getSum = (loc) => { const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; return w1 + w2; };
         document.getElementById('ind-osong').innerText = getSum('osong');
         document.getElementById('ind-term').innerText = getSum('terminal');
         document.getElementById('ind-air').innerText = getSum('airport');
         document.getElementById('ind-car').innerText = getSum('car');
+        
+        // 신청 명단
         const actionTbody = document.getElementById('indActionTableBody');
         const actions = room.admin_actions?.[today] || {};
         const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
+        
         actionTbody.innerHTML = items.length ? items.map(a => {
-            const isConfirmed = a.confirmed === true;
-            return `<tr><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isConfirmed})" style="border:none; border-radius:5px; padding:6px 10px; font-size:10px; cursor:pointer; background:${isConfirmed ? '#10b981' : '#e2e8f0'}; color:${isConfirmed ? 'white' : '#64748b'};">${isConfirmed ? '확인됨' : '미확인'}</button></td></tr>`;
+            const isSigned = a.confirmed === true;
+            const signDisplay = isSigned ? `<b style="color:var(--green-save);">${a.confirmedBy}</b>` : "미서명";
+            return `
+                <tr>
+                    <td style="font-weight:800;">${a.name}</td>
+                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
+                    <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td>
+                        <button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" 
+                                style="border:1.5px solid ${isSigned ? 'var(--green-save)' : '#cbd5e1'}; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; background:#fff; min-width:70px;">
+                            ${isSigned ? signDisplay : '<span style="color:#94a3b8;">서명</span>'}
+                        </button>
+                    </td>
+                </tr>`;
         }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8;">신청자 없음</td></tr>';
-        document.getElementById('courseNotice').value = room.coordNotice || ""; autoGrow(document.getElementById('courseNotice'));
+        
+        document.getElementById('courseNotice').value = room.coordNotice || ""; 
+        autoGrow(document.getElementById('courseNotice'));
     }
 
     function renderTotalHistory() {
@@ -397,18 +413,65 @@
 
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
-    function renderOutingManager() {
-        const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel');
-        label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = [];
-        Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">신청 내역이 없습니다.</td></tr>'; return; }
-        list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => { const isConfirmed = a.confirmed === true; tbody.innerHTML += `<tr><td style="font-size:11px; text-align:left;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isConfirmed})" style="border:none; border-radius:5px; padding:6px 12px; font-size:11px; cursor:pointer; background:${isConfirmed ? '#10b981' : '#e2e8f0'}; color:${isConfirmed ? 'white' : '#64748b'};">${isConfirmed ? '확인됨' : '미확인'}</button></td></tr>`; });
+function renderOutingManager() {
+        const tbody = document.getElementById('managerTableBody'); 
+        const label = document.getElementById('managerDateLabel');
+        label.innerText = `${selectedDate} 통합 관리 현황`; 
+        tbody.innerHTML = ""; 
+        let list = [];
+        
+        Object.keys(globalAllData).forEach(rid => { 
+            const actions = globalAllData[rid].admin_actions?.[selectedDate]; 
+            if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); 
+        });
+
+        if(list.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">신청 내역이 없습니다.</td></tr>'; 
+            return; 
+        }
+
+        list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
+            const isSigned = a.confirmed === true;
+            const signDisplay = isSigned ? `<b style="color:var(--green-save);">${a.confirmedBy}</b>` : "미서명";
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-size:11px; text-align:left;">${a.cName}</td>
+                    <td style="font-weight:800;">${a.name}</td>
+                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
+                    <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td>
+                        <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                                style="border:1.5px solid ${isSigned ? 'var(--green-save)' : '#cbd5e1'}; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; background:#fff; width:85px;">
+                            ${isSigned ? signDisplay : '<span style="color:#94a3b8;">서명하기</span>'}
+                        </button>
+                    </td>
+                </tr>`;
+        });
     }
 
-    async function toggleConfirm(rid, date, token, currentStatus) {
+async function toggleConfirm(rid, date, token, currentStatus) {
+        // 1. 해당 과정의 운영 담당자가 누구인지 확인
         const coordName = globalAllData[rid]?.settings?.coordinatorName || "";
-        if (!coordName) { alert("⚠️ 담당자가 지정되지 않았습니다.\n설정에서 담당자를 선택해주세요."); openSetupModalFromIndividual(); return; }
-        await firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}/confirmed`).set(!currentStatus);
+        
+        if (!coordName) { 
+            alert("⚠️ 해당 과정의 운영 담당자가 지정되지 않았습니다.\n설정에서 담당자를 먼저 선택해야 서명이 가능합니다."); 
+            openSetupModalFromIndividual(); 
+            return; 
+        }
+
+        const actionRef = firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}`);
+
+        if (!currentStatus) {
+            // 서명하기: 담당자 성함을 저장
+            await actionRef.update({ confirmed: true, confirmedBy: coordName });
+        } else {
+            // 서명취소: 서명 데이터 삭제
+            if(confirm("기존 서명을 취소하시겠습니까?")) {
+                await actionRef.update({ confirmed: false, confirmedBy: null });
+            }
+        }
+        // 실시간 리스너가 작동하므로 새로고침 없이 화면이 바뀝니다.
     }
 
 
@@ -545,10 +608,33 @@
     function openPrintModal() { startPrint('total'); }
     function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } document.getElementById('progressFill').style.width = progress + "%"; }, 150); }
     function executePrintProcess(mode) {
-        const targetBody = document.getElementById('printBody'); const targetRID = (mode === 'course') ? currentRID : "";
-        document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; targetBody.innerHTML = ""; let list = [];
-        Object.keys(globalAllData).forEach(rid => { if (mode === 'course' && rid !== targetRID) return; const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); });
-        list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { const coord = globalAllData[a.rid]?.settings?.coordinatorName || ""; targetBody.innerHTML += `<tr><td>${idx+1}</td><td>${a.cName}</td><td>${a.type==='outing'?'외출':'외박'}</td><td>${a.name}</td><td>${a.phone}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${a.confirmed?coord:""}</td></tr>`; });
+        const targetBody = document.getElementById('printBody'); 
+        const targetRID = (mode === 'course') ? currentRID : "";
+        document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; 
+        targetBody.innerHTML = ""; 
+        let list = [];
+
+        Object.keys(globalAllData).forEach(rid => { 
+            if (mode === 'course' && rid !== targetRID) return; 
+            const actions = globalAllData[rid].admin_actions?.[selectedDate]; 
+            if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); 
+        });
+
+        list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { 
+            // 데이터베이스에 저장된 확인자 성함(confirmedBy)을 가져옴
+            const signedName = a.confirmedBy || ""; 
+            
+            targetBody.innerHTML += `
+                <tr>
+                    <td>${idx+1}</td>
+                    <td style="text-align:left;">${a.cName}</td>
+                    <td>${a.type==='outing'?'외출':'외박'}</td>
+                    <td style="font-weight:bold;">${a.name}</td>
+                    <td>${a.phone}</td>
+                    <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td style="font-weight:bold;">${signedName}</td>
+                </tr>`; 
+        });
         window.print();
     }
 
