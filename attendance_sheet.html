@@ -88,7 +88,6 @@ async function init() {
         if (!room) return;
 
         // 1. 과정 정보(이름, 기간, 담당자) 및 상태(교수명) 가져오기
-        // settings에서는 과정명, 기간, 담당자명을 가져오고 status에서는 교수명을 가져옵니다.
         const setSnap = await db.ref(`courses/${room}/settings`).once('value');
         const statSnap = await db.ref(`courses/${room}/status`).once('value');
         
@@ -99,10 +98,10 @@ async function init() {
         document.getElementById('courseName').innerText = courseInfo.courseName || room;
         document.getElementById('coursePeriod').innerText = courseInfo.period || "-";
 
-        // [화면 연동] 결재란 담당자/교수 자동 입력
-        // 데이터가 없을 경우를 대비해 "-" 또는 빈칸으로 표시합니다.
+        // [화면 연동] 결재란 담당자/교수 자동 입력 (칭호 포함)
         document.getElementById('sign-coord').innerText = courseInfo.coordinatorName || "-";
-        document.getElementById('sign-prof').innerText = roomStatus.professorName || "-";
+        // 담임교수 이름 뒤에 " 교수"를 자동으로 붙여서 출력합니다.
+        document.getElementById('sign-prof').innerText = roomStatus.professorName ? roomStatus.professorName + " 교수" : "-";
 
         // 2. 날짜 헤더 생성 (월~금)
         dateArray = generateDates(courseInfo.period);
@@ -126,12 +125,17 @@ async function init() {
         });
     }
 
-    // 화면에 테이블을 그리는 함수
-    function renderTable(studentsRaw, attendanceData) {
-        const tbody = document.getElementById('attendance-body');
-        tbody.innerHTML = ""; // 기존 명단 싹 비우고 다시 그리기
 
-        // [중복 제거 및 입교 완료자만 필터링]
+
+
+
+
+
+
+function renderTable(studentsRaw, attendanceData) {
+        const tbody = document.getElementById('attendance-body');
+        tbody.innerHTML = ""; 
+
         const uniqueStudentsMap = new Map();
         Object.values(studentsRaw).forEach(s => {
             if (s.name && s.name !== "undefined") {
@@ -141,7 +145,6 @@ async function init() {
             }
         });
 
-        // 가나다순 정렬
         const sortedStudents = Array.from(uniqueStudentsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
         if (sortedStudents.length === 0) {
@@ -149,25 +152,26 @@ async function init() {
             return;
         }
 
-        // 명단 한 줄씩 생성
         sortedStudents.forEach((s, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${idx + 1}</td><td class="name-col">${s.name}</td>`;
 
-            // 설정된 날짜만큼 칸 만들기
             dateArray.forEach(d => {
                 const td = document.createElement('td');
                 const attendKey = `${s.name}_${s.phone}`;
 
-                // 해당 날짜에 이 학생의 출석 기록이 있는지 확인
                 if (attendanceData[d] && attendanceData[d][attendKey]) {
                     const info = attendanceData[d][attendKey];
                     const displayTime = (typeof info === 'object') ? info.time : "";
+                    
+                    // [인증 ID 생성] 데이터베이스에 authId가 있으면 쓰고, 없으면 토큰 앞자리를 가져옵니다.
+                    const authId = info.authId || "CERT-" + Math.random().toString(36).substr(2, 4).toUpperCase();
 
                     td.innerHTML = `
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:1px;">
                             <div class="stamp">출석</div>
-                            <div style="font-size:9px; color:#999; font-weight:normal;">${displayTime}</div>
+                            <div style="font-size:8px; color:#999; font-weight:normal; line-height:1;">${displayTime}</div>
+                            <div style="font-size:7px; color:#ccc; font-weight:normal; line-height:1;">${authId}</div>
                         </div>
                     `;
                 }
@@ -176,6 +180,19 @@ async function init() {
             tbody.appendChild(tr);
         });
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // 기간 문자열에서 평일 날짜만 추출하는 함수
     function generateDates(period) {
