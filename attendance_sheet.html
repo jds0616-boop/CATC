@@ -84,20 +84,30 @@
     // 파이어베이스 데이터베이스 참조
     const db = firebase.database();
 
-    async function init() {
+async function init() {
         if (!room) return;
 
-        // 1. 과정 정보(이름, 기간) 가져오기 - 이건 자주 안 변하므로 once로 한 번만 가져옴
+        // 1. 과정 정보(이름, 기간, 담당자) 및 상태(교수명) 가져오기
+        // settings에서는 과정명, 기간, 담당자명을 가져오고 status에서는 교수명을 가져옵니다.
         const setSnap = await db.ref(`courses/${room}/settings`).once('value');
+        const statSnap = await db.ref(`courses/${room}/status`).once('value');
+        
         courseInfo = setSnap.val() || {};
+        const roomStatus = statSnap.val() || {};
+
+        // [화면 연동] 상단 정보 표시
         document.getElementById('courseName').innerText = courseInfo.courseName || room;
         document.getElementById('coursePeriod').innerText = courseInfo.period || "-";
+
+        // [화면 연동] 결재란 담당자/교수 자동 입력
+        // 데이터가 없을 경우를 대비해 "-" 또는 빈칸으로 표시합니다.
+        document.getElementById('sign-coord').innerText = courseInfo.coordinatorName || "-";
+        document.getElementById('sign-prof').innerText = roomStatus.professorName || "-";
 
         // 2. 날짜 헤더 생성 (월~금)
         dateArray = generateDates(courseInfo.period);
         const header = document.getElementById('date-header');
         
-        // 기존 날짜 칸 초기화 (No, 성명만 남김)
         header.innerHTML = '<th>No</th><th>성명</th>';
         dateArray.forEach(d => {
             const th = document.createElement('th');
@@ -105,12 +115,10 @@
             header.appendChild(th);
         });
 
-        // 3. [실시간 핵심] 수강생 명단 감시 시작
-        // .on('value', ...)를 쓰면 데이터가 변할 때마다 아래 코드가 자동 실행됨
+        // 3. [실시간 핵심] 수강생 명단 및 출석 데이터 감시 시작
         db.ref(`courses/${room}/students`).on('value', studentSnap => {
             const studentsRaw = studentSnap.val() || {};
 
-            // 출석 데이터도 함께 실시간으로 가져옴
             db.ref(`courses/${room}/internal_attendance`).on('value', attendanceSnap => {
                 const attendanceData = attendanceSnap.val() || {};
                 renderTable(studentsRaw, attendanceData);
