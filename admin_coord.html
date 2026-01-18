@@ -411,34 +411,74 @@
         await firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}/confirmed`).set(!currentStatus);
     }
 
+// [안정화] 과정 운영 담당자(행정) 관리 객체
     const coordMgr = {
         list: [],
-        init: function() {
-            firebase.database().ref('system/coordinators').on('value', snap => {
-                const data = snap.val() || {};
+        init: async function() {
+            // 1. 데이터베이스에 담당자가 한 명도 없는지 "딱 한 번만" 확인
+            const snap = await firebase.database().ref('system/coordinators').once('value');
+            if (!snap.exists()) {
+                const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
+                // 초기 명단 한 명씩 저장
+                for (let name of initial) {
+                    await firebase.database().ref('system/coordinators').push(name);
+                }
+            }
+
+            // 2. 이후에는 데이터가 변할 때마다(추가/삭제) 실시간으로 화면만 다시 그림
+            firebase.database().ref('system/coordinators').on('value', s => {
+                const data = s.val() || {};
                 this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-                // 리스너 내에서 직접 UI를 업데이트하지 않고 호출 시점에 따라 명확히 제어
-                this.renderSelects(); 
+                this.renderSelects();
                 this.renderManageList();
             });
         },
         renderSelects: function() {
-            const sel = document.getElementById('setup-coord-select'); if(!sel) return;
-            const curValue = sel.value; // 현재 선택된 값 보존
+            const sel = document.getElementById('setup-coord-select');
+            if(!sel) return;
+            const curValue = sel.value; // 현재 선택 중인 이름 유지
             sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
-            this.list.forEach(c => { sel.add(new Option(c.name, c.name)); });
-            if(curValue) sel.value = curValue;
+            this.list.forEach(c => {
+                const opt = new Option(c.name, c.name);
+                if(c.name === curValue) opt.selected = true;
+                sel.add(opt);
+            });
         },
         renderManageList: function() {
-            const div = document.getElementById('coordListContainer'); if(!div) return;
-            div.innerHTML = this.list.map(c => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; font-weight:700;"><span>${c.name}</span><i class="fa-solid fa-trash-can" style="color:var(--danger); cursor:pointer;" onclick="coordMgr.delete('${c.key}')"></i></div>`).join('');
+            const div = document.getElementById('coordListContainer');
+            if(!div) return;
+            // 관리창 리스트 출력 (가독성 개선)
+            div.innerHTML = this.list.map(c => `
+                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; align-items:center; background:#fff;">
+                    <span style="font-weight:700; color:var(--navy-dark);">${c.name}</span>
+                    <i class="fa-solid fa-circle-xmark" style="color:var(--danger); cursor:pointer; font-size:18px;" onclick="coordMgr.delete('${c.key}')"></i>
+                </div>`).join('');
         },
-        add: async function() { 
-            const input = document.getElementById('newCoordInput'); const v = input.value.trim(); 
-            if(v) { await firebase.database().ref('system/coordinators').push(v); input.value = ""; } 
+        add: async function() {
+            const input = document.getElementById('newCoordInput');
+            const v = input.value.trim();
+            if(!v) return;
+            
+            // 저장 중에는 입력창 잠금
+            input.disabled = true;
+            try {
+                await firebase.database().ref('system/coordinators').push(v);
+                input.value = "";
+            } catch(e) {
+                alert("저장 중 오류: " + e.message);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
         },
-        delete: async function(k) { if(confirm("담당자를 삭제할까요?")) await firebase.database().ref(`system/coordinators/${k}`).remove(); },
-        openManage: function() { document.getElementById('coordManageModal').style.display='flex'; }
+        delete: async function(k) {
+            if(confirm("이 담당자를 명단에서 삭제할까요?")) {
+                await firebase.database().ref(`system/coordinators/${k}`).remove();
+            }
+        },
+        openManage: function() {
+            document.getElementById('coordManageModal').style.display = 'flex';
+        }
     };
 
     function openSetupModal() { toggleMenu(false); document.getElementById('setupModal').style.display = "flex"; }
