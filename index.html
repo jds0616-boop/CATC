@@ -1937,59 +1937,60 @@ function watchNotices() {
 
 
 
-// [최종 수정] 중복 출석 방지 기능이 추가된 출석 체크 함수
+// [최종 보강] 중복 출석을 완벽하게 차단하는 함수
 function handleInternalCheckIn(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
     if (isCheckIn && room) {
-        const myName = localStorage.getItem('kac_user_name');
-        const myPhone = localStorage.getItem('kac_user_phone');
+        // 1. 저장된 정보 가져오기 (양끝 공백 제거)
+        const myName = (localStorage.getItem('kac_user_name') || "").trim();
+        const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
         if (myName && myPhone) {
-            const attendanceKey = `${myName.trim()}_${myPhone.trim()}`;
+            // 2. 오늘 날짜 및 고유 키 생성
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            const currentTime = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+            const attendanceKey = `${myName}_${myPhone}`;
             
-            // [중요] 해당 날짜에 이미 내 출석 기록이 있는지 먼저 확인합니다.
             const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${today}/${attendanceKey}`);
 
+            // 3. [핵심] 서버에 이미 데이터가 있는지 매우 엄격하게 확인
             attendRef.once('value').then(snap => {
-                if (snap.exists()) {
-                    // 1. 이미 기록이 있는 경우: 알림만 띄우고 바로 메인으로 진입
-                    alert("이미 오늘의 출석 처리가 완료되었습니다.");
-                    
-                    // 주소창 정리 및 화면 전환
-                    const newUrl = window.location.pathname + `?room=${room}`;
-                    window.history.replaceState({}, '', newUrl);
-                    document.getElementById('landingPage').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'flex';
-                    startPresence();
+                if (snap.exists() && snap.val() !== null) {
+                    // 이미 데이터가 있다면!
+                    alert("알림: 이미 오늘의 출석 처리가 완료된 상태입니다.");
+                    cleanUrlAndGo(room);
                 } else {
-                    // 2. 기록이 없는 경우: 정상적으로 출석 처리 진행
+                    // 데이터가 없다면 처음 찍는 것!
+                    const currentTime = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
                     const authId = "KAC-" + Math.random().toString(36).substr(2, 5).toUpperCase();
 
                     attendRef.set({
                         name: myName,
                         time: currentTime,
-                        authId: authId
-                    })
-                    .then(() => {
+                        authId: authId,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).then(() => {
                         alert("✅ [" + myName + "]님, 출석 완료!\n인증번호: " + authId);
-                        
-                        const newUrl = window.location.pathname + `?room=${room}`;
-                        window.history.replaceState({}, '', newUrl);
-                        document.getElementById('landingPage').style.display = 'none';
-                        document.getElementById('mainApp').style.display = 'flex';
-                        startPresence();
+                        cleanUrlAndGo(room);
                     });
                 }
             });
         } else {
-            alert("입교 등록이 필요합니다. 등록 후 자동으로 출석 처리됩니다.");
+            // 정보가 없는 경우 입력창 유도
+            alert("입교 등록이 필요합니다. 성함과 번호 입력 후 자동으로 출석 처리됩니다.");
             document.getElementById('profileOverlay').style.display = 'flex';
         }
+    }
+
+    // 주소창을 깨끗하게 정리하고 메인으로 보내는 내부 함수
+    function cleanUrlAndGo(r) {
+        const newUrl = window.location.pathname + `?room=${r}`;
+        window.history.replaceState({}, '', newUrl);
+        if(document.getElementById('landingPage')) document.getElementById('landingPage').style.display = 'none';
+        if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'flex';
+        startPresence();
     }
 }
 
