@@ -120,6 +120,12 @@
       </div>
 
       <div id="side-individual-menu" style="display:none; flex-direction:column; gap:12px;">
+          <!-- [추가] 과정 설정 수정 버튼 -->
+          <button class="navy-btn" style="background:#0369a1; height:45px;" onclick="openSetupModalFromIndividual()">
+              <i class="fa-solid fa-sliders"></i> 해당 과정 설정 수정
+          </button>
+
+
           <div class="section-card">
               <div class="section-title"><i class="fa-solid fa-qrcode"></i> 출결 QR 관리</div>
               <div id="qrPreviewArea" style="background:#f8fafc; border:1px solid #eee; border-radius:8px; padding:10px; text-align:center; margin-bottom:10px;">
@@ -213,33 +219,33 @@
           </footer>
       </div>
 
-      <!-- [뷰 2] 개별 과정 상세 -->
+<!-- [뷰 2] 개별 과정 상세 -->
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:10px;">
+          <!-- 1. 제목 바 (그대로 유지) -->
+          <div id="indCourseHeader" style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); border-radius: 12px; padding: 18px 20px; margin-bottom: 5px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);">
+              <div style="background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">Room <span id="ind-room-id">-</span></div>
+              <div id="ind-course-name" style="font-weight: 800; font-size: 18px; color: #ffffff;">과정명 로딩 중...</div>
+          </div>
 
+          <!-- 2. [위치변경] 공지사항 영역 (위로) -->
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (담당과정 교수 및 교육생에게 공지)</div>
+              <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="과정 공지 입력"></textarea>
+              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+          </div>
 
-<!-- 개별 과정 상단 제목바 (배경색 변경 버전) -->
-<div id="indCourseHeader" style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); border-radius: 12px; padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);">
-    <!-- Room 번호 배지 (배경 대비를 위해 연한 파랑 적용) -->
-    <div style="background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">
-        Room <span id="ind-room-id">-</span>
-    </div>
-    <!-- 과정명 (흰색으로 강조) -->
-    <div id="ind-course-name" style="font-weight: 800; font-size: 18px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-        과정명 로딩 중...
-    </div>
-</div>
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (모든 교수 및 교육생에게 전달)</div>
+              <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="전체 공지 입력"></textarea>
+              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+          </div>
 
-
-
-
-
-
+          <!-- 3. 현황 박스 (입교/차량) -->
           <div class="dashboard-split">
               <div class="col-1-3">
                   <div class="entry-box" onclick="showEntryMemberList()">
-                      <span style="font-size:11px; font-weight:800; color:var(--blue-deep); margin-bottom:5px;">입교 현황</span>
+                      <span style="font-size:11px; font-weight:800; color:var(--blue-deep);">입교 현황</span>
                       <div class="entry-val" id="ind-entry-cnt">0<span>명</span></div>
-                      <span style="font-size:9px; color:#94a3b8; margin-top:4px;">(명단 확인)</span>
                   </div>
               </div>
               <div class="col-2-3">
@@ -255,6 +261,7 @@
               </div>
           </div>
 
+          <!-- 4. [위치변경] 외출/외박 신청자 명단 (아래로) -->
           <div class="section-card">
               <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span>
@@ -262,11 +269,12 @@
               </div>
               <div style="overflow-x: auto;">
                   <table class="navy-table">
-                      <thead><tr><th>신청자</th><th>비상연락처</th><th>구분</th><th>시간</th></tr></thead>
+                      <thead><tr><th>신청자</th><th>비상연락처</th><th>구분</th><th>시간</th><th>담당자 확인</th></tr></thead>
                       <tbody id="indActionTableBody"></tbody>
                   </table>
               </div>
           </div>
+      </div>
 
           <div class="section-card">
               <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (담당과정 교수 및 교육생에게 공지됩니다)</div>
@@ -318,6 +326,37 @@
       <div style="margin-top:30px; text-align:right; font-size:11px; color:#888;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
   </div>
 
+
+
+<!-- [신규] 과정 운영 담당자 관리 모달 -->
+  <div id="coordManageModal" class="setup-modal" style="z-index: 6000;">
+      <div class="setup-box" style="max-width: 400px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
+              <h3 style="margin:0; font-size:18px; color:var(--navy-dark);"><i class="fa-solid fa-user-gear"></i> 운영 담당자 명단 관리</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('coordManageModal').style.display='none'"></i>
+          </div>
+          <div id="coordListContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #f8fafc;">
+              <!-- 담당자 리스트가 여기에 생성됨 -->
+          </div>
+          <div style="display:flex; gap:5px;">
+              <input type="text" id="newCoordInput" class="navy-input" placeholder="성함 및 직책 입력">
+              <button class="navy-btn" style="width:70px;" onclick="coordMgr.add()">추가</button>
+          </div>
+          <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('coordManageModal').style.display='none'">닫기</button>
+      </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
   <!-- 과정 설정 모달 (강의실 리스트 보정) -->
   <div id="setupModal" class="setup-modal">
       <div class="setup-box">
@@ -326,42 +365,29 @@
               <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="closeSetupModal()"></i>
           </div>
           <div style="display:flex; flex-direction:column; gap:15px;">
-              <div><label class="setup-label">대상 강의실 선택</label><select id="setup-room-select" class="navy-select"></select></div>
+              <div><label class="setup-label">대상 강의실 선택</label><select id="setup-room-select" class="navy-select" onchange="loadRoomSettings(this.value)"></select></div>
               <div><label class="setup-label">교육과정명</label><input type="text" id="setup-course-name" class="navy-input" placeholder="정확한 과정명 입력"></div>
               <div><label class="setup-label">교육 기간</label><div style="display:flex; gap:5px; align-items:center;"><input type="date" id="setup-start" class="navy-input"><span>~</span><input type="date" id="setup-end" class="navy-input"></div></div>
               
-              <!-- 강의실 위치 선택 (그룹화) -->
               <div><label class="setup-label">강의실 상세 위치</label>
                   <select id="setup-room-dropdown" class="navy-select" onchange="checkLocationDirect(this.value)">
                       <option value="">--- 장소 선택 ---</option>
-                      <optgroup label="하늘관">
-                          <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
-                          <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
-                          <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
-                          <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
-                      </optgroup>
-                      <optgroup label="국제동">
-                          <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
-                          <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
-                          <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
-                      </optgroup>
-                      <optgroup label="관제교육동">
-                          <option value="관제교육동 1층">관제교육동 1층</option>
-                          <option value="관제교육동 2층">관제교육동 2층</option>
-                      </optgroup>
+                      <optgroup label="하늘관"><option value="하늘관 1층 대강당">하늘관 1층 대강당</option><option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option><option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option><option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option></optgroup>
+                      <optgroup label="국제동"><option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option><option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option><option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option></optgroup>
                       <option value="direct">직접 입력</option>
                   </select>
                   <input type="text" id="setup-location-direct" class="navy-input" style="margin-top:5px; display:none;" placeholder="위치 직접 작성">
               </div>
 
               <div><label class="setup-label">담당 교수</label><select id="setup-prof-select" class="navy-select"></select></div>
-
-<div><label class="setup-label">담당 교수</label><select id="setup-prof-select" class="navy-select"></select></div>
               
-              <!-- 여기에 추가하세요 -->
+              <!-- [수정] 담당자 선택 및 관리 버튼 -->
               <div>
                   <label class="setup-label">과정 운영 담당자 (행정)</label>
-                  <input type="text" id="setup-coord-name" class="navy-input" placeholder="예: 박상임 과장">
+                  <div style="display:flex; gap:5px;">
+                      <select id="setup-coord-select" class="navy-select"></select>
+                      <button class="navy-btn" style="width:45px; background:#1e293b;" onclick="coordMgr.openManage()"><i class="fa-solid fa-gear"></i></button>
+                  </div>
               </div>
 
 
@@ -520,58 +546,56 @@ function updateGlobalStatus() {
     }
 
 function updateIndividualView() {
-    const room = globalAllData[currentRID]; 
-    if (!room) return; // 방 데이터가 없으면 중단
-
-    // [신규 추가] 상단 제목바에 현재 방 번호와 과정명 표시
-    document.getElementById('ind-room-id').innerText = currentRID;
-    document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
-
-    // --- 아래는 기존 로직 그대로입니다 ---
-    const today = getTodayString();
-    const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
-    const uniqueSet = new Set(students.map(s => `${s.name}_${s.phone}`));
-    document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSet.size}<span>명</span>`;
-    
-    const getSum = (loc) => {
-        const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0;
-        const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0;
-        return w1 + w2;
-    };
-    
-    document.getElementById('ind-osong').innerText = getSum('osong');
-    document.getElementById('ind-term').innerText = getSum('terminal');
-    document.getElementById('ind-air').innerText = getSum('airport');
-    document.getElementById('ind-car').innerText = getSum('car');
-    
-    const actionTbody = document.getElementById('indActionTableBody');
-    const actions = room.admin_actions?.[today] || {};
-    const items = Object.values(actions).sort((a,b)=>a.timestamp - b.timestamp);
-    
-    actionTbody.innerHTML = items.length ? items.map(a => `<tr><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td style="color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8;">신청자 없음</td></tr>';
-    
-    document.getElementById('courseNotice').value = room.coordNotice || ""; 
-    autoGrow(document.getElementById('courseNotice'));
-}
+        const room = globalAllData[currentRID]; if (!room) return;
+        document.getElementById('ind-room-id').innerText = currentRID;
+        document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
+        const today = getTodayString();
+        const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
+        const uniqueSet = new Set(students.map(s => `${s.name}_${s.phone}`));
+        document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSet.size}<span>명</span>`;
+        const getSum = (loc) => {
+            const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0;
+            const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0;
+            return w1 + w2;
+        };
+        document.getElementById('ind-osong').innerText = getSum('osong');
+        document.getElementById('ind-term').innerText = getSum('terminal');
+        document.getElementById('ind-air').innerText = getSum('airport');
+        document.getElementById('ind-car').innerText = getSum('car');
+        
+        const actionTbody = document.getElementById('indActionTableBody');
+        const actions = room.admin_actions?.[today] || {};
+        const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp - b.timestamp);
+        
+        actionTbody.innerHTML = items.length ? items.map(a => {
+            const isConfirmed = a.confirmed === true;
+            return `<tr><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td style="color:#94a3b8; font-size:11px;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isConfirmed})" style="border:none; border-radius:5px; padding:4px 8px; font-size:10px; cursor:pointer; background:${isConfirmed ? '#10b981' : '#e2e8f0'}; color:${isConfirmed ? 'white' : '#64748b'};">${isConfirmed ? '확인됨' : '미확인'}</button></td></tr>`;
+        }).join('') : '<tr><td colspan="5" style="padding:20px; color:#94a3b8;">신청자 없음</td></tr>';
+        
+        document.getElementById('courseNotice').value = room.coordNotice || ""; autoGrow(document.getElementById('courseNotice'));
+    }
 
     function loadActionHistory(date) { selectedDate = date; renderTotalHistory(); }
-    function renderTotalHistory() {
+function renderTotalHistory() {
         const tbody = document.getElementById('historyTableBody'); if(!tbody) return;
         const filter = document.getElementById('courseFilter')?.value || 'all';
         const label = document.getElementById('historyDateLabel'); const dateObj = new Date(selectedDate); const week = ['일','월','화','수','목','금','토'];
-        if(label) label.innerText = `${selectedDate} (${week[dateObj.getDay()]}) 신청자 현황`;
+        if(label) label.innerText = `${selectedDate} (${week[dateObj.getDay()]}) 신청 요약`;
         tbody.innerHTML = ""; let list = [];
         Object.keys(globalAllData).forEach(rid => {
             if (filter !== 'all' && filter !== rid) return;
             const actions = globalAllData[rid].admin_actions?.[selectedDate];
             if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid }));
         });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:30px; color:#94a3b8;">내역 없음</td></tr>'; document.getElementById('totalCountSum').innerText = "총 0명"; }
-        else {
+        if(list.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:30px; color:#94a3b8;">내역 없음</td></tr>'; 
+            document.getElementById('totalCountSum').innerText = "총 0명 신청 중"; 
+        } else {
             list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
-                tbody.innerHTML += `<tr><td style="text-align:left;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td style="color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+                tbody.innerHTML += `<tr><td style="text-align:left; font-size:11px;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td>${a.phone}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td style="color:#94a3b8; font-size:11px;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`;
             });
-            document.getElementById('totalCountSum').innerText = `총 ${list.length}명 신청`;
+            document.getElementById('totalCountSum').innerText = `총 ${list.length}명 신청 중 (상세확인은 상단 관리대장 클릭)`;
         }
     }
 
@@ -643,21 +667,31 @@ async function openSetupModal() {
     }
 
 async function saveIntegratedSettings() {
-        const rid = document.getElementById('setup-room-select').value; const name = document.getElementById('setup-course-name').value.trim();
-        const start = document.getElementById('setup-start').value; const end = document.getElementById('setup-end').value;
-        const dropLoc = document.getElementById('setup-room-dropdown').value; const directLoc = document.getElementById('setup-location-direct').value.trim();
-        const loc = (dropLoc === 'direct') ? directLoc : dropLoc; const prof = document.getElementById('setup-prof-select').value;
-        const coord = document.getElementById('setup-coord-name').value.trim(); // 담당자 필드 추가
+        const rid = document.getElementById('setup-room-select').value; 
+        const name = document.getElementById('setup-course-name').value.trim();
+        const start = document.getElementById('setup-start').value; 
+        const end = document.getElementById('setup-end').value;
+        const dropLoc = document.getElementById('setup-room-dropdown').value; 
+        const directLoc = document.getElementById('setup-location-direct').value.trim();
+        const loc = (dropLoc === 'direct') ? directLoc : dropLoc; 
+        const prof = document.getElementById('setup-prof-select').value;
+        const coord = document.getElementById('setup-coord-select').value; // 담당자 선택값
 
         if(!rid || !name || !start || !end || !loc || !prof) return alert("항목 입력 필요");
-        const updates = {}; updates[`courses/${rid}/settings/courseName`] = name; updates[`courses/${rid}/settings/period`] = `${start} ~ ${end}`;
-        updates[`courses/${rid}/settings/roomDetailName`] = loc; updates[`courses/${rid}/settings/password`] = btoa("7777");
+        
+        const updates = {}; 
+        updates[`courses/${rid}/settings/courseName`] = name; 
+        updates[`courses/${rid}/settings/period`] = `${start} ~ ${end}`;
+        updates[`courses/${rid}/settings/roomDetailName`] = loc; 
+        updates[`courses/${rid}/settings/password`] = btoa("7777");
         updates[`courses/${rid}/status/professorName`] = prof; 
-        updates[`courses/${rid}/settings/coordinatorName`] = coord; // 담당자 저장
+        updates[`courses/${rid}/settings/coordinatorName`] = coord; // 담당자 저장 추가
         updates[`courses/${rid}/status/roomStatus`] = "active";
+        
         await firebase.database().ref(`courses/${rid}/settings/subjects`).remove();
         for(let inst of tempInstructors) { await firebase.database().ref(`courses/${rid}/settings/subjects`).push(inst); }
-        await firebase.database().ref().update(updates).then(()=>alert("저장 완료")); closeSetupModal();
+        await firebase.database().ref().update(updates).then(()=>alert("저장 완료")); 
+        closeSetupModal();
     }
 
 
@@ -805,10 +839,110 @@ async function resetIndividualCourse() {
         });
     }
 
-    async function toggleConfirm(rid, date, token, currentStatus) {
+async function toggleConfirm(rid, date, token, currentStatus) {
+        // [수정] 담당자가 지정되어 있는지 확인
+        const coordName = globalAllData[rid]?.settings?.coordinatorName || "";
+        if (!coordName) {
+            alert("⚠️ 해당 과정의 운영 담당자가 지정되지 않았습니다.\n먼저 [교육과정 통합환경 설정]에서 담당자를 지정해주세요.");
+            openSetupModal(); // 설정창 자동 오픈
+            return;
+        }
+
         await firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}/confirmed`).set(!currentStatus);
-        renderOutingManager(); // 즉시 화면 갱신
+        
+        // 팝업이 열려있으면 갱신, 아니면 개별뷰 갱신
+        if(document.getElementById('outingManagerView').style.display === 'flex') {
+            renderOutingManager();
+        } else {
+            updateIndividualView();
+        }
     }
+
+
+
+// [신규] 과정 운영 담당자(행정) 관리 객체
+    const coordMgr = {
+        list: [],
+        init: function() {
+            firebase.database().ref('system/coordinators').on('value', snap => {
+                const data = snap.val() || {};
+                // 데이터가 전혀 없을 때 초기 명단 강제 생성
+                if (Object.keys(data).length === 0) {
+                    const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
+                    initial.forEach(name => firebase.database().ref('system/coordinators').push(name));
+                }
+                this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
+                this.renderSelects();
+                this.renderManageList();
+            });
+        },
+        renderSelects: function() {
+            const selects = [document.getElementById('setup-coord-select')];
+            selects.forEach(sel => {
+                if(!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
+                this.list.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name; opt.innerText = c.name;
+                    if(c.name === currentVal) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+        },
+        renderManageList: function() {
+            const container = document.getElementById('coordListContainer');
+            if(!container) return;
+            container.innerHTML = this.list.map(c => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee; font-size:13px;">
+                    <span style="font-weight:700;">${c.name}</span>
+                    <i class="fa-solid fa-trash-can" style="color:#ef4444; cursor:pointer;" onclick="coordMgr.delete('${c.key}')"></i>
+                </div>`).join('');
+        },
+        add: function() {
+            const input = document.getElementById('newCoordInput');
+            const val = input.value.trim();
+            if(!val) return;
+            firebase.database().ref('system/coordinators').push(val).then(() => { input.value = ""; });
+        },
+        delete: function(key) {
+            if(confirm("이 담당자를 명단에서 삭제하시겠습니까?")) {
+                firebase.database().ref(`system/coordinators/${key}`).remove();
+            }
+        },
+        openManage: function() { document.getElementById('coordManageModal').style.display = 'flex'; }
+    };
+    coordMgr.init(); // 담당자 관리 시작
+
+
+function openSetupModalFromIndividual() {
+        if(!currentRID) return;
+        // 설정 모달의 강의실 선택을 현재 보고 있는 RID로 고정
+        document.getElementById('setup-room-select').value = currentRID;
+        loadRoomSettings(currentRID);
+        toggleMenu(false);
+        document.getElementById('setupModal').style.display = "flex";
+    }
+
+    // 설정 모달에서 강의실을 바꿨을 때 데이터를 채워주는 함수
+    async function loadRoomSettings(rid) {
+        if(!rid || !globalAllData[rid]) return;
+        const room = globalAllData[rid];
+        document.getElementById('setup-course-name').value = room.settings?.courseName || "";
+        document.getElementById('setup-coord-select').value = room.settings?.coordinatorName || "";
+        document.getElementById('setup-prof-select').value = room.status?.professorName || "";
+        
+        if(room.settings?.period && room.settings.period.includes(" ~ ")) {
+            const parts = room.settings.period.split(" ~ ");
+            document.getElementById('setup-start').value = parts[0];
+            document.getElementById('setup-end').value = parts[1];
+        }
+    }
+
+
+
+
+
 
 
 
