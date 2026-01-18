@@ -33,14 +33,12 @@
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .notice-area { width: 100%; min-height: 60px; border-radius: 8px; border: 1.5px solid var(--border-blue); padding: 12px; font-size: 13px; line-height: 1.5; resize: none; margin-bottom: 8px; background: #fff; font-weight: 600; outline: none; }
 
-    /* 상황판 */
     .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
     .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 18px 15px; color: white; text-align: center; }
     .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 6px; font-weight: 700; }
     .g-stat-val { font-size: 24px; font-weight: 900; color: var(--blue-main); }
     .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
 
-    /* 상세 현황 요약 박스 */
     .dashboard-split { display: flex; gap: 8px; align-items: stretch; width: 100%; }
     .col-1-3 { flex: 1; }
     .col-2-3 { flex: 2.5; }
@@ -51,7 +49,6 @@
     .shuttle-item span { font-size: 10px; color: #64748b; display: block; margin-bottom: 4px; font-weight: 700; }
     .shuttle-item b { font-size: 16px; color: var(--navy-dark); font-weight: 900; }
 
-    /* 테이블 */
     .navy-table { width: 100%; border-collapse: collapse; }
     .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-align: center; }
     .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; font-weight: 600; }
@@ -60,16 +57,14 @@
     .navy-btn.green { background: var(--green-save); }
     .navy-btn.red { background: var(--danger); }
 
-    /* 사이드 메뉴 */
     .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 5000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
     .side-menu.open { right: 0; }
     .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 4500; display: none; }
 
-    /* 모달 */
     .setup-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:6000; align-items:center; justify-content:center; padding:15px; }
     .setup-box { background:white; width:100%; max-width:500px; border-radius:24px; padding:25px; max-height:90vh; overflow-y:auto; position: relative; }
+    .setup-label { display: block; font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 6px; }
 
-    /* 로고 크기 보정 */
     .app-footer { height: 50px; background: var(--navy-dark); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; font-size: 12px; }
     .footer-logo img { height: 18px; filter: brightness(0) invert(1); opacity: 0.8; }
 
@@ -78,6 +73,11 @@
   </style>
 </head>
 <body>
+
+  <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9000; align-items:center; justify-content:center; flex-direction:column;">
+      <div style="font-weight:900; color:var(--navy-dark);">데이터 분석 중...</div>
+      <div style="width:200px; height:8px; background:#eee; border-radius:10px; margin-top:15px; overflow:hidden;"><div id="progressFill" style="width:0%; height:100%; background:var(--blue-main); transition:0.2s;"></div></div>
+  </div>
 
   <div class="app-container no-print">
     <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu(false)"></div>
@@ -142,7 +142,6 @@
               <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
 
-          <!-- [수정] 전체 신청 명단 바로 표시 -->
           <div class="section-card">
               <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
@@ -150,9 +149,7 @@
               </div>
               <div style="overflow-x: auto; margin-top:10px;">
                   <table class="navy-table">
-                      <thead>
-                          <tr><th>과정명</th><th>신청자</th><th>구분</th><th>시간</th></tr>
-                      </thead>
+                      <thead><tr><th>과정명</th><th>신청자</th><th>구분</th><th>시간</th></tr></thead>
                       <tbody id="historyTableBody"></tbody>
                   </table>
               </div>
@@ -161,23 +158,13 @@
 
       <!-- [뷰 2] 개별 과정 상세 -->
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:12px;">
+          <!-- 1. 프리미엄 블루 배너 -->
           <div id="indCourseHeader" style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); border-radius: 12px; padding: 18px 20px; margin-bottom: 5px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(0, 51, 102, 0.2);">
-              <div style="background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">Room <span id="ind-room-id">-</span></div>
+              <div style="background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">Room <span id="ind-room-id">-</span></div>
               <div id="ind-course-name" style="font-weight: 800; font-size: 18px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">과정명 로딩 중...</div>
           </div>
 
-          <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (해당 과정)</div>
-              <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="공지 입력"></textarea>
-              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
-          </div>
-
-          <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (공통)</div>
-              <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="센터 전체 공지 입력"></textarea>
-              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
-          </div>
-
+          <!-- 2. 현황 요약 (순서 변경 적용) -->
           <div class="dashboard-split">
               <div class="col-1-3">
                   <div class="entry-box" onclick="showEntryMemberList()">
@@ -198,6 +185,20 @@
               </div>
           </div>
 
+          <!-- 3. 공지사항 영역 (순서 변경 적용) -->
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (해당 과정)</div>
+              <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="공지 입력"></textarea>
+              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+          </div>
+
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (공통)</div>
+              <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="센터 전체 공지 입력"></textarea>
+              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+          </div>
+
+          <!-- 4. 신청자 명단 -->
           <div class="section-card">
               <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청 명단</span>
@@ -219,7 +220,7 @@
     </footer>
   </div>
 
-  <!-- 통합 관리대장 -->
+  <!-- 통합 관리대장 모달 -->
   <div id="outingManagerView" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f1f5f9; z-index:4000; flex-direction:column;">
       <header class="app-header">
           <button class="header-btn" onclick="closeOutingManager()"><i class="fa-solid fa-chevron-left"></i></button>
@@ -228,12 +229,10 @@
       </header>
       <div style="flex:1; overflow-y:auto; padding:15px;">
           <div class="section-card">
-              <div id="managerDateLabel" style="font-weight:900; margin-bottom:15px; color:var(--navy-dark);">관리 현황</div>
+              <div id="managerDateLabel" style="font-weight:900; margin-bottom:15px; color:var(--navy-dark); font-size:16px;">관리 현황</div>
               <div style="overflow-x: auto;">
                   <table class="navy-table">
-                      <thead>
-                          <tr><th>과정명</th><th>신청자</th><th>구분</th><th>시간</th><th>담당 확인</th></tr>
-                      </thead>
+                      <thead><tr><th>과정명</th><th>신청자</th><th>구분</th><th>시간</th><th>담당 확인</th></tr></thead>
                       <tbody id="managerTableBody"></tbody>
                   </table>
               </div>
@@ -241,7 +240,7 @@
       </div>
   </div>
 
-  <!-- 담당자 관리 모달 -->
+  <!-- 운영 담당자 명단 관리 모달 -->
   <div id="coordManageModal" class="setup-modal" style="z-index: 7000;">
       <div class="setup-box" style="max-width: 400px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
@@ -257,7 +256,7 @@
       </div>
   </div>
 
-  <!-- 통합 설정 모달 -->
+  <!-- 통합 환경 설정 모달 -->
   <div id="setupModal" class="setup-modal">
       <div class="setup-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
@@ -271,7 +270,7 @@
               <div><label class="setup-label">강의실 위치</label>
                   <select id="setup-room-dropdown" class="navy-select" onchange="checkLocationDirect(this.value)">
                       <option value="">--- 장소 선택 ---</option>
-                      <optgroup label="하늘관"><option value="하늘관 1층 대강당">하늘관 1층 대강당</option><option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option><option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option></optgroup>
+                      <optgroup label="하늘관"><option value="하늘관 1층 대강당">하늘관 1층 대강당</option><option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option><option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option><option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option></optgroup>
                       <optgroup label="국제동"><option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option><option value="국제동 2층 실습실">국제동 2층 실습실</option></optgroup>
                       <option value="direct">직접 입력</option>
                   </select>
@@ -295,7 +294,7 @@
           <h1 style="margin:0; font-size:28px;">외출/외박 신청 교육생 현황</h1>
           <p id="print-info-text" style="margin:10px 0; font-weight:700;"></p>
       </div>
-      <table class="print-table"><thead id="printHead"></thead><tbody id="printBody"></tbody></table>
+      <table class="print-table"><thead><tr><th width="40">No</th><th width="150">과정명</th><th width="60">구분</th><th width="80">성명</th><th width="130">비상연락처</th><th width="90">신청시간</th><th width="100">담당 확인</th></tr></thead><tbody id="printBody"></tbody></table>
   </div>
 
   <script src="config.js"></script>
@@ -331,11 +330,7 @@
         let globalSet = new Set(); let todayA = 0; const today = getTodayString();
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
-            if (room.students) { 
-                Object.values(room.students).forEach(s => {
-                    if (s.name && s.name !== "undefined") { globalSet.add(`${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`); }
-                });
-            }
+            if (room.students) { Object.values(room.students).forEach(s => { if (s.name && s.name !== "undefined") { globalSet.add(`${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`); } }); }
             if (room.admin_actions?.[today]) todayA += Object.keys(room.admin_actions[today]).length;
         });
         document.getElementById('g-total-students').innerHTML = `${globalSet.size}<span>명</span>`;
@@ -389,18 +384,15 @@
     }
 
     function renderTotalHistory() {
-        const tbody = document.getElementById('historyTableBody');
-        const label = document.getElementById('historyDateLabel');
-        label.innerText = `${selectedDate} 신청 명단`;
-        tbody.innerHTML = ""; let list = [];
+        const tbody = document.getElementById('historyTableBody'); const label = document.getElementById('historyDateLabel');
+        label.innerText = `${selectedDate} 신청 명단`; tbody.innerHTML = ""; let list = [];
         Object.keys(globalAllData).forEach(rid => {
             const actions = globalAllData[rid].admin_actions?.[selectedDate];
             if(actions) Object.values(actions).forEach(a => list.push({...a, cName: globalAllData[rid].settings?.courseName || rid}));
         });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#94a3b8;">내역 없음</td></tr>'; return; }
-        list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => {
-            tbody.innerHTML += `<tr><td style="text-align:left; font-size:11px;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`;
-        });
+        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; }
+        list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => { tbody.innerHTML += `<tr><td style="text-align:left; font-size:11px;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`; });
+        document.getElementById('totalCountSum').innerText = `총 ${list.length}명 신청 중 (상세확인은 상단 관리대장 클릭)`;
     }
 
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
@@ -408,16 +400,9 @@
     function renderOutingManager() {
         const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel');
         label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = [];
-        Object.keys(globalAllData).forEach(rid => {
-            const actions = globalAllData[rid].admin_actions?.[selectedDate];
-            if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid }));
-        });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8;">신청 내역이 없습니다.</td></tr>'; return; }
-        list.sort((a,b) => a.timestamp-b.timestamp).forEach(a => {
-            const isConfirmed = a.confirmed === true;
-            tbody.innerHTML += `<tr><td style="font-size:11px; text-align:left;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-            <td><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isConfirmed})" style="border:none; border-radius:5px; padding:6px 12px; font-size:11px; cursor:pointer; background:${isConfirmed ? '#10b981' : '#e2e8f0'}; color:${isConfirmed ? 'white' : '#64748b'};">${isConfirmed ? '확인됨' : '미확인'}</button></td></tr>`;
-        });
+        Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); });
+        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">신청 내역이 없습니다.</td></tr>'; return; }
+        list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => { const isConfirmed = a.confirmed === true; tbody.innerHTML += `<tr><td style="font-size:11px; text-align:left;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isConfirmed})" style="border:none; border-radius:5px; padding:6px 12px; font-size:11px; cursor:pointer; background:${isConfirmed ? '#10b981' : '#e2e8f0'}; color:${isConfirmed ? 'white' : '#64748b'};">${isConfirmed ? '확인됨' : '미확인'}</button></td></tr>`; });
     }
 
     async function toggleConfirm(rid, date, token, currentStatus) {
@@ -432,21 +417,27 @@
             firebase.database().ref('system/coordinators').on('value', snap => {
                 const data = snap.val() || {};
                 this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-                this.renderSelects(); this.renderManageList();
+                // 리스너 내에서 직접 UI를 업데이트하지 않고 호출 시점에 따라 명확히 제어
+                this.renderSelects(); 
+                this.renderManageList();
             });
         },
         renderSelects: function() {
             const sel = document.getElementById('setup-coord-select'); if(!sel) return;
-            const cur = sel.value; sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
+            const curValue = sel.value; // 현재 선택된 값 보존
+            sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
             this.list.forEach(c => { sel.add(new Option(c.name, c.name)); });
-            if(cur) sel.value = cur;
+            if(curValue) sel.value = curValue;
         },
         renderManageList: function() {
             const div = document.getElementById('coordListContainer'); if(!div) return;
-            div.innerHTML = this.list.map(c => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; font-size:12px;"><span>${c.name}</span><i class="fa-solid fa-trash-can" style="color:var(--danger); cursor:pointer;" onclick="coordMgr.delete('${c.key}')"></i></div>`).join('');
+            div.innerHTML = this.list.map(c => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; font-weight:700;"><span>${c.name}</span><i class="fa-solid fa-trash-can" style="color:var(--danger); cursor:pointer;" onclick="coordMgr.delete('${c.key}')"></i></div>`).join('');
         },
-        add: function() { const v = document.getElementById('newCoordInput').value.trim(); if(v) firebase.database().ref('system/coordinators').push(v).then(()=>document.getElementById('newCoordInput').value=""); },
-        delete: function(k) { if(confirm("삭제?")) firebase.database().ref(`system/coordinators/${k}`).remove(); },
+        add: async function() { 
+            const input = document.getElementById('newCoordInput'); const v = input.value.trim(); 
+            if(v) { await firebase.database().ref('system/coordinators').push(v); input.value = ""; } 
+        },
+        delete: async function(k) { if(confirm("담당자를 삭제할까요?")) await firebase.database().ref(`system/coordinators/${k}`).remove(); },
         openManage: function() { document.getElementById('coordManageModal').style.display='flex'; }
     };
 
@@ -458,11 +449,9 @@
         document.getElementById('setup-prof-select').value = room.status?.professorName || "";
         document.getElementById('setup-coord-select').value = room.settings?.coordinatorName || "";
         if(room.settings?.period?.includes(" ~ ")) { const p = room.settings.period.split(" ~ "); document.getElementById('setup-start').value = p[0]; document.getElementById('setup-end').value = p[1]; }
-        const loc = room.settings?.roomDetailName || "";
-        const dropdown = document.getElementById('setup-room-dropdown');
+        const loc = room.settings?.roomDetailName || ""; const dropdown = document.getElementById('setup-room-dropdown');
         let found = false; for(let i=0; i<dropdown.options.length; i++) { if(dropdown.options[i].value === loc) { dropdown.selectedIndex = i; found = true; break; } }
-        if(!found && loc) { dropdown.value = "direct"; document.getElementById('setup-location-direct').value = loc; document.getElementById('setup-location-direct').style.display = "block"; }
-        else { document.getElementById('setup-location-direct').style.display = "none"; }
+        if(!found && loc) { dropdown.value = "direct"; document.getElementById('setup-location-direct').value = loc; document.getElementById('setup-location-direct').style.display = "block"; } else { document.getElementById('setup-location-direct').style.display = "none"; }
     }
     async function saveIntegratedSettings() {
         const rid = document.getElementById('setup-room-select').value; const name = document.getElementById('setup-course-name').value.trim();
