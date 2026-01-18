@@ -355,32 +355,41 @@
         }
     }
 
- function updateIndividualView() {
+
+
+
+
+
+
+
+function updateIndividualView() {
         const room = globalAllData[currentRID]; if (!room) return;
         document.getElementById('ind-room-id').innerText = currentRID;
         document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
         const today = getTodayString();
         
-        // 입교 현황
+        // 입교 현황 및 차량 현황 (생략/유지)
         const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
         const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
         document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
-        
-        // 차량 현황
         const getSum = (loc) => { const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; return w1 + w2; };
         document.getElementById('ind-osong').innerText = getSum('osong');
         document.getElementById('ind-term').innerText = getSum('terminal');
         document.getElementById('ind-air').innerText = getSum('airport');
         document.getElementById('ind-car').innerText = getSum('car');
         
-        // 신청 명단
+        // 신청 명단 리스트
         const actionTbody = document.getElementById('indActionTableBody');
         const actions = room.admin_actions?.[today] || {};
         const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
         
         actionTbody.innerHTML = items.length ? items.map(a => {
             const isSigned = a.confirmed === true;
-            const signDisplay = isSigned ? `<b style="color:var(--green-save);">${a.confirmedBy}</b>` : "미서명";
+            const btnStyle = isSigned 
+                ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" 
+                : "background: var(--blue-main); color: #fff; border: none;";
+            const btnText = isSigned ? a.confirmedBy : "서명";
+
             return `
                 <tr>
                     <td style="font-weight:800;">${a.name}</td>
@@ -388,8 +397,8 @@
                     <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
                     <td>
                         <button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" 
-                                style="border:1.5px solid ${isSigned ? 'var(--green-save)' : '#cbd5e1'}; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; background:#fff; min-width:70px;">
-                            ${isSigned ? signDisplay : '<span style="color:#94a3b8;">서명</span>'}
+                                style="${btnStyle} border-radius:5px; padding:6px 10px; font-size:11px; cursor:pointer; min-width:75px; font-weight:800;">
+                            ${btnText}
                         </button>
                     </td>
                 </tr>`;
@@ -398,6 +407,12 @@
         document.getElementById('courseNotice').value = room.coordNotice || ""; 
         autoGrow(document.getElementById('courseNotice'));
     }
+
+
+
+
+
+
 
     function renderTotalHistory() {
         const tbody = document.getElementById('historyTableBody'); const label = document.getElementById('historyDateLabel');
@@ -413,6 +428,10 @@
 
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
+
+
+
+
 function renderOutingManager() {
         const tbody = document.getElementById('managerTableBody'); 
         const label = document.getElementById('managerDateLabel');
@@ -432,8 +451,14 @@ function renderOutingManager() {
 
         list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
             const isSigned = a.confirmed === true;
-            const signDisplay = isSigned ? `<b style="color:var(--green-save);">${a.confirmedBy}</b>` : "미서명";
             
+            // 서명 여부에 따른 버튼 스타일 설정
+            const btnStyle = isSigned 
+                ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" // 서명 후 (회색)
+                : "background: var(--blue-main); color: #fff; border: none;";       // 서명 전 (컬러)
+            
+            const btnText = isSigned ? a.confirmedBy : "서명하기";
+
             tbody.innerHTML += `
                 <tr>
                     <td style="font-size:11px; text-align:left;">${a.cName}</td>
@@ -442,20 +467,24 @@ function renderOutingManager() {
                     <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
                     <td>
                         <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
-                                style="border:1.5px solid ${isSigned ? 'var(--green-save)' : '#cbd5e1'}; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; background:#fff; width:85px;">
-                            ${isSigned ? signDisplay : '<span style="color:#94a3b8;">서명하기</span>'}
+                                style="${btnStyle} border-radius:5px; padding:6px 8px; font-size:11px; cursor:pointer; width:90px; font-weight:800;">
+                            ${btnText}
                         </button>
                     </td>
                 </tr>`;
         });
     }
 
+
+
+
+
+
 async function toggleConfirm(rid, date, token, currentStatus) {
-        // 1. 해당 과정의 운영 담당자가 누구인지 확인
+        // 1. 담당자 지정 여부 확인
         const coordName = globalAllData[rid]?.settings?.coordinatorName || "";
-        
         if (!coordName) { 
-            alert("⚠️ 해당 과정의 운영 담당자가 지정되지 않았습니다.\n설정에서 담당자를 먼저 선택해야 서명이 가능합니다."); 
+            alert("⚠️ 해당 과정의 운영 담당자가 지정되지 않았습니다.\n설정에서 담당자를 먼저 선택해주세요."); 
             openSetupModalFromIndividual(); 
             return; 
         }
@@ -463,17 +492,18 @@ async function toggleConfirm(rid, date, token, currentStatus) {
         const actionRef = firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}`);
 
         if (!currentStatus) {
-            // 서명하기: 담당자 성함을 저장
+            // 서명하기 로직
             await actionRef.update({ confirmed: true, confirmedBy: coordName });
+            alert("✅ 서명이 완료되었습니다.");
         } else {
-            // 서명취소: 서명 데이터 삭제
+            // 서명 취소 로직
             if(confirm("기존 서명을 취소하시겠습니까?")) {
                 await actionRef.update({ confirmed: false, confirmedBy: null });
+                alert("서명이 취소되었습니다.");
             }
         }
-        // 실시간 리스너가 작동하므로 새로고침 없이 화면이 바뀝니다.
+        // 데이터가 바뀌면 아래 render 함수들이 리스너에 의해 자동 실행됩니다.
     }
-
 
 
 
