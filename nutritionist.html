@@ -77,7 +77,7 @@
     }
     #timerText { color: var(--danger); font-weight: 900; }
 
-    /* 메인 지표 카드 (단순화) */
+    /* 메인 지표 카드 */
     .main-stat-card {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border-radius: 24px;
@@ -96,8 +96,10 @@
     }
     .sub-stat-card {
         background: white; border: 1.5px solid #e2e8f0; border-radius: 15px;
-        padding: 15px; display: flex; justify-content: space-between; align-items: center;
+        padding: 18px 20px; display: flex; justify-content: space-between; align-items: center;
+        cursor: pointer; transition: 0.2s;
     }
+    .sub-stat-card:active { background: #fef2f2; transform: scale(0.98); border-color: var(--danger); }
     .sub-stat-label { font-size: 14px; font-weight: 700; color: #64748b; }
     .sub-stat-val { font-size: 20px; font-weight: 800; color: var(--danger); }
 
@@ -133,11 +135,13 @@
     .modal-header { padding: 20px; background: var(--navy-dark); color: white; display: flex; justify-content: space-between; align-items: center; }
     .modal-body { padding: 20px; overflow-y: auto; }
     .modal-close { font-size: 20px; cursor: pointer; }
-    .skip-user-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; font-size: 15px; }
-    .skip-user-name { font-weight: 800; }
-    .skip-user-phone { color: #94a3b8; }
+    .skip-user-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 4px; }
+    .skip-user-main { display: flex; justify-content: space-between; align-items: center; }
+    .skip-user-name { font-weight: 800; color: var(--text-dark); font-size: 16px; }
+    .skip-user-phone { color: var(--accent-blue); font-weight: 700; font-size: 14px; }
+    .skip-user-course { font-size: 11px; color: #94a3b8; font-weight: 600; }
 
-    /* 햄버거 사이드 메뉴 */
+    /* 사이드 메뉴 */
     .side-menu {
         position: fixed; top: 0; right: -100%; width: 80%; max-width: 300px; height: 100%;
         background: white; z-index: 6000; transition: 0.3s; padding: 30px 20px;
@@ -145,32 +149,30 @@
     }
     .side-menu.open { right: 0; }
     .menu-title { font-size: 18px; font-weight: 900; margin-bottom: 30px; border-bottom: 2px solid var(--navy-dark); padding-bottom: 10px;}
-    .upload-section { text-align: center; }
     .upload-btn { background: var(--green-main); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; margin-bottom: 20px;}
     #menuPreview { width: 100%; border-radius: 10px; border: 1px solid #ddd; margin-top: 10px; }
 
-    /* 하단바 */
+    /* 하단바 디자인 */
     .app-footer {
       position: fixed; bottom: 0; width: 100%; max-width: 600px; height: 54px;
-      background: var(--navy-dark); color: #94a3b8;
+      background: var(--navy-dark); color: #fff;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; font-size: 12px; z-index: 1000;
+      padding: 0 20px; z-index: 1000;
     }
-    .footer-logo img { height: 18px; filter: brightness(0) invert(1); opacity: 0.8; }
+    #footer-date { font-size: 15px; font-weight: 800; opacity: 0.9; letter-spacing: -0.5px; }
+    .footer-logo img { height: 18px; filter: brightness(0) invert(1); opacity: 0.9; }
   </style>
 </head>
 
 <body>
 
   <div class="app-container">
-    <!-- 상단바 -->
     <header class="app-header">
       <button class="header-btn" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="header-title">항공기술훈련원 식당</div>
       <button class="header-btn" onclick="toggleSideMenu(true)"><i class="fa-solid fa-bars"></i></button>
     </header>
 
-    <!-- 사이드 메뉴 (식단표 관리) -->
     <div id="sideMenu" class="side-menu">
         <div style="text-align: right; margin-bottom: 20px;"><i class="fa-solid fa-xmark modal-close" onclick="toggleSideMenu(false)"></i></div>
         <div class="menu-title">주간 식단표 관리</div>
@@ -186,90 +188,83 @@
     </div>
 
     <main class="app-content">
-      
-      <!-- 마감 카운트다운 -->
       <div class="countdown-bar">
           <i class="fa-regular fa-clock"></i> 금일 석식 조사 마감까지 <span id="timerText">00:00:00</span> 남음
       </div>
 
-      <!-- 메인 핵심 지표 -->
       <div class="main-stat-card">
           <span class="main-stat-label">오늘의 석식 식사 예정 총원</span>
           <div class="main-stat-val" id="grandTotalNet">0<span>명</span></div>
       </div>
 
       <div class="sub-stat-row">
-          <div class="sub-stat-card">
-              <span class="sub-stat-label">오늘의 석식 제외 신청</span>
+          <div class="sub-stat-card" onclick="showAllExclusions()">
+              <span class="sub-stat-label">오늘의 석식 제외 신청 (명단보기)</span>
               <span class="sub-stat-val" id="grandTotalSkips">0명</span>
           </div>
       </div>
 
-      <!-- 과정별 상세 리스트 -->
       <div class="list-card">
           <div class="card-header"><i class="fa-solid fa-clipboard-list"></i> 과정별 식수 상세 (클릭 시 명단확인)</div>
           <table class="status-table">
               <thead>
                   <tr>
                       <th style="width: 50%;">과정명</th>
-                      <th style="width: 15%;">총원</th>
+                      <th style="width: 15%;">입교</th>
                       <th style="width: 15%;">제외</th>
                       <th style="width: 20%;">예정</th>
                   </tr>
               </thead>
-              <tbody id="roomTableBody">
-                  <!-- 데이터 동적 로드 -->
-              </tbody>
+              <tbody id="roomTableBody"></tbody>
           </table>
       </div>
     </main>
 
-    <!-- 상세 명단 팝업 모달 -->
     <div id="detailModal" class="modal-overlay" onclick="if(event.target==this) closeDetailModal()">
         <div class="modal-box">
             <div class="modal-header">
                 <div id="modalTitle" style="font-weight: 800;">제외 교육생 명단</div>
                 <i class="fa-solid fa-xmark modal-close" onclick="closeDetailModal()"></i>
             </div>
-            <div class="modal-body" id="modalList">
-                <!-- 이름 리스트 삽입 -->
-            </div>
+            <div class="modal-body" id="modalList"></div>
             <button onclick="closeDetailModal()" style="width: 100%; padding: 15px; border: none; background: #f1f5f9; font-weight: 800; color: #64748b; cursor: pointer;">닫기</button>
         </div>
     </div>
 
-    <!-- 하단바 -->
     <footer class="app-footer">
-      <div id="footer-date">0000-00-00</div>
-      <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
+      <div id="footer-date">로딩 중...</div>
+      <div class="footer-logo"><img src="logo.png" alt="KAC"></div>
     </footer>
   </div>
 
   <script src="config.js"></script>
   <script>
-    // --- 전역 변수 ---
     let allCourseData = {};
 
-    // --- 1. 초기 실행 및 메뉴 제어 ---
     function toggleSideMenu(open) {
         document.getElementById('sideMenu').classList.toggle('open', open);
-        if(open) fetchCurrentMenu(); // 메뉴 열 때 최신 식단표 불러오기
+        if(open) fetchCurrentMenu();
     }
 
-    // --- 2. 카운트다운 로직 (16:00 마감) ---
+    function updateClock() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('footer-date').innerText = `${year}.${month}.${day} ${hh}시 ${mm}분`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
     function updateCountdown() {
         const now = new Date();
         const deadline = new Date();
         deadline.setHours(16, 0, 0, 0);
-
         let diff = deadline - now;
         const timerEl = document.getElementById('timerText');
-
-        if (diff <= 0) {
-            timerEl.innerText = "조사 마감됨";
-            return;
-        }
-
+        if (diff <= 0) { timerEl.innerText = "조사 마감됨"; return; }
         const h = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
         const m = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
         const s = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
@@ -277,7 +272,7 @@
     }
     setInterval(updateCountdown, 1000);
 
-    // --- 3. 데이터 로드 (강사 플랫폼과 로직 동기화) ---
+    // --- [핵심 수정] 데이터 로드 (입교 완료된 사람만 총원으로 계산) ---
     function fetchMealData() {
         const today = getTodayString();
         firebase.database().ref('courses').on('value', snap => {
@@ -285,53 +280,46 @@
             allCourseData = data;
             const tbody = document.getElementById('roomTableBody');
             tbody.innerHTML = "";
-
-            let grandTotalStudents = 0;
+            let grandTotalArrived = 0; // 실제 입교 완료 총원
             let grandTotalSkips = 0;
 
             Object.keys(data).forEach(rid => {
                 const room = data[rid];
                 if (room.status && room.status.roomStatus === 'active') {
                     
-                    // 총원 계산 (강사플랫폼 로직: 예정명단 + 실제명단 합산)
-                    const expectedNames = room.expectedStudents || [];
+                    // (변경) 총원 계산: 명단에 관계없이 앱에 접속한 '실제 인원'만 추출
                     const actualStudents = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
-                    const actualNames = actualStudents.map(s => s.name);
-                    const combinedNames = Array.from(new Set([...expectedNames, ...actualNames]));
+                    const actualNames = Array.from(new Set(actualStudents.map(s => s.name))); // 중복 기기 제거
                     
-                    const roomTotal = combinedNames.length;
+                    const roomArrived = actualNames.length; // 이 강의실의 실제 입교 인원
                     const roomSkips = room.dinner_skips && room.dinner_skips[today] ? Object.keys(room.dinner_skips[today]).length : 0;
                     
-                    if (roomTotal > 0) {
-                        grandTotalStudents += roomTotal;
+                    if (roomArrived > 0) {
+                        grandTotalArrived += roomArrived;
                         grandTotalSkips += roomSkips;
 
                         const cName = room.settings?.courseName || `강의실 ${rid}`;
                         tbody.innerHTML += `
                             <tr onclick="showRoomDetails('${rid}', '${cName}')">
                                 <td class="course-name">${cName}</td>
-                                <td>${roomTotal}</td>
+                                <td>${roomArrived}</td>
                                 <td class="skip-val">${roomSkips}</td>
-                                <td class="net-val">${roomTotal - roomSkips}</td>
-                            </tr>
-                        `;
+                                <td class="net-val">${roomArrived - roomSkips}</td>
+                            </tr>`;
                     }
                 }
             });
-
-            document.getElementById('grandTotalNet').innerHTML = (grandTotalStudents - grandTotalSkips) + "<span>명</span>";
+            // 식사 예정 = 실제 입교 인원 - 제외 신청자
+            document.getElementById('grandTotalNet').innerHTML = (grandTotalArrived - grandTotalSkips) + "<span>명</span>";
             document.getElementById('grandTotalSkips').innerText = grandTotalSkips + "명";
-            document.getElementById('footer-date').innerText = today;
         });
     }
 
-    // --- 4. 상세 팝업 (누가 안 먹는지 확인) ---
     function showRoomDetails(rid, cName) {
         const today = getTodayString();
         const skips = allCourseData[rid].dinner_skips ? allCourseData[rid].dinner_skips[today] : null;
         const modal = document.getElementById('detailModal');
         const listArea = document.getElementById('modalList');
-        
         document.getElementById('modalTitle').innerText = cName;
         listArea.innerHTML = "";
 
@@ -339,40 +327,67 @@
             listArea.innerHTML = "<div style='text-align:center; padding:30px; color:#94a3b8;'>석식 제외 신청자가 없습니다.</div>";
         } else {
             Object.values(skips).sort().forEach(val => {
-                // val 형태: "홍길동(1234)"
                 const name = val.split('(')[0];
                 const phone = val.includes('(') ? val.split('(')[1].replace(')', '') : '';
                 listArea.innerHTML += `
                     <div class="skip-user-item">
-                        <span class="skip-user-name">${name}</span>
-                        <span class="skip-user-phone">뒷자리: ${phone}</span>
-                    </div>
-                `;
+                        <div class="skip-user-main"><span class="skip-user-name">${name}</span><span class="skip-user-phone">${phone}</span></div>
+                    </div>`;
             });
         }
         modal.style.display = 'flex';
     }
 
-    function closeDetailModal() {
-        document.getElementById('detailModal').style.display = 'none';
+    function showAllExclusions() {
+        const today = getTodayString();
+        const modal = document.getElementById('detailModal');
+        const listArea = document.getElementById('modalList');
+        document.getElementById('modalTitle').innerText = "전체 석식 제외자 현황";
+        listArea.innerHTML = "";
+
+        let allSkips = [];
+        Object.keys(allCourseData).forEach(rid => {
+            const room = allCourseData[rid];
+            const skips = room.dinner_skips ? room.dinner_skips[today] : null;
+            if(skips) {
+                Object.values(skips).forEach(val => {
+                    allSkips.push({
+                        nameInfo: val,
+                        course: room.settings?.courseName || rid
+                    });
+                });
+            }
+        });
+
+        if (allSkips.length === 0) {
+            listArea.innerHTML = "<div style='text-align:center; padding:30px; color:#94a3b8;'>오늘 석식 제외자가 없습니다.</div>";
+        } else {
+            allSkips.sort((a,b) => a.nameInfo.localeCompare(b.nameInfo));
+            allSkips.forEach(item => {
+                const name = item.nameInfo.split('(')[0];
+                const phone = item.nameInfo.includes('(') ? item.nameInfo.split('(')[1].replace(')', '') : '';
+                listArea.innerHTML += `
+                    <div class="skip-user-item">
+                        <div class="skip-user-main"><span class="skip-user-name">${name}</span><span class="skip-user-phone">${phone}</span></div>
+                        <div class="skip-user-course">${item.course}</div>
+                    </div>`;
+            });
+        }
+        modal.style.display = 'flex';
     }
 
-    // --- 5. 식단표 관리 (업로드 및 미리보기) ---
+    function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
+
     function fetchCurrentMenu() {
         firebase.database().ref('system/nutrition_menu').once('value', snap => {
             const imgEl = document.getElementById('menuPreview');
-            if (snap.exists()) {
-                imgEl.src = snap.val();
-            } else {
-                imgEl.src = "https://via.placeholder.com/300x400?text=No+Image";
-            }
+            imgEl.src = snap.exists() ? snap.val() : "https://via.placeholder.com/300x400?text=No+Image";
         });
     }
 
     async function handleFileUpload(input) {
         const file = input.files[0];
         if (!file) return;
-        
         const reader = new FileReader();
         reader.onload = async (e) => {
             const base64 = e.target.result;
@@ -383,7 +398,6 @@
         reader.readAsDataURL(file);
     }
 
-    // 실행
     fetchMealData();
     fetchCurrentMenu();
   </script>
