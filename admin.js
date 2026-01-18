@@ -563,7 +563,7 @@ resetCourse: function() {
 
 
 
-// [최종 수정] 수강생 삭제 시 모든 데이터(출석부 포함) 삭제 로직
+// [최종 보강] 수강생 삭제 시 차량 신청 내역(셔틀)까지 완벽하게 삭제하는 로직
 deleteStudent: function(token) {
     if(!state.room) return;
     
@@ -572,37 +572,46 @@ deleteStudent: function(token) {
         if(!targetStudent) return;
         const targetName = targetStudent.name;
         const targetPhone = (targetStudent.phone || "0000").trim();
-        const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부 도장 키
+        const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부 대조용 키
 
-        if(confirm(`🚨 [${targetName}] 수강생의 모든 정보와 출석 기록을 삭제하시겠습니까?`)) {
+        if(confirm(`🚨 [${targetName}] 수강생의 모든 정보(출석부, 차량신청, 행정내역)를 삭제하시겠습니까?`)) {
             const today = getTodayString();
             const updates = {};
+            const rPath = `courses/${state.room}`;
             
-            // 1. 수강생 기본 정보 삭제 (이게 지워지면 교육생 폰에서 강제 퇴실 발생)
-            updates[`courses/${state.room}/students/${token}`] = null;
-            
-            // 2. 석식/외출 기록 삭제
-            updates[`courses/${state.room}/dinner_skips/${today}/${token}`] = null;
-            updates[`courses/${state.room}/admin_actions/${today}/${token}`] = null;
+            // 1. 기본 정보 및 행정 신청 삭제
+            updates[`${rPath}/students/${token}`] = null;
+            updates[`${rPath}/dinner_skips/${today}/${token}`] = null;
+            updates[`${rPath}/admin_actions/${today}/${token}`] = null;
 
-            // 3. 모든 날짜의 출석 도장(internal_attendance) 삭제
-            firebase.database().ref(`courses/${state.room}/internal_attendance`).once('value', attendSnap => {
-                const allDates = attendSnap.val() || {};
-                Object.keys(allDates).forEach(date => {
-                    if (allDates[date][attendanceKey]) {
-                        updates[`courses/${state.room}/internal_attendance/${date}/${attendanceKey}`] = null;
+            // 2. 차량 신청 내역(셔틀/자차) 모든 경로 삭제
+            const locations = ['osong', 'terminal', 'airport', 'car'];
+            const waves = ['wave1', 'wave2'];
+            
+            waves.forEach(w => {
+                locations.forEach(loc => {
+                    // 해당 학생의 토큰으로 된 신청 정보가 있다면 삭제
+                    updates[`${rPath}/shuttle/out/${w}/${loc}/${token}`] = null;
+                });
+            });
+
+            // 3. 자체 출석부(모든 날짜) 도장 삭제
+            firebase.database().ref(`${rPath}/internal_attendance`).once('value', attendSnap => {
+                const allAttendData = attendSnap.val() || {};
+                Object.keys(allAttendData).forEach(date => {
+                    if(allAttendData[date][attendanceKey]) {
+                        updates[`${rPath}/internal_attendance/${date}/${attendanceKey}`] = null;
                     }
                 });
 
-                // 서버에 일괄 적용
+                // 서버에 한꺼번에 적용 (원자적 업데이트)
                 firebase.database().ref().update(updates).then(() => {
-                    ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 정리되었습니다.`);
+                    ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 성공적으로 삭제되었습니다.`);
                 });
             });
         }
     });
 },
-
 
 
 
