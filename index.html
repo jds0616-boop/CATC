@@ -714,7 +714,7 @@ function exitApp() {
 
 
 
-// [최종 보강] 삭제 후 재접속 시 부활 방지 및 자동 퇴출 로직
+// [최종 보강] 삭제 후 부활 절대 방지 로직 (수정본)
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
@@ -722,46 +722,43 @@ function startPresence() {
     
     if (!uToken || !currentRoom || !name) return;
 
-    const myFullStatusRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+    const myRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
     const connectedRef = firebase.database().ref(".info/connected");
 
-    // [1] 실시간 감시: 브라우저가 켜져 있는 동안 강사가 나를 지우면 즉시 퇴출
-    myFullStatusRef.on('value', snap => {
+    // [1] 실시간 감시: 앱이 켜져 있는 동안 강사가 나를 지우면 즉시 퇴출
+    myRef.on('value', snap => {
         if (!snap.exists() && document.getElementById('mainApp').style.display === 'flex') {
-            evictUser();
+            evictUser("정보가 삭제되었습니다.");
         }
     });
 
-    // [2] 재연결 감시: 화면을 껐다 켰을 때(부활 시도 시) 체크
+    // [2] 재연결/부활 방지: 화면을 켰을 때(서버 연결 시) 체크
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
-            // [핵심] 서버에 내 정보를 쓰기(update) 전에, 내가 아직 서버에 존재하는지 먼저 물어봅니다.
-            myFullStatusRef.once('value').then(s => {
+            // [중요] 서버에 내 정보를 업데이트(update)하기 전에, 
+            // 내가 서버 명단에 아직 '존재'하는지부터 먼저 '확인(once)' 합니다.
+            myRef.once('value').then(s => {
                 if (s.exists()) {
-                    // 서버에 내가 아직 있다면 -> 정상 접속 중이므로 정보 업데이트
-                    myFullStatusRef.update({
-                        name: name,
-                        phone: phone,
+                    // 서버 명단에 내가 있을 때만: 온라인 보고를 합니다.
+                    myRef.update({
                         isOnline: true,
                         lastSeen: firebase.database.ServerValue.TIMESTAMP
                     });
-                    myFullStatusRef.child('isOnline').onDisconnect().set(false);
+                    myRef.child('isOnline').onDisconnect().set(false);
                 } else {
-                    // 서버에 내가 없다면 -> 강사가 나를 지운 것이므로 부활하지 말고 퇴출
-                    if (document.getElementById('mainApp').style.display === 'flex') {
-                        evictUser();
-                    }
+                    // 서버 명단에 내가 없다면: 삭제된 좀비이므로 부활을 차단하고 즉시 퇴출
+                    evictUser("유효하지 않은 입장 정보입니다.");
                 }
             });
         }
     });
 
-    // 퇴출 처리 공통 함수
-    function evictUser() {
-        myFullStatusRef.off(); // 감시 중단
-        localStorage.removeItem('uToken'); // 입장권 파기
-        alert("강의실 정보가 갱신되었거나 관리자에 의해 삭제되었습니다.");
-        location.reload(); // 페이지 새로고침 -> 초기 화면으로
+    // 강제 퇴출 및 데이터 파기 공통 함수
+    function evictUser(msg) {
+        myRef.off(); // 서버 감시 중단
+        localStorage.removeItem('uToken'); // 입장권(토큰) 파기 (이게 핵심!)
+        alert(msg);
+        location.reload(); // 초기 화면으로 튕겨나감
     }
 
     // 전체 접속자 수 카운트 (유지)
