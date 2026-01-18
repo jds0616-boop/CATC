@@ -202,15 +202,17 @@
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:10px;">
 
 
-    <!-- [신규 추가] 현재 선택된 과정 헤더 표시줄 -->
-    <div id="currentCourseHeader" style="background: white; border: 1.5px solid var(--border-blue); border-radius: 12px; padding: 15px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.03);">
-        <div style="background: #f0f9ff; color: var(--blue-main); padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 15px;">
-            Room <span id="ind-room-id">-</span>
-        </div>
-        <div id="ind-course-name" style="font-weight: 800; font-size: 16px; color: var(--navy-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            과정명 로딩 중...
-        </div>
+<!-- 개별 과정 상단 제목바 (배경색 변경 버전) -->
+<div id="indCourseHeader" style="background: linear-gradient(135deg, #003366 0%, #0055aa 100%); border-radius: 12px; padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);">
+    <!-- Room 번호 배지 (배경 대비를 위해 연한 파랑 적용) -->
+    <div style="background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 14px; border: 1px solid rgba(255, 255, 255, 0.3);">
+        Room <span id="ind-room-id">-</span>
     </div>
+    <!-- 과정명 (흰색으로 강조) -->
+    <div id="ind-course-name" style="font-weight: 800; font-size: 18px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        과정명 로딩 중...
+    </div>
+</div>
 
 
 
