@@ -1254,20 +1254,16 @@ loadDashboardStats: function() {
 
 
 
-loadAttendanceView: async function() {
+// [교체 및 추가] 출결 게시판 통합 관리 (공식 QR + 자체 출석부)
+    loadAttendanceView: function() {
         if(!state.room) return;
         
-        const imgMain = document.getElementById('attendanceQrImgMain');
-        const msgMain = document.getElementById('noAttendanceQrMsgMain');
-        
-        // 데이터 로드 전 초기화
-        if(imgMain) imgMain.style.display = 'none';
-        if(msgMain) msgMain.style.display = 'block';
-        if(msgMain) msgMain.innerText = "데이터를 불러오는 중...";
-
-        // 실시간 리스너 연결 (코디네이터가 바꾸면 바로 바뀌도록)
+        // 1. [기존 기능 유지] 공식 E-HRD QR 이미지 실시간 감시
         firebase.database().ref(`courses/${state.room}/attendanceQR`).on('value', snap => {
             const qrData = snap.val();
+            const imgMain = document.getElementById('attendanceQrImgMain');
+            const msgMain = document.getElementById('noAttendanceQrMsgMain');
+            
             if(qrData) {
                 if(imgMain) {
                     imgMain.src = qrData;
@@ -1281,6 +1277,104 @@ loadAttendanceView: async function() {
                     msgMain.innerText = "등록된 QR 이미지가 없습니다. (운영부 업로드 필요)";
                 }
             }
+        });
+
+        // 2. [신규 기능] 자체 출석체크 실시간 감시 시작
+        this.loadInternalAttendance();
+    },
+
+    // [신규] 출결 모드 전환 (공식 QR <-> 자체 출석체크)
+    toggleAttendanceMode: function(mode) {
+        const areaOfficial = document.getElementById('area-official-qr');
+        const areaInternal = document.getElementById('area-internal-qr');
+        const subTitle = document.getElementById('attendanceSubTitle');
+        const btnOfficial = document.getElementById('btn-mode-official');
+        const btnInternal = document.getElementById('btn-mode-internal');
+
+        if(mode === 'official') {
+            if(areaOfficial) areaOfficial.style.display = 'block';
+            if(areaInternal) areaInternal.style.display = 'none';
+            if(subTitle) subTitle.innerText = "E-HRD 출결 처리를 위한 QR 코드입니다.";
+            // 버튼 디자인 변경
+            btnOfficial.style.background = "#003366"; btnOfficial.style.color = "white";
+            btnInternal.style.background = "#f1f5f9"; btnInternal.style.color = "#64748b";
+        } else {
+            if(areaOfficial) areaOfficial.style.display = 'none';
+            if(areaInternal) areaInternal.style.display = 'block';
+            if(subTitle) subTitle.innerText = "항기원 자체 시스템을 통해 실시간 출석을 확인합니다.";
+            // 버튼 디자인 변경
+            btnOfficial.style.background = "#f1f5f9"; btnOfficial.style.color = "#64748b";
+            btnInternal.style.background = "#003366"; btnInternal.style.color = "white";
+            // 자체 QR 생성
+            this.generateInternalQR();
+        }
+    },
+
+    // [신규] 자체 출석용 QR 코드 생성 (&checkin=true 포함)
+    generateInternalQR: function() {
+        const target = document.getElementById('internalQrTarget');
+        if(!target) return;
+        target.innerHTML = ""; 
+
+        const pathArr = window.location.pathname.split('/'); 
+        pathArr.pop();
+        const baseUrl = window.location.origin + pathArr.join('/');
+        
+        // 교육생용 index.html로 보내되, 출석체크 신호를 함께 보냅니다.
+        const internalUrl = `${baseUrl}/index.html?room=${state.room}&checkin=true`;
+
+        new QRCode(target, {
+            text: internalUrl,
+            width: 260,
+            height: 260,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    },
+
+    // [신규] 자체 출석부 실시간 리스트 렌더링
+    loadInternalAttendance: function() {
+        if(!state.room) return;
+        const today = getTodayString();
+        const listDiv = document.getElementById('internalAttendanceList');
+        
+        // (1) 먼저 전체 수강생 명단을 가져옵니다.
+        firebase.database().ref(`courses/${state.room}/students`).on('value', studentSnap => {
+            const students = studentSnap.val() || {};
+            // 유효한 이름이 있는 학생들만 골라서 이름순 정렬
+            const studentList = Object.keys(students).map(k => ({token: k, ...students[k]}))
+                                .filter(s => s.name && s.name !== "undefined")
+                                .sort((a,b) => a.name.localeCompare(b.name));
+
+            // (2) 오늘 날짜의 출석 완료 데이터를 가져옵니다.
+            firebase.database().ref(`courses/${state.room}/internal_attendance/${today}`).on('value', attendSnap => {
+                const attendees = attendSnap.val() || {};
+                const attendCount = Object.keys(attendees).length;
+
+                // 통계 숫자 업데이트
+                const checkInCountEl = document.getElementById('checkInCount');
+                const totalMemberCountEl = document.getElementById('totalMemberCount');
+                if(checkInCountEl) checkInCountEl.innerText = attendCount;
+                if(totalMemberCountEl) totalMemberCountEl.innerText = studentList.length;
+
+                if(!listDiv) return;
+                listDiv.innerHTML = "";
+
+                // (3) 명단 출력
+                studentList.forEach(s => {
+                    const isAttended = attendees[s.token] ? true : false;
+                    const bgColor = isAttended ? "#ecfdf5" : "#ffffff";
+                    const textColor = isAttended ? "#10b981" : "#94a3b8";
+                    const borderColor = isAttended ? "#10b981" : "#e2e8f0";
+                    const icon = isAttended ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-regular fa-circle"></i>';
+
+                    listDiv.innerHTML += `
+                        <div style="background:${bgColor}; color:${textColor}; border:1.5px solid ${borderColor}; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:800; display:flex; flex-direction:column; gap:5px; transition:0.2s;">
+                            <div style="font-size:16px;">${icon}</div>
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
+                        </div>
+                    `;
+                });
+            });
         });
     },
 
