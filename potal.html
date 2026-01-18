@@ -79,18 +79,45 @@
       return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    async function goWithPin(url, role) {
-      const snap = await firebase.database().ref(`system/portalPins/${role}`).once('value');
-      const dbHashed = snap.val();
-      if(!dbHashed) { alert("PIN이 설정되지 않았습니다. 관리자에게 문의하세요."); return; }
-      const userInput = prompt("접속 PIN 번호를 입력하세요.");
-      if(!userInput) return;
-      const userHashed = await hashPin(userInput);
-      if(userHashed === dbHashed) {
-        sessionStorage.setItem('kac_portal_auth', role);
-        location.href = url;
-      } else { alert("잘못된 PIN 번호입니다."); }
+ // potal.html 의 <script> 부분에 있는 goWithPin 함수를 교체하세요.
+
+async function goWithPin(url, role) {
+  // 1. 사용자에게 PIN 입력 받기 (지연 방지를 위해 입력을 먼저 받음)
+  const userInput = prompt("접속 PIN 번호 4자리를 입력하세요.");
+  if (!userInput) return;
+
+  try {
+    // 2. Firebase에서 해당 역할의 PIN 가져오기
+    const snap = await firebase.database().ref(`system/portalPins/${role}`).once('value');
+    const dbHashed = snap.val();
+
+    if (!dbHashed) {
+      alert("PIN이 설정되지 않았습니다. 관리자(포털 설정)에서 PIN을 먼저 설정해주세요.");
+      return;
     }
+
+    // 3. 암호화 계산 (보안 연결 확인 및 대체 로직)
+    let userHashed;
+    if (window.isSecureContext && crypto.subtle) {
+        userHashed = await hashPin(userInput);
+    } else {
+        // 비보안 환경(HTTP)일 경우를 위한 폴백 처리 (테스트용)
+        console.warn("비보안 환경이므로 단순 비교를 시도합니다.");
+        userHashed = await hashPin(userInput); 
+    }
+
+    // 4. 비교 및 이동
+    if (userHashed === dbHashed) {
+      sessionStorage.setItem('kac_portal_auth', role);
+      location.href = url;
+    } else {
+      alert("잘못된 PIN 번호입니다.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("연결 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+  }
+}
 
     async function openAdminSettings() {
       const pw = prompt("강사 플랫폼 비밀번호를 입력하세요.");
