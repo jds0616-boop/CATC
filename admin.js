@@ -1331,49 +1331,63 @@ loadDashboardStats: function() {
         });
     },
 
-    // [신규] 자체 출석부 실시간 리스트 렌더링
+// [교체] 자체 출석부 실시간 리스트 (중복 제거 및 동명인 처리 버전)
     loadInternalAttendance: function() {
         if(!state.room) return;
         const today = getTodayString();
         const listDiv = document.getElementById('internalAttendanceList');
         
-        // (1) 먼저 전체 수강생 명단을 가져옵니다.
+        // (1) 수강생 명단 가져오기
         firebase.database().ref(`courses/${state.room}/students`).on('value', studentSnap => {
             const students = studentSnap.val() || {};
-            // 유효한 이름이 있는 학생들만 골라서 이름순 정렬
-            const studentList = Object.keys(students).map(k => ({token: k, ...students[k]}))
-                                .filter(s => s.name && s.name !== "undefined")
-                                .sort((a,b) => a.name.localeCompare(b.name));
+            
+            // [중요] 이름+번호가 같은 데이터는 하나로 합치기 (중복 방지)
+            const uniqueStudentsMap = new Map();
+            Object.keys(students).forEach(key => {
+                const s = students[key];
+                if (s.name && s.name !== "undefined") {
+                    const identifier = `${s.name.trim()}_${s.phone.trim()}`;
+                    // 이미 등록된 사람이면 온라인 상태인 쪽을 우선함
+                    if (!uniqueStudentsMap.has(identifier) || s.isOnline) {
+                        uniqueStudentsMap.set(identifier, { ...s, token: key });
+                    }
+                }
+            });
 
-            // (2) 오늘 날짜의 출석 완료 데이터를 가져옵니다.
+            // 가나다순 정렬
+            const sortedList = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+
+            // (2) 오늘 날짜의 출석 완료 데이터 가져오기
             firebase.database().ref(`courses/${state.room}/internal_attendance/${today}`).on('value', attendSnap => {
                 const attendees = attendSnap.val() || {};
-                const attendCount = Object.keys(attendees).length;
+                
+                // 화면 업데이트
+                let attendCount = 0;
+                if(listDiv) listDiv.innerHTML = "";
 
-                // 통계 숫자 업데이트
-                const checkInCountEl = document.getElementById('checkInCount');
-                const totalMemberCountEl = document.getElementById('totalMemberCount');
-                if(checkInCountEl) checkInCountEl.innerText = attendCount;
-                if(totalMemberCountEl) totalMemberCountEl.innerText = studentList.length;
+                sortedList.forEach(s => {
+                    // 이 사람이 오늘 출석했는지 확인 (성함_번호 조합으로 대조)
+                    const attendKey = `${s.name.trim()}_${s.phone.trim()}`;
+                    const isAttended = attendees[attendKey] ? true : false;
+                    if(isAttended) attendCount++;
 
-                if(!listDiv) return;
-                listDiv.innerHTML = "";
-
-                // (3) 명단 출력
-                studentList.forEach(s => {
-                    const isAttended = attendees[s.token] ? true : false;
                     const bgColor = isAttended ? "#ecfdf5" : "#ffffff";
                     const textColor = isAttended ? "#10b981" : "#94a3b8";
                     const borderColor = isAttended ? "#10b981" : "#e2e8f0";
                     const icon = isAttended ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-regular fa-circle"></i>';
 
-                    listDiv.innerHTML += `
-                        <div style="background:${bgColor}; color:${textColor}; border:1.5px solid ${borderColor}; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:800; display:flex; flex-direction:column; gap:5px; transition:0.2s;">
-                            <div style="font-size:16px;">${icon}</div>
-                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
-                        </div>
-                    `;
+                    if(listDiv) {
+                        listDiv.innerHTML += `
+                            <div style="background:${bgColor}; color:${textColor}; border:1.5px solid ${borderColor}; padding:10px; border-radius:10px; text-align:center; font-size:14px; font-weight:800; display:flex; flex-direction:column; gap:5px; transition: 0.2s;">
+                                <div style="font-size:16px;">${icon}</div>
+                                <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
+                            </div>
+                        `;
+                    }
                 });
+
+                if(document.getElementById('totalMemberCount')) document.getElementById('totalMemberCount').innerText = sortedList.length;
+                if(document.getElementById('checkInCount')) document.getElementById('checkInCount').innerText = attendCount;
             });
         });
     },

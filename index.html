@@ -1601,7 +1601,7 @@ function openRoomMove() {
 
 
 
-// [교체] 프로필 저장 및 자동 출석 체크 연동
+// [교체] 프로필 저장 시 고유 식별값(이름_번호) 사용 로직
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
@@ -1611,16 +1611,16 @@ async function saveProfile() {
         return;
     }
     
+    // [중요] 이름과 전화번호를 조합하여 나만의 고유 ID를 만듭니다. (중복 방지 핵심)
+    const uToken = `${name}_${phone}`;
     localStorage.setItem('kac_user_name', name);
     localStorage.setItem('kac_user_phone', phone);
-    
-    const uToken = Math.random().toString(36).substr(2, 9) + "_" + Date.now().toString().slice(-4);
     localStorage.setItem('uToken', uToken); 
 
     try {
         const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
         
-        await studentRef.set({
+        await studentRef.update({
             name: name,
             phone: phone,
             joinedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -1630,7 +1630,7 @@ async function saveProfile() {
         startPresence(); 
         document.getElementById('profileOverlay').style.display = 'none';
         
-        // [핵심 추가] 이름 등록 직후, 만약 출석 QR로 들어왔다면 바로 출석 처리
+        // 만약 QR 출석 체크로 들어왔다면 바로 출석 처리
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('checkin') === 'true') {
             handleInternalCheckIn(currentRoom); 
@@ -1643,6 +1643,11 @@ async function saveProfile() {
         alert("등록 중 오류가 발생했습니다.");
     }
 }
+
+
+
+
+
 
 
 // [최종] 서버 명부 대조 방식의 프로필 체크
@@ -1878,19 +1883,20 @@ function watchNotices() {
 
 
 
-// [최종 수정] 항기원 자체 출석 체크 처리 함수
+// [교체] 출석 체크 시 고유 식별값(이름_번호)으로 기록 저장
 function handleInternalCheckIn(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
     if (isCheckIn && room) {
-        const myToken = localStorage.getItem('uToken');
+        const myToken = localStorage.getItem('uToken'); // 이름_번호 조합
         const myName = localStorage.getItem('kac_user_name');
 
         if (myToken && myName) {
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
+            // 서버에 '이름_번호'를 키값으로 저장하여 중복 원천 봉쇄
             firebase.database().ref(`courses/${room}/internal_attendance/${today}/${myToken}`).set(myName)
             .then(() => {
                 alert("✅ 항기원 자체 출석 체크가 완료되었습니다!");
@@ -1898,7 +1904,6 @@ function handleInternalCheckIn(room) {
                 window.history.replaceState({}, '', newUrl);
             });
         } else {
-            // 정보가 없는 경우, 알림을 띄우고 프로필 입력창을 보여줌
             alert("입교 등록이 필요합니다. 성함 입력 후 자동으로 출석 처리됩니다.");
             document.getElementById('profileOverlay').style.display = 'flex';
         }
