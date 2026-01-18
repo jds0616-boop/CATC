@@ -411,32 +411,44 @@
         await firebase.database().ref(`courses/${rid}/admin_actions/${date}/${token}/confirmed`).set(!currentStatus);
     }
 
-// [안정화] 과정 운영 담당자(행정) 관리 객체
+
+
+
+
+
+
+
+
+// [최종 보강] 과정 운영 담당자(행정) 관리 객체
     const coordMgr = {
         list: [],
         init: async function() {
-            // 1. 데이터베이스에 담당자가 한 명도 없는지 "딱 한 번만" 확인
-            const snap = await firebase.database().ref('system/coordinators').once('value');
+            // 1. 데이터가 있는지 처음에 한번 확인
+            const ref = firebase.database().ref('system/coordinators');
+            const snap = await ref.once('value');
+            
             if (!snap.exists()) {
                 const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
-                // 초기 명단 한 명씩 저장
                 for (let name of initial) {
-                    await firebase.database().ref('system/coordinators').push(name);
+                    await ref.push(name);
                 }
             }
 
-            // 2. 이후에는 데이터가 변할 때마다(추가/삭제) 실시간으로 화면만 다시 그림
-            firebase.database().ref('system/coordinators').on('value', s => {
+            // 2. 실시간 리스너 연결 (데이터가 바뀔 때마다 실행)
+            ref.on('value', s => {
                 const data = s.val() || {};
+                // 데이터를 배열로 변환
                 this.list = Object.keys(data).map(k => ({ key: k, name: data[k] }));
-                this.renderSelects();
+                
+                // 3. 데이터가 오면 리스트와 선택창을 둘 다 새로 그림
+                this.renderSelects(); 
                 this.renderManageList();
             });
         },
         renderSelects: function() {
             const sel = document.getElementById('setup-coord-select');
             if(!sel) return;
-            const curValue = sel.value; // 현재 선택 중인 이름 유지
+            const curValue = sel.value; // 현재 선택값 보존
             sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
             this.list.forEach(c => {
                 const opt = new Option(c.name, c.name);
@@ -447,11 +459,17 @@
         renderManageList: function() {
             const div = document.getElementById('coordListContainer');
             if(!div) return;
-            // 관리창 리스트 출력 (가독성 개선)
+            
+            if(this.list.length === 0) {
+                div.innerHTML = "<div style='text-align:center; padding:20px; color:#94a3b8;'>담당자가 없습니다.</div>";
+                return;
+            }
+
+            // 관리창 내부 리스트 생성
             div.innerHTML = this.list.map(c => `
-                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; align-items:center; background:#fff;">
-                    <span style="font-weight:700; color:var(--navy-dark);">${c.name}</span>
-                    <i class="fa-solid fa-circle-xmark" style="color:var(--danger); cursor:pointer; font-size:18px;" onclick="coordMgr.delete('${c.key}')"></i>
+                <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee; font-size:14px; align-items:center; background:#fff; margin-bottom:5px; border-radius:8px;">
+                    <span style="font-weight:800; color:#1e293b;">${c.name}</span>
+                    <i class="fa-solid fa-circle-xmark" style="color:#ef4444; cursor:pointer; font-size:20px;" onclick="coordMgr.delete('${c.key}')"></i>
                 </div>`).join('');
         },
         add: async function() {
@@ -459,27 +477,38 @@
             const v = input.value.trim();
             if(!v) return;
             
-            // 저장 중에는 입력창 잠금
             input.disabled = true;
             try {
                 await firebase.database().ref('system/coordinators').push(v);
                 input.value = "";
             } catch(e) {
-                alert("저장 중 오류: " + e.message);
+                alert("저장 오류: " + e.message);
             } finally {
                 input.disabled = false;
                 input.focus();
             }
         },
         delete: async function(k) {
-            if(confirm("이 담당자를 명단에서 삭제할까요?")) {
+            if(confirm("이 담당자를 삭제하시겠습니까?")) {
                 await firebase.database().ref(`system/coordinators/${k}`).remove();
             }
         },
         openManage: function() {
             document.getElementById('coordManageModal').style.display = 'flex';
+            this.renderManageList(); // 창 열 때 한번 더 강제로 그림
         }
     };
+
+
+
+
+
+
+
+
+
+
+
 
     function openSetupModal() { toggleMenu(false); document.getElementById('setupModal').style.display = "flex"; }
     function openSetupModalFromIndividual() { document.getElementById('setup-room-select').value = currentRID; loadRoomSettings(currentRID); toggleMenu(false); document.getElementById('setupModal').style.display = "flex"; }
