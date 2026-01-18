@@ -74,6 +74,29 @@
     .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 9000; display: none; align-items: center; justify-content: center; flex-direction: column; }
     .progress-bar { width: 180px; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px; }
     .progress-fill { height: 100%; background: var(--blue-main); width: 0%; transition: width 0.1s; }
+
+
+/* 관리대장 전체화면 팝업을 모바일 규격(600px)에 맞춤 */
+    #outingManagerView { 
+        display:none; 
+        position:fixed; 
+        top:0; 
+        left:50%; 
+        transform:translateX(-50%); 
+        width:100%; 
+        max-width:600px; 
+        height:100%; 
+        background:#f1f5f9; 
+        z-index:4000; 
+        flex-direction:column;
+        box-shadow: 0 0 30px rgba(0,0,0,0.2);
+    }
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -408,25 +431,73 @@
     }
 
     function renderTotalHistory() {
-        const tbody = document.getElementById('historyTableBody'); const label = document.getElementById('historyDateLabel');
-        label.innerText = `${selectedDate} 신청 명단`; tbody.innerHTML = ""; let list = [];
-        Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({...a, cName: globalAllData[rid].settings?.courseName || rid})); });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; }
-        list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => { tbody.innerHTML += `<tr><td style="text-align:left; font-size:11px;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td></tr>`; });
+        const tbody = document.getElementById('historyTableBody'); 
+        const label = document.getElementById('historyDateLabel');
+        label.innerText = `${selectedDate} 신청 명단`; 
+        tbody.innerHTML = ""; 
+        let list = [];
+
+        Object.keys(globalAllData).forEach(rid => { 
+            const actions = globalAllData[rid].admin_actions?.[selectedDate]; 
+            if(actions) Object.values(actions).forEach(a => list.push({...a, cName: globalAllData[rid].settings?.courseName || rid})); 
+        });
+
+        if(list.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:40px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; 
+            return; 
+        }
+
+        list.sort((a,b)=>a.timestamp-b.timestamp).forEach(a => { 
+            // 모든 td에 text-align:center 적용 및 과정명 줄바꿈 방지
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-size:11px; color:var(--blue-deep);">${a.cName}</td>
+                    <td style="font-weight:800; text-align:center;">${a.name}</td>
+                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                    <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                </tr>`; 
+        });
+        document.getElementById('totalCountSum').innerText = `총 ${list.length}명 신청 중 (상세확인은 상단 관리대장 클릭)`;
     }
 
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
     function renderOutingManager() {
-        const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel');
-        label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = [];
-        Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); });
-        if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">신청 내역이 없습니다.</td></tr>'; return; }
+        const tbody = document.getElementById('managerTableBody'); 
+        const label = document.getElementById('managerDateLabel');
+        label.innerText = `${selectedDate} 통합 관리 현황`; 
+        tbody.innerHTML = ""; 
+        let list = [];
+        
+        Object.keys(globalAllData).forEach(rid => { 
+            const actions = globalAllData[rid].admin_actions?.[selectedDate]; 
+            if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); 
+        });
+
+        if(list.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">신청 내역이 없습니다.</td></tr>'; 
+            return; 
+        }
+
         list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
             const isSigned = a.confirmed === true;
             const btnStyle = isSigned ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" : "background: var(--blue-main); color: #fff; border: none;";
             const btnText = isSigned ? a.confirmedBy : "서명하기";
-            tbody.innerHTML += `<tr><td style="font-size:11px; text-align:left;">${a.cName}</td><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:6px 8px; font-size:11px; cursor:pointer; width:90px; font-weight:800;">${btnText}</button></td></tr>`;
+
+            // 관리대장 테이블: 모바일 폭에 맞춰 너비 최적화 및 중앙 정렬
+            tbody.innerHTML += `
+                <tr>
+                    <td style="width:30%; font-size:10px; text-align:center; word-break:keep-all;">${a.cName}</td>
+                    <td style="width:18%; font-weight:800; text-align:center;">${a.name}</td>
+                    <td style="width:12%; color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                    <td style="width:20%; font-size:10px; text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td style="width:20%; text-align:center;">
+                        <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                                style="${btnStyle} border-radius:5px; padding:6px 0; font-size:10px; cursor:pointer; width:100%; font-weight:800;">
+                            ${btnText}
+                        </button>
+                    </td>
+                </tr>`;
         });
     }
 
