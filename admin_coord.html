@@ -371,16 +371,39 @@
         else { location.href = 'potal.html'; }
     }
 
-    function updateGlobalStatus() {
-        let totalS = 0; let todayA = 0; const tStr = getTodayString();
-        Object.keys(globalAllData).forEach(rid => {
-            const room = globalAllData[rid];
-            if (room.students) { totalS += (new Set(Object.values(room.students).filter(s=>s.name&&s.name!=="undefined").map(s=>`${s.name}_${s.phone}`))).size; }
-            if (room.admin_actions?.[tStr]) { todayA += Object.keys(room.admin_actions[tStr]).length; }
-        });
-        document.getElementById('g-total-students').innerHTML = `${totalS}<span>명</span>`;
-        document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
-    }
+function updateGlobalStatus() {
+    // 1. 전체 강의실의 학생을 통합해서 담을 Set 생성 (중복 자동 제거)
+    let globalStudentSet = new Set();
+    let todayA = 0; 
+    const tStr = getTodayString();
+
+    Object.keys(globalAllData).forEach(rid => {
+        const room = globalAllData[rid];
+        
+        // 해당 강의실에 학생 데이터가 있는 경우
+        if (room.students) { 
+            Object.values(room.students).forEach(s => {
+                // 이름과 전화번호가 유효한 경우만 처리
+                if (s.name && s.name !== "undefined" && s.phone && s.phone !== "undefined") {
+                    // "이름_전화번호" 형태의 키를 생성하여 Set에 추가
+                    // Set은 동일한 값이 들어오면 하나만 남깁니다.
+                    globalStudentSet.add(`${s.name.trim()}_${s.phone.replace(/-/g, '').trim()}`);
+                }
+            });
+        }
+        
+        // 2. 금일 총 외출/외박 건수 합산
+        if (room.admin_actions?.[tStr]) { 
+            todayA += Object.keys(room.admin_actions[tStr]).length; 
+        }
+    });
+
+    // 중복이 완전히 제거된 전체 인원수
+    const totalS = globalStudentSet.size; 
+    
+    document.getElementById('g-total-students').innerHTML = `${totalS}<span>명</span>`;
+    document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+}
 
     function renderCourseSelectors() {
         const list = document.getElementById('activeCourseList');
