@@ -812,6 +812,89 @@ const profMgr = {
     } // <--- 함수의 끝
 }; // <--- 중요!! profMgr라는 큰 바구니를 여기서 완전히 닫습니다. (콤마 없음)
 
+
+// 과정 담당자(행정) 및 서명 관리 객체 (강사 플랫폼용)
+const coordMgr = {
+    list: [],
+    tempSign: "",
+    
+    init: function() {
+        const ref = firebase.database().ref('system/coordinators');
+        ref.on('value', s => {
+            const data = s.val() || {};
+            this.list = Object.keys(data).map(k => ({ key: k, ...data[k] }));
+            this.renderSelects();    
+            this.renderManageList(); 
+        });
+    },
+
+    renderSelects: function() {
+        const sel = document.getElementById('setup-coord-select'); 
+        if(!sel) return;
+        const curValue = sel.value; 
+        sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
+        this.list.forEach(c => {
+            const opt = new Option(c.name, c.name);
+            if(c.name === curValue) opt.selected = true;
+            sel.add(opt);
+        });
+    },
+
+    renderManageList: function() {
+        const div = document.getElementById('coordListContainer'); 
+        if(!div) return;
+        if(this.list.length === 0) {
+            div.innerHTML = "<div style='text-align:center; padding:20px; color:#94a3b8;'>등록된 담당자가 없습니다.</div>";
+            return;
+        }
+        div.innerHTML = this.list.map(c => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; align-items:center; background:#fff; margin-bottom:5px; border-radius:8px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-weight:800; color:#1e293b;">${c.name}</span>
+                    ${c.sign ? `<img src="${c.sign}" style="height:35px; mix-blend-mode:multiply; border:1px solid #eee; border-radius:4px;">` : `<span style="font-size:10px; color:#94a3b8;">(미등록)</span>`}
+                </div>
+                <i class="fa-solid fa-circle-xmark" style="color:#ef4444; cursor:pointer; font-size:20px;" onclick="coordMgr.delete('${c.key}')"></i>
+            </div>`).join('');
+    },
+
+    handleFile: function(input) {
+        const file = input.files[0]; 
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            this.tempSign = e.target.result; 
+            document.getElementById('tempSignPreview').src = e.target.result;
+            document.getElementById('signPreviewArea').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    },
+
+    add: async function() {
+        const input = document.getElementById('newCoordInput'); 
+        const name = input.value.trim();
+        if(!name) return alert("성함을 입력해 주세요.");
+        try {
+            await firebase.database().ref('system/coordinators').push({ name: name, sign: this.tempSign });
+            input.value = ""; this.tempSign = "";
+            document.getElementById('signPreviewArea').style.display = 'none';
+        } catch(e) { alert("오류: " + e.message); }
+    },
+
+    delete: async function(k) {
+        if(confirm("이 담당자를 삭제할까요?")) {
+            await firebase.database().ref(`system/coordinators/${k}`).remove();
+        }
+    },
+
+    openManage: function() {
+        document.getElementById('coordManageModal').style.display = 'flex';
+    }
+};
+
+
+
+
+
 // --- [신규] 과목(세션) 관리 로직 ---
 const subjectMgr = {
     list: [],
@@ -3196,7 +3279,8 @@ subjectMgr.addSubjectInModal = function() {
 window.onload = function() { 
     dataMgr.checkMobile(); 
     dataMgr.initSystem(); 
-    profMgr.init(); 
+    profMgr.init();   
+    coordMgr.init(); // 과정 담당자 초기화 추가
     guideMgr.init();
 
     // 새로고침 시 기존 접속 강의실 자동 복구
