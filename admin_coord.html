@@ -22,17 +22,15 @@
     }
     .app-container { width: 100%; max-width: 600px; min-height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); }
     
-    /* 상단바 확대 (로고 밸런스) */
-    .app-header { height: 60px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
+    /* 상단바 확대 */
+    .app-header { height: 50px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
     .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
-    .header-title { color: #fff; font-size: 22px; font-weight: 900; letter-spacing: -1px; }
+    .header-title { color: #fff; font-size: 20px; font-weight: 900; letter-spacing: -1px; }
 
     .app-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .section-card { background: var(--card-white); border-radius: 12px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     
-    /* 모든 제목 좌측 정렬 고정 */
-    .section-title { font-size: 14px; font-weight: 800; color: var(--blue-deep); margin-bottom: 15px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
-    .section-title.has-btn { justify-content: space-between; }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; }
     
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .navy-input:focus { border-color: var(--blue-main); background: #fff; }
@@ -41,7 +39,7 @@
     .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 5px; }
     .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 15px; color: white; text-align: center; }
     .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 5px; font-weight: 700; }
-    .g-stat-val { font-size: 24px; font-weight: 900; color: var(--blue-main); }
+    .g-stat-val { font-size: 22px; font-weight: 900; color: var(--blue-main); }
     .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
 
     /* 상세 화면 레이아웃 (1/3 : 2/3) */
@@ -50,12 +48,13 @@
     .col-2-3 { flex: 2.5; }
     
     .entry-box { background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-    .entry-val { font-size: 26px; font-weight: 900; color: var(--navy-dark); }
+    .entry-val { font-size: 24px; font-weight: 900; color: var(--navy-dark); }
     .entry-val span { font-size: 12px; color: #94a3b8; }
 
-    /* 차량 수요조사 결과 (슬림형) */
+    /* 차량 수요조사 결과 */
     .shuttle-grid { display: flex; justify-content: space-between; gap: 4px; }
-    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; }
+    .shuttle-item { flex: 1; background: #fff; border-radius: 8px; padding: 10px 2px; border: 1px solid #eef2f6; text-align: center; cursor: pointer; transition: 0.2s; }
+    .shuttle-item:active { background: #f0fdf4; }
     .shuttle-item span { font-size: 10px; color: #64748b; display: block; margin-bottom: 4px; font-weight: 700; }
     .shuttle-item b { font-size: 16px; color: var(--navy-dark); font-weight: 900; }
 
@@ -80,18 +79,20 @@
     .progress-bar { width: 180px; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px; }
     .progress-fill { height: 100%; background: var(--blue-main); width: 0%; transition: width 0.1s; }
 
-    /* 인쇄 양식 (결재란 삭제) */
+    /* 인쇄 전용 스타일 */
     #print-area { display: none; }
     @media print {
       body { background: white; }
       .app-container, .no-print { display: none !important; }
       #print-area { display: block !important; padding: 20px; }
-      .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
       .print-table th, .print-table td { border: 1px solid #333; padding: 10px; text-align: center; font-size: 13px; }
     }
 
     .setup-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:15px; }
     .setup-box { background:white; width:100%; max-width:500px; border-radius:24px; padding:25px; max-height:90vh; overflow-y:auto; }
+    .setup-group { margin-bottom: 15px; }
+    .setup-label { display: block; font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -111,7 +112,7 @@
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="toggleMenu(false)"></i>
       </div>
 
-      <!-- [상태별 메뉴 분리] -->
+      <!-- [뷰별 메뉴 자동 제어] -->
       <div id="side-global-menu" style="display:none; flex-direction:column; gap:12px;">
           <button class="navy-btn" style="background:#3b82f6; height:45px;" onclick="openSetupModal()">
               <i class="fa-solid fa-gear"></i> 교육과정 추가/설정
@@ -128,7 +129,7 @@
               <input type="file" id="qrFile" accept="image/*" style="display:none;" onchange="handleQRUpload(this)">
               <button class="navy-btn" style="background:#64748b;" onclick="document.getElementById('qrFile').click()">QR 이미지 교체</button>
           </div>
-          <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="handleSidebarAction('trans')">
+          <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="openTransportModal()">
               <i class="fa-solid fa-car-side"></i> 강사 수송 요청
           </button>
       </div>
@@ -156,7 +157,7 @@
           </div>
 
           <div class="section-card">
-              <div class="section-title has-btn">
+              <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
                   <div style="display:flex; gap:5px;">
                       <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
@@ -209,7 +210,7 @@
           </div>
 
           <div class="section-card">
-              <div class="section-title has-btn">
+              <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span>
                   <button class="navy-btn" style="width:60px; height:28px; font-size:11px;" onclick="startPrint('course')">인쇄</button>
               </div>
@@ -226,6 +227,13 @@
               <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="내용을 입력하세요."></textarea>
               <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
           </div>
+
+          <!-- 항기원 전체 공지 영역 복구 -->
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 항기원 전체 공지 (항기원 모든 교수 및 교육생에게 전달됩니다)</div>
+              <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="내용을 입력하세요."></textarea>
+              <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
+          </div>
       </div>
     </main>
 
@@ -237,8 +245,8 @@
 
   <!-- 인쇄 옵션 모달 -->
   <div id="printOptionModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:5000; align-items:center; justify-content:center; padding:20px;">
-      <div style="background:white; width:100%; max-width:400px; border-radius:24px; padding:30px; text-align:center;">
-          <h3 style="margin-top:0; color:var(--navy-dark);">명단 인쇄 범위 선택</h3>
+      <div style="background:white; width:100%; max-width:350px; border-radius:24px; padding:30px; text-align:center;">
+          <h3 style="margin-top:0;">명단 인쇄 범위 선택</h3>
           <p style="font-size:13px; color:#64748b; margin-bottom:20px;">출력할 대상을 선택해 주세요.</p>
           <button class="navy-btn" style="height:48px; margin-bottom:10px;" onclick="startPrint('total')">전체 과정 통합 인쇄</button>
           <div style="font-size:11px; color:#94a3b8; margin:15px 0 10px 0; border-top:1px solid #eee; padding-top:15px;">--- 개별 과정별 선택 인쇄 ---</div>
@@ -247,9 +255,9 @@
       </div>
   </div>
 
-  <!-- 출력물 템플릿 (결재란 삭제) -->
+  <!-- 인쇄 레이어 (결재란 삭제) -->
   <div id="print-area">
-      <div style="text-align:center; border-bottom:3px double #333; padding-bottom:15px; margin-bottom:30px;">
+      <div style="text-align:center; border-bottom:3px double #333; padding-bottom:10px; margin-bottom:30px;">
           <h1 style="margin:0; font-size:32px; font-weight:900;">외출/외박 신청자</h1>
           <p id="print-info-text" style="margin:10px 0; font-size:16px; font-weight:700; color:#444;"></p>
       </div>
@@ -261,10 +269,10 @@
           </thead>
           <tbody id="printBody"></tbody>
       </table>
-      <div style="margin-top:30px; text-align:right; font-size:12px; color:#666;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
+      <div style="margin-top:30px; text-align:right; font-size:11px; color:#888;">항공기술훈련원 교육운영부 | 출력일시: <span id="print-now"></span></div>
   </div>
 
-  <!-- 설정 모달 -->
+  <!-- 과정 설정 모달 (강의실 리스트 보정) -->
   <div id="setupModal" class="setup-modal">
       <div class="setup-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
@@ -272,21 +280,38 @@
               <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="closeSetupModal()"></i>
           </div>
           <div style="display:flex; flex-direction:column; gap:15px;">
-              <div><label style="font-size:12px; font-weight:800; color:#64748b;">대상 강의실 선택</label><select id="setup-room-select" class="navy-select"></select></div>
-              <div><label style="font-size:12px; font-weight:800; color:#64748b;">교육과정명</label><input type="text" id="setup-course-name" class="navy-input" placeholder="정확한 과정명 입력"></div>
-              <div><label style="font-size:12px; font-weight:800; color:#64748b;">교육 기간</label><div style="display:flex; gap:5px; align-items:center;"><input type="date" id="setup-start" class="navy-input"><input type="date" id="setup-end" class="navy-input"></div></div>
-              <div><label style="font-size:12px; font-weight:800; color:#64748b;">강의실 상세 위치</label>
+              <div><label class="setup-label">대상 강의실 선택</label><select id="setup-room-select" class="navy-select"></select></div>
+              <div><label class="setup-label">교육과정명</label><input type="text" id="setup-course-name" class="navy-input" placeholder="정확한 과정명 입력"></div>
+              <div><label class="setup-label">교육 기간</label><div style="display:flex; gap:5px; align-items:center;"><input type="date" id="setup-start" class="navy-input"><span>~</span><input type="date" id="setup-end" class="navy-input"></div></div>
+              
+              <!-- 강의실 위치 선택 (그룹화) -->
+              <div><label class="setup-label">강의실 상세 위치</label>
                   <select id="setup-room-dropdown" class="navy-select" onchange="checkLocationDirect(this.value)">
                       <option value="">--- 장소 선택 ---</option>
-                      <optgroup label="하늘관"><option value="하늘관 1층 대강당">하늘관 1층 대강당</option><option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option></optgroup>
-                      <optgroup label="국제동"><option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option></optgroup>
+                      <optgroup label="하늘관">
+                          <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
+                          <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
+                          <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
+                          <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
+                      </optgroup>
+                      <optgroup label="국제동">
+                          <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
+                          <option value="국제동 2층 항공정보통신시설 실습실">국제동 2층 항공정보통신시설 실습실</option>
+                          <option value="국제동 2층 VOR/DME/TACAN 실습실">국제동 2층 VOR/DME/TACAN 실습실</option>
+                      </optgroup>
+                      <optgroup label="관제교육동">
+                          <option value="관제교육동 1층">관제교육동 1층</option>
+                          <option value="관제교육동 2층">관제교육동 2층</option>
+                      </optgroup>
                       <option value="direct">직접 입력</option>
                   </select>
                   <input type="text" id="setup-location-direct" class="navy-input" style="margin-top:5px; display:none;" placeholder="위치 직접 작성">
               </div>
-              <div><label style="font-size:12px; font-weight:800; color:#64748b;">담당 교수</label><select id="setup-prof-select" class="navy-select"></select></div>
+
+              <div><label class="setup-label">담당 교수</label><select id="setup-prof-select" class="navy-select"></select></div>
+              
               <div style="padding:15px; background:#f8fafc; border-radius:12px; border:1px solid #eee;">
-                  <label style="font-size:12px; font-weight:800; color:#64748b;">출강 강사 리스트</label>
+                  <label class="setup-label">출강 강사 리스트</label>
                   <div id="setup-instructor-list" style="max-height:100px; overflow-y:auto; margin-bottom:8px;"></div>
                   <div style="display:flex; gap:5px;"><input type="text" id="setup-new-inst" class="navy-input" placeholder="강사명"><button class="navy-btn" style="width:60px;" onclick="addTempInstructor()">추가</button></div>
               </div>
@@ -295,7 +320,7 @@
       </div>
   </div>
 
-  <!-- 강사 수송 모달 -->
+  <!-- 강사 수송 모달 (복구) -->
   <div id="transportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:15px;">
       <div style="background:white; width:100%; max-width:450px; border-radius:24px; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;">
           <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center;"><h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청 관리</h3><i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i></div>
@@ -319,19 +344,32 @@
     function init() {
         firebase.database().ref('courses').on('value', snap => {
             globalAllData = snap.val() || {};
-            updateGlobalStatus(); renderInitialLists(); renderTotalHistory();
+            updateGlobalStatus(); 
+            renderCourseSelectors(); // 버그 보정: 과정 필터/리스트 그리기
+            renderTotalHistory();    // 버그 보정: 전체 현황 그리기
             if(currentRID) updateIndividualView();
             cleanOldData();
         });
-        firebase.database().ref('system/globalNotice').on('value', s => { document.getElementById('globalNotice').value = s.val() || ""; autoGrow(document.getElementById('globalNotice')); });
+        firebase.database().ref('system/globalNotice').on('value', s => { 
+            const el = document.getElementById('globalNotice'); 
+            if(el) { el.value = s.val() || ""; autoGrow(el); }
+        });
         document.getElementById('historyDate').value = selectedDate;
     }
 
     function runClock() {
         const now = new Date(); const week = ['일','월','화','수','목','금','토'];
-        document.getElementById('footer-date').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        const str = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        document.getElementById('footer-date').innerText = str;
     }
     setInterval(runClock, 1000);
+
+    function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
+
+    function handleBackNav() {
+        if(currentRID) { currentRID = ""; handleRoomSelection(); }
+        else { location.href = 'potal.html'; }
+    }
 
     function updateGlobalStatus() {
         let totalS = 0; let todayA = 0; const tStr = getTodayString();
@@ -344,40 +382,31 @@
         document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
     }
 
-    function handleBackNav() {
-        if(currentRID) { currentRID = ""; handleRoomSelection(); }
-        else { location.href = 'potal.html'; }
-    }
-
-    function renderInitialLists() {
-        const select = document.getElementById('roomSelect');
+    function renderCourseSelectors() {
         const list = document.getElementById('activeCourseList');
-        const setupRoom = document.getElementById('setup-room-select');
+        const select = document.getElementById('roomSelect'); // 과정 선택 박스 (개별화면에선 숨김)
         const filter = document.getElementById('courseFilter');
-        const savedRoom = select.value;
-        const savedFilter = filter.value;
-
-        select.innerHTML = '<option value="">전체 과정 현황 보기 (기본)</option>';
-        setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
-        filter.innerHTML = '<option value="all">모든 과정 보기</option>';
-        list.innerHTML = "";
+        const setupRoom = document.getElementById('setup-room-select');
+        
+        if(list) list.innerHTML = "";
+        if(filter) filter.innerHTML = '<option value="all">모든 과정 보기</option>';
+        if(setupRoom) setupRoom.innerHTML = '<option value="">강의실 선택 (A~Z)</option>';
 
         for(let i=65; i<=90; i++){
             const rid = String.fromCharCode(i); const room = globalAllData[rid];
             let label = `Room ${rid}`; if(room?.status?.roomStatus==='active') label += ` [사용중 - ${room.status.professorName||'미정'}]`;
-            setupRoom.add(new Option(label, rid));
+            if(setupRoom) setupRoom.add(new Option(label, rid));
+            
             if(room?.status?.roomStatus==='active'){
                 const cName = room.settings?.courseName || rid;
-                select.add(new Option(`Room ${rid} - ${cName}`, rid));
-                filter.add(new Option(cName, rid));
-                const item = document.createElement('div');
-                item.style = "background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
-                item.onclick = () => { currentRID = rid; handleRoomSelection(); };
-                item.innerHTML = `<div><b style="color:#0ea5e9; margin-right:8px;">Room ${rid}</b><span style="font-weight:700; font-size:13px;">${cName}</span></div><i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:11px;"></i>`;
-                list.appendChild(item);
+                if(filter) filter.add(new Option(cName, rid));
+                if(list){
+                    const item = document.createElement('div'); item.style = "background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;";
+                    item.onclick = () => { currentRID = rid; handleRoomSelection(); }; item.innerHTML = `<div><b style="color:#0ea5e9; margin-right:8px;">Room ${rid}</b><span style="font-weight:700; font-size:13px;">${cName}</span></div><i class="fa-solid fa-chevron-right" style="color:#cbd5e1; font-size:11px;"></i>`;
+                    list.appendChild(item);
+                }
             }
         }
-        select.value = savedRoom; filter.value = savedFilter;
     }
 
     function handleRoomSelection() {
@@ -412,12 +441,10 @@
 
     function loadActionHistory(date) { selectedDate = date; renderTotalHistory(); }
     function renderTotalHistory() {
-        const tbody = document.getElementById('historyTableBody'); 
-        const filterEl = document.getElementById('courseFilter');
-        const filter = filterEl ? filterEl.value : 'all';
-        const label = document.getElementById('historyDateLabel');
-        const dateObj = new Date(selectedDate); const week = ['일','월','화','수','목','금','토'];
-        label.innerText = `${selectedDate} (${week[dateObj.getDay()]}) 신청자 현황`;
+        const tbody = document.getElementById('historyTableBody'); if(!tbody) return;
+        const filter = document.getElementById('courseFilter')?.value || 'all';
+        const label = document.getElementById('historyDateLabel'); const dateObj = new Date(selectedDate); const week = ['일','월','화','수','목','금','토'];
+        if(label) label.innerText = `${selectedDate} (${week[dateObj.getDay()]}) 신청자 현황`;
         tbody.innerHTML = ""; let list = [];
         Object.keys(globalAllData).forEach(rid => {
             if (filter !== 'all' && filter !== rid) return;
@@ -447,13 +474,12 @@
 
     function startPrint(mode, filterRID) {
         document.getElementById('printOptionModal').style.display = "none";
-        const overlay = document.getElementById('loadingOverlay'); const fill = document.getElementById('progressFill');
-        const text = document.getElementById('loadingText'); overlay.style.display = "flex";
+        const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex";
         let progress = 0;
         const timer = setInterval(() => {
             progress += 25; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode, filterRID); }
-            fill.style.width = progress + "%"; text.innerText = `데이터 수집 중... ${progress}%`;
-        }, 120);
+            document.getElementById('progressFill').style.width = progress + "%"; document.getElementById('loadingText').innerText = `인쇄 데이터 수집 중... ${progress}%`;
+        }, 150);
     }
 
     function executePrintProcess(mode, filterRID) {
@@ -525,9 +551,9 @@
     function showEntryMemberList() {
         const room = globalAllData[currentRID]; const uniqueMap = new Map();
         Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined").forEach(s => { const key = `${s.name}_${s.phone}`; if(!uniqueMap.has(key)) uniqueMap.set(key, s.name); });
-        alert(`[입교 명단]\n\n${Array.from(uniqueMap.values()).sort().join(", ") || "입교자 없음"}`);
+        const list = Array.from(uniqueMap.values()).sort().join(", "); alert(`[입교 명단]\n\n${list || "입교자 없음"}`);
     }
-    function showShuttleMembers(loc) { const room = globalAllData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {}); if(m1.length + m2.length === 0) return alert("신청자 없음"); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`); }
+    function showShuttleMembers(loc) { const room = globalAllData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {}); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`); }
     function checkLocationDirect(v) { document.getElementById('setup-location-direct').style.display = (v === 'direct') ? "block" : "none"; }
     function addTempInstructor() { const i = document.getElementById('setup-new-inst'); if(i.value.trim()){ tempInstructors.push(i.value.trim()); i.value = ""; renderInstructorList(); } }
     function renderInstructorList() {
