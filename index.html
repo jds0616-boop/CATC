@@ -714,59 +714,59 @@ function exitApp() {
 
 
 
-// [최종 보강] 삭제 시 즉시 화면 차단 및 부활 방지 로직
+// [최종 보강] 유령 회원 방지 및 강제 퇴출 로직 완결판
 function startPresence() {
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
     const phone = localStorage.getItem('kac_user_phone');
     
-    if (!uToken || !currentRoom || !name) return;
+    // 입장권이 없으면 실행 중단
+    if (!uToken || !currentRoom || !name) {
+        if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
+        return;
+    }
 
     const myRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
     const connectedRef = firebase.database().ref(".info/connected");
 
-    // [1] 실시간 셧다운 감시: 앱을 켜놓고 있는 동안 강사가 지우면 즉시 실행
+    // [1] 실시간 감시: 내가 서버에서 지워지는 순간 즉시 화면 차단
     myRef.on('value', snap => {
         if (!snap.exists()) {
-            // 서버에 내 명단이 없으면 즉시 앱 화면을 숨기고 쫓아냄
-            evictUser("강의실에서 퇴출되었습니다.");
+            evictUser("입장 정보가 만료되었거나 삭제되었습니다.");
         }
     });
 
-    // [2] 부활 방지 체크: 화면을 다시 켰을 때(재연결 시) 체크
+    // [2] 접속 상태 업데이트: 서버 확인 후 명단에 있을 때만 데이터 전송
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
             myRef.once('value').then(s => {
                 if (s.exists()) {
-                    // 명단에 있을 때만 접속 상태 업데이트
-                    myRef.update({ isOnline: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                    // 서버 명단에 내가 있을 때만 온라인 상태 보고
+                    myRef.update({
+                        name: name,
+                        phone: phone,
+                        isOnline: true,
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
                     myRef.child('isOnline').onDisconnect().set(false);
                 } else {
-                    // 명단에 없으면 부활 시도 조차 못하게 차단
-                    evictUser("유효하지 않은 입장 정보입니다.");
+                    // 서버 명단에 없으면 부활 시도 차단 및 퇴출
+                    evictUser("유효하지 않은 접근입니다.");
                 }
             });
         }
     });
 
-    // [강제 퇴출 함수] 화면을 즉시 가리고 모든 권한을 뺏습니다.
+    // [강제 퇴출 함수] 모든 데이터 삭제 및 화면 봉쇄
     function evictUser(msg) {
-        // 1. 서버 통신 즉시 중단
-        myRef.off();
-        
-        // 2. 화면 즉시 차단 (채팅창과 메인 화면을 아예 안 보이게 숨김)
+        myRef.off(); // 서버 연결 끊기
+        localStorage.removeItem('uToken'); // 입장권 삭제
         if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
-        if(document.getElementById('landingPage')) document.getElementById('landingPage').style.display = 'none';
-        
-        // 3. 내 핸드폰에 저장된 입장권(토큰) 삭제
-        localStorage.removeItem('uToken');
-        
-        // 4. 알림창을 띄우고 페이지 강제 새로고침
         alert(msg);
-        location.href = location.pathname + location.search; // 깨끗하게 초기화면으로 이동
+        location.reload(); // 초기 화면으로 강제 이동
     }
 
-    // 전체 접속자 수 감시 (유지)
+    // 전체 접속자 수 감시
     firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
         const data = snap.val() || {};
         const activeUsers = Object.values(data).filter(user => 
@@ -776,7 +776,6 @@ function startPresence() {
         if(countEl) countEl.innerText = `${activeUsers.length}명 접속`;
     });
 }
-
 
 
 
@@ -1691,28 +1690,35 @@ async function saveProfile() {
 
 
 
-// [최종] 서버 명부 대조 방식의 프로필 체크
+// [최종 수정] 서버 명단 대조 방식의 엄격한 프로필 체크
 async function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
     const uToken = localStorage.getItem('uToken');
 
+    // 1. 핸드폰에 입장권(uToken) 자체가 없으면 무조건 이름 입력창 표시
     if (!uToken || !savedName) {
         document.getElementById('profileOverlay').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
         return;
     }
 
     try {
+        // 2. 서버 명단에 내가 실제로 있는지 확인
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
+            // 서버 명단에 없다면 (삭제되었거나 유령인 경우) 입장권 파기 후 이름 입력창 표시
+            localStorage.removeItem('uToken');
             document.getElementById('profileOverlay').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
         } else {
-            // 접속이 확인되면 실시간 감지 시작
-            startPresence();
+            // 3. 서버에 명단이 있을 때만 정상 입장
             showMainDashboard();
         }
     } catch (e) {
+        // 오류 발생 시 안전을 위해 이름 입력창 표시
         document.getElementById('profileOverlay').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
     }
 }
 
