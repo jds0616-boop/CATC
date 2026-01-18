@@ -1930,7 +1930,12 @@ function watchNotices() {
 
 
 
-// [최종 수정] 출석 시 성함과 시간을 함께 저장하는 로직
+
+
+
+
+
+// [최종 수정] 인증 ID를 생성하여 서버에 함께 저장하는 로직
 function handleInternalCheckIn(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
@@ -1943,20 +1948,21 @@ function handleInternalCheckIn(room) {
             const attendanceKey = `${myName.trim()}_${myPhone.trim()}`;
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            
-            // 시간 포맷 생성 (예: 09:05)
             const currentTime = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+            
+            // [인증 ID 생성] 6자리 고유 번호
+            const authId = "KAC-" + Math.random().toString(36).substr(2, 5).toUpperCase();
 
-            // [수정] 이름 대신 {성함, 시간} 객체로 저장
+            // 서버 저장
             firebase.database().ref(`courses/${room}/internal_attendance/${today}/${attendanceKey}`).set({
                 name: myName,
-                time: currentTime
+                time: currentTime,
+                authId: authId // 서버에 인증 ID 저장
             })
             .then(() => {
-                alert("✅ [" + myName + "]님, 출석 체크가 완료되었습니다. (" + currentTime + ")");
+                alert("✅ [" + myName + "]님, 출석 완료!\n인증번호: " + authId);
                 const newUrl = window.location.pathname + `?room=${room}`;
                 window.history.replaceState({}, '', newUrl);
-                
                 document.getElementById('landingPage').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'flex';
                 startPresence();
@@ -1967,8 +1973,6 @@ function handleInternalCheckIn(room) {
         }
     }
 }
-
-
 
 
 

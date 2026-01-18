@@ -468,6 +468,9 @@ resetCourse: function() {
         updates[`${rPath}/attendanceQR`] = null;
         updates[`${rPath}/connections`] = null;
 
+       // [핵심 추가] 자체 출석부 데이터도 함께 삭제합니다.
+        updates[`${rPath}/internal_attendance`] = null;
+
         // [기본값 설정 항목]
         updates[`${rPath}/settings/courseName`] = "";
         updates[`${rPath}/settings/subjects`] = null;
