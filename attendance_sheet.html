@@ -18,11 +18,26 @@
         .sign-box { height: 60px; cursor: pointer; position: relative; vertical-align: middle; }
         .sign-box img { max-height: 50px; mix-blend-mode: multiply; }
 
-        /* 메인 테이블 */
-        .main-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .main-table th, .main-table td { border: 1px solid #000; padding: 8px 4px; text-align: center; }
-        .main-table th { background: #f8fafc; }
-        .name-col { width: 80px; font-weight: bold; }
+/* 메인 테이블 스타일 수정 */
+        .main-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 11px; 
+            table-layout: fixed; /* 모든 열 너비를 고정합니다 */
+            word-break: break-all;
+        }
+        .main-table th, .main-table td { 
+            border: 1px solid #000; 
+            padding: 8px 2px; 
+            text-align: center; 
+            overflow: hidden; /* 내용이 넘쳐도 틀이 깨지지 않게 합니다 */
+        }
+        .main-table th { background: #f8fafc; height: 35px; }
+        
+        /* 열별 너비 지정 */
+        .no-col { width: 35px; }   /* 번호 칸 */
+        .name-col { width: 75px; font-weight: bold; } /* 성명 칸 */
+        /* 나머지 날짜 칸들은 남은 공간을 똑같이 나눠 갖습니다 */
         
         /* 도장 스타일 */
         .stamp { color: #dc2626; font-weight: 900; border: 2px solid #dc2626; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transform: rotate(-10deg); }
@@ -84,6 +99,9 @@
     // 파이어베이스 데이터베이스 참조
     const db = firebase.database();
 
+
+
+
 async function init() {
         if (!room) return;
 
@@ -100,14 +118,15 @@ async function init() {
 
         // [화면 연동] 결재란 담당자/교수 자동 입력 (칭호 포함)
         document.getElementById('sign-coord').innerText = courseInfo.coordinatorName || "-";
-        // 담임교수 이름 뒤에 " 교수"를 자동으로 붙여서 출력합니다.
         document.getElementById('sign-prof').innerText = roomStatus.professorName ? roomStatus.professorName + " 교수" : "-";
 
         // 2. 날짜 헤더 생성 (월~금)
         dateArray = generateDates(courseInfo.period);
         const header = document.getElementById('date-header');
         
-        header.innerHTML = '<th>No</th><th>성명</th>';
+        // 헤더의 No 칸에 no-col 클래스를 부여하여 너비를 고정합니다.
+        header.innerHTML = '<th class="no-col">No</th><th class="name-col">성명</th>';
+        
         dateArray.forEach(d => {
             const th = document.createElement('th');
             th.innerHTML = d.split('-')[1] + '/' + d.split('-')[2] + '<br>' + getDayName(d);
