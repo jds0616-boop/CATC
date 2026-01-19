@@ -706,33 +706,45 @@ async function enterApp() {
 
 
 function openMainMenu() {
-    const myName = localStorage.getItem('kac_user_name') || "미등록";
-    const myPhone = localStorage.getItem('kac_user_phone') || "0000";
+    // 1. 내 정보 가져오기 (공백 제거)
+    const myName = (localStorage.getItem('kac_user_name') || "미등록").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone') || "0000").trim();
+    const dormTextEl = document.getElementById('displayMyDorm');
 
+    // 2. 상단 이름/번호 표시
     document.getElementById('displayMyName').innerText = myName;
     document.getElementById('displayMyPhone').innerText = myPhone;
 
-    // 지원부 플랫폼 생활관 데이터 실시간 감시 (.on)
-    firebase.database().ref(`system/dormitory_assignments/${myName}_${myPhone}`).on('value', snap => {
-        const data = snap.val();
-        const dormTextEl = document.getElementById('displayMyDorm');
-        if(!dormTextEl) return;
+    // 3. [지능형 실시간 매칭] 
+    // 우선순위 1: '이름_번호'로 된 정밀 데이터가 있는지 확인 (동명이인 수동 구분용)
+    // 우선순위 2: 일반 '이름' 데이터가 있는지 확인 (기본 매칭)
+    
+    const dormAssignmentsRef = firebase.database().ref(`system/dormitory_assignments`);
 
-        if (data) {
+    // .on을 사용하여 지원부에서 어떤 방식으로 수정하든 실시간으로 반응합니다.
+    dormAssignmentsRef.on('value', snap => {
+        const allDormData = snap.val() || {};
+        
+        // [A] 이름_번호 조합 (예: 홍길동_3126) 확인
+        const precisionKey = `${myName}_${myPhone}`;
+        
+        if (allDormData[precisionKey]) {
+            const data = allDormData[precisionKey];
             dormTextEl.innerText = `${data.building} ${data.room}호`;
             dormTextEl.style.color = "#3b82f6";
-        } else {
-            // 이름으로만 한번 더 시도
-            firebase.database().ref(`system/dormitory_assignments/${myName}`).once('value').then(s2 => {
-                const d2 = s2.val();
-                if (d2) {
-                    dormTextEl.innerText = `${d2.building} ${d2.room}호`;
-                    dormTextEl.style.color = "#3b82f6";
-                } else {
-                    dormTextEl.innerText = "배정 정보 확인 중...";
-                    dormTextEl.style.color = "#94a3b8";
-                }
-            });
+            dormTextEl.style.fontWeight = "900";
+        } 
+        // [B] 일반 이름 (예: 홍길동) 확인
+        else if (allDormData[myName]) {
+            const data = allDormData[myName];
+            dormTextEl.innerText = `${data.building} ${data.room}호`;
+            dormTextEl.style.color = "#3b82f6";
+            dormTextEl.style.fontWeight = "900";
+        } 
+        // [C] 데이터 없음
+        else {
+            dormTextEl.innerText = "생활관 배정 정보 확인 중...";
+            dormTextEl.style.color = "#94a3b8";
         }
     });
 
