@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>항공기술훈련원 교육지원부 - 통합 지원 관리</title>
+    <title>KAC 교육지원부 - 생활관 배정 관리</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -14,423 +14,213 @@
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     
     <style>
-        :root {
-            --navy-dark: #0f172a;
-            --blue-main: #0ea5e9;
-            --blue-deep: #0369a1;
-            --bg-cool: #f1f5f9;
-            --card-white: #ffffff;
-            --text-dark: #1e293b;
-            --border-gray: #e2e8f0;
-            --danger: #ef4444;
-            --success: #10b981;
-            --warning: #f59e0b;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Pretendard', sans-serif;
-            background: #cbd5e1;
-            display: flex; justify-content: center;
-            color: var(--text-dark);
-            overflow: hidden;
-        }
-
-        .app-container {
-            width: 100%; max-width: 600px; height: 100dvh;
-            background: var(--bg-cool);
-            display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(0,0,0,0.1);
-            position: relative;
-        }
-
-        .app-header {
-            height: 60px;
-            background: var(--navy-dark);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; flex-shrink: 0;
-            border-bottom: 2px solid var(--blue-main);
-            position: sticky; top: 0; z-index: 1000;
-        }
-        .header-btn { font-size: 20px; color: #fff; cursor: pointer; border: none; background: none; }
-        .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
-
+        :root { --navy: #0f172a; --blue: #0ea5e9; --bg: #f1f5f9; --danger: #ef4444; --success: #10b981; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', sans-serif; }
+        body { margin: 0; background: #cbd5e1; display: flex; justify-content: center; color: #1e293b; overflow: hidden; }
+        .app-container { width: 100%; max-width: 600px; height: 100dvh; background: var(--bg); display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.2); position: relative; }
+        .app-header { height: 60px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 3px solid var(--blue); position: sticky; top: 0; z-index: 1000; color: #fff; }
+        .header-title { font-size: 18px; font-weight: 900; }
         .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-
-        .section-card {
-            background: var(--card-white);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--border-gray);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        }
-        .section-title {
-            font-size: 14px; font-weight: 800; color: var(--blue-deep);
-            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
-        }
-
-        .period-banner {
-            background: var(--navy-dark);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        .period-banner div { font-size: 11px; opacity: 0.7; }
-        .period-banner b { font-size: 14px; color: var(--blue-main); }
-
-        .upload-zone {
-            background: #f8fafc; border: 2px dashed #cbd5e1;
-            padding: 30px 20px; text-align: center; border-radius: 12px;
-            cursor: pointer; transition: 0.2s;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-        .upload-zone.dragover { border-color: var(--blue-main); background: #f0f9ff; transform: scale(1.02); }
-        .upload-zone i { font-size: 30px; color: #94a3b8; }
-        .upload-text { font-size: 13px; font-weight: 700; color: #475569; }
-
-        .date-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 5px; }
-        .navy-input {
-            width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border-gray);
-            padding: 0 10px; font-size: 13px; font-weight: 600; outline: none; background: #fff;
-        }
-
-        #previewResult {
-            margin-top: 15px; background: var(--navy-dark); color: #fff;
-            padding: 15px; border-radius: 10px; font-size: 12px;
-            max-height: 250px; overflow-y: auto; text-align: left;
-            white-space: pre-wrap; line-height: 1.6; display: none;
-            border: 1px solid #334155;
-        }
-
-        .navy-btn {
-            width: 100%; height: 48px; border-radius: 10px;
-            background: var(--blue-main); color: white; border: none;
-            font-weight: 800; font-size: 14px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin-top: 10px;
-        }
+        .section-card { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
+        .section-title { font-size: 14px; font-weight: 800; color: #0369a1; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .period-banner { background: var(--navy); color: white; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+        .upload-zone { background: #f8fafc; border: 2px dashed #cbd5e1; padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: 0.2s; }
+        .upload-zone.dragover { border-color: var(--blue); background: #f0f9ff; transform: scale(1.02); }
+        #previewResult { margin-top: 15px; background: var(--navy); color: #fff; padding: 15px; border-radius: 10px; font-size: 12px; max-height: 200px; overflow-y: auto; text-align: left; white-space: pre-wrap; display: none; border: 1px solid #334155; }
+        .navy-btn { width: 100%; height: 48px; border-radius: 10px; background: var(--blue); color: white; border: none; font-weight: 800; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
         .navy-btn.success { background: var(--success); }
-        .navy-btn.warning { background: var(--warning); }
-        .navy-btn:active { opacity: 0.9; transform: scale(0.98); }
-
         .navy-table { width: 100%; border-collapse: collapse; }
-        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 11px; }
+        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; }
         .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 13px; font-weight: 600; }
-        .tag-room { background: #eff6ff; color: var(--blue-main); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
-
-        .app-footer {
-            height: 65px; background: var(--navy-dark); color: #fff;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 25px; flex-shrink: 0;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
+        .tag-room { background: #eff6ff; color: var(--blue); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+        .app-footer { height: 65px; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-top: 1px solid rgba(255,255,255,0.1); }
         #footer-date { font-size: 17px; font-weight: 800; font-family: 'Courier New', monospace; }
-        .footer-logo img { height: 22px; filter: brightness(0) invert(1); opacity: 0.8; }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 2000;
-            display: none; align-items: center; justify-content: center; padding: 20px;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
         .modal-box { background: white; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <header class="app-header">
-            <button class="header-btn" onclick="location.href='potal.html'"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="header-title">교육지원부 통합 관리</div>
-            <div style="width:40px"></div>
-        </header>
+<div class="app-container">
+    <header class="app-header">
+        <button onclick="location.href='potal.html'" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="header-title">교육지원부 생활관 관리</div>
+        <div style="width:40px"></div>
+    </header>
 
-        <main class="app-content">
-            <div class="period-banner">
-                <div><i class="fa-solid fa-clock-rotate-left"></i> 현재 서버 배정표 유효기간</div>
-                <b id="display-period">데이터 로딩 중...</b>
+    <main class="app-content">
+        <div class="period-banner">
+            <div><i class="fa-solid fa-clock-rotate-left"></i> 현재 서버 배정표 유효기간</div>
+            <b id="display-period">로딩 중...</b>
+        </div>
+
+        <div class="section-card">
+            <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표(PDF) 신규 업로드</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <input type="date" id="period-start" class="navy-btn" style="background:white; color:#333; border:1px solid #ddd;">
+                <input type="date" id="period-end" class="navy-btn" style="background:white; color:#333; border:1px solid #ddd;">
             </div>
+            <label class="upload-zone" id="dropZone" for="pdfFile">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size:30px; color:#94a3b8;"></i>
+                <div style="font-size:13px; font-weight:700; color:#475569;">PDF 파일을 여기에 드래그하세요</div>
+                <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
+            </label>
+            <div id="previewResult"></div>
+            <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">서버 저장 및 확정</button>
+        </div>
 
-            <div class="section-card">
-                <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표(PDF) 신규 업로드</div>
-                
-                <div class="date-input-row">
-                    <div class="input-group">
-                        <label>유효 시작일</label>
-                        <input type="date" id="period-start" class="navy-input">
-                    </div>
-                    <div class="input-group">
-                        <label>유효 종료일</label>
-                        <input type="date" id="period-end" class="navy-input">
-                    </div>
-                </div>
-
-                <label class="upload-zone" id="dropZone" for="pdfFile">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <div class="upload-text">배정표 PDF 파일을 여기에 드래그하세요</div>
-                    <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
-                </label>
-                
-                <div id="previewResult"></div>
-                
-                <button id="saveBtn" class="navy-btn success" style="display:none; margin-top:15px;" onclick="saveToFirebase()">
-                    <i class="fa-solid fa-check-double"></i> 판독 데이터 서버 저장 및 확정
-                </button>
-            </div>
-
-            <div class="section-card">
-                <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록 (예외 인원)</div>
-                <div class="date-input-row">
-                    <input type="text" id="manual-name" class="navy-input" placeholder="성함">
-                    <input type="number" id="manual-room" class="navy-input" placeholder="호실(숫자)">
-                </div>
-                <select id="manual-bld" class="navy-input" style="margin-bottom:10px;">
-                    <option value="청렴관">청렴관</option>
-                    <option value="상생관">상생관</option>
-                    <option value="국제동">국제동</option>
-                </select>
-                <button class="navy-btn warning" onclick="addManual()">
-                    <i class="fa-solid fa-plus"></i> 명단에 수동 추가
-                </button>
-            </div>
-
-            <div class="section-card" style="margin-bottom:50px;">
-                <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (클릭 시 방 이동)</div>
-                <div style="overflow-x: auto;">
-                    <table class="navy-table">
-                        <thead>
-                            <tr>
-                                <th>성함</th>
-                                <th>생활관</th>
-                                <th>호실</th>
-                                <th width="40"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="dormTableBody">
-                            <tr><td colspan="4" style="padding:30px; color:#94a3b8;">데이터를 로딩 중...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-
-        <footer class="app-footer">
-            <div id="footer-date">00/00 00:00:00</div>
-            <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
-        </footer>
-    </div>
-
-    <!-- 방 이동 모달 -->
-    <div id="editModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 style="margin-top:0;"><i class="fa-solid fa-person-walking-arrow-right"></i> 생활관 이동/수정</h3>
-            <p id="edit-name" style="font-weight:900; font-size:18px; color:var(--blue-main); margin-bottom:20px;"></p>
-            <div class="input-group" style="margin-bottom:15px;">
-                <label>이동할 생활관</label>
-                <select id="edit-bld" class="navy-input">
-                    <option value="청렴관">청렴관</option>
-                    <option value="상생관">상생관</option>
-                    <option value="국제동">국제동</option>
-                </select>
-            </div>
-            <div class="input-group" style="margin-bottom:25px;">
-                <label>이동할 호실</label>
-                <input type="number" id="edit-room" class="navy-input" placeholder="숫자만 입력">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeModal()">취소</button>
-                <button class="navy-btn success" style="flex:2;" onclick="updateDorm()">변경 사항 저장</button>
+        <div class="section-card" style="margin-bottom:50px;">
+            <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (클릭 시 수정)</div>
+            <div style="overflow-x: auto;">
+                <table class="navy-table">
+                    <thead><tr><th>성함</th><th>생활관</th><th>호실</th><th width="40"></th></tr></thead>
+                    <tbody id="dormTableBody"></tbody>
+                </table>
             </div>
         </div>
+    </main>
+
+    <footer class="app-footer">
+        <div id="footer-date">00/00 00:00:00</div>
+        <img src="logo.png" style="height:22px; filter:brightness(0) invert(1);">
+    </footer>
+</div>
+
+<div id="editModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="edit-name" style="margin-top:0; color:var(--navy);">이름</h3>
+        <select id="edit-bld" class="navy-btn" style="background:white; color:#333; border:1px solid #ddd; margin-bottom:10px;">
+            <option value="청렴관">청렴관</option><option value="상생관">상생관</option><option value="국제동">국제동</option>
+        </select>
+        <input type="number" id="edit-room" class="navy-btn" style="background:white; color:#333; border:1px solid #ddd; margin-bottom:20px;" placeholder="호실 번호">
+        <div style="display:flex; gap:10px;">
+            <button class="navy-btn" style="background:#64748b;" onclick="closeModal()">취소</button>
+            <button class="navy-btn success" onclick="updateDorm()">저장</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        const db = firebase.database();
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+<script>
+    const db = firebase.database();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    let extractedData = {};
 
-        let extractedData = {};
+    window.onload = function() {
+        loadPeriod(); loadDormList(); initDragAndDrop();
+        setInterval(() => {
+            const now = new Date(); const week = ['일','월','화','수','목','금','토'];
+            document.getElementById('footer-date').innerText = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        }, 1000);
+    };
 
-        window.onload = function() {
-            loadPeriod();
-            loadDormList();
-            initDragAndDrop();
-            setInterval(runClock, 1000);
-            runClock();
-        };
+    function initDragAndDrop() {
+        const dz = document.getElementById('dropZone');
+        window.addEventListener("dragover", e => e.preventDefault());
+        window.addEventListener("drop", e => e.preventDefault());
+        dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+        dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+        dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); if(e.dataTransfer.files.length) processPDFFile(e.dataTransfer.files[0]); });
+    }
 
-        function loadPeriod() {
-            db.ref('system/dormitory_metadata').on('value', snap => {
-                const data = snap.val();
-                document.getElementById('display-period').innerText = data ? data.period : "미설정";
-            });
-        }
+    function handleFileSelect(input) { if(input.files.length) processPDFFile(input.files[0]); }
 
-        async function addManual() {
-            const name = document.getElementById('manual-name').value.trim();
-            const room = document.getElementById('manual-room').value.trim();
-            const bld = document.getElementById('manual-bld').value;
-            if(!name || !room) return alert("성함과 호실을 입력하세요.");
-            await db.ref(`system/dormitory_assignments/${name}`).set({ building: bld, room: room });
-            alert("✅ 추가되었습니다.");
-            document.getElementById('manual-name').value = ""; document.getElementById('manual-room').value = "";
-        }
-
-        function openEdit(name, bld, room) {
-            document.getElementById('edit-name').innerText = name;
-            document.getElementById('edit-bld').value = bld;
-            document.getElementById('edit-room').value = room;
-            document.getElementById('editModal').style.display = 'flex';
-        }
-        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
-        async function updateDorm() {
-            const name = document.getElementById('edit-name').innerText;
-            const bld = document.getElementById('edit-bld').value;
-            const room = document.getElementById('edit-room').value.trim();
-            if(!room) return alert("호실을 입력하세요.");
-            await db.ref(`system/dormitory_assignments/${name}`).update({ building: bld, room: room });
-            alert("✅ 변경되었습니다.");
-            closeModal();
-        }
-
-        // [핵심 로직 수정] PDF 판독 버그 해결 (정밀 판독 모드)
-        function parseDormText(text) {
-            const preview = document.getElementById('previewResult');
-            extractedData = {}; 
+    async function processPDFFile(file) {
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+            extractedData = {};
             
-            // 제외할 단어 목록 (시설 명칭)
-            const blacklist = ["강의실", "개월", "계단", "과정", "관제사", "교육", "기도실", "배정표", "복도", "비상구", "생활관", "세탁", "신입사원", "청렴관", "상생관", "국제동", "휴게실", "대강당", "식당", "주방", "창고", "PC방", "세탁실", "하반기", "하늘관", "항공교통", "번호", "안내", "시설", "식당", "주방"];
+            for(let i=1; i<=pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const viewport = page.getViewport({scale: 1.0});
+                
+                // 좌표 기반 텍스트 추출
+                let items = content.items.map(it => ({
+                    str: it.str.trim(),
+                    x: it.transform[4],
+                    y: it.transform[5],
+                    height: it.height
+                })).filter(it => it.str.length > 0);
 
-            const buildings = ["청렴관", "상생관", "국제동"];
-            let currentBuilding = "미지정";
+                // 상단 제목에서 건물명 찾기
+                let pageBuilding = "기타";
+                const titleItem = items.find(it => it.str.includes("배정표"));
+                if(titleItem) {
+                    if(titleItem.str.includes("청렴관")) pageBuilding = "청렴관";
+                    else if(titleItem.str.includes("상생관")) pageBuilding = "상생관";
+                    else if(titleItem.str.includes("국제동")) pageBuilding = "국제동";
+                }
 
-            const lines = text.split('\n');
-            
-            lines.forEach(line => {
-                // 1. 건물명 변경 (오직 상단 제목에서 "배정표(건물명)" 형식일 때만)
-                if (line.includes("배정표")) {
-                    buildings.forEach(b => {
-                        if (line.includes(b)) {
-                            currentBuilding = b;
+                // 방 번호(3자리 숫자)와 이름(한글) 분류
+                let rooms = items.filter(it => /^[1-3]\d{2}$/.test(it.str));
+                let names = items.filter(it => /^[가-힣]{2,4}$/.test(it.str) && !["청렴관","상생관","국제동","배정표","강의실","휴게실"].includes(it.str));
+
+                // 각 이름에 대해 '가장 가까운 위에 있는 방 번호' 매칭
+                names.forEach(name => {
+                    let bestRoom = null;
+                    let minDistance = 9999;
+
+                    rooms.forEach(room => {
+                        const dx = Math.abs(room.x - name.x);
+                        const dy = room.y - name.y; // 방이 이름보다 위에 있어야 함 (dy > 0)
+                        
+                        // 세로축(X)이 비슷하고 위에 있는 경우
+                        if(dx < 50 && dy > 0 && dy < 100) {
+                            if(dy < minDistance) {
+                                minDistance = dy;
+                                bestRoom = room.str;
+                            }
                         }
                     });
-                }
 
-                // 2. 한 줄 분석
-                const tokens = line.split(/\s+/);
-                let lastFoundRoom = null;
-
-                tokens.forEach(token => {
-                    // [중요] 호실 번호 찾기: (☎438) 같은 괄호 안의 숫자는 무시하고 순수 숫자 3자리만 찾음
-                    // 괄호가 포함되지 않은 순수 숫자 3자리 매칭
-                    const roomMatch = token.match(/^[1-3]\d{2}$/); 
-                    if(roomMatch) {
-                        lastFoundRoom = roomMatch[0];
-                    }
-
-                    // 이름 찾기 (한글 2~4글자)
-                    const nameMatches = token.match(/[가-힣]{2,4}/g);
-                    if (nameMatches && lastFoundRoom && currentBuilding !== "미지정") {
-                        nameMatches.forEach(name => {
-                            // 블랙리스트에 없고 건물 이름도 아닌 실제 이름만 저장
-                            if (!blacklist.includes(name) && !buildings.includes(name)) {
-                                extractedData[name] = { 
-                                    room: lastFoundRoom, 
-                                    building: currentBuilding 
-                                };
-                            }
-                        });
-                    }
+                    if(bestRoom) extractedData[name.str] = { room: bestRoom, building: pageBuilding };
                 });
-            });
+            }
 
+            const preview = document.getElementById('previewResult');
             const keys = Object.keys(extractedData);
             if(keys.length > 0) {
-                preview.style.display = "block";
-                document.getElementById('saveBtn').style.display = "flex";
-                preview.innerText = `✅ 실제 교육생 ${keys.length}명 판독 완료\n` + 
-                    "------------------------------------------\n" +
-                    keys.map(name => `${name}: ${extractedData[name].building} ${extractedData[name].room}호`).join("\n");
-            } else {
-                alert("데이터를 찾을 수 없습니다. PDF 텍스트 추출이 가능한 형식인지 확인하세요.");
-            }
+                preview.style.display = "block"; document.getElementById('saveBtn').style.display = "flex";
+                preview.innerText = `✅ 판독 완료: ${keys.length}명\n` + keys.map(n => `${n}: ${extractedData[n].building} ${extractedData[n].room}호`).join("\n");
+            } else { alert("데이터를 찾을 수 없습니다. PDF 글자가 깨졌는지 확인하세요."); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function saveToFirebase() {
+        const start = document.getElementById('period-start').value;
+        const end = document.getElementById('period-end').value;
+        if(!start || !end) return alert("유효 기간을 설정하세요.");
+        if(confirm("데이터를 저장할까요? 기존 데이터는 삭제됩니다.")) {
+            await db.ref('system/dormitory_assignments').set(extractedData);
+            await db.ref('system/dormitory_metadata').set({ period: `${start} ~ ${end}` });
+            alert("완료!"); location.reload();
         }
+    }
 
-        async function saveToFirebase() {
-            const start = document.getElementById('period-start').value;
-            const end = document.getElementById('period-end').value;
-            if(!start || !end) return alert("배정표 유효 기간을 설정해주세요.");
+    function loadDormList() {
+        db.ref('system/dormitory_assignments').on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('dormTableBody');
+            tbody.innerHTML = Object.keys(data).sort().map(name => `
+                <tr onclick="openEdit('${name}', '${data[name].building}', '${data[name].room}')" style="cursor:pointer;">
+                    <td><b>${name}</b></td><td>${data[name].building}</td>
+                    <td><span class="tag-room">${data[name].room}호</span></td>
+                    <td><i class="fa-solid fa-trash-can" style="color:var(--danger);" onclick="event.stopPropagation(); deleteDorm('${name}')"></i></td>
+                </tr>`).join('') || "<tr><td colspan='4' style='padding:30px;'>내역 없음</td></tr>";
+        });
+    }
 
-            if(confirm(`${Object.keys(extractedData).length}명의 데이터를 서버에 저장할까요?\n기존 배정 정보는 삭제됩니다.`)) {
-                await db.ref('system/dormitory_assignments').set(extractedData);
-                await db.ref('system/dormitory_metadata').set({ period: `${start} ~ ${end}` });
-                alert("✅ 배정표 업데이트 완료!");
-                document.getElementById('previewResult').style.display = 'none';
-                document.getElementById('saveBtn').style.display = 'none';
-            }
-        }
-
-        function loadDormList() {
-            db.ref('system/dormitory_assignments').on('value', snap => {
-                const data = snap.val() || {};
-                const tbody = document.getElementById('dormTableBody');
-                tbody.innerHTML = "";
-                const keys = Object.keys(data).sort();
-                if(keys.length === 0) { tbody.innerHTML = "<tr><td colspan='4' style='padding:30px;'>배정 내역 없음</td></tr>"; return; }
-                keys.forEach(name => {
-                    const item = data[name];
-                    tbody.innerHTML += `
-                        <tr onclick="openEdit('${name}', '${item.building}', '${item.room}')" style="cursor:pointer;">
-                            <td><b>${name}</b></td>
-                            <td style="color:#64748b;">${item.building}</td>
-                            <td><span class="tag-room">${item.room}호</span></td>
-                            <td><i class="fa-solid fa-trash-can" style="color:var(--danger);" onclick="event.stopPropagation(); deleteDorm('${name}')"></i></td>
-                        </tr>`;
-                });
-            });
-        }
-
-        function deleteDorm(name) { if(confirm(`${name}님 삭제?`)) db.ref(`system/dormitory_assignments/${name}`).remove(); }
-
-        function initDragAndDrop() {
-            const dz = document.getElementById('dropZone');
-            window.addEventListener("dragover", e => e.preventDefault());
-            window.addEventListener("drop", e => e.preventDefault());
-            dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
-            dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
-            dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); if(e.dataTransfer.files.length) processPDFFile(e.dataTransfer.files[0]); });
-        }
-
-        async function processPDFFile(file) {
-            if(file.type !== "application/pdf") return alert("PDF만 가능합니다.");
-            const reader = new FileReader();
-            reader.onload = async function() {
-                const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
-                let text = "";
-                for(let i=1; i<=pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const content = await page.getTextContent();
-                    text += content.items.map(item => item.str).join(" ") + "\n";
-                }
-                parseDormText(text);
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function handleFileSelect(input) { if(input.files.length) processPDFFile(input.files[0]); }
-
-        function runClock() {
-            const now = new Date();
-            const week = ['일','월','화','수','목','금','토'];
-            const dateStr = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]})`;
-            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-            document.getElementById('footer-date').innerText = `${dateStr} ${timeStr}`;
-        }
-    </script>
+    function loadPeriod() { db.ref('system/dormitory_metadata').on('value', s => { document.getElementById('display-period').innerText = s.val() ? s.val().period : "미설정"; }); }
+    function deleteDorm(n) { if(confirm(`${n}님 삭제?`)) db.ref(`system/dormitory_assignments/${n}`).remove(); }
+    function openEdit(n, b, r) { document.getElementById('edit-name').innerText = n; document.getElementById('edit-bld').value = b; document.getElementById('edit-room').value = r; document.getElementById('editModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+    async function updateDorm() {
+        const n = document.getElementById('edit-name').innerText;
+        await db.ref(`system/dormitory_assignments/${n}`).update({ building: document.getElementById('edit-bld').value, room: document.getElementById('edit-room').value });
+        alert("수정 완료"); closeModal();
+    }
+</script>
 </body>
 </html>
