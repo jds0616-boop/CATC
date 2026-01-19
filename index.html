@@ -858,7 +858,7 @@ function startPresence() {
     // [1] 실시간 감시: 내가 서버에서 지워지는 순간 즉시 화면 차단
     myRef.on('value', snap => {
         if (!snap.exists()) {
-            evictUser("입장 정보가 만료되었거나 삭제되었습니다.");
+            evictUser("해당 정보가 변경되어 재시작합니다.");
         }
     });
 
