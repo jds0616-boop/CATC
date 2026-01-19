@@ -2334,17 +2334,14 @@ loadDormitoryData: function() {
         const statusEl = document.getElementById('dormArrivalStatus');
         if(!tbody) return;
 
-        // 1. 데이터 경로 설정
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
         const dormRef = firebase.database().ref(`system/dormitory_assignments`);
 
-        // 2. 실시간 렌더링 함수
         const renderAll = (expData, actData, dormData) => {
             const expectedNames = expData || [];
             const actualStudents = Object.values(actData || {}).filter(s => s.name && s.name !== "undefined");
             const actualNames = actualStudents.map(s => s.name);
-
             const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
             let arrivedCount = 0;
@@ -2367,11 +2364,17 @@ loadDormitoryData: function() {
                 const cleanName = name.trim();
                 const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
                 
-                // [색상 로직 추가] 건물명에 따른 색상 코드 지정
+                // [확실한 색상 구분 로직]
                 let buildingColor = "#94a3b8"; // 기본 회색 (미배정)
-                if (assigned.building.includes("청렴관")) buildingColor = "#2563eb"; // 파란색
-                else if (assigned.building.includes("상생관")) buildingColor = "#16a34a"; // 초록색
-                else if (assigned.building.includes("국제동")) buildingColor = "#9333ea"; // 보라색
+                const bName = assigned.building;
+                
+                if (bName.includes("청렴")) {
+                    buildingColor = "#2563eb"; // 청렴관: 파란색
+                } else if (bName.includes("상생")) {
+                    buildingColor = "#16a34a"; // 상생관: 초록색
+                } else if (bName.includes("국제")) {
+                    buildingColor = "#9333ea"; // 국제동: 보라색
+                }
 
                 const isAssigned = assigned.building !== "-";
                 const statusIcon = isArrived ? '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:5px;"></i>' : '<i class="fa-solid fa-circle" style="color:#e2e8f0; margin-right:5px;"></i>';
@@ -2383,14 +2386,13 @@ loadDormitoryData: function() {
                             ${statusIcon} ${name}
                         </td>
                         <td style="color:#64748b;">${phoneSuffix}</td>
-                        <!-- [생활관 및 호실] 지정된 색상 적용 -->
-                        <td style="color:${buildingColor}; font-weight:800;">${assigned.building}</td>
-                        <td style="color:${buildingColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
+                        <!-- 아래 두 칸에 동일한 buildingColor를 강제로 적용합니다 -->
+                        <td style="color:${buildingColor} !important; font-weight:800;">${assigned.building}</td>
+                        <td style="color:${buildingColor} !important; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
                     </tr>`;
             });
         };
 
-        // 3. 실시간 감시 (.on)
         let cacheExp = [], cacheAct = {}, cacheDorm = {};
         expectedRef.on('value', s => { cacheExp = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
         actualRef.on('value', s => { cacheAct = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
