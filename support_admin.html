@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>항공기술훈련원 교육지원부 - 통합 지원 관리</title>
+    <title>항공기술훈련원 교육지원부 - 통합 관리</title>
     
-    <!-- 필수 라이브러리 로드 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -17,8 +16,8 @@
     <style>
         :root {
             --navy-dark: #0f172a;
-            --blue-main: #0ea5e9;
-            --blue-deep: #0369a1;
+            --blue-main: #3b82f6;
+            --blue-deep: #1e40af;
             --bg-cool: #f1f5f9;
             --card-white: #ffffff;
             --text-dark: #1e293b;
@@ -35,89 +34,97 @@
             background: #cbd5e1;
             display: flex; justify-content: center;
             color: var(--text-dark);
-            overflow-x: hidden;
         }
 
         .app-container {
             width: 100%; max-width: 600px; min-height: 100dvh;
             background: var(--bg-cool);
             display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(0,0,0,0.1);
-            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
         }
 
-        /* [상단바] 교육운영 플랫폼과 통일 */
+        /* 상단바 고정 */
         .app-header {
             height: 60px;
             background: var(--navy-dark);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 20px; flex-shrink: 0;
-            border-bottom: 2px solid var(--blue-main);
+            border-bottom: 3px solid var(--blue-main);
             position: sticky; top: 0; z-index: 1000;
         }
         .header-btn { font-size: 20px; color: #fff; cursor: pointer; border: none; background: none; }
-        .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+        .header-title { color: #fff; font-size: 18px; font-weight: 900; }
 
-        /* 메인 컨텐츠 영역 */
         .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 
-        /* 섹션 카드 스타일 */
-        .section-card {
-            background: var(--card-white);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--border-gray);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        }
-        .section-title {
-            font-size: 14px; font-weight: 800; color: var(--blue-deep);
-            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
-        }
-
-        /* 메뉴 그리드 */
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 5px; }
+        /* 메뉴 탭 디자인 */
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .menu-item {
-            background: white; padding: 15px 10px; border-radius: 12px;
+            background: white; padding: 15px 5px; border-radius: 12px;
             border: 1.5px solid var(--border-gray); text-align: center;
             cursor: pointer; transition: 0.2s;
         }
-        .menu-item i { font-size: 24px; color: var(--blue-main); margin-bottom: 10px; display: block; }
-        .menu-item span { font-size: 12px; font-weight: 800; color: var(--navy-dark); }
-        .menu-item:active { transform: scale(0.95); background: #f8fafc; }
-        .menu-item.active { border-color: var(--blue-main); background: #f0f9ff; }
+        .menu-item i { font-size: 22px; color: var(--blue-main); margin-bottom: 8px; display: block; }
+        .menu-item span { font-size: 13px; font-weight: 800; color: var(--navy-dark); }
+        .menu-item.active { border-color: var(--blue-main); background: #eff6ff; }
         .menu-item.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-        /* 업로드 구역 */
-        .upload-zone {
-            background: #f8fafc; border: 2px dashed #cbd5e1;
-            padding: 30px 20px; text-align: center; border-radius: 12px;
-            cursor: pointer; transition: 0.2s;
+        /* 섹션 카드 디자인 */
+        .section-card {
+            background: var(--card-white);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-gray);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        .upload-zone:hover { border-color: var(--blue-main); background: #f0f9ff; }
-        #previewResult {
-            margin-top: 15px; background: var(--navy-dark); color: #fff;
-            padding: 15px; border-radius: 10px; font-size: 12px;
-            max-height: 150px; overflow-y: auto; text-align: left;
-            white-space: pre-wrap; line-height: 1.6; display: none;
+        .section-title {
+            font-size: 15px; font-weight: 800; color: var(--blue-deep);
+            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
         }
 
-        /* 버튼 스타일 */
+        /* PDF 업로드 영역 수정 (겹침 방지) */
+        .upload-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .upload-zone:hover { border-color: var(--blue-main); background: #f0f7ff; }
+        .upload-zone i { font-size: 35px; color: #94a3b8; }
+        .upload-text { font-size: 14px; font-weight: 700; color: #475569; }
+
+        /* 판독 결과 텍스트창 */
+        #previewResult {
+            margin-top: 15px; background: #1e293b; color: #e2e8f0;
+            padding: 15px; border-radius: 12px; font-size: 12px;
+            max-height: 180px; overflow-y: auto; text-align: left;
+            white-space: pre-wrap; line-height: 1.6; display: none;
+            border: 1px solid #334155;
+        }
+
         .navy-btn {
-            width: 100%; height: 48px; border-radius: 10px;
+            width: 100%; height: 50px; border-radius: 12px;
             background: var(--blue-main); color: white; border: none;
-            font-weight: 800; font-size: 14px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-weight: 800; font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-top: 15px;
         }
         .navy-btn.success { background: var(--success); }
-        .navy-btn:active { opacity: 0.9; transform: scale(0.98); }
 
-        /* 테이블 스타일 */
-        .navy-table { width: 100%; border-collapse: collapse; }
-        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 11px; }
-        .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 13px; font-weight: 600; }
-        .tag-room { background: #eff6ff; color: var(--blue-main); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+        /* 테이블 디자인 */
+        .navy-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 12px; }
+        .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 14px; font-weight: 600; }
+        .tag-room { background: #eff6ff; color: var(--blue-main); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
 
-        /* [하단바] 포털/교육운영과 통일 */
+        /* 하단바 고정 */
         .app-footer {
             height: 65px;
             background: var(--navy-dark);
@@ -128,28 +135,19 @@
         }
         #footer-date { font-size: 17px; font-weight: 800; font-family: 'Courier New', monospace; }
         .footer-logo img { height: 22px; filter: brightness(0) invert(1); opacity: 0.8; }
-
-        /* 공사중 표시 */
-        .under-construction {
-            padding: 40px 20px; text-align: center; color: #94a3b8;
-        }
-        .under-construction i { font-size: 40px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- 상단바 -->
         <header class="app-header">
             <button class="header-btn" onclick="location.href='potal.html'"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="header-title">교육지원부 통합 관리</div>
             <div style="width:40px"></div>
         </header>
 
-        <!-- 메인 컨텐츠 -->
         <main class="app-content">
-            
-            <!-- 메뉴 선택 -->
+            <!-- 탭 메뉴 -->
             <div class="menu-grid">
                 <div class="menu-item active" onclick="showTab('dorm')">
                     <i class="fa-solid fa-hotel"></i>
@@ -169,21 +167,22 @@
             <div id="tab-dorm" class="tab-content">
                 <div class="section-card">
                     <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표 PDF 업로드</div>
+                    
                     <label class="upload-zone" for="pdfFile">
-                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; color: #94a3b8; margin-bottom: 10px; display: block;"></i>
-                        <span style="font-weight: 700; font-size: 14px;">파일 선택 또는 여기에 드롭</span>
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <div class="upload-text">배정표 PDF 파일을 선택하거나<br>여기에 드래그하세요</div>
                         <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="processPDF(this)">
                     </label>
                     
                     <div id="previewResult"></div>
                     
-                    <button id="saveBtn" class="navy-btn success" style="display:none; margin-top:15px;" onclick="saveToFirebase()">
-                        <i class="fa-solid fa-check-double"></i> 판독 데이터 서버 저장
+                    <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">
+                        <i class="fa-solid fa-check-double"></i> 판독 데이터 서버 저장 및 확정
                     </button>
                 </div>
 
-                <div class="section-card" style="margin-top:15px;">
-                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 현황</div>
+                <div class="section-card" style="margin-top:20px;">
+                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 확인</div>
                     <div style="overflow-x: auto;">
                         <table class="navy-table">
                             <thead>
@@ -191,31 +190,25 @@
                                     <th>성함</th>
                                     <th>생활관</th>
                                     <th>호실</th>
-                                    <th width="50">관리</th>
+                                    <th width="40"></th>
                                 </tr>
                             </thead>
                             <tbody id="dormTableBody">
-                                <tr><td colspan="4" style="padding:30px; color:#94a3b8;">데이터를 로딩 중...</td></tr>
+                                <tr><td colspan="4" style="padding:40px; color:#94a3b8;">등록된 배정 내역이 없습니다.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. 공사중 섹션 (미화/냉난방) -->
-            <div id="tab-empty" class="tab-content" style="display:none;">
-                <div class="section-card">
-                    <div class="under-construction">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                        <h3>서비스 준비 중</h3>
-                        <p>해당 기능은 현재 시스템 연동 공사 중입니다.</p>
-                    </div>
-                </div>
+            <!-- 공사중 섹션 -->
+            <div id="tab-empty" class="tab-content" style="display:none; padding:50px 20px; text-align:center; color:#94a3b8;">
+                <i class="fa-solid fa-screwdriver-wrench" style="font-size:50px; margin-bottom:20px;"></i>
+                <h3 style="margin:0;">서비스 준비 중</h3>
+                <p>시스템 연동 공사 중입니다.</p>
             </div>
-
         </main>
 
-        <!-- 하단바 -->
         <footer class="app-footer">
             <div id="footer-date">00/00 00:00:00</div>
             <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
@@ -228,14 +221,12 @@
 
         let extractedData = {};
 
-        // 초기 실행
         window.onload = function() {
             loadDormList();
             setInterval(runClock, 1000);
             runClock();
         };
 
-        // 탭 전환
         function showTab(type) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             if(type === 'dorm') {
@@ -243,13 +234,11 @@
                 document.getElementById('tab-dorm').style.display = 'block';
                 document.getElementById('tab-empty').style.display = 'none';
             } else {
-                // 현재는 모두 공사중 처리
                 document.getElementById('tab-dorm').style.display = 'none';
                 document.getElementById('tab-empty').style.display = 'block';
             }
         }
 
-        // PDF 판독 로직
         async function processPDF(input) {
             const file = input.files[0];
             if (!file) return;
@@ -266,9 +255,7 @@
                         fullText += textContent.items.map(item => item.str).join(" ") + "\n";
                     }
                     parseDormText(fullText);
-                } catch (e) {
-                    alert("PDF 해석 중 오류가 발생했습니다.");
-                }
+                } catch (e) { alert("PDF 판독 중 오류가 발생했습니다."); }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -297,21 +284,19 @@
             if(keys.length > 0) {
                 preview.style.display = "block";
                 document.getElementById('saveBtn').style.display = "flex";
-                preview.innerText = `✅ 판독 완료: ${keys.length}명\n` + 
+                preview.innerText = `✅ 판독 성공 (${keys.length}명)\n` + 
                     keys.map(name => `${name}: ${extractedData[name].building} ${extractedData[name].room}호`).join("\n");
-            } else {
-                alert("데이터를 찾을 수 없습니다. 텍스트가 포함된 PDF인지 확인해주세요.");
-            }
+            } else { alert("데이터를 찾을 수 없습니다."); }
         }
 
         async function saveToFirebase() {
-            if(confirm(`추출된 ${Object.keys(extractedData).length}명의 데이터를 서버에 저장하시겠습니까?`)) {
+            if(confirm(`판독된 ${Object.keys(extractedData).length}명의 데이터를 저장할까요?`)) {
                 const updates = {};
                 for(let name in extractedData) {
                     updates[`system/dormitory_assignments/${name}`] = extractedData[name];
                 }
                 await db.ref().update(updates);
-                alert("✅ 생활관 배정 정보가 실시간 반영되었습니다.");
+                alert("✅ 배정 정보가 저장되었습니다.");
                 document.getElementById('previewResult').style.display = 'none';
                 document.getElementById('saveBtn').style.display = 'none';
             }
@@ -341,7 +326,7 @@
         }
 
         function deleteDorm(name) {
-            if(confirm(`${name}님의 배정 정보를 삭제하시겠습니까?`)) {
+            if(confirm(`${name}님의 정보를 삭제할까요?`)) {
                 db.ref(`system/dormitory_assignments/${name}`).remove();
             }
         }
