@@ -706,29 +706,27 @@ async function enterApp() {
 
 
 function openMainMenu() {
-    // 1. 저장된 내 정보 가져오기
     const myName = localStorage.getItem('kac_user_name') || "미등록";
     const myPhone = localStorage.getItem('kac_user_phone') || "0000";
 
-    // 2. 화면에 표시
     document.getElementById('displayMyName').innerText = myName;
     document.getElementById('displayMyPhone').innerText = myPhone;
 
-    // 3. 생활관 정보 실시간 대조 (지원부 데이터 사용)
+    // [실시간 연동] .on 을 사용하여 지원부 변동 시 즉시 반영
     const dormRef = firebase.database().ref(`system/dormitory_assignments/${myName}_${myPhone}`);
     
-    // [보완] 만약 이름_번호 조합으로 안나오면 이름으로만 한번 더 검색
-    dormRef.once('value').then(snap => {
-        let data = snap.val();
+    dormRef.on('value', snap => {
+        const data = snap.val();
         const dormTextEl = document.getElementById('displayMyDorm');
-        
+        if(!dormTextEl) return;
+
         if (data) {
             dormTextEl.innerText = `${data.building} ${data.room}호`;
             dormTextEl.style.color = "#3b82f6";
         } else {
-            // 이름으로만 한 번 더 시도
+            // 이름으로만 한 번 더 조회
             firebase.database().ref(`system/dormitory_assignments/${myName}`).once('value').then(s2 => {
-                let d2 = s2.val();
+                const d2 = s2.val();
                 if (d2) {
                     dormTextEl.innerText = `${d2.building} ${d2.room}호`;
                     dormTextEl.style.color = "#3b82f6";
@@ -743,13 +741,20 @@ function openMainMenu() {
     document.getElementById('menuModal').style.display = 'flex';
 }
 
+
+
+
+
 // [신규] 정보 수정 버튼 클릭 시 호출되는 함수
 function editProfile() {
-    // 기존 입력창에 저장된 값을 미리 채워줌
-    document.getElementById('userName').value = localStorage.getItem('kac_user_name') || "";
-    document.getElementById('userPhone').value = localStorage.getItem('kac_user_phone') || "";
+    // [중요] 수정 전의 이름과 번호를 미리 백업해둡니다. (나중에 지우기 위함)
+    const oldName = localStorage.getItem('kac_user_name');
+    const oldPhone = localStorage.getItem('kac_user_phone');
+    localStorage.setItem('kac_old_uToken', `${oldName}_${oldPhone}`);
+
+    document.getElementById('userName').value = oldName || "";
+    document.getElementById('userPhone').value = oldPhone || "";
     
-    // 메뉴 닫고 프로필 입력창 열기
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('profileOverlay').style.display = 'flex';
 }
@@ -1777,16 +1782,23 @@ async function saveProfile() {
         return;
     }
     
-    // [중요] 이름과 전화번호를 조합하여 나만의 고유 ID를 만듭니다. (중복 방지 핵심)
-    const uToken = `${name}_${phone}`;
-    localStorage.setItem('kac_user_name', name);
-    localStorage.setItem('kac_user_phone', phone);
-    localStorage.setItem('uToken', uToken); 
+    const newUToken = `${name}_${phone}`;
+    const oldUToken = localStorage.getItem('kac_old_uToken');
+    const isEditMode = oldUToken ? true : false;
 
     try {
-        const studentRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-        
-        await studentRef.update({
+        // [중요] 이름이나 번호가 바뀌었다면 옛날 데이터 노드를 삭제합니다.
+        if (isEditMode && oldUToken !== newUToken) {
+            await firebase.database().ref(`courses/${currentRoom}/students/${oldUToken}`).remove();
+        }
+
+        // 새 ID로 데이터 저장
+        localStorage.setItem('kac_user_name', name);
+        localStorage.setItem('kac_user_phone', phone);
+        localStorage.setItem('uToken', newUToken);
+        localStorage.removeItem('kac_old_uToken'); // 백업 삭제
+
+        await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
             name: name,
             phone: phone,
             joinedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -1796,20 +1808,22 @@ async function saveProfile() {
         startPresence(); 
         document.getElementById('profileOverlay').style.display = 'none';
         
-        // 만약 QR 출석 체크로 들어왔다면 바로 출석 처리
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('checkin') === 'true') {
-            handleInternalCheckIn(currentRoom); 
+        if (isEditMode) {
+            alert("✅ 정보가 수정되었습니다.");
         } else {
             alert(`${name}님, 환영합니다!`);
         }
         
         showMainDashboard();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('checkin') === 'true') {
+            handleInternalCheckIn(currentRoom); 
+        }
     } catch (e) {
         alert("등록 중 오류가 발생했습니다.");
     }
 }
-
 
 
 
