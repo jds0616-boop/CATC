@@ -200,7 +200,7 @@
               </div>
               <div style="overflow-x: auto; margin-top:10px;">
                   <table class="navy-table">
-                      <thead><tr><th>과정명</th><th>신청자</th><th>구분</th><th>시간</th></tr></thead>
+                      <thead><tr><th style="width:25%;">과정명</th><th style="width:15%;">신청자</th><th style="width:15%;">구분</th><th style="width:25%;">시간</th><th style="width:20%;">담당 확인</th></tr></thead>
                       <tbody id="historyTableBody"></tbody>
                   </table>
               </div>
@@ -577,7 +577,8 @@
 
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
-            const cName = room.settings?.courseName || `Room ${rid}`;
+            // 실제 과정명 가져오기 (없으면 Room ID)
+            const cName = room.settings?.courseName || `[미설정] Room ${rid}`;
             
             if (room.students) { 
                 Object.values(room.students).forEach(s => {
@@ -586,8 +587,7 @@
                         const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
                         
                         globalList.push({
-                            roomIdx: rid,
-                            courseName: cName,
+                            courseName: cName, // 실제 과정명 저장
                             name: s.name.trim(),
                             phone: last4
                         });
@@ -600,7 +600,7 @@
             }
         });
 
-        // 1. 중복 제거 (이름 + 뒷자리 기준)
+        // 중복 제거 (이름 + 뒷자리 기준)
         const uniqueSet = new Set();
         const filteredList = globalList.filter(item => {
             const id = `${item.name}_${item.phone}`;
@@ -609,22 +609,20 @@
             return true;
         });
 
-        // 2. 화면 숫자 업데이트
         document.getElementById('g-total-students').innerHTML = `${uniqueSet.size}<span>명</span>`;
         document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
 
-        // 3. [수정] 박스 클릭 시 이쁘게 리스트업 팝업 띄우기
         const statBox = document.getElementById('g-total-students').parentElement;
         statBox.onclick = function() {
             const modal = document.getElementById('totalStudentListModal');
             const tbody = document.getElementById('totalStudentListBody');
             
-            // 과정명(Room)순 -> 이름순 정렬
-            filteredList.sort((a,b) => a.roomIdx.localeCompare(b.roomIdx) || a.name.localeCompare(b.name));
+            // 과정명순 -> 이름순 정렬
+            filteredList.sort((a,b) => a.courseName.localeCompare(b.courseName) || a.name.localeCompare(b.name));
             
             tbody.innerHTML = filteredList.length ? filteredList.map(s => `
                 <tr>
-                    <td style="font-size:11px; color:var(--blue-main); font-weight:800;">[Room ${s.roomIdx}]</td>
+                    <td style="font-size:11px; color:var(--blue-deep); font-weight:800; text-align:left; padding-left:10px;">${s.courseName}</td>
                     <td style="font-weight:800;">${s.name}</td>
                     <td style="color:#94a3b8;">${s.phone}</td>
                 </tr>
@@ -633,7 +631,6 @@
             modal.style.display = 'flex';
         };
     }
-
 
 
 
@@ -826,17 +823,15 @@ function renderCourseSelectors() {
 
 
 
-// [전체현황 하단] 당일 외출/외박 전체 신청자 명단 렌더링
+// [전체현황 하단] 당일 외출/외박 전체 신청자 명단 렌더링 (서명 기능 포함)
     function renderTotalHistory() {
         const tbody = document.getElementById('historyTableBody');
         const label = document.getElementById('historyDateLabel');
         if(!tbody || !label) return;
 
-        // 당일 날짜 정보 추출 (예: 1월 20일)
         const d = new Date(selectedDate);
         const dateText = `${d.getMonth() + 1}월 ${d.getDate()}일`;
         
-        // 1. 제목 업데이트 및 실시간 배지 추가
         label.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span>당일(${dateText}) 외출·외박 전체 신청자 명단</span>
@@ -848,28 +843,49 @@ function renderCourseSelectors() {
         let list = [];
         Object.keys(globalAllData).forEach(rid => {
             const actions = globalAllData[rid].admin_actions?.[selectedDate];
-            if(actions) Object.values(actions).forEach(a => list.push({
-                ...a, 
-                cName: globalAllData[rid].settings?.courseName || rid
-            }));
+            if(actions) {
+                Object.keys(actions).forEach(token => {
+                    list.push({
+                        ...actions[token], 
+                        rid: rid, // 어느 과정인지 저장
+                        token: token,
+                        cName: globalAllData[rid].settings?.courseName || rid
+                    });
+                });
+            }
         });
 
         if(list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="padding:40px; color:#94a3b8; text-align:center;">오늘 신청된 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">오늘 신청된 내역이 없습니다.</td></tr>';
             return;
         }
 
         // 시간순 정렬
         list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
+            const isSigned = a.confirmed === true;
+            const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:30px;">` : "서명";
+            const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
+
             tbody.innerHTML += `
                 <tr>
-                    <td style="text-align:center; font-size:11px; color:var(--blue-deep); width:30%;">${a.cName}</td>
-                    <td style="font-weight:800; text-align:center; width:20%;">${a.name}</td>
-                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center; width:20%;">${a.type==='outing'?'외출':'외박'}</td>
-                    <td style="text-align:center; font-size:11px; color:#94a3b8; width:30%;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
+                    <td style="font-weight:800; text-align:center;">${a.name}</td>
+                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                    <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                    <td>
+                        <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                                style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px;">
+                            ${btnContent}
+                        </button>
+                    </td>
                 </tr>`;
         });
     }
+
+
+
+
+
     function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
     function renderOutingManager() { const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel'); label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); }); if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; } list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => { const isSigned = a.confirmed === true; const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:32px;">` : "서명하기"; const btnStyle = isSigned ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" : "background: var(--blue-main); color: #fff; border: none;"; tbody.innerHTML += `<tr><td style="width:30%; font-size:10px; text-align:center;">${a.cName}</td><td style="width:18%; font-weight:800; text-align:center;">${a.name}</td><td style="width:12%; color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td><td style="width:20%; font-size:10px; text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td style="width:20%; text-align:center;"><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px 0; font-size:10px; cursor:pointer; width:100%; height:38px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td></tr>`; }); }
