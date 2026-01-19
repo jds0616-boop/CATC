@@ -168,13 +168,15 @@
                                 // 가장 가까운 위에 있는 방 찾기
                                 let bestRoom = null;
                                 let minDistance = 9999;
-                                rooms.forEach(r => {
-                                    const dx = Math.abs(r.x - it.x);
-                                    const dy = r.y - it.y; // 방이 이름보다 위에 있음 (Y좌표가 큼)
-                                    if(dx < 60 && dy > 0 && dy < 120) {
-                                        if(dy < minDistance) { minDistance = dy; bestRoom = r.num; }
-                                    }
-                                });
+rooms.forEach(r => {
+    const dx = Math.abs(r.x - it.x);
+    const dy = r.y - it.y; 
+    // [수정] dx 범위를 60 -> 150으로, dy 범위를 120 -> 250으로 대폭 확대
+    // 이렇게 하면 멀리 떨어져 있는 우측 열 데이터도 모두 잡아냅니다.
+    if(dx < 150 && dy > 0 && dy < 250) { 
+        if(dy < minDistance) { minDistance = dy; bestRoom = r.num; }
+    }
+});
                                 if(bestRoom) extractedData[name] = { room: bestRoom, building: currentBuilding };
                             }
                         });
