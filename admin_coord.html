@@ -571,6 +571,9 @@
         };
     }
 
+
+
+
 // [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
     function updateIndividualView() {
         const room = globalAllData[currentRID]; if (!room) return;
@@ -581,12 +584,16 @@
         document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
         document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
 
-        // [수정] 모든 학생장 및 연락처 실시간 연동
+        // [최종 수정] 모든 학생장 및 입력된 전체 전화번호 실시간 연동
         let leaderTxt = "지정된 학생장 없음";
         if(room.students) {
             const leaders = Object.values(room.students).filter(s => s.isLeader === true);
             if(leaders.length > 0) {
-                leaderTxt = leaders.map(l => `${l.name} (${l.phone || '연락처 미등록'})`).join(' / ');
+                // 강사 플랫폼에서 수정한 전체 번호(l.phone)를 그대로 가져와서 표시합니다.
+                leaderTxt = leaders.map(l => {
+                    const phoneDisplay = l.phone ? l.phone : '연락처 미등록';
+                    return `${l.name} [${phoneDisplay}]`;
+                }).join('  /  ');
             }
         }
         document.getElementById('ind-leader').innerText = leaderTxt;
