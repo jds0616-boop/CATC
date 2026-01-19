@@ -43,7 +43,6 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.2);
         }
 
-        /* 상단바 고정 */
         .app-header {
             height: 60px;
             background: var(--navy-dark);
@@ -57,7 +56,6 @@
 
         .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 
-        /* 메뉴 탭 디자인 */
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .menu-item {
             background: white; padding: 15px 5px; border-radius: 12px;
@@ -69,7 +67,6 @@
         .menu-item.active { border-color: var(--blue-main); background: #eff6ff; }
         .menu-item.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-        /* 섹션 카드 디자인 */
         .section-card {
             background: var(--card-white);
             border-radius: 20px;
@@ -82,7 +79,7 @@
             margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
         }
 
-        /* PDF 업로드 영역 수정 (겹침 방지) */
+        /* 업로드 박스 디자인 (드래그 효과 추가) */
         .upload-zone {
             background: #f8fafc;
             border: 2px dashed #cbd5e1;
@@ -95,12 +92,14 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
+            transition: 0.3s;
         }
-        .upload-zone:hover { border-color: var(--blue-main); background: #f0f7ff; }
+        /* 파일을 끌고 박스 위로 왔을 때 색상 변함 */
+        .upload-zone.dragover { border-color: var(--blue-main); background: #f0f7ff; transform: scale(1.02); }
+        
         .upload-zone i { font-size: 35px; color: #94a3b8; }
         .upload-text { font-size: 14px; font-weight: 700; color: #475569; }
 
-        /* 판독 결과 텍스트창 */
         #previewResult {
             margin-top: 15px; background: #1e293b; color: #e2e8f0;
             padding: 15px; border-radius: 12px; font-size: 12px;
@@ -118,13 +117,11 @@
         }
         .navy-btn.success { background: var(--success); }
 
-        /* 테이블 디자인 */
         .navy-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
         .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 12px; }
         .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 14px; font-weight: 600; }
         .tag-room { background: #eff6ff; color: var(--blue-main); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
 
-        /* 하단바 고정 */
         .app-footer {
             height: 65px;
             background: var(--navy-dark);
@@ -147,7 +144,6 @@
         </header>
 
         <main class="app-content">
-            <!-- 탭 메뉴 -->
             <div class="menu-grid">
                 <div class="menu-item active" onclick="showTab('dorm')">
                     <i class="fa-solid fa-hotel"></i>
@@ -163,15 +159,15 @@
                 </div>
             </div>
 
-            <!-- 1. 생활관 배정 섹션 -->
             <div id="tab-dorm" class="tab-content">
                 <div class="section-card">
                     <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표 PDF 업로드</div>
                     
-                    <label class="upload-zone" for="pdfFile">
+                    <!-- 드래그 앤 드롭 이벤트를 위해 id="dropZone" 추가 -->
+                    <label class="upload-zone" id="dropZone" for="pdfFile">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                         <div class="upload-text">배정표 PDF 파일을 선택하거나<br>여기에 드래그하세요</div>
-                        <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="processPDF(this)">
+                        <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
                     </label>
                     
                     <div id="previewResult"></div>
@@ -201,7 +197,6 @@
                 </div>
             </div>
 
-            <!-- 공사중 섹션 -->
             <div id="tab-empty" class="tab-content" style="display:none; padding:50px 20px; text-align:center; color:#94a3b8;">
                 <i class="fa-solid fa-screwdriver-wrench" style="font-size:50px; margin-bottom:20px;"></i>
                 <h3 style="margin:0;">서비스 준비 중</h3>
@@ -223,25 +218,53 @@
 
         window.onload = function() {
             loadDormList();
+            initDragAndDrop(); // 드래그 방지 기능 초기화
             setInterval(runClock, 1000);
             runClock();
         };
 
-        function showTab(type) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            if(type === 'dorm') {
-                document.querySelector('.menu-item:nth-child(1)').classList.add('active');
-                document.getElementById('tab-dorm').style.display = 'block';
-                document.getElementById('tab-empty').style.display = 'none';
-            } else {
-                document.getElementById('tab-dorm').style.display = 'none';
-                document.getElementById('tab-empty').style.display = 'block';
+        // [핵심] 드래그 앤 드롭 버그 방지 로직
+        function initDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+
+            // 1. 브라우저 전체에서 파일 드롭 시 파일이 열리는 기본 동작 방지
+            window.addEventListener("dragover", e => e.preventDefault(), false);
+            window.addEventListener("drop", e => e.preventDefault(), false);
+
+            // 2. 드롭존 위로 파일을 끌어왔을 때 시각 효과
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.classList.add("dragover");
+            });
+
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.classList.remove("dragover");
+            });
+
+            // 3. 드롭존에 파일을 놓았을 때 판독 시작
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    processPDFFile(files[0]);
+                }
+            });
+        }
+
+        // 일반 파일 선택 시 실행
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                processPDFFile(input.files[0]);
             }
         }
 
-        async function processPDF(input) {
-            const file = input.files[0];
-            if (!file) return;
+        // PDF 파일을 처리하는 통합 함수
+        async function processPDFFile(file) {
+            if (file.type !== "application/pdf") {
+                alert("PDF 파일만 업로드 가능합니다.");
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = async function() {
@@ -328,6 +351,18 @@
         function deleteDorm(name) {
             if(confirm(`${name}님의 정보를 삭제할까요?`)) {
                 db.ref(`system/dormitory_assignments/${name}`).remove();
+            }
+        }
+
+        function showTab(type) {
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            if(type === 'dorm') {
+                document.querySelector('.menu-item:nth-child(1)').classList.add('active');
+                document.getElementById('tab-dorm').style.display = 'block';
+                document.getElementById('tab-empty').style.display = 'none';
+            } else {
+                document.getElementById('tab-dorm').style.display = 'none';
+                document.getElementById('tab-empty').style.display = 'block';
             }
         }
 
