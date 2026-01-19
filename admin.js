@@ -2367,20 +2367,25 @@ loadDormitoryData: function() {
                 const cleanName = name.trim();
                 const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
                 
+                // [색상 로직 추가] 건물명에 따른 색상 코드 지정
+                let buildingColor = "#94a3b8"; // 기본 회색 (미배정)
+                if (assigned.building.includes("청렴관")) buildingColor = "#2563eb"; // 파란색
+                else if (assigned.building.includes("상생관")) buildingColor = "#16a34a"; // 초록색
+                else if (assigned.building.includes("국제동")) buildingColor = "#9333ea"; // 보라색
+
                 const isAssigned = assigned.building !== "-";
-                const dormColor = isAssigned ? "#3b82f6" : "#94a3b8";
                 const statusIcon = isArrived ? '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:5px;"></i>' : '<i class="fa-solid fa-circle" style="color:#e2e8f0; margin-right:5px;"></i>';
 
                 tbody.innerHTML += `
                     <tr onclick="ui.setMode('students')" style="${!isArrived ? 'opacity:0.6;' : ''} cursor:pointer;">
                         <td>${idx + 1}</td>
-                        <!-- [성함 열] 가운데 정렬로 수정됨 -->
                         <td style="font-weight:bold; text-align:center;">
                             ${statusIcon} ${name}
                         </td>
                         <td style="color:#64748b;">${phoneSuffix}</td>
-                        <td style="color:${dormColor}; font-weight:800;">${assigned.building}</td>
-                        <td style="color:${dormColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
+                        <!-- [생활관 및 호실] 지정된 색상 적용 -->
+                        <td style="color:${buildingColor}; font-weight:800;">${assigned.building}</td>
+                        <td style="color:${buildingColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
                     </tr>`;
             });
         };
