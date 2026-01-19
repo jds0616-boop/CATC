@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>KAC 통합 관리 포털</title>
+  <title>항공기술훈련원 교육플랫폼 - 통합 포털</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -11,116 +11,229 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
   <style>
-    :root { --navy-dark: #0f172a; --bg-gray: #f1f5f9; --text-main: #1e293b; --accent-blue: #3b82f6; }
+    :root { 
+        --navy-dark: #0f172a; 
+        --bg-gray: #f1f5f9; 
+        --text-main: #1e293b; 
+        --accent-blue: #3b82f6;
+        --accent-orange: #f97316;
+        --accent-green: #10b981;
+        --accent-purple: #6366f1;
+    }
+    
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; background: #e2e8f0; display: flex; justify-content: center; }
-    .app-container { width: 100%; max-width: 600px; min-height: 100dvh; background: var(--bg-gray); display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); position: relative; }
-    .app-header { position: fixed; top: 0; width: 100%; max-width: 600px; height: 60px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; color: #fff; }
-    .header-title { font-size: 16px; font-weight: 800; }
-    .app-footer { position: fixed; bottom: 0; width: 100%; max-width: 600px; height: 54px; background: var(--navy-dark); color: #94a3b8; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 11px; z-index: 1000; border-top: 1px solid rgba(255,255,255,0.1); }
-    .footer-logo img { height: 18px; filter: brightness(0) invert(1); opacity: 0.8; }
-    .app-content { flex: 1; margin-top: 60px; margin-bottom: 54px; padding: 30px 24px; }
-    .portal-intro { text-align: center; margin-bottom: 30px; }
-    .portal-intro h1 { font-size: 24px; font-weight: 900; color: var(--navy-dark); margin-bottom: 8px; }
-    .menu-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .menu-card { background: #fff; border-radius: 24px; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; text-decoration: none; border: 1.5px solid #e2e8f0; transition: 0.2s; }
+    
+    body { 
+        margin: 0; padding: 0; 
+        font-family: 'Pretendard', sans-serif; 
+        background: #cbd5e1; 
+        display: flex; justify-content: center; 
+    }
+
+    .app-container { 
+        width: 100%; max-width: 600px; height: 100dvh; 
+        background: var(--bg-gray); 
+        display: flex; flex-direction: column; 
+        box-shadow: 0 0 50px rgba(0,0,0,0.2); 
+        position: relative; 
+    }
+
+    /* 상단바 개선 */
+    .app-header { 
+        height: 70px; 
+        background: var(--navy-dark); 
+        display: flex; align-items: center; justify-content: space-between; 
+        padding: 0 20px; z-index: 1000; color: #fff; 
+        border-bottom: 3px solid var(--accent-blue);
+    }
+    .header-title { font-size: 19px; font-weight: 900; letter-spacing: -0.5px; }
+
+    /* 메인 컨텐츠 영역 */
+    .app-content { 
+        flex: 1; 
+        padding: 40px 24px; 
+        overflow-y: auto;
+    }
+    .portal-intro { text-align: center; margin-bottom: 35px; }
+    .portal-intro h1 { font-size: 28px; font-weight: 900; color: var(--navy-dark); margin-bottom: 10px; }
+    .portal-intro p { color: #64748b; font-size: 15px; font-weight: 500; }
+
+    /* 메뉴 그리드 레이아웃 */
+    .menu-grid { 
+        width: 100%; 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 16px; 
+    }
+
+    /* 카드 공통 스타일 */
+    .menu-card { 
+        background: #fff; 
+        border-radius: 28px; 
+        padding: 30px 16px; 
+        display: flex; flex-direction: column; align-items: center; 
+        text-decoration: none; 
+        border: 1px solid #e2e8f0; 
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
     .menu-card:active { transform: scale(0.95); background: #f8fafc; }
-    .icon-circle { width: 60px; height: 60px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 14px; }
-    .menu-name { font-size: 16px; font-weight: 800; color: var(--navy-dark); }
-    .m-driver .icon-circle { background: #eff6ff; color: #3b82f6; }
-    .m-meal .icon-circle { background: #ecfdf5; color: #10b981; }
+    .menu-card:hover { border-color: var(--accent-blue); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+
+    .icon-circle { 
+        width: 65px; height: 65px; 
+        border-radius: 22px; 
+        display: flex; align-items: center; justify-content: center; 
+        font-size: 28px; margin-bottom: 16px; 
+    }
+    .menu-name { font-size: 17px; font-weight: 800; color: var(--navy-dark); }
+
+    /* 개별 메뉴 색상 */
+    .m-driver .icon-circle { background: #eff6ff; color: var(--accent-blue); }
+    .m-meal .icon-circle { background: #ecfdf5; color: var(--accent-green); }
     .m-coord .icon-circle { background: #f0f9ff; color: #0ea5e9; }
-    .m-leader .icon-circle { background: #f5f3ff; color: #6366f1; }
-    .full-btn { grid-column: span 2; flex-direction: row; gap: 15px; justify-content: flex-start; padding-left: 30px; }
-    .full-btn .icon-circle { margin-bottom: 0; width: 50px; height: 50px; font-size: 20px; }
+    .m-support .icon-circle { background: #fff7ed; color: var(--accent-orange); }
+    .m-leader .icon-circle { background: #f5f3ff; color: var(--accent-purple); }
+
+    /* 가로로 긴 버튼 */
+    .full-btn { 
+        grid-column: span 2; 
+        flex-direction: row; 
+        gap: 20px; 
+        justify-content: flex-start; 
+        padding-left: 35px; 
+    }
+    .full-btn .icon-circle { margin-bottom: 0; width: 55px; height: 55px; font-size: 24px; }
+
+    /* 하단바 개선 (시간 크게) */
+    .app-footer { 
+        height: 70px; 
+        background: var(--navy-dark); 
+        color: #fff; 
+        display: flex; align-items: center; justify-content: space-between; 
+        padding: 0 25px; z-index: 1000; 
+        border-top: 1px solid rgba(255,255,255,0.1); 
+    }
+    #footer-date { 
+        font-size: 18px; /* 로고 크기에 맞춰 크게 조절 */
+        font-weight: 800; 
+        color: #f8fafc;
+        font-family: 'Courier New', monospace; /* 시계 느낌을 위해 고정폭 글꼴 사용 가능 */
+    }
+    .footer-logo img { height: 24px; filter: brightness(0) invert(1); opacity: 0.9; }
+
     /* 설정 모달 */
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; padding:20px; }
-    .modal-content { background:#fff; width:100%; max-width:400px; border-radius:24px; padding:24px; }
-    .input-box { width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:10px; font-size:14px; }
-    .save-btn { width:100%; padding:14px; background:var(--navy-dark); color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(5px); }
+    .modal-content { background:#fff; width:100%; max-width:400px; border-radius:30px; padding:30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .modal-content h3 { margin-top:0; font-size:20px; font-weight:900; color:var(--navy-dark); }
+    .input-box { width:100%; padding:15px; margin-bottom:12px; border:2px solid #f1f5f9; border-radius:14px; font-size:15px; font-weight:600; outline:none; }
+    .input-box:focus { border-color: var(--accent-blue); }
+    .save-btn { width:100%; padding:16px; background:var(--navy-dark); color:#fff; border:none; border-radius:14px; font-weight:800; cursor:pointer; font-size:16px; }
+    .close-btn { background:#f1f5f9; color:#64748b; margin-top:10px; }
   </style>
 </head>
 <body>
   <div class="app-container">
     <header class="app-header">
       <div style="width:40px"></div>
-      <div class="header-title">KAC Training Platform</div>
-      <div style="width:40px; text-align:right; cursor:pointer;" onclick="openAdminSettings()"><i class="fa-solid fa-gear"></i></div>
+      <div class="header-title">항공기술훈련원 교육플랫폼</div>
+      <div style="width:40px; text-align:right; cursor:pointer; font-size: 20px;" onclick="openAdminSettings()"><i class="fa-solid fa-gear"></i></div>
     </header>
+
     <main class="app-content">
-      <div class="portal-intro"><h1>통합 관리 포털</h1><p>로그인 후 서비스에 접속해 주세요.</p></div>
+      <div class="portal-intro">
+          <h1>통합 관리 포털</h1>
+          <p>사용자 역할에 맞는 서비스를 선택해 주세요.</p>
+      </div>
+
       <div class="menu-grid">
-        <a href="javascript:void(0)" onclick="goWithPin('driver.html', 'driver')" class="menu-card m-driver"><div class="icon-circle"><i class="fa-solid fa-bus"></i></div><span class="menu-name">운전원</span></a>
-        <a href="javascript:void(0)" onclick="goWithPin('nutritionist.html', 'meal')" class="menu-card m-meal"><div class="icon-circle"><i class="fa-solid fa-utensils"></i></div><span class="menu-name">영양사</span></a>
-        <a href="javascript:void(0)" onclick="goWithPin('admin_coord.html', 'coord')" class="menu-card m-coord full-btn"><div class="icon-circle"><i class="fa-solid fa-user-tie"></i></div><span class="menu-name">교육운영 담당자</span></a>
-        <a href="student_leader.html" class="menu-card m-leader full-btn"><div class="icon-circle"><i class="fa-solid fa-crown"></i></div><span class="menu-name">학생장</span></a>
+        <!-- 1. 운전원 -->
+        <a href="javascript:void(0)" onclick="goWithPin('driver.html', 'driver')" class="menu-card m-driver">
+            <div class="icon-circle"><i class="fa-solid fa-bus"></i></div>
+            <span class="menu-name">운전원</span>
+        </a>
+        <!-- 2. 영양사 -->
+        <a href="javascript:void(0)" onclick="goWithPin('nutritionist.html', 'meal')" class="menu-card m-meal">
+            <div class="icon-circle"><i class="fa-solid fa-utensils"></i></div>
+            <span class="menu-name">영양사</span>
+        </a>
+        <!-- 3. 교육운영 담당자 (행정) -->
+        <a href="javascript:void(0)" onclick="goWithPin('admin_coord.html', 'coord')" class="menu-card m-coord full-btn">
+            <div class="icon-circle"><i class="fa-solid fa-user-tie"></i></div>
+            <span class="menu-name">교육운영 담당자 (행정)</span>
+        </a>
+        <!-- 4. 교육지원 담당자 (생활관) -->
+        <a href="javascript:void(0)" onclick="goWithPin('support_admin.html', 'support')" class="menu-card m-support full-btn">
+            <div class="icon-circle"><i class="fa-solid fa-hotel"></i></div>
+            <span class="menu-name">교육지원 담당자 (생활관)</span>
+        </a>
+        <!-- 5. 학생장 -->
+        <a href="student_leader.html" class="menu-card m-leader full-btn">
+            <div class="icon-circle"><i class="fa-solid fa-crown"></i></div>
+            <span class="menu-name">학생장 전용 플랫폼</span>
+        </a>
       </div>
     </main>
-    <footer class="app-footer"><div id="footer-date"></div><div class="footer-logo"><img src="logo.png"></div></footer>
+
+    <footer class="app-footer">
+      <div id="footer-date">로딩 중...</div>
+      <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
+    </footer>
   </div>
 
   <!-- PIN 관리 모달 -->
   <div id="adminModal" class="modal">
     <div class="modal-content">
-      <h3 style="margin-top:0">포털 PIN 번호 관리</h3>
-      <p style="font-size:12px; color:gray">플랫폼별 접속 4자리 번호를 설정하세요.</p>
+      <h3>포털 보안 PIN 설정</h3>
+      <p style="font-size:13px; color:#64748b; margin-bottom:20px;">각 플랫폼 접속을 위한 4자리 번호를 관리합니다.</p>
       <input type="password" id="new_driver" class="input-box" placeholder="운전원 새 PIN">
       <input type="password" id="new_meal" class="input-box" placeholder="영양사 새 PIN">
-      <input type="password" id="new_coord" class="input-box" placeholder="담당자 새 PIN">
-      <button class="save-btn" onclick="saveNewPins()">설정 저장</button>
-      <button class="save-btn" style="background:#ccc; margin-top:8px" onclick="closeModal()">닫기</button>
+      <input type="password" id="new_coord" class="input-box" placeholder="교육운영 새 PIN">
+      <input type="password" id="new_support" class="input-box" placeholder="교육지원 새 PIN">
+      <button class="save-btn" onclick="saveNewPins()">설정 저장하기</button>
+      <button class="save-btn close-btn" onclick="closeModal()">닫기</button>
     </div>
   </div>
 
   <script>
+    // PIN 암호화 함수
     async function hashPin(pin) {
       const msgUint8 = new TextEncoder().encode(pin);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
       return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
- // potal.html 의 <script> 부분에 있는 goWithPin 함수를 교체하세요.
+    // PIN 확인 후 페이지 이동
+    async function goWithPin(url, role) {
+      const userInput = prompt("접속 PIN 번호 4자리를 입력하세요.");
+      if (!userInput) return;
 
-async function goWithPin(url, role) {
-  // 1. 사용자에게 PIN 입력 받기 (지연 방지를 위해 입력을 먼저 받음)
-  const userInput = prompt("접속 PIN 번호 4자리를 입력하세요.");
-  if (!userInput) return;
+      try {
+        const snap = await firebase.database().ref(`system/portalPins/${role}`).once('value');
+        const dbHashed = snap.val();
 
-  try {
-    // 2. Firebase에서 해당 역할의 PIN 가져오기
-    const snap = await firebase.database().ref(`system/portalPins/${role}`).once('value');
-    const dbHashed = snap.val();
+        if (!dbHashed) {
+          alert("PIN이 설정되지 않았습니다. 관리자(톱니바퀴)에서 설정을 완료해주세요.");
+          return;
+        }
 
-    if (!dbHashed) {
-      alert("PIN이 설정되지 않았습니다. 관리자(포털 설정)에서 PIN을 먼저 설정해주세요.");
-      return;
+        const userHashed = await hashPin(userInput);
+
+        if (userHashed === dbHashed) {
+          sessionStorage.setItem('kac_portal_auth', role);
+          location.href = url;
+        } else {
+          alert("잘못된 PIN 번호입니다.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("데이터 연결 오류가 발생했습니다.");
+      }
     }
 
-    // 3. 암호화 계산 (보안 연결 확인 및 대체 로직)
-    let userHashed;
-    if (window.isSecureContext && crypto.subtle) {
-        userHashed = await hashPin(userInput);
-    } else {
-        // 비보안 환경(HTTP)일 경우를 위한 폴백 처리 (테스트용)
-        console.warn("비보안 환경이므로 단순 비교를 시도합니다.");
-        userHashed = await hashPin(userInput); 
-    }
-
-    // 4. 비교 및 이동
-    if (userHashed === dbHashed) {
-      sessionStorage.setItem('kac_portal_auth', role);
-      location.href = url;
-    } else {
-      alert("잘못된 PIN 번호입니다.");
-    }
-  } catch (e) {
-    console.error(e);
-    alert("연결 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
-  }
-}
-
+    // 관리자 설정창 열기 (비밀번호 확인)
     async function openAdminSettings() {
-      const pw = prompt("강사 플랫폼 비밀번호를 입력하세요.");
+      const pw = prompt("시스템 마스터 비밀번호를 입력하세요.");
       if(!pw) return;
       try {
         await firebase.auth().signInWithEmailAndPassword("admin@kac.com", pw);
@@ -128,24 +241,35 @@ async function goWithPin(url, role) {
       } catch(e) { alert("비밀번호가 올바르지 않습니다."); }
     }
 
+    // 새로운 PIN 저장
     async function saveNewPins() {
-      const roles = ['driver', 'meal', 'coord'];
+      const roles = ['driver', 'meal', 'coord', 'support'];
       for(const r of roles) {
         const val = document.getElementById(`new_${r}`).value;
         if(val) {
+          if(val.length !== 4) { alert("PIN은 반드시 4자리여야 합니다."); return; }
           const hashed = await hashPin(val);
           await firebase.database().ref(`system/portalPins/${r}`).set(hashed);
         }
       }
-      alert("설정이 저장되었습니다."); closeModal();
+      alert("모든 PIN 설정이 안전하게 저장되었습니다."); 
+      closeModal();
     }
 
     function closeModal() { document.getElementById('adminModal').style.display='none'; }
+
+    // 하단 대형 시계 작동
     function runClock() {
-      const now = new Date(); const week = ['일','월','화','수','목','금','토'];
-      document.getElementById('footer-date').innerText = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const now = new Date(); 
+      const week = ['일','월','화','수','목','금','토'];
+      const dateStr = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]})`;
+      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+      
+      document.getElementById('footer-date').innerText = `${dateStr} ${timeStr}`;
     }
-    setInterval(runClock, 1000); runClock();
+    
+    setInterval(runClock, 1000); 
+    runClock();
   </script>
 </body>
 </html>
