@@ -2331,66 +2331,70 @@ loadStudentList: function() {
 loadDormitoryData: function() {
         if(!state.room) return;
         const tbody = document.getElementById('dormitoryTableBody');
-        const statusEl = document.getElementById('dormArrivalStatus'); // 생활관 전용 배지 ID
+        const statusEl = document.getElementById('dormArrivalStatus');
         if(!tbody) return;
 
+        // 1. 데이터 경로 설정
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
         const dormRef = firebase.database().ref(`system/dormitory_assignments`);
 
-        expectedRef.on('value', expSnap => {
-            const expectedNames = expSnap.val() || [];
-            
-            actualRef.on('value', actualSnap => {
-                const studentsData = actualSnap.val() || {};
-                const actualStudents = Object.values(studentsData).filter(s => s.name && s.name !== "undefined");
-                const actualNames = actualStudents.map(s => s.name);
+        // 2. 실시간 렌더링 함수 (통합 호출용)
+        const renderAll = (expData, actData, dormData) => {
+            const expectedNames = expData || [];
+            const actualStudents = Object.values(actData || {}).filter(s => s.name && s.name !== "undefined");
+            const actualNames = actualStudents.map(s => s.name);
 
-                const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
+            // 전체 명단 생성 및 정렬
+            const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
-                let arrivedCount = 0;
-                combinedNames.forEach(name => { if(actualNames.includes(name)) arrivedCount++; });
-                const total = combinedNames.length;
-                const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
+            // 상단 배지 업데이트
+            let arrivedCount = 0;
+            combinedNames.forEach(name => { if(actualNames.includes(name)) arrivedCount++; });
+            const total = combinedNames.length;
+            const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
+            if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
+
+            // 테이블 그리기
+            tbody.innerHTML = "";
+            if (combinedNames.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>명단이 존재하지 않습니다.</td></tr>";
+                return;
+            }
+
+            combinedNames.forEach((name, idx) => {
+                const isArrived = actualNames.includes(name);
+                const sData = actualStudents.find(s => s.name === name) || {};
+                const phoneSuffix = sData.phone ? sData.phone.slice(-4) : "-";
+
+                // [핵심] 실시간으로 받아온 dormData에서 정보 매칭
+                const cleanName = name.trim();
+                const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
                 
-                if(statusEl) {
-                    statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
-                }
+                const isAssigned = assigned.building !== "-";
+                const dormColor = isAssigned ? "#3b82f6" : "#94a3b8";
+                const statusIcon = isArrived ? '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:5px;"></i>' : '<i class="fa-solid fa-circle" style="color:#e2e8f0; margin-right:5px;"></i>';
 
-                dormRef.once('value').then(dormSnap => {
-                    const dormData = dormSnap.val() || {};
-                    tbody.innerHTML = "";
-
-                    if (combinedNames.length === 0) {
-                        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>명단이 존재하지 않습니다.</td></tr>";
-                        return;
-                    }
-
-                    combinedNames.forEach((name, idx) => {
-                        const isArrived = actualNames.includes(name);
-                        const sData = actualStudents.find(s => s.name === name) || {};
-                        const phoneSuffix = sData.phone ? sData.phone.slice(-4) : "-";
-                        const cleanName = name.trim();
-                        const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
-                        
-                        const isAssigned = assigned.building !== "-";
-                        const dormColor = isAssigned ? "#3b82f6" : "#94a3b8";
-                        const statusIcon = isArrived ? '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:5px;"></i>' : '<i class="fa-solid fa-circle" style="color:#e2e8f0; margin-right:5px;"></i>';
-
-                        tbody.innerHTML += `
-                            <tr style="${!isArrived ? 'opacity:0.6;' : ''}">
-                                <td>${idx + 1}</td>
-                                <td style="font-weight:bold; text-align:left; padding-left:30px;">
-                                    ${statusIcon} ${name}
-                                </td>
-                                <td style="color:#64748b;">${phoneSuffix}</td>
-                                <td style="color:${dormColor}; font-weight:800;">${assigned.building}</td>
-                                <td style="color:${dormColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
-                            </tr>`;
-                    });
-                });
+                tbody.innerHTML += `
+                    <tr onclick="ui.setMode('students')" style="${!isArrived ? 'opacity:0.6;' : ''} cursor:pointer;">
+                        <td>${idx + 1}</td>
+                        <td style="font-weight:bold; text-align:left; padding-left:30px;">
+                            ${statusIcon} ${name}
+                        </td>
+                        <td style="color:#64748b;">${phoneSuffix}</td>
+                        <td style="color:${dormColor}; font-weight:800;">${assigned.building}</td>
+                        <td style="color:${dormColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
+                    </tr>`;
             });
-        });
+        };
+
+        // 3. 세 가지 데이터를 모두 실시간 감시 (.on)
+        // 셋 중 하나만 변해도 화면이 즉시 다시 그려집니다.
+        let cacheExp = [], cacheAct = {}, cacheDorm = {};
+
+        expectedRef.on('value', s => { cacheExp = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
+        actualRef.on('value', s => { cacheAct = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
+        dormRef.on('value', s => { cacheDorm = s.val() || {}; renderAll(cacheExp, cacheAct, cacheDorm); });
     },
 
 
