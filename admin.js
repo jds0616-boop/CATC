@@ -2339,23 +2339,20 @@ loadDormitoryData: function() {
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
         const dormRef = firebase.database().ref(`system/dormitory_assignments`);
 
-        // 2. 실시간 렌더링 함수 (통합 호출용)
+        // 2. 실시간 렌더링 함수
         const renderAll = (expData, actData, dormData) => {
             const expectedNames = expData || [];
             const actualStudents = Object.values(actData || {}).filter(s => s.name && s.name !== "undefined");
             const actualNames = actualStudents.map(s => s.name);
 
-            // 전체 명단 생성 및 정렬
             const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
-            // 상단 배지 업데이트
             let arrivedCount = 0;
             combinedNames.forEach(name => { if(actualNames.includes(name)) arrivedCount++; });
             const total = combinedNames.length;
             const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
             if(statusEl) statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
 
-            // 테이블 그리기
             tbody.innerHTML = "";
             if (combinedNames.length === 0) {
                 tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>명단이 존재하지 않습니다.</td></tr>";
@@ -2367,7 +2364,6 @@ loadDormitoryData: function() {
                 const sData = actualStudents.find(s => s.name === name) || {};
                 const phoneSuffix = sData.phone ? sData.phone.slice(-4) : "-";
 
-                // [핵심] 실시간으로 받아온 dormData에서 정보 매칭
                 const cleanName = name.trim();
                 const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
                 
@@ -2378,7 +2374,8 @@ loadDormitoryData: function() {
                 tbody.innerHTML += `
                     <tr onclick="ui.setMode('students')" style="${!isArrived ? 'opacity:0.6;' : ''} cursor:pointer;">
                         <td>${idx + 1}</td>
-                        <td style="font-weight:bold; text-align:left; padding-left:30px;">
+                        <!-- [성함 열] 가운데 정렬로 수정됨 -->
+                        <td style="font-weight:bold; text-align:center;">
                             ${statusIcon} ${name}
                         </td>
                         <td style="color:#64748b;">${phoneSuffix}</td>
@@ -2388,10 +2385,8 @@ loadDormitoryData: function() {
             });
         };
 
-        // 3. 세 가지 데이터를 모두 실시간 감시 (.on)
-        // 셋 중 하나만 변해도 화면이 즉시 다시 그려집니다.
+        // 3. 실시간 감시 (.on)
         let cacheExp = [], cacheAct = {}, cacheDorm = {};
-
         expectedRef.on('value', s => { cacheExp = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
         actualRef.on('value', s => { cacheAct = s.val(); renderAll(cacheExp, cacheAct, cacheDorm); });
         dormRef.on('value', s => { cacheDorm = s.val() || {}; renderAll(cacheExp, cacheAct, cacheDorm); });
