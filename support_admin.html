@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>항공기술훈련원 교육지원부 - 통합 관리</title>
+    <title>항공기술훈련원 교육지원부 - 통합 지원 관리</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -16,8 +16,8 @@
     <style>
         :root {
             --navy-dark: #0f172a;
-            --blue-main: #3b82f6;
-            --blue-deep: #1e40af;
+            --blue-main: #0ea5e9;
+            --blue-deep: #0369a1;
             --bg-cool: #f1f5f9;
             --card-white: #ffffff;
             --text-dark: #1e293b;
@@ -34,13 +34,15 @@
             background: #cbd5e1;
             display: flex; justify-content: center;
             color: var(--text-dark);
+            overflow: hidden;
         }
 
         .app-container {
-            width: 100%; max-width: 600px; min-height: 100dvh;
+            width: 100%; max-width: 600px; height: 100dvh;
             background: var(--bg-cool);
             display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            position: relative;
         }
 
         .app-header {
@@ -48,90 +50,99 @@
             background: var(--navy-dark);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 20px; flex-shrink: 0;
-            border-bottom: 3px solid var(--blue-main);
+            border-bottom: 2px solid var(--blue-main);
             position: sticky; top: 0; z-index: 1000;
         }
         .header-btn { font-size: 20px; color: #fff; cursor: pointer; border: none; background: none; }
-        .header-title { color: #fff; font-size: 18px; font-weight: 900; }
+        .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
 
         .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 5px; }
         .menu-item {
-            background: white; padding: 15px 5px; border-radius: 12px;
+            background: white; padding: 15px 10px; border-radius: 12px;
             border: 1.5px solid var(--border-gray); text-align: center;
             cursor: pointer; transition: 0.2s;
         }
-        .menu-item i { font-size: 22px; color: var(--blue-main); margin-bottom: 8px; display: block; }
-        .menu-item span { font-size: 13px; font-weight: 800; color: var(--navy-dark); }
-        .menu-item.active { border-color: var(--blue-main); background: #eff6ff; }
+        .menu-item i { font-size: 24px; color: var(--blue-main); margin-bottom: 10px; display: block; }
+        .menu-item span { font-size: 12px; font-weight: 800; color: var(--navy-dark); }
+        .menu-item.active { border-color: var(--blue-main); background: #f0f9ff; }
         .menu-item.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
         .section-card {
             background: var(--card-white);
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 20px;
             border: 1px solid var(--border-gray);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
         }
         .section-title {
-            font-size: 15px; font-weight: 800; color: var(--blue-deep);
+            font-size: 14px; font-weight: 800; color: var(--blue-deep);
             margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
         }
 
-        /* 업로드 박스 디자인 (드래그 효과 추가) */
         .upload-zone {
-            background: #f8fafc;
-            border: 2px dashed #cbd5e1;
-            padding: 40px 20px;
-            text-align: center;
-            border-radius: 15px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            transition: 0.3s;
+            background: #f8fafc; border: 2px dashed #cbd5e1;
+            padding: 30px 20px; text-align: center; border-radius: 12px;
+            cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
         }
-        /* 파일을 끌고 박스 위로 왔을 때 색상 변함 */
         .upload-zone.dragover { border-color: var(--blue-main); background: #f0f7ff; transform: scale(1.02); }
-        
-        .upload-zone i { font-size: 35px; color: #94a3b8; }
+        .upload-zone i { font-size: 30px; color: #94a3b8; }
         .upload-text { font-size: 14px; font-weight: 700; color: #475569; }
 
+        /* 수동 입력창 스타일 */
+        .manual-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .navy-input {
+            width: 100%; height: 45px; border-radius: 8px; border: 1px solid var(--border-gray);
+            padding: 0 12px; font-size: 14px; font-weight: 600; outline: none;
+        }
+        .navy-select {
+            width: 100%; height: 45px; border-radius: 8px; border: 1px solid var(--border-gray);
+            padding: 0 10px; font-size: 14px; font-weight: 600; background: #fff;
+        }
+
         #previewResult {
-            margin-top: 15px; background: #1e293b; color: #e2e8f0;
-            padding: 15px; border-radius: 12px; font-size: 12px;
-            max-height: 180px; overflow-y: auto; text-align: left;
+            margin-top: 15px; background: var(--navy-dark); color: #fff;
+            padding: 15px; border-radius: 10px; font-size: 12px;
+            max-height: 150px; overflow-y: auto; text-align: left;
             white-space: pre-wrap; line-height: 1.6; display: none;
             border: 1px solid #334155;
         }
 
         .navy-btn {
-            width: 100%; height: 50px; border-radius: 12px;
+            width: 100%; height: 48px; border-radius: 10px;
             background: var(--blue-main); color: white; border: none;
-            font-weight: 800; font-size: 15px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            margin-top: 15px;
+            font-weight: 800; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .navy-btn.success { background: var(--success); }
+        .navy-btn:active { opacity: 0.9; transform: scale(0.98); }
 
-        .navy-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 12px; }
-        .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 14px; font-weight: 600; }
-        .tag-room { background: #eff6ff; color: var(--blue-main); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
+        .navy-table { width: 100%; border-collapse: collapse; }
+        .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 11px; }
+        .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 13px; font-weight: 600; }
+        .tag-room { background: #eff6ff; color: var(--blue-main); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
 
         .app-footer {
-            height: 65px;
-            background: var(--navy-dark);
-            color: #fff;
+            height: 65px; background: var(--navy-dark); color: #fff;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 25px; flex-shrink: 0;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
         #footer-date { font-size: 17px; font-weight: 800; font-family: 'Courier New', monospace; }
         .footer-logo img { height: 22px; filter: brightness(0) invert(1); opacity: 0.8; }
+
+        /* 수정 팝업(모달) 스타일 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-box {
+            background: white; width: 100%; max-width: 400px;
+            border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
@@ -149,58 +160,57 @@
                     <i class="fa-solid fa-hotel"></i>
                     <span>생활관 배정</span>
                 </div>
-                <div class="menu-item disabled">
-                    <i class="fa-solid fa-broom"></i>
-                    <span>미화 지원</span>
-                </div>
-                <div class="menu-item disabled">
-                    <i class="fa-solid fa-snowflake"></i>
-                    <span>냉난방 지원</span>
-                </div>
+                <div class="menu-item disabled"><i class="fa-solid fa-broom"></i><span>미화 지원</span></div>
+                <div class="menu-item disabled"><i class="fa-solid fa-snowflake"></i><span>냉난방 지원</span></div>
             </div>
 
-            <div id="tab-dorm" class="tab-content">
+            <!-- 생활관 배정 메인 영역 -->
+            <div id="tab-dorm">
+                <!-- 1. PDF 일괄 업로드 -->
                 <div class="section-card">
                     <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표 PDF 업로드</div>
-                    
-                    <!-- 드래그 앤 드롭 이벤트를 위해 id="dropZone" 추가 -->
                     <label class="upload-zone" id="dropZone" for="pdfFile">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <div class="upload-text">배정표 PDF 파일을 선택하거나<br>여기에 드래그하세요</div>
+                        <div class="upload-text">파일을 선택하거나 드래그하세요</div>
                         <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
                     </label>
-                    
                     <div id="previewResult"></div>
-                    
                     <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">
-                        <i class="fa-solid fa-check-double"></i> 판독 데이터 서버 저장 및 확정
+                        <i class="fa-solid fa-check-double"></i> 판독 데이터 일괄 저장
                     </button>
                 </div>
 
-                <div class="section-card" style="margin-top:20px;">
-                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 확인</div>
+                <!-- 2. 개별 수동 등록 -->
+                <div class="section-card" style="margin-top:15px;">
+                    <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록 (예외 인원)</div>
+                    <div class="manual-input-grid">
+                        <input type="text" id="manualName" class="navy-input" placeholder="성함">
+                        <input type="number" id="manualRoom" class="navy-input" placeholder="호실 (숫자)">
+                    </div>
+                    <select id="manualBuilding" class="navy-select" style="margin-bottom:10px;">
+                        <option value="청렴관">청렴관</option>
+                        <option value="상생관">상생관</option>
+                        <option value="국제동">국제동</option>
+                    </select>
+                    <button class="navy-btn" onclick="addManualEntry()">
+                        <i class="fa-solid fa-plus"></i> 명단에 개별 추가하기
+                    </button>
+                </div>
+
+                <!-- 3. 실시간 배정 명단 -->
+                <div class="section-card" style="margin-top:15px;">
+                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (이름 클릭 시 이동)</div>
                     <div style="overflow-x: auto;">
                         <table class="navy-table">
                             <thead>
-                                <tr>
-                                    <th>성함</th>
-                                    <th>생활관</th>
-                                    <th>호실</th>
-                                    <th width="40"></th>
-                                </tr>
+                                <tr><th>성함</th><th>생활관</th><th>호실</th><th width="40"></th></tr>
                             </thead>
                             <tbody id="dormTableBody">
-                                <tr><td colspan="4" style="padding:40px; color:#94a3b8;">등록된 배정 내역이 없습니다.</td></tr>
+                                <tr><td colspan="4" style="padding:30px;">데이터 로딩 중...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <div id="tab-empty" class="tab-content" style="display:none; padding:50px 20px; text-align:center; color:#94a3b8;">
-                <i class="fa-solid fa-screwdriver-wrench" style="font-size:50px; margin-bottom:20px;"></i>
-                <h3 style="margin:0;">서비스 준비 중</h3>
-                <p>시스템 연동 공사 중입니다.</p>
             </div>
         </main>
 
@@ -210,75 +220,112 @@
         </footer>
     </div>
 
+    <!-- 방 이동/수정 팝업 -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:var(--navy-dark);"><i class="fa-solid fa-person-walking-arrow-right"></i> 생활관 이동/수정</h3>
+            <p id="editTargetName" style="font-weight:800; font-size:18px; color:var(--blue-main); margin-bottom:20px;"></p>
+            
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:800; color:#64748b;">이동할 생활관</label>
+                <select id="editBuilding" class="navy-select" style="margin-top:5px;">
+                    <option value="청렴관">청렴관</option>
+                    <option value="상생관">상생관</option>
+                    <option value="국제동">국제동</option>
+                </select>
+            </div>
+            <div style="margin-bottom:25px;">
+                <label style="font-size:12px; font-weight:800; color:#64748b;">이동할 호실</label>
+                <input type="number" id="editRoom" class="navy-input" style="margin-top:5px;" placeholder="숫자만 입력">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeEditModal()">취소</button>
+                <button class="navy-btn success" style="flex:2;" onclick="saveEdit()">변경 저장</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const db = firebase.database();
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
         let extractedData = {};
 
         window.onload = function() {
             loadDormList();
-            initDragAndDrop(); // 드래그 방지 기능 초기화
+            initDragAndDrop();
             setInterval(runClock, 1000);
             runClock();
         };
 
-        // [핵심] 드래그 앤 드롭 버그 방지 로직
+        // [추가] 수동 등록 기능
+        async function addManualEntry() {
+            const name = document.getElementById('manualName').value.trim();
+            const room = document.getElementById('manualRoom').value.trim();
+            const bld = document.getElementById('manualBuilding').value;
+
+            if(!name || !room) return alert("성함과 호실을 모두 입력하세요.");
+
+            if(confirm(`${name}님을 ${bld} ${room}호로 등록할까요?`)) {
+                await db.ref(`system/dormitory_assignments/${name}`).set({
+                    building: bld,
+                    room: room
+                });
+                alert("✅ 등록 완료");
+                document.getElementById('manualName').value = "";
+                document.getElementById('manualRoom').value = "";
+            }
+        }
+
+        // [추가] 방 이동/수정 로직
+        function openEditModal(name, bld, room) {
+            document.getElementById('editTargetName').innerText = name;
+            document.getElementById('editBuilding').value = bld;
+            document.getElementById('editRoom').value = room;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        async function saveEdit() {
+            const name = document.getElementById('editTargetName').innerText;
+            const bld = document.getElementById('editBuilding').value;
+            const room = document.getElementById('editRoom').value.trim();
+
+            if(!room) return alert("호실을 입력하세요.");
+
+            await db.ref(`system/dormitory_assignments/${name}`).update({
+                building: bld,
+                room: room
+            });
+            alert("✅ 이동 처리가 완료되었습니다.");
+            closeEditModal();
+        }
+
+        // 드래그 앤 드롭 및 PDF 처리 (기존 로직 유지)
         function initDragAndDrop() {
-            const dropZone = document.getElementById('dropZone');
-
-            // 1. 브라우저 전체에서 파일 드롭 시 파일이 열리는 기본 동작 방지
-            window.addEventListener("dragover", e => e.preventDefault(), false);
-            window.addEventListener("drop", e => e.preventDefault(), false);
-
-            // 2. 드롭존 위로 파일을 끌어왔을 때 시각 효과
-            dropZone.addEventListener("dragover", (e) => {
-                e.preventDefault();
-                dropZone.classList.add("dragover");
-            });
-
-            dropZone.addEventListener("dragleave", () => {
-                dropZone.classList.remove("dragover");
-            });
-
-            // 3. 드롭존에 파일을 놓았을 때 판독 시작
-            dropZone.addEventListener("drop", (e) => {
-                e.preventDefault();
-                dropZone.classList.remove("dragover");
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    processPDFFile(files[0]);
-                }
-            });
+            const dz = document.getElementById('dropZone');
+            window.addEventListener("dragover", e => e.preventDefault());
+            window.addEventListener("drop", e => e.preventDefault());
+            dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+            dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+            dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); if(e.dataTransfer.files.length) processPDFFile(e.dataTransfer.files[0]); });
         }
 
-        // 일반 파일 선택 시 실행
-        function handleFileSelect(input) {
-            if (input.files.length > 0) {
-                processPDFFile(input.files[0]);
-            }
-        }
+        function handleFileSelect(input) { if(input.files.length) processPDFFile(input.files[0]); }
 
-        // PDF 파일을 처리하는 통합 함수
         async function processPDFFile(file) {
-            if (file.type !== "application/pdf") {
-                alert("PDF 파일만 업로드 가능합니다.");
-                return;
-            }
-
+            if(file.type !== "application/pdf") return alert("PDF만 가능합니다.");
             const reader = new FileReader();
             reader.onload = async function() {
-                const typedarray = new Uint8Array(this.result);
-                try {
-                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                    let fullText = "";
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        fullText += textContent.items.map(item => item.str).join(" ") + "\n";
-                    }
-                    parseDormText(fullText);
-                } catch (e) { alert("PDF 판독 중 오류가 발생했습니다."); }
+                const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                let text = "";
+                for(let i=1; i<=pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(" ") + "\n";
+                }
+                parseDormText(text);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -288,38 +335,33 @@
             extractedData = {}; 
             const buildings = ["청렴관", "상생관", "국제동"];
             let currentBuilding = "기타";
-
-            const tokens = text.split(/\s+/);
-            for(let i=0; i<tokens.length; i++) {
-                buildings.forEach(b => { if(tokens[i].includes(b)) currentBuilding = b; });
-                if(/^\d{3}$/.test(tokens[i])) {
-                    const room = tokens[i];
-                    for(let j=1; j<=2; j++) {
-                        if(tokens[i+j] && /^[가-힣]{2,4}$/.test(tokens[i+j])) {
-                            const name = tokens[i+j];
-                            extractedData[name] = { room: room, building: currentBuilding };
+            const lines = text.split('\n');
+            
+            lines.forEach(line => {
+                buildings.forEach(b => { if(line.includes(b)) currentBuilding = b; });
+                const roomMatches = line.match(/\d{3}/g);
+                if(roomMatches) {
+                    roomMatches.forEach(room => {
+                        const nameMatches = line.match(/[가-힣]{2,4}/g);
+                        if(nameMatches) {
+                            nameMatches.forEach(name => {
+                                if(!buildings.includes(name)) extractedData[name] = { room: room, building: currentBuilding };
+                            });
                         }
-                    }
+                    });
                 }
-            }
+            });
 
-            const keys = Object.keys(extractedData);
-            if(keys.length > 0) {
-                preview.style.display = "block";
-                document.getElementById('saveBtn').style.display = "flex";
-                preview.innerText = `✅ 판독 성공 (${keys.length}명)\n` + 
-                    keys.map(name => `${name}: ${extractedData[name].building} ${extractedData[name].room}호`).join("\n");
+            if(Object.keys(extractedData).length > 0) {
+                preview.style.display = "block"; document.getElementById('saveBtn').style.display = "flex";
+                preview.innerText = `✅ 판독 완료: ${Object.keys(extractedData).length}명\n` + Object.keys(extractedData).map(n => `${n}: ${extractedData[n].building} ${extractedData[n].room}호`).join("\n");
             } else { alert("데이터를 찾을 수 없습니다."); }
         }
 
         async function saveToFirebase() {
-            if(confirm(`판독된 ${Object.keys(extractedData).length}명의 데이터를 저장할까요?`)) {
-                const updates = {};
-                for(let name in extractedData) {
-                    updates[`system/dormitory_assignments/${name}`] = extractedData[name];
-                }
-                await db.ref().update(updates);
-                alert("✅ 배정 정보가 저장되었습니다.");
+            if(confirm("추출된 명단을 저장할까요?")) {
+                await db.ref('system/dormitory_assignments').update(extractedData);
+                alert("✅ 저장 완료");
                 document.getElementById('previewResult').style.display = 'none';
                 document.getElementById('saveBtn').style.display = 'none';
             }
@@ -331,47 +373,24 @@
                 const tbody = document.getElementById('dormTableBody');
                 tbody.innerHTML = "";
                 const keys = Object.keys(data).sort();
-                if(keys.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='padding:30px;'>배정 내역이 없습니다.</td></tr>";
-                    return;
-                }
+                if(!keys.length) return tbody.innerHTML = "<tr><td colspan='4' style='padding:30px;'>내역 없음</td></tr>";
                 keys.forEach(name => {
                     const item = data[name];
                     tbody.innerHTML += `
-                        <tr>
+                        <tr onclick="openEditModal('${name}', '${item.building}', '${item.room}')" style="cursor:pointer;">
                             <td><b>${name}</b></td>
                             <td style="color:#64748b;">${item.building}</td>
                             <td><span class="tag-room">${item.room}호</span></td>
-                            <td><i class="fa-solid fa-trash-can" style="color:var(--danger); cursor:pointer;" onclick="deleteDorm('${name}')"></i></td>
+                            <td><i class="fa-solid fa-trash-can" style="color:var(--danger);" onclick="event.stopPropagation(); deleteDorm('${name}')"></i></td>
                         </tr>`;
                 });
             });
         }
 
-        function deleteDorm(name) {
-            if(confirm(`${name}님의 정보를 삭제할까요?`)) {
-                db.ref(`system/dormitory_assignments/${name}`).remove();
-            }
-        }
-
-        function showTab(type) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            if(type === 'dorm') {
-                document.querySelector('.menu-item:nth-child(1)').classList.add('active');
-                document.getElementById('tab-dorm').style.display = 'block';
-                document.getElementById('tab-empty').style.display = 'none';
-            } else {
-                document.getElementById('tab-dorm').style.display = 'none';
-                document.getElementById('tab-empty').style.display = 'block';
-            }
-        }
-
+        function deleteDorm(name) { if(confirm(`${name}님을 삭제할까요?`)) db.ref(`system/dormitory_assignments/${name}`).remove(); }
         function runClock() {
-            const now = new Date();
-            const week = ['일','월','화','수','목','금','토'];
-            const dateStr = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]})`;
-            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-            document.getElementById('footer-date').innerText = `${dateStr} ${timeStr}`;
+            const now = new Date(); const week = ['일','월','화','수','목','금','토'];
+            document.getElementById('footer-date').innerText = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
         }
     </script>
 </body>
