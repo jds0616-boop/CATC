@@ -712,10 +712,8 @@ function openMainMenu() {
     document.getElementById('displayMyName').innerText = myName;
     document.getElementById('displayMyPhone').innerText = myPhone;
 
-    // [실시간 연동] .on 을 사용하여 지원부 변동 시 즉시 반영
-    const dormRef = firebase.database().ref(`system/dormitory_assignments/${myName}_${myPhone}`);
-    
-    dormRef.on('value', snap => {
+    // 지원부 플랫폼 생활관 데이터 실시간 감시 (.on)
+    firebase.database().ref(`system/dormitory_assignments/${myName}_${myPhone}`).on('value', snap => {
         const data = snap.val();
         const dormTextEl = document.getElementById('displayMyDorm');
         if(!dormTextEl) return;
@@ -724,14 +722,14 @@ function openMainMenu() {
             dormTextEl.innerText = `${data.building} ${data.room}호`;
             dormTextEl.style.color = "#3b82f6";
         } else {
-            // 이름으로만 한 번 더 조회
+            // 이름으로만 한번 더 시도
             firebase.database().ref(`system/dormitory_assignments/${myName}`).once('value').then(s2 => {
                 const d2 = s2.val();
                 if (d2) {
                     dormTextEl.innerText = `${d2.building} ${d2.room}호`;
                     dormTextEl.style.color = "#3b82f6";
                 } else {
-                    dormTextEl.innerText = "배정 정보 없음 (또는 매칭 전)";
+                    dormTextEl.innerText = "배정 정보 확인 중...";
                     dormTextEl.style.color = "#94a3b8";
                 }
             });
