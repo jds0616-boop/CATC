@@ -94,12 +94,7 @@
         .upload-zone i { font-size: 30px; color: #94a3b8; }
         .upload-text { font-size: 13px; font-weight: 700; color: #475569; }
 
-        .date-input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
+        .date-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .input-group label { display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 5px; }
         .navy-input {
             width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border-gray);
@@ -109,7 +104,7 @@
         #previewResult {
             margin-top: 15px; background: var(--navy-dark); color: #fff;
             padding: 15px; border-radius: 10px; font-size: 12px;
-            max-height: 150px; overflow-y: auto; text-align: left;
+            max-height: 250px; overflow-y: auto; text-align: left;
             white-space: pre-wrap; line-height: 1.6; display: none;
             border: 1px solid #334155;
         }
@@ -303,38 +298,42 @@
             closeModal();
         }
 
-        // [핵심 로직 수정] PDF 판독 버그 해결 (정밀 판독)
+        // [핵심 로직 수정] PDF 판독 버그 해결 (정밀 판독 모드)
         function parseDormText(text) {
             const preview = document.getElementById('previewResult');
             extractedData = {}; 
             
             // 제외할 단어 목록 (시설 명칭)
-            const blacklist = ["강의실", "개월", "계단", "과정", "관제사", "교육", "기도실", "배정표", "복도", "비상구", "생활관", "세탁", "신입사원", "청렴관", "상생관", "국제동", "휴게실", "대강당", "식당", "주방", "창고", "PC방", "세탁실"];
+            const blacklist = ["강의실", "개월", "계단", "과정", "관제사", "교육", "기도실", "배정표", "복도", "비상구", "생활관", "세탁", "신입사원", "청렴관", "상생관", "국제동", "휴게실", "대강당", "식당", "주방", "창고", "PC방", "세탁실", "하반기", "하늘관", "항공교통", "번호", "안내", "시설", "식당", "주방"];
 
             const buildings = ["청렴관", "상생관", "국제동"];
             let currentBuilding = "미지정";
 
-            // 줄 단위로 쪼개서 분석
             const lines = text.split('\n');
             
             lines.forEach(line => {
-                // [수정] 오직 '배정표'라는 제목이 있는 줄에서만 건물명을 인식합니다. (B강의실 무시)
+                // 1. 건물명 변경 (오직 상단 제목에서 "배정표(건물명)" 형식일 때만)
                 if (line.includes("배정표")) {
-                    buildings.forEach(b => { if (line.includes(b)) currentBuilding = b; });
+                    buildings.forEach(b => {
+                        if (line.includes(b)) {
+                            currentBuilding = b;
+                        }
+                    });
                 }
 
-                // 한 줄에 호실과 이름이 섞여 있으므로 단어 단위로 분석
+                // 2. 한 줄 분석
                 const tokens = line.split(/\s+/);
                 let lastFoundRoom = null;
 
                 tokens.forEach(token => {
-                    // 호실 번호 추출 (숫자 3자리)
-                    const roomMatch = token.match(/\b[1-4]\d{2}\b/); // 100~499번대 호실만 찾음
+                    // [중요] 호실 번호 찾기: (☎438) 같은 괄호 안의 숫자는 무시하고 순수 숫자 3자리만 찾음
+                    // 괄호가 포함되지 않은 순수 숫자 3자리 매칭
+                    const roomMatch = token.match(/^[1-3]\d{2}$/); 
                     if(roomMatch) {
                         lastFoundRoom = roomMatch[0];
                     }
 
-                    // 이름 추출 (한글 2~4글자)
+                    // 이름 찾기 (한글 2~4글자)
                     const nameMatches = token.match(/[가-힣]{2,4}/g);
                     if (nameMatches && lastFoundRoom && currentBuilding !== "미지정") {
                         nameMatches.forEach(name => {
@@ -358,16 +357,16 @@
                     "------------------------------------------\n" +
                     keys.map(name => `${name}: ${extractedData[name].building} ${extractedData[name].room}호`).join("\n");
             } else {
-                alert("데이터를 찾을 수 없습니다. PDF 형식을 확인하세요.");
+                alert("데이터를 찾을 수 없습니다. PDF 텍스트 추출이 가능한 형식인지 확인하세요.");
             }
         }
 
         async function saveToFirebase() {
             const start = document.getElementById('period-start').value;
             const end = document.getElementById('period-end').value;
-            if(!start || !end) return alert("유효 기간을 설정해주세요.");
+            if(!start || !end) return alert("배정표 유효 기간을 설정해주세요.");
 
-            if(confirm(`${Object.keys(extractedData).length}명의 데이터를 저장할까요?\n기존 배정 정보는 삭제됩니다.`)) {
+            if(confirm(`${Object.keys(extractedData).length}명의 데이터를 서버에 저장할까요?\n기존 배정 정보는 삭제됩니다.`)) {
                 await db.ref('system/dormitory_assignments').set(extractedData);
                 await db.ref('system/dormitory_metadata').set({ period: `${start} ~ ${end}` });
                 alert("✅ 배정표 업데이트 완료!");
@@ -432,7 +431,6 @@
             const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
             document.getElementById('footer-date').innerText = `${dateStr} ${timeStr}`;
         }
-        function showTab(t) {}
     </script>
 </body>
 </html>
