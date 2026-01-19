@@ -2331,15 +2331,13 @@ loadStudentList: function() {
 loadDormitoryData: function() {
         if(!state.room) return;
         const tbody = document.getElementById('dormitoryTableBody');
-        const statusEl = document.getElementById('dormArrivalStatus');
+        const statusEl = document.getElementById('dormArrivalStatus'); // 생활관 전용 배지 ID
         if(!tbody) return;
 
-        // 1. 필요한 데이터 참조 (예정 명단, 실제 입장 명단, 지원부 배정 데이터)
         const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
         const actualRef = firebase.database().ref(`courses/${state.room}/students`);
         const dormRef = firebase.database().ref(`system/dormitory_assignments`);
 
-        // 2. 실시간 감시 시작 (.on 사용)
         expectedRef.on('value', expSnap => {
             const expectedNames = expSnap.val() || [];
             
@@ -2348,10 +2346,8 @@ loadDormitoryData: function() {
                 const actualStudents = Object.values(studentsData).filter(s => s.name && s.name !== "undefined");
                 const actualNames = actualStudents.map(s => s.name);
 
-                // 전체 명단 생성 및 정렬
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
 
-                // 입교 숫자 계산 및 상단 배지 업데이트
                 let arrivedCount = 0;
                 combinedNames.forEach(name => { if(actualNames.includes(name)) arrivedCount++; });
                 const total = combinedNames.length;
@@ -2361,7 +2357,6 @@ loadDormitoryData: function() {
                     statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
                 }
 
-                // 3. 생활관 배정 정보 매칭 후 테이블 그리기
                 dormRef.once('value').then(dormSnap => {
                     const dormData = dormSnap.val() || {};
                     tbody.innerHTML = "";
@@ -2375,8 +2370,6 @@ loadDormitoryData: function() {
                         const isArrived = actualNames.includes(name);
                         const sData = actualStudents.find(s => s.name === name) || {};
                         const phoneSuffix = sData.phone ? sData.phone.slice(-4) : "-";
-
-                        // 생활관 데이터 매칭 (이름 앞뒤 공백 제거)
                         const cleanName = name.trim();
                         const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
                         
