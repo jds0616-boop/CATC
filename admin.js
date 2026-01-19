@@ -2328,34 +2328,75 @@ loadStudentList: function() {
 },
 
 // [추가 1] 생활관 중복 제거 및 데이터 로드 함수
-    loadDormitoryData: function() {
+loadDormitoryData: function() {
+        if(!state.room) return;
         const tbody = document.getElementById('dormitoryTableBody');
+        const statusEl = document.getElementById('dormArrivalStatus');
         if(!tbody) return;
-        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px;'>데이터를 조회 중...</td></tr>";
 
-        Promise.all([
-            firebase.database().ref(`courses/${state.room}/students`).once('value'), 
-            firebase.database().ref(`system/dormitory_assignments`).once('value')
-        ]).then(([sSnap, dSnap]) => {
-            const allStudents = Object.values(sSnap.val() || {}).filter(s => s.name && s.name !== "undefined");
-            const dormData = dSnap.val() || {};
+        // 1. 필요한 데이터 참조 (예정 명단, 실제 입장 명단, 지원부 배정 데이터)
+        const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
+        const actualRef = firebase.database().ref(`courses/${state.room}/students`);
+        const dormRef = firebase.database().ref(`system/dormitory_assignments`);
+
+        // 2. 실시간 감시 시작 (.on 사용)
+        expectedRef.on('value', expSnap => {
+            const expectedNames = expSnap.val() || [];
             
-            // 이름+번호 대조 중복 제거 로직
-            const uniqueStudentsMap = new Map();
-            allStudents.forEach(s => {
-                const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
-                const uniqueKey = `${s.name}_${phoneSuffix}`;
-                if (!uniqueStudentsMap.has(uniqueKey)) {
-                    uniqueStudentsMap.set(uniqueKey, { name: s.name, phone: phoneSuffix });
+            actualRef.on('value', actualSnap => {
+                const studentsData = actualSnap.val() || {};
+                const actualStudents = Object.values(studentsData).filter(s => s.name && s.name !== "undefined");
+                const actualNames = actualStudents.map(s => s.name);
+
+                // 전체 명단 생성 및 정렬
+                const combinedNames = Array.from(new Set([...expectedNames, ...actualNames])).sort((a,b) => a.localeCompare(b));
+
+                // 입교 숫자 계산 및 상단 배지 업데이트
+                let arrivedCount = 0;
+                combinedNames.forEach(name => { if(actualNames.includes(name)) arrivedCount++; });
+                const total = combinedNames.length;
+                const percent = total > 0 ? Math.round((arrivedCount / total) * 100) : 0;
+                
+                if(statusEl) {
+                    statusEl.innerText = `${arrivedCount} / ${total} 명 (${percent}%)`;
                 }
+
+                // 3. 생활관 배정 정보 매칭 후 테이블 그리기
+                dormRef.once('value').then(dormSnap => {
+                    const dormData = dormSnap.val() || {};
+                    tbody.innerHTML = "";
+
+                    if (combinedNames.length === 0) {
+                        tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>명단이 존재하지 않습니다.</td></tr>";
+                        return;
+                    }
+
+                    combinedNames.forEach((name, idx) => {
+                        const isArrived = actualNames.includes(name);
+                        const sData = actualStudents.find(s => s.name === name) || {};
+                        const phoneSuffix = sData.phone ? sData.phone.slice(-4) : "-";
+
+                        // 생활관 데이터 매칭 (이름 앞뒤 공백 제거)
+                        const cleanName = name.trim();
+                        const assigned = dormData[cleanName] || { building: "-", room: "미배정" };
+                        
+                        const isAssigned = assigned.building !== "-";
+                        const dormColor = isAssigned ? "#3b82f6" : "#94a3b8";
+                        const statusIcon = isArrived ? '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:5px;"></i>' : '<i class="fa-solid fa-circle" style="color:#e2e8f0; margin-right:5px;"></i>';
+
+                        tbody.innerHTML += `
+                            <tr style="${!isArrived ? 'opacity:0.6;' : ''}">
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:bold; text-align:left; padding-left:30px;">
+                                    ${statusIcon} ${name}
+                                </td>
+                                <td style="color:#64748b;">${phoneSuffix}</td>
+                                <td style="color:${dormColor}; font-weight:800;">${assigned.building}</td>
+                                <td style="color:${dormColor}; font-weight:900;">${assigned.room}${isAssigned ? '호' : ''}</td>
+                            </tr>`;
+                    });
+                });
             });
-
-            const students = Array.from(uniqueStudentsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-            tbody.innerHTML = students.length ? students.map((s, idx) => {
-                const assigned = dormData[`${s.name}_${s.phone}`] || dormData[s.name] || {building: "-", room: "미배정"};
-                return `<tr><td>${idx + 1}</td><td style="font-weight:bold;">${s.name}</td><td>${s.phone}</td><td style="color:#3b82f6; font-weight:800;">${assigned.building}</td><td style="color:#3b82f6; font-weight:800;">${assigned.room}${assigned.room !== "미배정" ? "호" : ""}</td></tr>`;
-            }).join('') : "<tr><td colspan='5' style='padding:50px;'>입실한 학생이 없습니다.</td></tr>";
         });
     },
 

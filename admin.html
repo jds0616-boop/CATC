@@ -791,17 +791,27 @@
 
 
 
-<!-- [신규] 생활관 배치 현황 섹션 -->
+<!-- [수정] 생활관 배치 현황 섹션 (실시간 연동 상태바 추가) -->
 <div id="view-dormitory" style="display:none; width:100%; flex-direction:column; align-items:center;">
     <div class="view-header">
         <h1><i class="fa-solid fa-bed"></i> 생활관 배치 현황 <span class="header-room-badge room-badge-global"></span></h1>
-        <p>교육생들에게 배정된 생활관 정보를 확인합니다. (연동 준비 중)</p>
+        
+        <!-- [신규] 실시간 연동 상태 배지 구역 -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 4px 12px; border-radius: 50px; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; font-weight: 800;">
+                <i class="fa-solid fa-sync fa-spin" style="color: #3b82f6; font-size: 11px;"></i>
+                <span id="dormArrivalStatus">0 / 0 명 (0%)</span>
+                <span style="color: #cbd5e1; font-weight: 400;">|</span>
+                <span>실시간 업데이트 중</span>
+            </div>
+        </div>
     </div>
+
     <div class="modern-white-card">
         <table class="modern-table">
             <thead>
                 <tr>
-                    <th>연번</th>
+                    <th style="width:70px;">연번</th>
                     <th>성함</th>
                     <th>전화번호(뒤4자리)</th>
                     <th>배정 생활관</th>
@@ -809,7 +819,7 @@
                 </tr>
             </thead>
             <tbody id="dormitoryTableBody">
-                <tr><td colspan="5" style="padding:50px; color:#94a3b8;">수강생 정보를 불러오는 중입니다...</td></tr>
+                <tr><td colspan="5" style="padding:50px; color:#94a3b8;">데이터를 불러오는 중입니다...</td></tr>
             </tbody>
         </table>
     </div>
