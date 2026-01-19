@@ -112,7 +112,7 @@
           </button>
       </div>
 
-      <div id="side-individual-menu" style="display:none; flex-direction:column; gap:12px;">
+<div id="side-individual-menu" style="display:none; flex-direction:column; gap:12px;">
           <button class="navy-btn" style="background:var(--blue-deep); height:45px;" onclick="openSetupModalFromIndividual()">
               <i class="fa-solid fa-sliders"></i> 해당 과정 설정 수정
           </button>
@@ -127,6 +127,10 @@
           </div>
           <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="openTransportModal()">
               <i class="fa-solid fa-car-side"></i> 강사 수송 요청
+          </button>
+          <!-- 생활관 배정현황 버튼 추가 -->
+          <button class="navy-btn" style="background:#10b981; height:45px;" onclick="openDormManager()">
+              <i class="fa-solid fa-bed"></i> 생활관 배정현황 조회
           </button>
           <button class="navy-btn red" style="height:45px; margin-top: 10px;" onclick="resetIndividualCourse()">
               <i class="fa-solid fa-triangle-exclamation"></i> 교육과정 강제 리셋
@@ -323,7 +327,11 @@
       <div class="setup-box" style="max-width: 450px;">
           <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center; margin:-25px -25px 20px -25px; border-radius:24px 24px 0 0;"><h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청 관리</h3><i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i></div>
           <div style="display:flex; flex-direction:column; gap:15px;">
-              <select id="reqLoc" class="navy-select"><option value="오송역">오송역</option><option value="청주터미널">청주터미널</option></select>
+              <select id="reqLoc" class="navy-select" onchange="updateTransDirButtons()">
+                  <option value="오송역">오송역</option>
+                  <option value="청주터미널">청주터미널</option>
+                  <option value="청주공항">청주공항</option>
+              </select>
               <div style="display:flex; gap:5px;"><input type="date" id="reqDate" class="navy-input"><input type="time" id="reqTime" class="navy-input"></div>
               <div style="display:flex; gap:8px;"><button id="btnTransTo" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('to')">장소→항기원</button><button id="btnTransFrom" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('from')">항기원→장소</button></div>
               <input type="text" id="reqProf" class="navy-input" placeholder="강사명 성함"><input type="tel" id="reqPhone" class="navy-input" placeholder="강사 연락처"><button class="navy-btn" style="background:#6366f1; height:45px;" onclick="submitTransReq()">수송 예약 등록</button>
@@ -332,6 +340,41 @@
           <button class="navy-btn" style="margin-top:15px; background:#64748b;" onclick="closeTransportModal()">닫기</button>
       </div>
   </div>
+
+
+
+
+
+<!-- 생활관 배정현황 모달 -->
+  <div id="dormManagerModal" class="setup-modal">
+      <div class="setup-box" style="max-width: 500px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
+              <h3 style="margin:0; font-size:17px; color:var(--navy-dark);"><i class="fa-solid fa-bed"></i> 과정 생활관 배정 명단</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('dormManagerModal').style.display='none'"></i>
+          </div>
+          <div style="max-height: 400px; overflow-y: auto;">
+              <table class="navy-table">
+                  <thead>
+                      <tr><th>성함</th><th>뒷자리</th><th>생활관</th><th>호실</th></tr>
+                  </thead>
+                  <tbody id="dormTableBody"></tbody>
+              </table>
+          </div>
+          <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('dormManagerModal').style.display='none'">닫기</button>
+      </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
   <!-- 인쇄 레이어 -->
   <div id="print-area">
@@ -528,7 +571,7 @@
         };
     }
 
-    // [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
+// [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
     function updateIndividualView() {
         const room = globalAllData[currentRID]; if (!room) return;
         document.getElementById('ind-room-id').innerText = currentRID;
@@ -538,11 +581,13 @@
         document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
         document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
 
-        // 학생장 실시간 연동 (지정/해제 즉시 반영)
+        // [수정] 모든 학생장 및 연락처 실시간 연동
         let leaderTxt = "지정된 학생장 없음";
         if(room.students) {
-            const leader = Object.values(room.students).find(s => s.isLeader === true);
-            if(leader) leaderTxt = `${leader.name} (${leader.phone || ''})`;
+            const leaders = Object.values(room.students).filter(s => s.isLeader === true);
+            if(leaders.length > 0) {
+                leaderTxt = leaders.map(l => `${l.name} (${l.phone || '연락처 미등록'})`).join(' / ');
+            }
         }
         document.getElementById('ind-leader').innerText = leaderTxt;
 
@@ -560,7 +605,6 @@
         
         actionTbody.innerHTML = items.length ? items.map(a => {
             const isSigned = a.confirmed === true;
-            // 서명된 경우 도장(이미지) 출력
             const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img">` : "서명";
             const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
             return `<tr><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
@@ -569,6 +613,9 @@
         
         document.getElementById('courseNotice').value = room.coordNotice || ""; 
     }
+
+
+
 
     // [5. 서명 연동 및 실시간 처리]
     async function toggleConfirm(rid, date, token, currentStatus) {
@@ -604,8 +651,49 @@
         try { await firebase.database().ref('system/transport_requests').push({ courseRID: currentRID, dir: transDir, date, time, prof, phone, timestamp: firebase.database.ServerValue.TIMESTAMP }); alert("✅ 예약 완료"); document.getElementById('reqProf').value = ""; document.getElementById('reqPhone').value = ""; document.getElementById('reqTime').value = ""; updateTransDirButtons(); } catch(e) { alert("오류: " + e.message); }
     }
     async function deleteTrans(id) { if(confirm("삭제?")) await firebase.database().ref(`system/transport_requests/${id}`).remove(); }
-    function setTransDir(d) { const loc = document.getElementById('reqLoc').value; const btnTo = document.getElementById('btnTransTo'); const btnFrom = document.getElementById('btnTransFrom'); if(d === 'to') { transDir = `${loc}→항기원`; btnTo.style.background = "var(--blue-main)"; btnTo.style.color = "#fff"; btnFrom.style.background = "#fff"; btnFrom.style.color = "#64748b"; } else { transDir = `항기원→${loc}`; btnFrom.style.background = "var(--blue-main)"; btnFrom.style.color = "#fff"; btnTo.style.background = "#fff"; btnTo.style.color = "#64748b"; } }
-    function updateTransDirButtons() { transDir = ""; const styleReset = (id) => { const el = document.getElementById(id); if(el) { el.style.background = "#fff"; el.style.color = "#64748b"; el.style.border = "1.5px solid #e2e8f0"; } }; styleReset('btnTransTo'); styleReset('btnTransFrom'); }
+function setTransDir(d) { 
+        const loc = document.getElementById('reqLoc').value; 
+        const btnTo = document.getElementById('btnTransTo'); 
+        const btnFrom = document.getElementById('btnTransFrom'); 
+        if(d === 'to') { 
+            transDir = `${loc}→항기원`; 
+            btnTo.style.background = "var(--blue-main)"; 
+            btnTo.style.color = "#fff"; 
+            btnFrom.style.background = "#fff"; 
+            btnFrom.style.color = "#64748b"; 
+        } else { 
+            transDir = `항기원→${loc}`; 
+            btnFrom.style.background = "var(--blue-main)"; 
+            btnFrom.style.color = "#fff"; 
+            btnTo.style.background = "#fff"; 
+            btnTo.style.color = "#64748b"; 
+        } 
+    }
+
+function updateTransDirButtons() { 
+        transDir = ""; 
+        const loc = document.getElementById('reqLoc').value; // 현재 선택된 장소(오송역 등)
+        const btnTo = document.getElementById('btnTransTo');
+        const btnFrom = document.getElementById('btnTransFrom');
+        
+        // 1. 장소→항기원 버튼 글자 및 스타일 초기화
+        if(btnTo) {
+            btnTo.style.background = "#fff"; 
+            btnTo.style.color = "#64748b"; 
+            btnTo.style.border = "1.5px solid #e2e8f0";
+            btnTo.innerHTML = `<i class="fa-solid fa-car"></i> ${loc}→항기원`;
+        }
+        
+        // 2. 항기원→장소 버튼 글자 및 스타일 초기화
+        if(btnFrom) {
+            btnFrom.style.background = "#fff"; 
+            btnFrom.style.color = "#64748b"; 
+            btnFrom.style.border = "1.5px solid #e2e8f0";
+            btnFrom.innerHTML = `<i class="fa-solid fa-car"></i> 항기원→${loc}`;
+        }
+    }
+
+
 
     // [7. 화면 내비게이션 및 유틸]
     function handleBackNav() { if(currentRID) { currentRID = ""; handleRoomSelection(); } else { location.href = 'potal.html'; } }
@@ -697,6 +785,80 @@ function renderTotalHistory() { const tbody = document.getElementById('historyTa
     firebase.database().ref('system/professors').on('value', snap => {
         const sel = document.getElementById('setup-prof-select'); if(sel) { sel.innerHTML = '<option value="">교수 선택</option>'; Object.values(snap.val() || {}).forEach(n => sel.add(new Option(n, n))); }
     });
+
+
+
+
+
+
+
+// 생활관 배정 현황 로직 추가
+    async function openDormManager() {
+        toggleMenu(false);
+        const tbody = document.getElementById('dormTableBody');
+        tbody.innerHTML = "<tr><td colspan='4' style='padding:20px;'>데이터를 불러오는 중...</td></tr>";
+        document.getElementById('dormManagerModal').style.display = 'flex';
+
+        try {
+            const [studentSnap, dormSnap] = await Promise.all([
+                firebase.database().ref(`courses/${currentRID}/students`).once('value'),
+                firebase.database().ref(`system/dormitory_assignments`).once('value')
+            ]);
+
+            const students = studentSnap.val() || {};
+            const dormData = dormSnap.val() || {};
+            tbody.innerHTML = "";
+
+            const studentList = Object.values(students)
+                .filter(s => s.name && s.name !== "undefined")
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            if (studentList.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='4' style='padding:20px;'>입교한 교육생이 없습니다.</td></tr>";
+                return;
+            }
+
+            studentList.forEach(s => {
+                const sPhone = s.phone ? s.phone.slice(-4) : "";
+                let assigned = dormData[`${s.name.trim()}_${sPhone}`] || dormData[s.name.trim()] || { building: "-", room: "미배정" };
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:800;">${s.name}</td>
+                        <td style="color:#64748b;">${sPhone}</td>
+                        <td style="color:var(--blue-deep);">${assigned.building}</td>
+                        <td style="font-weight:800;">${assigned.room}${assigned.room !== '미배정' ? '호' : ''}</td>
+                    </tr>`;
+            });
+        } catch (e) {
+            tbody.innerHTML = "<tr><td colspan='4' style='color:red;'>오류 발생: " + e.message + "</td></tr>";
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     init();
   </script>
