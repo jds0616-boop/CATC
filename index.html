@@ -225,6 +225,55 @@
     max-height: 85vh;    /* 화면 높이의 85%까지만 커지게 제한 */
     overflow-y: auto;   /* 내용이 넘치면 세로 스크롤바 생성 */
 }
+
+
+
+/* 메뉴 상단 내 정보 카드 스타일 */
+        .user-profile-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+            position: relative;
+        }
+        .profile-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .profile-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: #1e293b;
+        }
+        .btn-edit-profile {
+            font-size: 13px;
+            color: #3b82f6;
+            font-weight: 700;
+            cursor: pointer;
+            background: #eff6ff;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .profile-dorm {
+            font-size: 14px;
+            font-weight: 800;
+            color: #6366f1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        /* 생활관 아이콘: 맵핀 형태의 세련된 아이콘 적용 */
+        .profile-dorm i {
+            color: #3b82f6;
+            font-size: 16px;
+        }
+
+
+
         .menu-item { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; cursor: pointer; color: #333; }
 
 
@@ -353,19 +402,34 @@
             <button class="btn-enter" onclick="closeResultOverlay()" style="margin:20px auto 0 auto; width:100%;">확인 및 닫기</button>
         </div>
     </div>
-    <div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
-    <div class="menu-box">
-        <h3>Menu</h3>
-        <div class="menu-item" onclick="openNotice()"><i class="fa-solid fa-bullhorn" style="color: #facc15;"></i> 공지사항 </div>
-        <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
-        <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
-        <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
-        <div class="menu-item" style="opacity:0.5; color:#999;"><i class="fa-solid fa-box-open"></i> 미화/비품 신청(준비중)</div>
-        <div class="menu-item" onclick="openAttendanceQR()"><i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i> 출결 QR 확인</div>
-        <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:8px; background:#e2e8f0; font-weight:bold;">닫기</button>
-    </div>
-</div>
 
+
+
+<div id="menuModal" class="menu-overlay" onclick="if(event.target==this)this.style.display='none'">
+        <div class="menu-box">
+            <!-- [추가] 마이 프로필 카드 섹션 -->
+            <div class="user-profile-card">
+                <div class="profile-info-row">
+                    <div class="profile-name">
+                        <span id="displayMyName">-</span>님 <span style="font-size:14px; color:#94a3b8; font-weight:500;">(<span id="displayMyPhone">0000</span>)</span>
+                    </div>
+                    <div class="btn-edit-profile" onclick="editProfile()">정보 수정</div>
+                </div>
+                <div class="profile-dorm" id="displayMyDormArea">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <span id="displayMyDorm">생활관 정보 확인 중...</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom:15px; font-size:16px; color:#64748b;">메뉴 서비스</h3>
+            <div class="menu-item" onclick="openNotice()"><i class="fa-solid fa-bullhorn" style="color: #facc15;"></i> 공지사항 </div>
+            <div class="menu-item" onclick="viewMealMenu()"><i class="fa-solid fa-utensils"></i> 금주 식단보기</div>
+            <div class="menu-item" onclick="openShuttleApply()"><i class="fa-solid fa-bus"></i> 차량 신청</div>
+            <div class="menu-item" onclick="openAdminAction()"><i class="fa-solid fa-file-signature"></i> 외출·외박 / 석식제외</div>
+            <div class="menu-item" onclick="openAttendanceQR()"><i class="fa-solid fa-qrcode" style="color: #3b82f6;"></i> 출결 QR 확인</div>
+            <button onclick="document.getElementById('menuModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:12px; background:#f1f5f9; font-weight:900; color:#475569;">닫기</button>
+        </div>
+    </div>
 
 
 <!-- 차량 신청용 팝업 (1차/2차 차수 선택 기능 추가) -->
@@ -642,9 +706,52 @@ async function enterApp() {
 
 
 function openMainMenu() {
-    // 모든 잠금 클래스 제거 후 메뉴 열기
-    document.querySelectorAll('.locked').forEach(el => el.classList.remove('locked'));
+    // 1. 저장된 내 정보 가져오기
+    const myName = localStorage.getItem('kac_user_name') || "미등록";
+    const myPhone = localStorage.getItem('kac_user_phone') || "0000";
+
+    // 2. 화면에 표시
+    document.getElementById('displayMyName').innerText = myName;
+    document.getElementById('displayMyPhone').innerText = myPhone;
+
+    // 3. 생활관 정보 실시간 대조 (지원부 데이터 사용)
+    const dormRef = firebase.database().ref(`system/dormitory_assignments/${myName}_${myPhone}`);
+    
+    // [보완] 만약 이름_번호 조합으로 안나오면 이름으로만 한번 더 검색
+    dormRef.once('value').then(snap => {
+        let data = snap.val();
+        const dormTextEl = document.getElementById('displayMyDorm');
+        
+        if (data) {
+            dormTextEl.innerText = `${data.building} ${data.room}호`;
+            dormTextEl.style.color = "#3b82f6";
+        } else {
+            // 이름으로만 한 번 더 시도
+            firebase.database().ref(`system/dormitory_assignments/${myName}`).once('value').then(s2 => {
+                let d2 = s2.val();
+                if (d2) {
+                    dormTextEl.innerText = `${d2.building} ${d2.room}호`;
+                    dormTextEl.style.color = "#3b82f6";
+                } else {
+                    dormTextEl.innerText = "배정 정보 없음 (또는 매칭 전)";
+                    dormTextEl.style.color = "#94a3b8";
+                }
+            });
+        }
+    });
+
     document.getElementById('menuModal').style.display = 'flex';
+}
+
+// [신규] 정보 수정 버튼 클릭 시 호출되는 함수
+function editProfile() {
+    // 기존 입력창에 저장된 값을 미리 채워줌
+    document.getElementById('userName').value = localStorage.getItem('kac_user_name') || "";
+    document.getElementById('userPhone').value = localStorage.getItem('kac_user_phone') || "";
+    
+    // 메뉴 닫고 프로필 입력창 열기
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('profileOverlay').style.display = 'flex';
 }
 
 
