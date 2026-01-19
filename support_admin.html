@@ -24,6 +24,7 @@
             --border-gray: #e2e8f0;
             --danger: #ef4444;
             --success: #10b981;
+            --warning: #f59e0b;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -41,10 +42,11 @@
             width: 100%; max-width: 600px; height: 100dvh;
             background: var(--bg-cool);
             display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
             position: relative;
         }
 
+        /* 상단바 */
         .app-header {
             height: 60px;
             background: var(--navy-dark);
@@ -58,17 +60,7 @@
 
         .app-content { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 5px; }
-        .menu-item {
-            background: white; padding: 15px 10px; border-radius: 12px;
-            border: 1.5px solid var(--border-gray); text-align: center;
-            cursor: pointer; transition: 0.2s;
-        }
-        .menu-item i { font-size: 24px; color: var(--blue-main); margin-bottom: 10px; display: block; }
-        .menu-item span { font-size: 12px; font-weight: 800; color: var(--navy-dark); }
-        .menu-item.active { border-color: var(--blue-main); background: #f0f9ff; }
-        .menu-item.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
-
+        /* 섹션 카드 */
         .section-card {
             background: var(--card-white);
             border-radius: 16px;
@@ -81,14 +73,19 @@
             margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
         }
 
-        /* 교육 기간 안내 박스 */
-        .info-banner {
-            background: #fffbeb; border: 1px solid #fde68a;
-            padding: 12px 15px; border-radius: 10px; margin-bottom: 5px;
-            display: flex; align-items: center; gap: 10px;
+        /* 현재 배정 기간 안내 배너 */
+        .period-banner {
+            background: var(--navy-dark);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
         }
-        .info-banner i { color: #d97706; }
-        .info-banner span { font-size: 13px; font-weight: 800; color: #92400e; }
+        .period-banner div { font-size: 11px; opacity: 0.7; }
+        .period-banner b { font-size: 14px; color: var(--blue-main); }
 
         /* 업로드 박스 */
         .upload-zone {
@@ -97,18 +94,21 @@
             cursor: pointer; transition: 0.2s;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
         }
-        .upload-zone.dragover { border-color: var(--blue-main); background: #f0f7ff; transform: scale(1.02); }
+        .upload-zone.dragover { border-color: var(--blue-main); background: #f0f9ff; transform: scale(1.02); }
         .upload-zone i { font-size: 30px; color: #94a3b8; }
         .upload-text { font-size: 13px; font-weight: 700; color: #475569; }
 
-        .date-input-group { display: flex; align-items: center; gap: 8px; margin-top: 15px; }
+        /* 날짜 입력 UI */
+        .date-input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-group label { display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 5px; }
         .navy-input {
             width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border-gray);
             padding: 0 10px; font-size: 13px; font-weight: 600; outline: none; background: #fff;
-        }
-        .navy-select {
-            width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--border-gray);
-            padding: 0 8px; font-size: 13px; font-weight: 600; background: #fff;
         }
 
         #previewResult {
@@ -119,21 +119,24 @@
             border: 1px solid #334155;
         }
 
+        /* 하단 고정 버튼 */
         .navy-btn {
-            width: 100%; height: 45px; border-radius: 8px;
+            width: 100%; height: 48px; border-radius: 10px;
             background: var(--blue-main); color: white; border: none;
             font-weight: 800; font-size: 14px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin-top: 10px;
         }
         .navy-btn.success { background: var(--success); }
-        .navy-btn:active { transform: scale(0.98); opacity: 0.9; }
+        .navy-btn.warning { background: var(--warning); }
+        .navy-btn:active { opacity: 0.9; transform: scale(0.98); }
 
+        /* 테이블 */
         .navy-table { width: 100%; border-collapse: collapse; }
         .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid var(--border-gray); color: #64748b; font-size: 11px; }
         .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 13px; font-weight: 600; }
         .tag-room { background: #eff6ff; color: var(--blue-main); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
 
+        /* 하단바 */
         .app-footer {
             height: 65px; background: var(--navy-dark); color: #fff;
             display: flex; align-items: center; justify-content: space-between;
@@ -143,6 +146,7 @@
         #footer-date { font-size: 17px; font-weight: 800; font-family: 'Courier New', monospace; }
         .footer-logo img { height: 22px; filter: brightness(0) invert(1); opacity: 0.8; }
 
+        /* 수정 모달 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); z-index: 2000;
@@ -161,109 +165,108 @@
             <div style="width:40px"></div>
         </header>
 
+        <!-- 메인 컨텐츠 -->
         <main class="app-content">
-            <!-- 배정 기간 정보 배너 -->
-            <div class="info-banner">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span id="currentPeriodDisplay">현재 적용 기간: 로딩 중...</span>
+            
+            <!-- 1. 현재 배정 기간 표시 -->
+            <div class="period-banner">
+                <div><i class="fa-solid fa-clock-rotate-left"></i> 현재 서버 배정표 유효기간</div>
+                <b id="display-period">데이터 로딩 중...</b>
             </div>
 
-            <!-- 메뉴 탭 -->
-            <div class="menu-grid">
-                <div class="menu-item active" onclick="showTab('dorm')">
-                    <i class="fa-solid fa-hotel"></i>
-                    <span>생활관 배정</span>
+            <!-- 2. PDF 업로드 섹션 -->
+            <div class="section-card">
+                <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표(PDF) 신규 업로드</div>
+                
+                <div class="date-input-row">
+                    <div class="input-group">
+                        <label>유효 시작일</label>
+                        <input type="date" id="period-start" class="navy-input">
+                    </div>
+                    <div class="input-group">
+                        <label>유효 종료일</label>
+                        <input type="date" id="period-end" class="navy-input">
+                    </div>
                 </div>
-                <div class="menu-item disabled"><i class="fa-solid fa-broom"></i><span>미화 지원</span></div>
-                <div class="menu-item disabled"><i class="fa-solid fa-snowflake"></i><span>냉난방 지원</span></div>
+
+                <label class="upload-zone" id="dropZone" for="pdfFile">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <div class="upload-text">배정표 PDF 파일을 여기에 드래그하세요</div>
+                    <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
+                </label>
+                
+                <div id="previewResult"></div>
+                
+                <button id="saveBtn" class="navy-btn success" style="display:none; margin-top:15px;" onclick="saveToFirebase()">
+                    <i class="fa-solid fa-check-double"></i> 판독 데이터 서버 저장 및 확정
+                </button>
             </div>
 
-            <!-- 생활관 배정 섹션 -->
-            <div id="tab-dorm">
-                <!-- 1. PDF 업로드 및 기간 설정 -->
-                <div class="section-card">
-                    <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 생활관 배정표 PDF 업로드</div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="font-size: 12px; font-weight: 800; color: #64748b;">[필수] 배정표 유효 기간 설정</label>
-                        <div class="date-input-group">
-                            <input type="date" id="upload-start" class="navy-input">
-                            <span style="font-weight: 800;">~</span>
-                            <input type="date" id="upload-end" class="navy-input">
-                        </div>
-                    </div>
-
-                    <label class="upload-zone" id="dropZone" for="pdfFile">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <div class="upload-text">배정표 PDF 파일을 여기에 드래그하세요</div>
-                        <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
-                    </label>
-                    
-                    <div id="previewResult"></div>
-                    
-                    <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">
-                        <i class="fa-solid fa-check-double"></i> 판독 데이터 일괄 저장 및 확정
-                    </button>
+            <!-- 3. 개별 수동 등록 섹션 -->
+            <div class="section-card">
+                <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록 (예외 인원)</div>
+                <div class="date-input-row">
+                    <input type="text" id="manual-name" class="navy-input" placeholder="성함">
+                    <input type="number" id="manual-room" class="navy-input" placeholder="호실(숫자)">
                 </div>
+                <select id="manual-bld" class="navy-input" style="margin-bottom:10px;">
+                    <option value="청렴관">청렴관</option>
+                    <option value="상생관">상생관</option>
+                    <option value="국제동">국제동</option>
+                </select>
+                <button class="navy-btn warning" onclick="addManual()">
+                    <i class="fa-solid fa-plus"></i> 명단에 수동 추가
+                </button>
+            </div>
 
-                <!-- 2. 개별 수동 등록 -->
-                <div class="section-card" style="margin-top:15px;">
-                    <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록 (예외 인원)</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                        <input type="text" id="manualName" class="navy-input" placeholder="성함">
-                        <input type="number" id="manualRoom" class="navy-input" placeholder="호실(숫자)">
-                    </div>
-                    <select id="manualBuilding" class="navy-select" style="margin-bottom:8px;">
-                        <option value="청렴관">청렴관</option>
-                        <option value="상생관">상생관</option>
-                        <option value="국제동">국제동</option>
-                    </select>
-                    <button class="navy-btn" onclick="addManualEntry()">개별 추가하기</button>
-                </div>
-
-                <!-- 3. 실시간 배정 명단 -->
-                <div class="section-card" style="margin-top:15px; margin-bottom: 50px;">
-                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (이름 클릭 시 이동)</div>
-                    <div style="overflow-x: auto;">
-                        <table class="navy-table">
-                            <thead>
-                                <tr><th>성함</th><th>생활관</th><th>호실</th><th width="40"></th></tr>
-                            </thead>
-                            <tbody id="dormTableBody">
-                                <tr><td colspan="4" style="padding:30px;">데이터 로딩 중...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- 4. 배정 명단 리스트 -->
+            <div class="section-card" style="margin-bottom:50px;">
+                <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (클릭 시 방 이동)</div>
+                <div style="overflow-x: auto;">
+                    <table class="navy-table">
+                        <thead>
+                            <tr>
+                                <th>성함</th>
+                                <th>생활관</th>
+                                <th>호실</th>
+                                <th width="40"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dormTableBody">
+                            <tr><td colspan="4" style="padding:30px; color:#94a3b8;">데이터를 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
 
+        <!-- 하단바 -->
         <footer class="app-footer">
             <div id="footer-date">00/00 00:00:00</div>
             <div class="footer-logo"><img src="logo.png" alt="KAC Logo"></div>
         </footer>
     </div>
 
-    <!-- 방 수정 모달 -->
+    <!-- 방 이동 모달 -->
     <div id="editModal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="margin-top:0;"><i class="fa-solid fa-person-walking-arrow-right"></i> 생활관 이동/수정</h3>
-            <p id="editTargetName" style="font-weight:800; font-size:18px; color:var(--blue-main); margin-bottom:20px;"></p>
-            <div style="margin-bottom:15px;">
-                <label style="font-size:12px; font-weight:800; color:#64748b;">이동할 생활관</label>
-                <select id="editBuilding" class="navy-select" style="margin-top:5px;">
+            <p id="edit-name" style="font-weight:900; font-size:18px; color:var(--blue-main); margin-bottom:20px;"></p>
+            <div class="input-group" style="margin-bottom:15px;">
+                <label>이동할 생활관</label>
+                <select id="edit-bld" class="navy-input">
                     <option value="청렴관">청렴관</option>
                     <option value="상생관">상생관</option>
                     <option value="국제동">국제동</option>
                 </select>
             </div>
-            <div style="margin-bottom:25px;">
-                <label style="font-size:12px; font-weight:800; color:#64748b;">이동할 호실</label>
-                <input type="number" id="editRoom" class="navy-input" style="margin-top:5px;" placeholder="숫자만 입력">
+            <div class="input-group" style="margin-bottom:25px;">
+                <label>이동할 호실</label>
+                <input type="number" id="edit-room" class="navy-input" placeholder="숫자만 입력">
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeEditModal()">취소</button>
-                <button class="navy-btn success" style="flex:2;" onclick="saveEdit()">변경 저장</button>
+                <button class="navy-btn" style="background:#64748b; flex:1;" onclick="closeModal()">취소</button>
+                <button class="navy-btn success" style="flex:2;" onclick="updateDorm()">변경 사항 저장</button>
             </div>
         </div>
     </div>
@@ -271,122 +274,115 @@
     <script>
         const db = firebase.database();
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
         let extractedData = {};
 
         window.onload = function() {
+            loadPeriod();
             loadDormList();
-            loadMetadata(); // 기간 정보 불러오기
             initDragAndDrop();
             setInterval(runClock, 1000);
             runClock();
         };
 
-        // 1. 배정표 유효 기간 불러오기
-        function loadMetadata() {
+        // 1. 현재 서버에 저장된 기간 정보 불러오기
+        function loadPeriod() {
             db.ref('system/dormitory_metadata').on('value', snap => {
-                const data = snap.val() || {};
-                const period = data.period || "등록된 기간 정보가 없습니다.";
-                document.getElementById('currentPeriodDisplay').innerText = `현재 적용 기간: ${period}`;
+                const data = snap.val();
+                document.getElementById('display-period').innerText = data ? data.period : "미설정";
             });
         }
 
-        // 2. 수동 등록 기능
-        async function addManualEntry() {
-            const name = document.getElementById('manualName').value.trim();
-            const room = document.getElementById('manualRoom').value.trim();
-            const bld = document.getElementById('manualBuilding').value;
-            if(!name || !room) return alert("이름과 호실을 입력하세요.");
+        // 2. 수동 등록
+        async function addManual() {
+            const name = document.getElementById('manual-name').value.trim();
+            const room = document.getElementById('manual-room').value.trim();
+            const bld = document.getElementById('manual-bld').value;
+            if(!name || !room) return alert("성함과 호실을 입력하세요.");
             await db.ref(`system/dormitory_assignments/${name}`).set({ building: bld, room: room });
-            alert("✅ 추가 완료");
-            document.getElementById('manualName').value = ""; document.getElementById('manualRoom').value = "";
+            alert("✅ 추가되었습니다.");
+            document.getElementById('manual-name').value = ""; document.getElementById('manual-room').value = "";
         }
 
-        // 3. 수정 기능
-        function openEditModal(name, bld, room) {
-            document.getElementById('editTargetName').innerText = name;
-            document.getElementById('editBuilding').value = bld;
-            document.getElementById('editRoom').value = room;
+        // 3. 수정(이동) 모달 제어
+        function openEdit(name, bld, room) {
+            document.getElementById('edit-name').innerText = name;
+            document.getElementById('edit-bld').value = bld;
+            document.getElementById('edit-room').value = room;
             document.getElementById('editModal').style.display = 'flex';
         }
-        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
-        async function saveEdit() {
-            const name = document.getElementById('editTargetName').innerText;
-            const bld = document.getElementById('editBuilding').value;
-            const room = document.getElementById('editRoom').value.trim();
+        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+        async function updateDorm() {
+            const name = document.getElementById('edit-name').innerText;
+            const bld = document.getElementById('edit-bld').value;
+            const room = document.getElementById('edit-room').value.trim();
+            if(!room) return alert("호실을 입력하세요.");
             await db.ref(`system/dormitory_assignments/${name}`).update({ building: bld, room: room });
-            alert("✅ 이동 완료"); closeEditModal();
+            alert("✅ 변경되었습니다.");
+            closeModal();
         }
 
-        // 4. PDF 판독 로직 (강화된 필터 적용)
+        // 4. PDF 판독 로직 (강화된 필터)
         function parseDormText(text) {
             const preview = document.getElementById('previewResult');
             extractedData = {}; 
-            const blacklist = ["강의실", "개월", "계단", "과정", "관제사", "교육", "기도실", "배정표", "복도", "비상구", "생활관", "세탁", "신입사원", "청렴관", "상생관", "국제동", "휴게실", "하반기", "대강당", "세미나", "국제", "식당", "주방", "번호", "배정", "시설", "안내"];
+            const blacklist = ["강의실", "개월", "계단", "과정", "관제사", "교육", "기도실", "배정표", "복도", "비상구", "생활관", "세탁", "신입사원", "청렴관", "상생관", "국제동", "휴게실", "하반기", "대강당", "세미나", "국제", "식당", "주방", "번호", "배정", "시설", "안내", "하늘관", "항공교통", "창고", "세탁실", "PC방", "기도실", "비상구"];
+
             const buildings = ["청렴관", "상생관", "국제동"];
-            let currentBuilding = "기타";
+            let currentBuilding = "미지정";
             const lines = text.split('\n');
             
             lines.forEach(line => {
-                buildings.forEach(b => { if(line.includes(b)) currentBuilding = b; });
+                if (line.includes("배정표")) {
+                    buildings.forEach(b => { if (line.includes(b)) currentBuilding = b; });
+                }
+
                 const tokens = line.split(/\s+/);
                 let lastFoundRoom = null;
+
                 tokens.forEach(token => {
-                    const roomMatch = token.match(/\d{3}/);
+                    const roomMatch = token.match(/\b[1-3]\d{2}\b/); 
                     if(roomMatch) lastFoundRoom = roomMatch[0];
+
                     const nameMatches = token.match(/[가-힣]{2,4}/g);
-                    if (nameMatches && lastFoundRoom) {
+                    if (nameMatches && lastFoundRoom && currentBuilding !== "미지정") {
                         nameMatches.forEach(name => {
-                            if (!blacklist.includes(name)) extractedData[name] = { room: lastFoundRoom, building: currentBuilding };
+                            if (!blacklist.includes(name)) {
+                                extractedData[name] = { room: lastFoundRoom, building: currentBuilding };
+                            }
                         });
                     }
                 });
             });
 
-            if(Object.keys(extractedData).length > 0) {
-                preview.style.display = "block"; document.getElementById('saveBtn').style.display = "flex";
-                preview.innerText = `✅ 실제 교육생 ${Object.keys(extractedData).length}명 판독 완료\n------------------------------------------\n` + Object.keys(extractedData).map(n => `${n}: ${extractedData[n].building} ${extractedData[n].room}호`).join("\n");
+            const keys = Object.keys(extractedData);
+            if(keys.length > 0) {
+                preview.style.display = "block";
+                document.getElementById('saveBtn').style.display = "flex";
+                preview.innerText = `✅ 실제 교육생 ${keys.length}명 판독 완료\n------------------------------------------\n` + 
+                    keys.map(name => `${name}: ${extractedData[name].building} ${extractedData[name].room}호`).join("\n");
             } else { alert("데이터를 찾을 수 없습니다."); }
         }
 
-        // 5. 서버 일괄 저장 (기간 정보 포함)
+        // 5. 서버 저장 (기간 정보 포함)
         async function saveToFirebase() {
-            const start = document.getElementById('upload-start').value;
-            const end = document.getElementById('upload-end').value;
-            if(!start || !end) return alert("배정표의 유효 기간(시작~종료)을 설정해주세요.");
+            const start = document.getElementById('period-start').value;
+            const end = document.getElementById('period-end').value;
+            if(!start || !end) return alert("유효 기간(시작~종료)을 입력해주세요.");
 
-            if(confirm(`${Object.keys(extractedData).length}명의 데이터를 서버에 저장하시겠습니까?\n기존 데이터는 삭제됩니다.`)) {
-                // 1. 기존 데이터 삭제 후 새 데이터 업데이트
+            if(confirm(`판독된 ${Object.keys(extractedData).length}명의 데이터를 저장할까요?\n기존 배정 정보는 삭제됩니다.`)) {
+                const updates = {};
+                // 기존 데이터 덮어쓰기 위해 set 사용
                 await db.ref('system/dormitory_assignments').set(extractedData);
-                // 2. 기간 정보 업데이트
                 await db.ref('system/dormitory_metadata').set({ period: `${start} ~ ${end}` });
                 
-                alert("✅ 배정표 업데이트 완료!");
+                alert("✅ 배정표가 성공적으로 업데이트되었습니다.");
                 document.getElementById('previewResult').style.display = 'none';
                 document.getElementById('saveBtn').style.display = 'none';
             }
         }
 
-        function loadDormList() {
-            db.ref('system/dormitory_assignments').on('value', snap => {
-                const data = snap.val() || {};
-                const tbody = document.getElementById('dormTableBody');
-                tbody.innerHTML = "";
-                const keys = Object.keys(data).sort();
-                if(!keys.length) return tbody.innerHTML = "<tr><td colspan='4' style='padding:30px;'>내역 없음</td></tr>";
-                keys.forEach(name => {
-                    const item = data[name];
-                    tbody.innerHTML += `
-                        <tr onclick="openEditModal('${name}', '${item.building}', '${item.room}')" style="cursor:pointer;">
-                            <td><b>${name}</b></td>
-                            <td style="color:#64748b;">${item.building}</td>
-                            <td><span class="tag-room">${item.room}호</span></td>
-                            <td><i class="fa-solid fa-trash-can" style="color:var(--danger);" onclick="event.stopPropagation(); deleteDorm('${name}')"></i></td>
-                        </tr>`;
-                });
-            });
-        }
-
-        // 기타 유틸리티 (드래그, 시계 등)
+        // 기타 유틸리티 (드래그, 리스트 로드 등)
         function initDragAndDrop() {
             const dz = document.getElementById('dropZone');
             window.addEventListener("dragover", e => e.preventDefault());
@@ -395,8 +391,9 @@
             dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
             dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); if(e.dataTransfer.files.length) processPDFFile(e.dataTransfer.files[0]); });
         }
-        function handleFileSelect(input) { if(input.files.length) processPDFFile(input.files[0]); }
+
         async function processPDFFile(file) {
+            if(file.type !== "application/pdf") return alert("PDF만 가능합니다.");
             const reader = new FileReader();
             reader.onload = async function() {
                 const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
@@ -410,12 +407,38 @@
             };
             reader.readAsArrayBuffer(file);
         }
-        function deleteDorm(name) { if(confirm(`${name}님을 삭제할까요?`)) db.ref(`system/dormitory_assignments/${name}`).remove(); }
-        function runClock() {
-            const now = new Date(); const week = ['일','월','화','수','목','금','토'];
-            document.getElementById('footer-date').innerText = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+
+        function handleFileSelect(input) { if(input.files.length) processPDFFile(input.files[0]); }
+
+        function loadDormList() {
+            db.ref('system/dormitory_assignments').on('value', snap => {
+                const data = snap.val() || {};
+                const tbody = document.getElementById('dormTableBody');
+                tbody.innerHTML = "";
+                const keys = Object.keys(data).sort();
+                if(keys.length === 0) { tbody.innerHTML = "<tr><td colspan='4' style='padding:30px;'>배정 내역 없음</td></tr>"; return; }
+                keys.forEach(name => {
+                    const item = data[name];
+                    tbody.innerHTML += `
+                        <tr onclick="openEdit('${name}', '${item.building}', '${item.room}')" style="cursor:pointer;">
+                            <td><b>${name}</b></td>
+                            <td style="color:#64748b;">${item.building}</td>
+                            <td><span class="tag-room">${item.room}호</span></td>
+                            <td><i class="fa-solid fa-trash-can" style="color:var(--danger);" onclick="event.stopPropagation(); deleteDorm('${name}')"></i></td>
+                        </tr>`;
+                });
+            });
         }
-        function showTab(t) { /* 추후 확장용 */ }
+
+        function deleteDorm(name) { if(confirm(`${name}님 삭제?`)) db.ref(`system/dormitory_assignments/${name}`).remove(); }
+
+        function runClock() {
+            const now = new Date();
+            const week = ['일','월','화','수','목','금','토'];
+            const dateStr = `${now.getMonth()+1}/${now.getDate()}(${week[now.getDay()]})`;
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+            document.getElementById('footer-date').innerText = `${dateStr} ${timeStr}`;
+        }
     </script>
 </body>
 </html>
