@@ -294,7 +294,7 @@
               <div style="display:flex; gap:5px;">
                   <input type="file" id="coordSignFile" accept="image/*" style="display:none;" onchange="coordMgr.handleFile(this)">
                   <button class="navy-btn" style="background:#64748b; flex:1;" onclick="document.getElementById('coordSignFile').click()"><i class="fa-solid fa-stamp"></i> 서명 선택</button>
-                  <button class="navy-btn" style="flex:1;" onclick="coordMgr.add()">등록하기</button>
+                  <button id="coordRegBtn" class="navy-btn" style="flex:1;" onclick="coordMgr.add()">등록하기</button>
               </div>
               <div id="signPreviewArea" style="margin-top:10px; text-align:center; display:none;">
                   <span style="font-size:11px; color:#64748b;">선택된 서명 미리보기:</span><br>
@@ -435,115 +435,155 @@
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
 
 
-// [최종 보강] 과정 운영 담당자(행정) 및 서명 관리 객체
-    const coordMgr = {
-        list: [],
-        tempSign: "",
-        
-        // 1. 초기화: 담당자가 없으면 기본 명단을 생성하고 리스너 연결
-        init: async function() {
-            const ref = firebase.database().ref('system/coordinators');
-            const snap = await ref.once('value');
-            
-            // 데이터가 하나도 없을 때만 초기 명단 생성
-            if (!snap.exists()) {
-                const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
-                for (let name of initial) { 
-                    await ref.push({ name: name, sign: "" }); 
-                }
-            }
-
-            // 실시간 리스너: 데이터 변경 시 마다 리스트 갱신
-            ref.on('value', s => {
-                const data = s.val() || {};
-                this.list = Object.keys(data).map(k => ({ key: k, ...data[k] }));
-                this.renderSelects();    // 설정창 내 선택메뉴 갱신
-                this.renderManageList(); // 관리창 내 리스트 갱신
-            });
-        },
-
-        // 2. 환경 설정창의 드롭다운(Select) 메뉴 그리기
-        renderSelects: function() {
-            const sel = document.getElementById('setup-coord-select'); 
-            if(!sel) return;
-            const curValue = sel.value; // 현재 선택하고 있던 값 유지
-            sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
-            this.list.forEach(c => {
-                const opt = new Option(c.name, c.name);
-                if(c.name === curValue) opt.selected = true;
-                sel.add(opt);
-            });
-        },
-
-        // 3. 관리창(톱니바퀴 클릭 시) 내부의 담당자/서명 리스트 그리기
-        renderManageList: function() {
-            const div = document.getElementById('coordListContainer'); 
-            if(!div) return;
-            
-            if(this.list.length === 0) {
-                div.innerHTML = "<div style='text-align:center; padding:20px; color:#94a3b8;'>등록된 담당자가 없습니다.</div>";
-                return;
-            }
-
-            div.innerHTML = this.list.map(c => `
-                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; align-items:center; background:#fff; margin-bottom:5px; border-radius:8px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="font-weight:800; color:var(--navy-dark);">${c.name}</span>
-                        ${c.sign ? `<img src="${c.sign}" style="height:35px; mix-blend-mode:multiply; border:1px solid #eee; border-radius:4px;">` : `<span style="font-size:10px; color:#94a3b8;">(서명 미등록)</span>`}
-                    </div>
-                    <i class="fa-solid fa-circle-xmark" style="color:var(--danger); cursor:pointer; font-size:20px;" onclick="coordMgr.delete('${c.key}')"></i>
-                </div>`).join('');
-        },
-
-        // 4. 서명 이미지 파일 선택 시 처리
-        handleFile: function(input) {
-            const file = input.files[0]; 
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                this.tempSign = e.target.result; // 이미지 데이터(Base64) 저장
-                document.getElementById('tempSignPreview').src = e.target.result;
-                document.getElementById('signPreviewArea').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        },
-
-        // 5. [등록하기] 버튼 클릭 시 DB에 저장
-        add: async function() {
-            const input = document.getElementById('newCoordInput'); 
-            const name = input.value.trim();
-            if(!name) return alert("성함을 입력해 주세요.");
-            
-            try {
-                await firebase.database().ref('system/coordinators').push({ 
-                    name: name, 
-                    sign: this.tempSign 
-                });
-                input.value = ""; 
-                this.tempSign = "";
-                document.getElementById('signPreviewArea').style.display = 'none';
-                alert("성공적으로 등록되었습니다.");
-            } catch(e) {
-                alert("저장 오류: " + e.message);
-            }
-        },
-
-        // 6. [삭제] 버튼 클릭 시 처리
-        delete: async function(k) {
-            if(confirm("이 담당자를 명단에서 삭제할까요?\n(이미 등록된 외출서명은 유지됩니다)")) {
-                await firebase.database().ref(`system/coordinators/${k}`).remove();
-            }
-        },
-
-        // 7. 톱니바퀴 아이콘 클릭 시 관리 모달 열기
-        openManage: function() {
-            const modal = document.getElementById('coordManageModal');
-            if(modal) {
-                modal.style.display = 'flex';
-                this.renderManageList(); // 창을 열 때 리스트를 다시 한 번 확인
-            }
+// [최종 보강] 과정 운영 담당자(행정) 및 서명 관리 객체 (수정 기능 추가 버전)
+const coordMgr = {
+    list: [],
+    tempSign: "",
+    editingKey: null, // 현재 수정 중인 담당자의 고유 키 저장
+    
+    // 1. 초기화
+    init: async function() {
+        const ref = firebase.database().ref('system/coordinators');
+        const snap = await ref.once('value');
+        if (!snap.exists()) {
+            const initial = ["백유민 과장", "주영미 과장", "장영근 과장", "채유란 주임", "김지은 주임", "박찬미 주임"];
+            for (let name of initial) { await ref.push({ name: name, sign: "" }); }
         }
-    };
+        ref.on('value', s => {
+            const data = s.val() || {};
+            this.list = Object.keys(data).map(k => ({ key: k, ...data[k] }));
+            this.renderSelects();    
+            this.renderManageList(); 
+        });
+    },
+
+    // 2. 설정창 드롭다운 갱신
+    renderSelects: function() {
+        const sel = document.getElementById('setup-coord-select'); 
+        if(!sel) return;
+        const curValue = sel.value;
+        sel.innerHTML = '<option value="">--- 담당자 선택 ---</option>';
+        this.list.forEach(c => {
+            const opt = new Option(c.name, c.name);
+            if(c.name === curValue) opt.selected = true;
+            sel.add(opt);
+        });
+    },
+
+    // 3. 관리창 리스트 그리기 (클릭 시 수정 모드 연결)
+    renderManageList: function() {
+        const div = document.getElementById('coordListContainer'); 
+        if(!div) return;
+        if(this.list.length === 0) {
+            div.innerHTML = "<div style='text-align:center; padding:20px; color:#94a3b8;'>등록된 담당자가 없습니다.</div>";
+            return;
+        }
+
+        div.innerHTML = this.list.map(c => `
+            <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee; align-items:center; background:#fff; margin-bottom:5px; border-radius:8px; cursor:pointer; border:${this.editingKey === c.key ? '2px solid var(--blue-main)' : '1px solid #eee'}" 
+                 onclick="coordMgr.startEdit('${c.key}')">
+                <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                    <span style="font-weight:800; color:var(--navy-dark);">${c.name}</span>
+                    ${c.sign ? `<img src="${c.sign}" style="height:35px; mix-blend-mode:multiply; border:1px solid #eee; border-radius:4px;">` : `<span style="font-size:10px; color:#94a3b8;">(서명 미등록)</span>`}
+                </div>
+                <i class="fa-solid fa-circle-xmark" style="color:var(--danger); cursor:pointer; font-size:20px; padding:5px;" 
+                   onclick="event.stopPropagation(); coordMgr.delete('${c.key}')"></i>
+            </div>`).join('');
+    },
+
+    // 4. 수정 모드 시작 (이름 클릭 시 호출)
+    startEdit: function(key) {
+        const item = this.list.find(c => c.key === key);
+        if(!item) return;
+
+        this.editingKey = key;
+        document.getElementById('newCoordInput').value = item.name;
+        
+        // 버튼 텍스트 변경
+        document.getElementById('coordRegBtn').innerHTML = '<i class="fa-solid fa-check"></i> 수정완료';
+        document.getElementById('coordRegBtn').style.background = "var(--green-save)";
+
+        // 기존 서명이 있다면 미리보기 표시
+        if(item.sign) {
+            this.tempSign = item.sign;
+            document.getElementById('tempSignPreview').src = item.sign;
+            document.getElementById('signPreviewArea').style.display = 'block';
+        } else {
+            this.tempSign = "";
+            document.getElementById('signPreviewArea').style.display = 'none';
+        }
+        
+        this.renderManageList(); // 선택된 항목 강조를 위해 재랜더링
+        document.getElementById('newCoordInput').focus();
+    },
+
+    // 5. 입력값 초기화
+    resetFields: function() {
+        this.editingKey = null;
+        this.tempSign = "";
+        document.getElementById('newCoordInput').value = "";
+        document.getElementById('coordRegBtn').innerHTML = '등록하기';
+        document.getElementById('coordRegBtn').style.background = "var(--blue-main)";
+        document.getElementById('signPreviewArea').style.display = 'none';
+        document.getElementById('coordSignFile').value = "";
+        this.renderManageList();
+    },
+
+    // 6. 파일 선택 처리
+    handleFile: function(input) {
+        const file = input.files[0]; 
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            this.tempSign = e.target.result;
+            document.getElementById('tempSignPreview').src = e.target.result;
+            document.getElementById('signPreviewArea').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    },
+
+    // 7. 등록 또는 수정 실행
+    add: async function() {
+        const name = document.getElementById('newCoordInput').value.trim();
+        if(!name) return alert("성함을 입력해 주세요.");
+        
+        try {
+            const data = { name: name, sign: this.tempSign };
+            
+            if(this.editingKey) {
+                // 수정 모드
+                await firebase.database().ref(`system/coordinators/${this.editingKey}`).update(data);
+                alert("수정되었습니다.");
+            } else {
+                // 신규 등록 모드
+                await firebase.database().ref('system/coordinators').push(data);
+                alert("등록되었습니다.");
+            }
+            this.resetFields();
+        } catch(e) {
+            alert("저장 오류: " + e.message);
+        }
+    },
+
+    // 8. 삭제 처리
+    delete: async function(k) {
+        if(confirm("이 담당자를 명단에서 삭제할까요?")) {
+            await firebase.database().ref(`system/coordinators/${k}`).remove();
+            if(this.editingKey === k) this.resetFields();
+        }
+    },
+
+    openManage: function() {
+        this.resetFields(); // 열 때마다 초기화
+        document.getElementById('coordManageModal').style.display = 'flex';
+    }
+};
+
+
+
+
+
+
 
     // [2. 초기화 및 실시간 동기화]
     function init() {
