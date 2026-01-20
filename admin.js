@@ -2539,8 +2539,10 @@ loadDormitoryData: function() {
 // --- 4. Quiz Logic ---
 const quizMgr = {
     loadFile: function(e) {
-        const f = e.target.files[0]; 
+        const fileInput = e.target; // 파일 입력창 요소 저장
+        const f = fileInput.files[0]; 
         if (!f) return;
+
         const r = new FileReader();
         r.onload = (evt) => {
             const b = evt.target.result.trim().split(/\n\s*\n/);
@@ -2562,20 +2564,33 @@ const quizMgr = {
                     });
                 }
             });
+
             state.isExternalFileLoaded = true;
-            const quizTitle = prompt("이 퀴즈 세트의 이름을 입력해주세요:", `${new Date().toLocaleDateString()} 퀴즈`);
+            
+            // 제목 입력 시 현재 시간을 기본으로 넣어 중복 제목 방지
+            const now = new Date();
+            const defaultTitle = `${f.name.split('.')[0]}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+            const quizTitle = prompt("이 퀴즈 세트의 이름을 입력해주세요:", defaultTitle);
+            
             if (!quizTitle) { 
                 alert("업로드가 취소되었습니다."); 
+                fileInput.value = ""; // 취소 시에도 초기화
                 return; 
             }
+
             firebase.database().ref(`courses/${state.room}/quizBank`).push().set({
                 title: quizTitle, 
                 data: state.quizList, 
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => { 
-                ui.showAlert("저장되었습니다."); 
+                ui.showAlert("✅ 퀴즈가 성공적으로 업로드되었습니다."); 
                 quizMgr.loadSavedQuizList(); 
+                
+                // [핵심] 업로드 완료 후 파일 입력창을 완전히 비웁니다.
+                // 이렇게 해야 같은 파일명을 또 선택해도 'onchange' 이벤트가 정상 작동합니다.
+                fileInput.value = ""; 
             });
+
             this.renderMiniList();
             const ctrl = document.getElementById('quizControls');
             if(ctrl) ctrl.style.display = 'flex';
