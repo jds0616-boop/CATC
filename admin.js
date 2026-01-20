@@ -1147,16 +1147,23 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
-        // 기사님 수송 공지 로드
-        firebase.database().ref('system/shuttle_notice').on('value', s => {
-            const msg = s.val();
+// [수정] 과정 전용 출발시간 우선 로드
+        firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+            const dep = snap.val();
             const bar = document.getElementById('dashShuttleNotice');
             const txt = document.getElementById('dashShuttleNoticeTxt');
-            if(msg && bar && txt) {
+            if(!bar || !txt) return;
+
+            if (dep && dep.time) {
                 bar.style.display = "block";
-                txt.innerText = msg;
-            } else if(bar) {
-                bar.style.display = "none";
+                txt.innerText = `출발 예정: ${dep.date} ${dep.time}`;
+            } else {
+                // 과정 전용 시간이 없으면 기사님 전체 공지사항을 가져옴
+                firebase.database().ref('system/shuttle_notice').once('value', s => {
+                    const msg = s.val();
+                    if(msg) { bar.style.display = "block"; txt.innerText = msg; }
+                    else { bar.style.display = "none"; }
+                });
             }
         });
 
@@ -1771,12 +1778,24 @@ setMode: function(mode) {
 loadShuttleData: function() {
     if(!state.room) return;
 
-    // 1. 기사님 공지(출발시간) 연동
-    firebase.database().ref('system/shuttle_notice').on('value', snap => {
-        const time = snap.val() || "시간 정보 없음";
-        const el = document.getElementById('shuttleDepartureTime');
-        if(el) el.innerText = time;
-    });
+// 과정별 출발시간 우선 연동 코드
+firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+    const dep = snap.val();
+    const bar = document.getElementById('dashShuttleNotice');
+    const txt = document.getElementById('dashShuttleNoticeTxt');
+    if(!bar || !txt) return;
+
+    if (dep && dep.time) {
+        bar.style.display = "block";
+        txt.innerText = `출발 예정: ${dep.date} ${dep.time}`;
+    } else {
+        firebase.database().ref('system/shuttle_notice').once('value', s => {
+            const msg = s.val();
+            if(msg) { bar.style.display = "block"; txt.innerText = msg; }
+            else { bar.style.display = "none"; }
+        });
+    }
+});
 
     // 2. 신청 명단 실시간 연동
     firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
@@ -2427,12 +2446,22 @@ loadDormitoryData: function() {
     loadShuttleData: function() {
         if(!state.room) return;
 
-        // 1. 기사님 전달 시간 실시간 연동 (검정 박스용)
-        firebase.database().ref('system/shuttle_notice').on('value', snap => {
-            const time = snap.val() || "시간 정보 없음";
-            const el = document.getElementById('shuttleDepartureTime');
-            if(el) el.innerText = time;
+// 해당 과정 전용 출발시간 연동 코드
+firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+    const dep = snap.val();
+    const el = document.getElementById('shuttleDepartureTime');
+    if(!el) return;
+
+    if (dep && dep.time) {
+        el.innerText = `${dep.date} ${dep.time}`;
+        el.style.color = "#3b82f6";
+    } else {
+        firebase.database().ref('system/shuttle_notice').once('value', s => {
+            el.innerText = s.val() || "시간 정보 없음";
+            el.style.color = "white";
         });
+    }
+});
 
         // 2. 신청 명단 실시간 연동 (개편된 경로: shuttle/requests)
         firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
