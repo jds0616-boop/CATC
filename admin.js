@@ -2417,28 +2417,31 @@ loadDormitoryData: function() {
 
 
 
-// [완결본] 차량 신청 명단 실시간 로드 및 카운트 (문구 추가 버전)
+
+
+
+
+
+// [완결본] 차량 신청 명단 실시간 로드 (상하단 색상 완전 동기화 버전)
     loadShuttleData: function() {
         if(!state.room) return;
 
-        // 1. 좌측 파란색 박스: 기사님 전달 출발 시간 실시간 연동
+        // 1. 좌측 파란색 박스: 날짜, 시간, 문구 레이아웃
         firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
             const dep = snap.val();
             const el = document.getElementById('shuttleDepartureTime');
             if(!el) return;
 
             if (dep && dep.time) {
-                // 날짜, 시간, 그리고 "항기원 출발" 문구 추가
                 el.innerHTML = `
-                    <div style="font-size:22px; opacity:0.8; margin-bottom:5px;">${dep.date}</div>
-                    <div style="font-size:42px; font-weight:900; line-height:1;">${dep.time}</div>
-                    <div style="font-size:18px; margin-top:15px; font-weight:800; background:rgba(255,255,255,0.15); padding:5px 15px; border-radius:50px; display:inline-block;">
+                    <div style="font-size:20px; opacity:0.8; margin-bottom:2px;">${dep.date}</div>
+                    <div style="font-size:42px; font-weight:900; line-height:1.1;">${dep.time}</div>
+                    <div style="font-size:16px; margin-top:10px; font-weight:800; background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:50px; display:inline-block;">
                         항기원 출발
                     </div>
                 `;
                 el.style.color = "white";
             } else {
-                // 설정된 시간이 없을 때
                 firebase.database().ref('system/shuttle_notice').once('value', s => {
                     const notice = s.val() || "시간 정보 없음";
                     el.innerHTML = `<div style="font-size:18px; opacity:0.7;">${notice}</div>`;
@@ -2447,7 +2450,7 @@ loadDormitoryData: function() {
             }
         });
 
-        // 2. 우측 상단 카운트 및 하단 명단 실시간 연동
+        // 2. 신청 명단 실시간 연동 및 상단 요약 숫자 업데이트
         firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
             const requests = snap.val() || {};
             const tbody = document.getElementById('shuttleListTableBody');
@@ -2464,10 +2467,18 @@ loadDormitoryData: function() {
                 items.forEach((item, idx) => {
                     counts[item.type]++;
                     
-                    let color = "#64748b"; 
-                    if(item.type === 'osong') color = "#ef4444"; 
-                    else if(item.type === 'terminal') color = "#3b82f6"; 
-                    else if(item.type === 'airport') color = "#10b981"; 
+                    // [색상 통일화 핵심 로직] 
+                    // 칩 색상과 동일하게 강제 매칭 (텍스트에 '오송'이 포함되면 무조건 빨간색 등)
+                    let color = "#64748b"; // 기본 회색 (자차)
+                    const text = item.typeText || "";
+                    
+                    if(item.type === 'osong' || text.includes('오송')) {
+                        color = "#ef4444"; // 상단과 동일한 Red
+                    } else if(item.type === 'terminal' || text.includes('터미널')) {
+                        color = "#3b82f6"; // 상단과 동일한 Blue
+                    } else if(item.type === 'airport' || text.includes('공항')) {
+                        color = "#10b981"; // 상단과 동일한 Green
+                    }
 
                     const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
@@ -2476,12 +2487,13 @@ loadDormitoryData: function() {
                             <td>${idx + 1}</td>
                             <td style="font-weight:800; color:#1e293b;">${item.name}</td>
                             <td style="color:#64748b;">${item.phone}</td>
-                            <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
+                            <td style="color:${color} !important; font-weight:900; font-size:16px;">${text}</td>
                             <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
                         </tr>`;
                 });
             }
 
+            // 상단 카운트 숫자에 데이터 반영
             if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
             if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
             if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
