@@ -308,16 +308,27 @@
 </head>
 <body>
 
-<!-- [추가] 교육생 프로필 등록 팝업 -->
-<div id="profileOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:10000; flex-direction:column; align-items:center; justify-content:center; color:white; padding:20px; text-align:center;">
-    <div style="background:white; color:#1e293b; padding:30px 20px; border-radius:24px; width:100%; max-width:350px;">
-        <h2 style="margin:0 0 10px 0; font-weight:900;">본인 확인</h2>
-        <p style="font-size:14px; color:#64748b; margin-bottom:25px;">원활한 교육 행정 서비스를 위해<br>정보를 입력해주세요.</p>
+<!-- [수정] 개인정보 동의 절차가 추가된 프로필 등록 팝업 -->
+<div id="profileOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:10000; flex-direction:column; align-items:center; justify-content:center; color:white; padding:20px; text-align:center;">
+    <div style="background:white; color:#1e293b; padding:30px 20px; border-radius:24px; width:100%; max-width:350px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+        <h2 style="margin:0 0 10px 0; font-weight:900; color:#0f172a;">본인 확인</h2>
+        <p style="font-size:13px; color:#64748b; margin-bottom:20px; line-height:1.5;">원활한 교육 행정 서비스(출결, 배차, 생활관)를 위해 정보를 입력해주세요.</p>
         
-        <input type="text" id="userName" placeholder="성함 입력" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:12px; text-align:center;">
-        <input type="number" id="userPhone" placeholder="전화번호 뒷 4자리" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:20px; text-align:center;">
+        <input type="text" id="userName" placeholder="성함 입력" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:12px; text-align:center; outline:none;">
+        <input type="number" id="userPhone" placeholder="전화번호 뒷 4자리" style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:18px; margin-bottom:15px; text-align:center; outline:none;">
         
-        <button onclick="saveProfile()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:18px; font-weight:bold;">입장 완료</button>
+        <!-- 개인정보 동의 영역 -->
+        <div style="background:#f8fafc; padding:12px; border-radius:10px; text-align:left; margin-bottom:20px; border:1px solid #e2e8f0;">
+            <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="privacyAgree" style="width:18px; height:18px; margin-top:2px;">
+                <span style="font-size:12px; color:#475569; line-height:1.4;">
+                    (필수) <b>개인정보 수집 및 이용</b>에 동의합니다. 
+                    <br><small style="color:#94a3b8;">*목적: 교육운영 및 수송관리<br>*항목: 성명, 전화번호 뒷4자리<br>*보유: 교육 종료 시 즉시 파기</small>
+                </span>
+            </label>
+        </div>
+        
+        <button onclick="saveProfileWithCheck()" style="width:100%; padding:16px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:18px; font-weight:900; cursor:pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">동의하고 입장하기</button>
     </div>
 </div>
 
@@ -1921,6 +1932,41 @@ function openRoomMove() {
     document.getElementById('menuModal').style.display = 'none';
     if(typeof openMenu === 'function') openMenu(); 
 }
+
+
+
+
+
+// [추가] 동의 여부를 확인하고 저장하는 함수
+async function saveProfileWithCheck() {
+    const agree = document.getElementById('privacyAgree').checked;
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+
+    if (!agree) {
+        alert("서비스 이용을 위해 개인정보 수집 동의가 필요합니다.");
+        return;
+    }
+    
+    if (!name || phone.length !== 4) {
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
+        return;
+    }
+
+    // 모든 조건 충족 시 기존 저장 로직 실행
+    saveProfile(); 
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
