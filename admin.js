@@ -1147,25 +1147,57 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
-// [수정] 과정 전용 출발시간 우선 로드
-        firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-            const dep = snap.val();
-            const bar = document.getElementById('dashShuttleNotice');
-            const txt = document.getElementById('dashShuttleNoticeTxt');
-            if(!bar || !txt) return;
 
-            if (dep && dep.time) {
-                bar.style.display = "block";
-                txt.innerText = `출발 예정: ${dep.date} ${dep.time}`;
-            } else {
-                // 과정 전용 시간이 없으면 기사님 전체 공지사항을 가져옴
-                firebase.database().ref('system/shuttle_notice').once('value', s => {
-                    const msg = s.val();
-                    if(msg) { bar.style.display = "block"; txt.innerText = msg; }
-                    else { bar.style.display = "none"; }
-                });
-            }
+
+
+
+
+
+// [최종 수정] 딥블루 디자인에 최적화된 출발시간 연동 및 N배지 로직
+firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+    const dep = snap.val();
+    const el = document.getElementById('shuttleDepartureTime');
+    const badge = document.getElementById('shuttleNewBadge');
+    if(!el) return;
+
+    if (dep && dep.time && dep.date) {
+        const timeStr = `${dep.date} ${dep.time}`;
+        
+        // 1. 시간 변동 체크 (N 배지 노출 로직)
+        const lastSeenTime = localStorage.getItem(`last_seen_shuttle_${state.room}`);
+        if (lastSeenTime && lastSeenTime !== timeStr) {
+            if(badge) badge.style.display = 'inline-flex'; 
+        }
+
+        // 2. 날짜 가공 (2026-01-23 -> 1월 23일)
+        const dateParts = dep.date.split('-');
+        const month = parseInt(dateParts[1]);
+        const day = parseInt(dateParts[2]);
+
+        // 3. 디자인 적용 (가운데 정렬 및 화이트 폰트)
+        el.style.textAlign = "center";
+        el.innerHTML = `
+            <div style="color:#ffffff; font-size:24px; font-weight:900; margin-bottom:5px;">${month}월 ${day}일</div>
+            <div style="color:#ffffff; font-size:32px; font-weight:900; letter-spacing:-1px;">
+                ${dep.time} <span style="font-size:18px; opacity:0.8; font-weight:700;">항기원 출발</span>
+            </div>
+        `;
+    } else {
+        // 설정된 시간이 없을 경우 기사님 전체 공지사항 표시
+        firebase.database().ref('system/shuttle_notice').once('value', s => {
+            el.style.textAlign = "center";
+            el.style.color = "white";
+            el.style.fontSize = "24px";
+            el.style.fontWeight = "800";
+            el.innerText = s.val() || "시간 정보 없음";
         });
+    }
+});
+
+
+
+
+
 
         // 8. 실시간 질문(Q&A) 건수 카운트
         firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
@@ -1778,21 +1810,37 @@ setMode: function(mode) {
 loadShuttleData: function() {
     if(!state.room) return;
 
-// 과정별 출발시간 우선 연동 코드
+// [최종 수정] 출발시간 연동 (가운데 정렬, 시안성 강화, N배지 로직 포함)
 firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
     const dep = snap.val();
-    const bar = document.getElementById('dashShuttleNotice');
-    const txt = document.getElementById('dashShuttleNoticeTxt');
-    if(!bar || !txt) return;
+    const el = document.getElementById('shuttleDepartureTime');
+    if(!el) return;
 
-    if (dep && dep.time) {
-        bar.style.display = "block";
-        txt.innerText = `출발 예정: ${dep.date} ${dep.time}`;
+    if (dep && dep.time && dep.date) {
+        const timeStr = `${dep.date} ${dep.time}`;
+        
+        // 1. [신규] 시간 변동 체크 로직
+        // 브라우저 메모리에 저장된 '마지막 확인 시간'과 서버 시간이 다르면 'N' 배지 표시
+        const lastSeenTime = localStorage.getItem(`last_seen_shuttle_${state.room}`);
+        if (lastSeenTime && lastSeenTime !== timeStr) {
+            const badge = document.getElementById('shuttleNewBadge');
+            if(badge) badge.style.display = 'inline-flex'; // 'none'이었던 배지를 화면에 보이게 함
+        }
+
+        // 2. [수정] 시안성 강화 디자인 (날짜: 흰색 / 시간: 밝은 파랑)
+        const dateParts = dep.date.split('-');
+        const month = parseInt(dateParts[1]);
+        const day = parseInt(dateParts[2]);
+
+        el.style.textAlign = "center";
+        el.innerHTML = `
+            <span style="color:#ffffff; font-size:26px; font-weight:900;">${month}월 ${day}일</span><br>
+            <span style="color:#60a5fa; font-size:28px; font-weight:900;">${dep.time} <small style="font-size:18px;">항기원 출발</small></span>
+        `;
     } else {
         firebase.database().ref('system/shuttle_notice').once('value', s => {
-            const msg = s.val();
-            if(msg) { bar.style.display = "block"; txt.innerText = msg; }
-            else { bar.style.display = "none"; }
+            el.innerText = s.val() || "시간 정보 없음";
+            el.style.color = "white";
         });
     }
 });
@@ -2431,7 +2479,21 @@ loadDormitoryData: function() {
             if (mode === 'dashboard') this.loadDashboardStats(); 
             if (mode === 'notice') this.loadNoticeView(); 
             if (mode === 'attendance') this.loadAttendanceView();
-            if (mode === 'shuttle') this.loadShuttleData();
+            if (mode === 'shuttle') {
+    this.loadShuttleData();
+    
+    // [추가] 탭 진입 시 'N' 배지 숨기고 현재 시간을 '확인 완료'로 저장
+    const badge = document.getElementById('shuttleNewBadge');
+    if(badge) badge.style.display = 'none';
+
+    // 현재 설정된 시간을 '읽음' 상태로 저장하기 위해 데이터 가져오기
+    firebase.database().ref(`courses/${state.room}/shuttle/departure`).once('value', snap => {
+        const dep = snap.val();
+        if(dep && dep.time) {
+            localStorage.setItem(`last_seen_shuttle_${state.room}`, `${dep.date} ${dep.time}`);
+        }
+    });
+}
             if (mode === 'admin-action') this.loadAdminActionData();
             if (mode === 'dinner-skip') this.loadDinnerSkipData();
             if (mode === 'students') this.loadStudentList();
