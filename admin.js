@@ -1804,47 +1804,6 @@ setMode: function(mode) {
 
 
 
-
-
-// [7.5차 수정] 차량 신청 명단 실시간 로드
-loadShuttleData: function() {
-    if(!state.room) return;
-
-// [최종 수정] 출발시간 연동 (가운데 정렬, 시안성 강화, N배지 로직 포함)
-firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-    const dep = snap.val();
-    const el = document.getElementById('shuttleDepartureTime');
-    if(!el) return;
-
-    if (dep && dep.time && dep.date) {
-        const timeStr = `${dep.date} ${dep.time}`;
-        
-        // 1. [신규] 시간 변동 체크 로직
-        // 브라우저 메모리에 저장된 '마지막 확인 시간'과 서버 시간이 다르면 'N' 배지 표시
-        const lastSeenTime = localStorage.getItem(`last_seen_shuttle_${state.room}`);
-        if (lastSeenTime && lastSeenTime !== timeStr) {
-            const badge = document.getElementById('shuttleNewBadge');
-            if(badge) badge.style.display = 'inline-flex'; // 'none'이었던 배지를 화면에 보이게 함
-        }
-
-        // 2. [수정] 시안성 강화 디자인 (날짜: 흰색 / 시간: 밝은 파랑)
-        const dateParts = dep.date.split('-');
-        const month = parseInt(dateParts[1]);
-        const day = parseInt(dateParts[2]);
-
-        el.style.textAlign = "center";
-        el.innerHTML = `
-            <span style="color:#ffffff; font-size:26px; font-weight:900;">${month}월 ${day}일</span><br>
-            <span style="color:#60a5fa; font-size:28px; font-weight:900;">${dep.time} <small style="font-size:18px;">항기원 출발</small></span>
-        `;
-    } else {
-        firebase.database().ref('system/shuttle_notice').once('value', s => {
-            el.innerText = s.val() || "시간 정보 없음";
-            el.style.color = "white";
-        });
-    }
-});
-
     // 2. 신청 명단 실시간 연동
     firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
         const requests = snap.val() || {};
@@ -2508,68 +2467,8 @@ loadDormitoryData: function() {
     loadShuttleData: function() {
         if(!state.room) return;
 
-// 해당 과정 전용 출발시간 연동 코드
-firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-    const dep = snap.val();
-    const el = document.getElementById('shuttleDepartureTime');
-    if(!el) return;
 
-    if (dep && dep.time) {
-        el.innerText = `${dep.date} ${dep.time}`;
-        el.style.color = "#3b82f6";
-    } else {
-        firebase.database().ref('system/shuttle_notice').once('value', s => {
-            el.innerText = s.val() || "시간 정보 없음";
-            el.style.color = "white";
-        });
-    }
-});
 
-        // 2. 신청 명단 실시간 연동 (개편된 경로: shuttle/requests)
-        firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
-            const requests = snap.val() || {};
-            const tbody = document.getElementById('shuttleListTableBody');
-            if(!tbody) return;
-
-            tbody.innerHTML = "";
-            // 신청한 시간 순서대로 정렬
-            const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
-            
-            let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
-
-            if (items.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8; text-align:center;'>차량 신청 내역이 없습니다.</td></tr>";
-            }
-
-            items.forEach((item, idx) => {
-                counts[item.type]++;
-                
-                // 목적지별 색상 설정 (요청하신 색상 반영)
-                let color = "#64748b"; // 자차 (회색)
-                if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
-                else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
-                else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
-
-                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td style="font-weight:800;">${item.name}</td>
-                        <td>${item.phone}</td>
-                        <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
-                        <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
-                    </tr>`;
-            });
-
-            // 3. 상단 카운트칩(숫자판) 실시간 업데이트
-            if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
-            if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
-            if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
-            if(document.getElementById('cnt-airport')) document.getElementById('cnt-airport').innerText = counts.airport;
-            if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
-        });
-    },
 
 
 
