@@ -1489,38 +1489,45 @@ function forceCloseQuiz() {
 let currentShuttleData = null; // 나의 신청 데이터 저장용
 
 // 1. 차량 신청 팝업 열기
+// [수정] 기사님이 설정한 출발 시간을 실시간으로 연동하도록 변경된 함수
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
     const uToken = localStorage.getItem('uToken');
 
-// 우리 과정 전용 출발시간 동기화 코드
-firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
-    const dep = snap.val();
-    const timeEl = document.getElementById('departureTimeText');
-    if(!timeEl) return;
+    // [핵심 연동] 기사님이 driver.html에서 설정한 시간을 실시간으로 감시하여 표시합니다.
+    firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
+        const dep = snap.val();
+        const timeEl = document.getElementById('departureTimeText');
+        if(!timeEl) return;
 
-    if (dep && dep.time) {
-        timeEl.innerText = `${dep.date} ${dep.time}`;
-    } else {
-        firebase.database().ref('system/shuttle_notice').once('value', s => {
-            timeEl.innerText = s.val() || "시간 정보 없음";
-        });
-    }
-});
+        if (dep && dep.time) {
+            // 기사님이 시간을 설정한 경우 (예: 2026-01-23 15:00)
+            // 날짜 부분은 빼고 시간만 깔끔하게 보고 싶다면 ${dep.time}만 남겨도 됩니다.
+            timeEl.innerText = `${dep.date} [ ${dep.time} ] 출발 예정`;
+            timeEl.style.color = "#ef4444"; // 눈에 잘 띄게 빨간색 계열로 강조
+        } else {
+            // 기사님이 아직 시간을 설정하지 않았을 경우
+            firebase.database().ref('system/shuttle_notice').once('value', s => {
+                // system/shuttle_notice에 값이 있으면 그걸 보여주고, 없으면 대기 문구 출력
+                timeEl.innerText = s.val() || "기사님이 출발 시간을 설정 중입니다.";
+                timeEl.style.color = "#64748b"; 
+            });
+        }
+    });
 
-    // [기능 2] 기존 신청 내역 확인 (단일 경로 체크)
+    // 기존 신청 내역 확인 (이미 신청했는지 체크)
     const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
     currentShuttleData = snap.val();
 
     if (currentShuttleData) {
-        // 신청한 기록이 있으면: 취소 화면 보여주기
+        // 신청 기록이 있으면 취소 화면 표시
         document.getElementById('shuttleSelectionArea').style.display = 'none';
         document.getElementById('shuttleCancelArea').style.display = 'block';
         document.getElementById('myCurrentShuttleText').innerText = currentShuttleData.typeText;
     } else {
-        // 신청한 기록이 없으면: 선택 화면 보여주기
+        // 신청 기록이 없으면 선택 버튼들 표시
         document.getElementById('shuttleSelectionArea').style.display = 'block';
         document.getElementById('shuttleCancelArea').style.display = 'none';
     }
