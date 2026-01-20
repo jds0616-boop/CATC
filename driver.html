@@ -271,23 +271,28 @@ function renderCourseList() {
       if(!container) return;
       container.innerHTML = "";
 
-      // 1. 과정 데이터 정렬 (수료일자 빠른순)
+      // 1. 과정 데이터 정렬 (종료일 기준)
       const sortedKeys = Object.keys(allCourses).sort((a, b) => {
-        const dateA = allCourses[a].settings?.endDate || "9999-12-31";
-        const dateB = allCourses[b].settings?.endDate || "9999-12-31";
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-        return a.localeCompare(b);
+        const settingsA = allCourses[a].settings || {};
+        const settingsB = allCourses[b].settings || {};
+        
+        // 강사 플랫폼 방식: "2026-01-19 ~ 2026-01-23" 에서 뒤쪽 날짜만 추출
+        const getEndDate = (period) => (period && period.includes(' ~ ')) ? period.split(' ~ ')[1] : "9999-12-31";
+        
+        const dateA = getEndDate(settingsA.period);
+        const dateB = getEndDate(settingsB.period);
+        return dateA.localeCompare(dateB);
       });
 
-      // 날짜 포맷팅 함수 개선
+      // 날짜 포맷팅 함수 ('26.1.20 형식으로 변환)
       const formatDate = (dateStr) => {
-        if(!dateStr || dateStr === "") return null;
+        if(!dateStr || dateStr.trim() === "") return null;
         try {
-          const d = new Date(dateStr);
-          if (isNaN(d.getTime())) return null; // 유효하지 않은 날짜 체크
+          const d = new Date(dateStr.trim());
+          if (isNaN(d.getTime())) return dateStr; 
           return `'${String(d.getFullYear()).slice(2)}.${d.getMonth()+1}.${d.getDate()}`;
         } catch(e) {
-          return null;
+          return dateStr;
         }
       };
 
@@ -295,16 +300,20 @@ function renderCourseList() {
         const room = allCourses[rid];
         if(room.status?.roomStatus !== 'active') return;
 
-        const cName = room.settings?.courseName || rid;
+        const settings = room.settings || {};
+        const cName = settings.courseName || rid;
         
-        // 날짜 가져오기 (데이터 경로 재확인)
-        const rawStart = room.settings?.startDate;
-        const rawEnd = room.settings?.endDate;
-        const sDate = formatDate(rawStart);
-        const eDate = formatDate(rawEnd);
+        // [강사 플랫폼 연동 핵심] "시작일 ~ 종료일" 문장을 반으로 나눕니다.
+        let sDate = null;
+        let eDate = null;
+        if (settings.period && settings.period.includes(' ~ ')) {
+            const parts = settings.period.split(' ~ ');
+            sDate = formatDate(parts[0]);
+            eDate = formatDate(parts[1]);
+        }
         
-        // 날짜가 둘 다 있을 때만 표시, 없으면 '기간 미설정'
-        const dateDisplay = (sDate && eDate) ? `(${sDate}~${eDate})` : `<span style="color:#cbd5e1">(기간 미설정)</span>`;
+        // 날짜 표시 문구 결정
+        const dateDisplay = (sDate && eDate) ? `(${sDate}~${eDate})` : `<span style="color:#cbd5e1; font-weight:normal;">(기간 미설정)</span>`;
         
         const dep = room.shuttle?.departure || { time: "", date: "" };
         const reqs = room.shuttle?.requests ? Object.values(room.shuttle.requests) : [];
@@ -319,7 +328,7 @@ function renderCourseList() {
           <div class="course-info">
             <div>
               <span class="course-name">#${rid} ${cName}</span>
-              <span style="font-size:11px; color:#64748b; font-weight:600; margin-left:5px;">${dateDisplay}</span>
+              <span style="font-size:11px; color:#94a3b8; font-weight:700; margin-left:3px;">${dateDisplay}</span>
             </div>
             <div class="course-shuttle-info">
               <span style="color:var(--osong)">오송 ${reqs.filter(r=>r.type==='osong').length}</span>
@@ -342,7 +351,6 @@ function renderCourseList() {
         container.appendChild(card);
       });
     }
-
 
 
     // 팝업 확인 후 저장하는 함수 추가
