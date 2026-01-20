@@ -228,16 +228,26 @@
           <div class="dashboard-split">
               <div class="col-1-3"><div class="entry-box" onclick="showEntryMemberList()"><span style="font-size:11px; font-weight:800; color:var(--blue-deep);">입교 현황</span><div class="entry-val" id="ind-entry-cnt">0<span>명</span></div></div></div>
               <div class="col-2-3">
-                  <div class="section-card" style="height:100%; padding:10px; display:flex; flex-direction:column; justify-content:center;">
-                      <div class="section-title" style="margin-bottom:8px; font-size:11px;">차량 수요조사 결과</div>
-                      <div class="shuttle-grid">
-                          <div class="shuttle-item" onclick="showShuttleMembers('osong')"><span>오송</span><b id="ind-osong">0</b></div>
-                          <div class="shuttle-item" onclick="showShuttleMembers('terminal')"><span>터미널</span><b id="ind-term">0</b></div>
-                          <div class="shuttle-item" onclick="showShuttleMembers('airport')"><span>공항</span><b id="ind-air">0</b></div>
-                          <div class="shuttle-item" onclick="showShuttleMembers('car')"><span>자차</span><b id="ind-car">0</b></div>
+              <div class="section-card" style="height:100%; padding:10px; display:flex; flex-direction:column; justify-content:center;">
+                  <div class="section-title" style="margin-bottom:8px; font-size:11px;">
+                      <i class="fa-solid fa-bus"></i> 퇴교 차량 수요조사 (실시간)
+                  </div>
+                  <div class="shuttle-grid">
+                      <div class="shuttle-item" onclick="showShuttleMembers('osong')" style="border-top:3px solid #ef4444;">
+                          <span>오송역</span><b id="ind-osong" style="color:#ef4444;">0</b>
+                      </div>
+                      <div class="shuttle-item" onclick="showShuttleMembers('terminal')" style="border-top:3px solid #3b82f6;">
+                          <span>터미널</span><b id="ind-term" style="color:#3b82f6;">0</b>
+                      </div>
+                      <div class="shuttle-item" onclick="showShuttleMembers('airport')" style="border-top:3px solid #10b981;">
+                          <span>공항</span><b id="ind-air" style="color:#10b981;">0</b>
+                      </div>
+                      <div class="shuttle-item" onclick="showShuttleMembers('car')" style="border-top:3px solid #64748b;">
+                          <span>자차</span><b id="ind-car" style="color:#64748b;">0</b>
                       </div>
                   </div>
               </div>
+          </div>
           </div>
 
           <div class="section-card">
@@ -731,15 +741,24 @@ function updateIndividualView() {
     const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
     document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
     
-    const getSum = (loc) => { 
-        const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; 
-        const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; 
-        return w1 + w2; 
-    };
-    document.getElementById('ind-osong').innerText = getSum('osong'); 
-    document.getElementById('ind-term').innerText = getSum('terminal'); 
-    document.getElementById('ind-air').innerText = getSum('airport'); 
-    document.getElementById('ind-car').innerText = getSum('car');
+// [개편] 차량 수요조사 데이터 집계 (shuttle/requests 경로 사용)
+        const shuttleRef = firebase.database().ref(`courses/${currentRID}/shuttle/requests`);
+        shuttleRef.on('value', s => {
+            const data = s.val() || {};
+            const items = Object.values(data);
+            
+            // 각 목적지별 인원 계산
+            const osong = items.filter(i => i.type === 'osong').length;
+            const term = items.filter(i => i.type === 'terminal').length;
+            const air = items.filter(i => i.type === 'airport').length;
+            const car = items.filter(i => i.type === 'car').length;
+
+            // 화면에 숫자 표시
+            document.getElementById('ind-osong').innerText = osong;
+            document.getElementById('ind-term').innerText = term;
+            document.getElementById('ind-air').innerText = air;
+            document.getElementById('ind-car').innerText = car;
+        });
     
     const actionTbody = document.getElementById('indActionTableBody');
     const actions = room.admin_actions?.[today] || {};
@@ -1028,7 +1047,20 @@ function openOutingLedger() {
     function updateQRPreview() { const room = globalAllData[currentRID]; const img = document.getElementById('qrPreview'); const empty = document.getElementById('qrEmpty'); if(room?.attendanceQR) { img.src = room.attendanceQR; img.style.display = "block"; empty.style.display = "none"; } else { img.style.display = "none"; empty.style.display = "block"; } }
     function loadActionHistory(date) { selectedDate = date; renderTotalHistory(); }
     function showEntryMemberList() { const room = globalAllData[currentRID]; const valid = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined"); const list = Array.from(new Set(valid.map(s => s.name))).sort().join(", "); alert(`[입교 명단]\n\n${list || "입교자 없음"}`); }
-    function showShuttleMembers(loc) { const room = globalAllData[currentRID]; const m1 = Object.values(room.shuttle?.out?.wave1?.[loc] || {}); const m2 = Object.values(room.shuttle?.out?.wave2?.[loc] || {}); alert(`[신청 명단]\n\n1차: ${m1.join(", ") || "없음"}\n2차: ${m2.join(", ") || "없음"}`); }
+// [개편] 목적지별 클릭 시 상세 명단 팝업
+    function showShuttleMembers(locType) {
+        const room = globalAllData[currentRID];
+        // 개편된 데이터 경로(requests)에서 가져옵니다.
+        const requests = room.shuttle?.requests || {};
+        const typeNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차/개별이동' };
+        
+        const members = Object.values(requests)
+            .filter(r => r.type === locType)
+            .map(r => `${r.name}(${r.phone})`)
+            .sort();
+
+        alert(`[${typeNames[locType]} 신청 명단]\n\n${members.join(", ") || "신청자 없음"}`);
+    }
 
     setInterval(() => { const now = new Date(); const week = ['일','월','화','수','목','금','토']; document.getElementById('footer-date').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${week[now.getDay()]}) ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`; }, 1000);
     firebase.database().ref('system/professors').on('value', snap => {
