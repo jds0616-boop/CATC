@@ -679,7 +679,6 @@ function updateIndividualView() {
     const room = globalAllData[currentRID]; 
     if (!room) return;
 
-    // 1. 상단 과정 정보 업데이트
     document.getElementById('ind-room-id').innerText = currentRID;
     document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
     document.getElementById('ind-period').innerText = room.settings?.period || "-";
@@ -687,7 +686,6 @@ function updateIndividualView() {
     document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
     document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
 
-    // 2. 학생장 정보 연동
     let leaderTxt = "지정된 학생장 없음";
     if(room.students) {
         const leaders = Object.values(room.students).filter(s => s.isLeader === true);
@@ -697,7 +695,6 @@ function updateIndividualView() {
     }
     document.getElementById('ind-leader').innerText = leaderTxt;
 
-    // 3. 입교 현황 및 셔틀 집계
     const today = getTodayString();
     const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
     const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
@@ -713,7 +710,6 @@ function updateIndividualView() {
     document.getElementById('ind-air').innerText = getSum('airport'); 
     document.getElementById('ind-car').innerText = getSum('car');
     
-    // 4. 외출/외박 신청자 명단 (복귀 배지 로직 포함)
     const actionTbody = document.getElementById('indActionTableBody');
     const actions = room.admin_actions?.[today] || {};
     const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
@@ -721,10 +717,9 @@ function updateIndividualView() {
     actionTbody.innerHTML = items.length ? items.map(a => {
         const isSigned = a.confirmed === true;
         
-        // [핵심] 복귀 완료 배지 생성
-        const returnBadge = a.returned ? `<span style="background:#10b981; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800;">복귀완료</span>` : "";
+        // 배지가 찌그러지지 않게 한 줄로 고정하는 코드 적용됨
+        const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
 
-        // 서명 버튼 디자인
         const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img">` : "서명";
         const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
 
@@ -929,14 +924,12 @@ function renderTotalHistory() {
         return;
     }
 
-    // 시간순 정렬 및 리스트 생성
     list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
         const isSigned = a.confirmed === true;
         
-        // [핵심 추가] 복귀 완료 배지 로직
-        const returnBadge = a.returned ? `<span style="background:#10b981; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800;">복귀완료</span>` : "";
+        // 배지가 찌그러지지 않게 한 줄로 고정하는 코드 적용됨
+        const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
 
-        // 서명 버튼 디자인
         const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:30px;">` : "서명";
         const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
 
@@ -955,7 +948,6 @@ function renderTotalHistory() {
             </tr>`;
     });
 }
-
 
 
 
