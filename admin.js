@@ -1767,10 +1767,11 @@ setMode: function(mode) {
 
 
 
+// [7.5차 수정] 차량 신청 명단 실시간 로드
 loadShuttleData: function() {
     if(!state.room) return;
 
-    // 1. 기사님 공지(출발시간) 실시간 연동
+    // 1. 기사님 공지(출발시간) 연동
     firebase.database().ref('system/shuttle_notice').on('value', snap => {
         const time = snap.val() || "시간 정보 없음";
         const el = document.getElementById('shuttleDepartureTime');
@@ -1789,7 +1790,7 @@ loadShuttleData: function() {
         let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
 
         if (items.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8; text-align:center;'>차량 신청 내역이 없습니다.</td></tr>";
         }
 
         items.forEach((item, idx) => {
@@ -1811,7 +1812,7 @@ loadShuttleData: function() {
                 </tr>`;
         });
 
-        // 상단 카운트칩 업데이트
+        // 상단 현황판 숫자 업데이트 (id 존재 여부 확인)
         if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
         if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
         if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
@@ -1819,6 +1820,9 @@ loadShuttleData: function() {
         if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
     });
 },
+
+
+
 
 // [수정] 차량 신청 명단 팝업: 취소 로직 연결 보완
 showShuttleListModal: function(waveId, waveName, locName, members) {
