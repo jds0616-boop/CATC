@@ -88,7 +88,17 @@
     .lbl-air { color: #d1ffd6 !important; }
 
     /* 과정별 리스트 카드 */
-    .course-card { background: white; border-radius: 15px; padding: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
+    .course-card { 
+  background: white; 
+  border-radius: 15px; 
+  padding: 15px; 
+  border: 1px solid #e2e8f0; 
+  border-left: 6px solid var(--kac-blue); /* 카드 전체 좌측 컬러바 추가 */
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
     .course-info { display: flex; justify-content: space-between; align-items: center; }
     .course-name { font-weight: 800; font-size: 16px; color: var(--kac-navy); }
     .course-shuttle-info { display: flex; gap: 10px; font-size: 12px; font-weight: 700; }
@@ -100,11 +110,18 @@
     .quick-btn.active { background: var(--kac-blue) !important; color: white !important; border-color: var(--kac-blue) !important; }
     /* 안내 문구 스타일 */ 
     .status-msg { 
-      flex: 1; font-size: 13px; font-weight: 800; color: #1e40af; text-align: center; 
-      background: #fff; border: 1px solid #cbd5e1; padding: 7px; border-radius: 6px;
-      border-left: 5px solid var(--kac-blue); /* 좌측 강조 컬러바 */
-      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05);
-    }
+  flex: 1; font-size: 13px; font-weight: 800; color: #64748b; text-align: center; 
+  background: #f8fafc; border: 1px solid #cbd5e1; padding: 7px; border-radius: 6px;
+  transition: all 0.3s ease;
+}
+.status-msg.completed {
+  background: #dcfce7 !important; 
+  color: #166534 !important; 
+  border-color: #22c55e !important;
+}
+
+
+
     .direct-input { flex: 1; border: 1px solid #cbd5e1; padding: 7px; border-radius: 6px; font-size: 13px; text-align: center; }
     .save-btn { background: var(--kac-navy); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; cursor: pointer; }
 
@@ -249,27 +266,51 @@
     }
 
     // 3. 과정별 리스트 렌더링
-   function renderCourseList() {
+function renderCourseList() {
       const container = document.getElementById('course-list-area');
       if(!container) return;
       container.innerHTML = "";
 
-      Object.keys(allCourses).forEach(rid => {
+      // 1. 과정 데이터 정렬 (1순위: 종료일 빠른순, 2순위: ID순)
+      const sortedKeys = Object.keys(allCourses).sort((a, b) => {
+        const dateA = allCourses[a].settings?.endDate || "9999-12-31";
+        const dateB = allCourses[b].settings?.endDate || "9999-12-31";
+        if (dateA !== dateB) return dateA.localeCompare(dateB); // 날짜 비교
+        return a.localeCompare(b); // ID 비교 (A, B, C...)
+      });
+
+      // 날짜 포맷팅 함수 ('26.1.19 형식)
+      const formatDate = (dateStr) => {
+        if(!dateStr) return "";
+        const d = new Date(dateStr);
+        return `'${String(d.getFullYear()).slice(2)}.${d.getMonth()+1}.${d.getDate()}`;
+      };
+
+      sortedKeys.forEach(rid => {
         const room = allCourses[rid];
         if(room.status?.roomStatus !== 'active') return;
 
         const cName = room.settings?.courseName || rid;
+        const sDate = formatDate(room.settings?.startDate);
+        const eDate = formatDate(room.settings?.endDate);
+        
         const dep = room.shuttle?.departure || { time: "", date: "" };
         const reqs = room.shuttle?.requests ? Object.values(room.shuttle.requests) : [];
         
         const is13 = dep.time === '13:00' ? 'active' : '';
         const is15 = dep.time === '15:00' ? 'active' : '';
+        
+        // 공지 완료 여부에 따른 클래스 설정
+        const statusClass = dep.time ? 'completed' : '';
 
         const card = document.createElement('div');
         card.className = 'course-card';
         card.innerHTML = `
           <div class="course-info">
-            <span class="course-name">#${rid} ${cName}</span>
+            <div>
+              <span class="course-name">#${rid} ${cName}</span>
+              <span style="font-size:11px; color:#64748b; font-weight:600; margin-left:5px;">(${sDate}~${eDate})</span>
+            </div>
             <div class="course-shuttle-info">
               <span style="color:var(--osong)">오송 ${reqs.filter(r=>r.type==='osong').length}</span>
               <span style="color:var(--term)">터미널 ${reqs.filter(r=>r.type==='terminal').length}</span>
@@ -280,7 +321,7 @@
             <button class="quick-btn ${is13}" onclick="confirmSetTime('${rid}', '13:00')">13:00</button>
             <button class="quick-btn ${is15}" onclick="confirmSetTime('${rid}', '15:00')">15:00</button>
             
-            <div id="status-${rid}" class="status-msg">
+            <div id="status-${rid}" class="status-msg ${statusClass}">
               ${dep.time ? dep.time + ' 과정 공지완료' : '시간을 선택하세요'}
             </div>
 
@@ -291,6 +332,8 @@
         container.appendChild(card);
       });
     }
+
+
 
     // 팝업 확인 후 저장하는 함수 추가
     function confirmSetTime(rid, time) {
