@@ -501,34 +501,41 @@
 
 
 
-<!-- [수정] 외출/외박 대장 기록용 신청 팝업 -->
+<!-- [수정] 외출/외박 신청 팝업 (시간 분리 및 불필요 항목 제거) -->
 <div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:95%; padding: 20px; border-radius: 20px; max-width: 450px;">
         <h3 style="margin-bottom: 5px; font-weight:900;">외출·외박 신청서 작성</h3>
         <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:15px;">오늘 날짜: 202X-XX-XX</p>
 
-        <!-- 이미 신청했을 때 나오는 화면 -->
         <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 20px; text-align: left;">
             <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 내역</p>
             <div id="adminStatusText" style="font-size: 14px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
             <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold;">신청 취소</button>
         </div>
 
-        <!-- 처음 신청할 때 입력하는 양식 -->
         <div id="adminActionForm" style="text-align: left; display: flex; flex-direction: column; gap: 12px;">
+            <!-- 구분 선택 -->
             <div style="display: flex; gap: 8px;">
                 <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외출 (당일)</button>
                 <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외박 (익일)</button>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label style="font-size:11px; font-weight:800; color:#64748b;">소속 (기수/과정)</label>
-                    <input type="text" id="userDept" placeholder="예: 13기" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
+            <!-- 시간 입력 (외출/복귀 분리) -->
+            <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size:11px; font-weight:800; color:#64748b;">외출 시간</label>
+                        <input type="time" id="startTime" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:800; color:#64748b;">복귀 시간</label>
+                        <input type="time" id="endTime" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    </div>
                 </div>
-                <div>
-                    <label style="font-size:11px; font-weight:800; color:#64748b;">시간 (외출~복귀)</label>
-                    <input type="text" id="outTimeRange" placeholder="18시~22시" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
+                <!-- 외박 선택시에만 노출될 복귀 날짜 -->
+                <div id="returnDateArea" style="display:none; margin-top:10px; border-top: 1px dashed #cbd5e1; padding-top:10px;">
+                    <label style="font-size:11px; font-weight:800; color:#e11d48;">복귀 예정 일자 (외박 시 필수)</label>
+                    <input type="date" id="returnDate" style="width:100%; padding:8px; border:1px solid #fda4af; border-radius:6px; font-size:14px;">
                 </div>
             </div>
 
@@ -543,7 +550,7 @@
             </div>
 
             <div>
-                <label style="font-size:11px; font-weight:800; color:#64748b;">비상 연락처 (전체 번호)</label>
+                <label style="font-size:11px; font-weight:800; color:#64748b;">비상 연락처</label>
                 <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
             </div>
 
@@ -560,6 +567,13 @@
         <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 15px; font-weight: 800; cursor: pointer;">취소</button>
     </div>
 </div>
+
+
+
+
+
+
+
 
 
 
@@ -1701,19 +1715,23 @@ async function openAdminAction() {
     }
 }
 
-// 2. 외출/외박 종류 선택 시 로직
+// 1. 외출/외박 타입 선택 시 날짜창 제어
 function selectAdminType(type) {
     selectedAdminType = type;
     updateAdminTypeButtons();
-    if (type === 'outing' || type === 'overnight') {
-        document.getElementById('skipDinner').checked = true;
-        document.getElementById('fullPhoneArea').style.display = 'block';
-        const savedFullPhone = localStorage.getItem('kac_user_full_phone');
-        if(savedFullPhone) document.getElementById('fullPhone').value = savedFullPhone;
+    const returnDateArea = document.getElementById('returnDateArea');
+    if(type === 'overnight') {
+        returnDateArea.style.display = 'block';
+        // 복귀 날짜 기본값을 내일로 설정
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('returnDate').value = tomorrow.toISOString().substring(0, 10);
     } else {
-        document.getElementById('fullPhoneArea').style.display = 'none';
+        returnDateArea.style.display = 'none';
     }
 }
+
+
 
 function updateAdminTypeButtons() {
     const types = ['outing', 'overnight'];
@@ -1736,33 +1754,30 @@ function updateAdminTypeButtons() {
 
 
 
-// 4. 최종 신청 제출
+// 2. 신청 데이터 전송
 async function submitAdminAction() {
     const today = getTodayString();
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
     
-    // 새로 만든 입력창들에서 데이터 가져오기
-    const dept = document.getElementById('userDept').value.trim();
-    const timeRange = document.getElementById('outTimeRange').value.trim();
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const returnDate = document.getElementById('returnDate').value;
     const dest = document.getElementById('destination').value.trim();
     const reason = document.getElementById('outingReason').value.trim();
     const fullPhone = document.getElementById('fullPhone').value.trim();
     const skipDinner = document.getElementById('skipDinner').checked;
 
-    // 유효성 검사 (안 쓴 게 있는지 확인)
-    if (selectedAdminType === 'none') { alert("외출 또는 외박을 선택해주세요."); return; }
-    if (!dept || !timeRange || !dest || !reason || !fullPhone) { 
-        alert("모든 빈칸을 채워주세요.\n비상연락처와 사유 등은 대장 기록을 위해 필수입니다."); 
-        return; 
-    }
+    if (selectedAdminType === 'none') { alert("구분을 선택해주세요."); return; }
+    if (!startTime || !endTime || !dest || !reason || !fullPhone) { alert("모든 항목을 입력해주세요."); return; }
+    if (selectedAdminType === 'overnight' && !returnDate) { alert("복귀 날짜를 선택해주세요."); return; }
 
     try {
-        // 서버(Firebase)에 저장할 데이터 보따리 만들기
         const actionData = {
             name: name,
-            dept: dept,
-            timeRange: timeRange,
+            startTime: startTime,
+            endTime: endTime,
+            returnDate: selectedAdminType === 'overnight' ? returnDate : today,
             destination: dest,
             reason: reason,
             phone: fullPhone,
@@ -1770,22 +1785,17 @@ async function submitAdminAction() {
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // 1. 외출/외박 기록 저장
         await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
 
-        // 2. 석식 제외 체크했으면 석식 DB에도 저장
         if (skipDinner) {
             const phoneShort = localStorage.getItem('kac_user_phone');
             await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
         }
 
-        alert("✅ 외출·외박 신청서가 정상 제출되었습니다.");
+        alert("✅ 신청서가 정상 제출되었습니다.");
         document.getElementById('adminActionModal').style.display = 'none';
-    } catch (e) { 
-        alert("저장 중 오류가 발생했습니다. 인터넷 연결을 확인하세요."); 
-    }
+    } catch (e) { alert("저장 중 오류 발생"); }
 }
-
 
 
 
