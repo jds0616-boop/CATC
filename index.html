@@ -495,53 +495,76 @@
 </div>
 
 
-<!-- [신규] 통합 행정 신청 팝업 (외출/외박/석식 제외) -->
-<div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
-    <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 20px; max-width: 400px;">
-        <h3 style="margin-bottom: 5px;">일일 행정 신청</h3>
-        <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:20px;">오늘 날짜: 202X-XX-XX</p>
 
-        <!-- 신청 현황 표시 (신청했을 때만 보임) -->
+
+
+
+
+
+<!-- [수정] 외출/외박 대장 기록용 신청 팝업 -->
+<div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
+    <div class="menu-box" style="width:95%; padding: 20px; border-radius: 20px; max-width: 450px;">
+        <h3 style="margin-bottom: 5px; font-weight:900;">외출·외박 신청서 작성</h3>
+        <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:15px;">오늘 날짜: 202X-XX-XX</p>
+
+        <!-- 이미 신청했을 때 나오는 화면 -->
         <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 20px; text-align: left;">
             <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 내역</p>
-            <div id="adminStatusText" style="font-size: 15px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
-            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold;">신청 취소</button>
+            <div id="adminStatusText" style="font-size: 14px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
+            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold;">신청 취소</button>
         </div>
 
-        <!-- 신청 입력 폼 -->
-        <div id="adminActionForm">
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">1. 오늘 저녁 식사 여부</label>
-                <div style="margin-top: 10px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                        <input type="checkbox" id="skipDinner" style="width:20px; height:20px;">
-                        <span style="font-size:15px; font-weight:600;">오늘 저녁은 먹지 않습니다. (동의)</span>
-                    </label>
-                    <p style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px;">※ 16:00 이후에는 신청/취소 불가</p>
+        <!-- 처음 신청할 때 입력하는 양식 -->
+        <div id="adminActionForm" style="text-align: left; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+                <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외출 (당일)</button>
+                <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외박 (익일)</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size:11px; font-weight:800; color:#64748b;">소속 (기수/과정)</label>
+                    <input type="text" id="userDept" placeholder="예: 13기" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:800; color:#64748b;">시간 (외출~복귀)</label>
+                    <input type="text" id="outTimeRange" placeholder="18시~22시" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
                 </div>
             </div>
 
-            <div style="text-align: left; margin-bottom: 25px;">
-                <label style="font-weight: 800; font-size: 14px; color: #1e293b;">2. 외출·외박 신청 (해당 시)</label>
-                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-none" onclick="selectAdminType('none')" style="height:50px; font-size:16px;">해당 없음</button>
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:50px; font-size:16px;">외출 (당일 복귀)</button>
-                    <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:50px; font-size:16px;">외박 (익일 복귀)</button>
-                </div>
+            <div>
+                <label style="font-size:11px; font-weight:800; color:#64748b;">행선지</label>
+                <input type="text" id="destination" placeholder="예: 청주시내" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
             </div>
 
-            <!-- 외출/외박 선택 시에만 나타나는 전화번호 입력 -->
-            <div id="fullPhoneArea" style="display:none; text-align: left; margin-bottom: 25px; background: #fff1f2; padding: 12px; border-radius: 12px;">
-                <label style="font-weight: 800; font-size: 13px; color: #e11d48;">비상 연락처 (전체 번호 입력)</label>
-                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; margin-top:8px; padding:12px; border:1px solid #fda4af; border-radius:8px; font-size:16px; text-align:center;">
+            <div>
+                <label style="font-size:11px; font-weight:800; color:#64748b;">신청 사유</label>
+                <input type="text" id="outingReason" placeholder="예: 개인용무, 식사 등" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
             </div>
 
-            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">신청 완료</button>
+            <div>
+                <label style="font-size:11px; font-weight:800; color:#64748b;">비상 연락처 (전체 번호)</label>
+                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; outline:none;">
+            </div>
+
+            <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px dashed #cbd5e1;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="skipDinner" style="width:18px; height:18px;">
+                    <span style="font-size:14px; font-weight:700; color:#1e293b;">오늘 저녁 식사를 하지 않습니다.</span>
+                </label>
+            </div>
+
+            <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 900; margin-top:5px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">신청서 제출</button>
         </div>
 
-           <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 20px; font-weight: 900; cursor: pointer;">나가기</button>
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 15px; font-weight: 800; cursor: pointer;">취소</button>
     </div>
 </div>
+
+
+
+
+
 
 <!-- [신규] 공지사항 팝업 -->
     <div id="noticeModal" class="menu-overlay" style="display:none; z-index: 9000;" onclick="if(event.target==this)this.style.display='none'">
@@ -1692,57 +1715,83 @@ function selectAdminType(type) {
     }
 }
 
-// 3. 버튼 디자인 업데이트
 function updateAdminTypeButtons() {
-    const types = ['none', 'outing', 'overnight'];
+    const types = ['outing', 'overnight'];
     types.forEach(t => {
         const btn = document.getElementById(`btn-${t}`);
         if(!btn) return;
         if (t === selectedAdminType) {
-            btn.style.background = "#3b82f6";
+            btn.style.background = "#3b82f6"; // 선택되면 파란색
             btn.style.color = "white";
+            btn.style.borderColor = "#3b82f6";
         } else {
-            btn.style.background = "#f8fafc";
-            btn.style.color = "#333";
+            btn.style.background = "#f8fafc"; // 안되면 흰색
+            btn.style.color = "#64748b";
+            btn.style.borderColor = "#e2e8f0";
         }
     });
 }
 
+
+
+
+
 // 4. 최종 신청 제출
 async function submitAdminAction() {
     const today = getTodayString();
-    const now = new Date();
-    const isAfterDeadline = now.getHours() >= 16; 
-
-    let uToken = localStorage.getItem('uToken');
+    const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
-    const phoneShort = localStorage.getItem('kac_user_phone');
-    const skipDinner = document.getElementById('skipDinner').checked;
-    const fullPhone = document.getElementById('fullPhone').value.trim();
-
-    if ((selectedAdminType === 'outing' || selectedAdminType === 'overnight') && !fullPhone) {
-        alert("비상 연락처를 입력해주세요."); return;
-    }
     
-    if (selectedAdminType !== 'none') localStorage.setItem('kac_user_full_phone', fullPhone);
+    // 새로 만든 입력창들에서 데이터 가져오기
+    const dept = document.getElementById('userDept').value.trim();
+    const timeRange = document.getElementById('outTimeRange').value.trim();
+    const dest = document.getElementById('destination').value.trim();
+    const reason = document.getElementById('outingReason').value.trim();
+    const fullPhone = document.getElementById('fullPhone').value.trim();
+    const skipDinner = document.getElementById('skipDinner').checked;
+
+    // 유효성 검사 (안 쓴 게 있는지 확인)
+    if (selectedAdminType === 'none') { alert("외출 또는 외박을 선택해주세요."); return; }
+    if (!dept || !timeRange || !dest || !reason || !fullPhone) { 
+        alert("모든 빈칸을 채워주세요.\n비상연락처와 사유 등은 대장 기록을 위해 필수입니다."); 
+        return; 
+    }
 
     try {
+        // 서버(Firebase)에 저장할 데이터 보따리 만들기
+        const actionData = {
+            name: name,
+            dept: dept,
+            timeRange: timeRange,
+            destination: dest,
+            reason: reason,
+            phone: fullPhone,
+            type: selectedAdminType,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        // 1. 외출/외박 기록 저장
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
+
+        // 2. 석식 제외 체크했으면 석식 DB에도 저장
         if (skipDinner) {
-            if (isAfterDeadline) {
-                alert("⚠️ 석식 신청/취소는 16시에 마감되었습니다.");
-            } else {
-                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
-            }
+            const phoneShort = localStorage.getItem('kac_user_phone');
+            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
         }
-        if (selectedAdminType !== 'none') {
-            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
-                name: name, phone: fullPhone, type: selectedAdminType, timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
-        alert("✅ 행정 신청이 완료되었습니다.");
+
+        alert("✅ 외출·외박 신청서가 정상 제출되었습니다.");
         document.getElementById('adminActionModal').style.display = 'none';
-    } catch (e) { alert("저장 중 오류 발생"); }
+    } catch (e) { 
+        alert("저장 중 오류가 발생했습니다. 인터넷 연결을 확인하세요."); 
+    }
 }
+
+
+
+
+
+
+
 
 // 5. 신청 취소 로직
 async function cancelAdminAction() {

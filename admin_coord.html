@@ -253,7 +253,7 @@
           </div>
 
           <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;"><span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span><button class="navy-btn" style="width:60px; height:28px; font-size:11px;" onclick="startPrint('course')">인쇄</button></div>
+              <div class="section-title" style="justify-content:space-between;"><span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span><button class="navy-btn" style="width:60px; height:28px; font-size:11px;" onclick="startPrint('course')">외출(외박)대장</button></div>
               <div style="overflow-x: auto;"><table class="navy-table"><thead><tr><th>신청자</th><th>구분</th><th>시간</th><th width="100">담당 확인</th></tr></thead><tbody id="indActionTableBody"></tbody></table></div>
           </div>
       </div>
@@ -934,7 +934,23 @@ function renderCourseSelectors() {
     async function loadRoomSettings(rid) { const room = globalAllData[rid]; if(!room) return; document.getElementById('setup-course-name').value = room.settings?.courseName || ""; document.getElementById('setup-prof-select').value = room.status?.professorName || ""; document.getElementById('setup-coord-select').value = room.settings?.coordinatorName || ""; if(room.settings?.period?.includes(" ~ ")) { const p = room.settings.period.split(" ~ "); document.getElementById('setup-start').value = p[0]; document.getElementById('setup-end').value = p[1]; } const loc = room.settings?.roomDetailName || ""; const dropdown = document.getElementById('setup-room-dropdown'); let found = false; for(let i=0; i<dropdown.options.length; i++) { if(dropdown.options[i].value === loc) { dropdown.selectedIndex = i; found = true; break; } } if(!found && loc) { dropdown.value = "direct"; document.getElementById('setup-location-direct').value = loc; document.getElementById('setup-location-direct').style.display = "block"; } else { document.getElementById('setup-location-direct').style.display = "none"; } }
     async function saveIntegratedSettings() { const rid = document.getElementById('setup-room-select').value; const name = document.getElementById('setup-course-name').value.trim(); const start = document.getElementById('setup-start').value; const end = document.getElementById('setup-end').value; const prof = document.getElementById('setup-prof-select').value; const coord = document.getElementById('setup-coord-select').value; const dropLoc = document.getElementById('setup-room-dropdown').value; const loc = (dropLoc === 'direct') ? document.getElementById('setup-location-direct').value.trim() : dropLoc; if(!rid || !name || !start || !end || !prof || !loc) return alert("필수 항목 입력 필요"); const updates = {}; updates[`courses/${rid}/settings/courseName`] = name; updates[`courses/${rid}/settings/period`] = `${start} ~ ${end}`; updates[`courses/${rid}/status/professorName`] = prof; updates[`courses/${rid}/settings/coordinatorName`] = coord; updates[`courses/${rid}/settings/roomDetailName`] = loc; updates[`courses/${rid}/status/roomStatus`] = "active"; await firebase.database().ref().update(updates).then(()=>alert("저장 완료")); closeSetupModal(); }
     async function resetIndividualCourse() { if(!confirm("🚨 모든 데이터 삭제! 리셋할까요?")) return; const rPath = `courses/${currentRID}`; const updates = {}; updates[`${rPath}/students`] = null; updates[`${rPath}/admin_actions`] = null; updates[`${rPath}/shuttle`] = null; updates[`${rPath}/questions`] = null; updates[`${rPath}/coordNotice`] = null; updates[`${rPath}/notice`] = null; updates[`${rPath}/status/roomStatus`] = "idle"; updates[`${rPath}/status/resetKey`] = "KICK_" + Date.now(); await firebase.database().ref().update(updates).then(()=>{ alert("리셋 완료"); currentRID=""; handleRoomSelection(); }); }
-    function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; document.getElementById('progressFill').style.width = progress + "%"; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } }, 150); }
+  
+
+// 외출외박 대장 새창 열기 함수
+function openOutingLedger() {
+    if(!currentRID) {
+        alert("먼저 왼쪽 리스트에서 교육 과정을 선택해주세요.");
+        return;
+    }
+    // 새 창으로 출력용 페이지 열기 (과정 ID를 함께 보냄)
+    window.open(`outing_ledger.html?room=${currentRID}`, '_blank', 'width=1300,height=900,scrollbars=yes');
+}
+
+
+
+
+
+  function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; document.getElementById('progressFill').style.width = progress + "%"; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } }, 150); }
     function executePrintProcess(mode) { const targetBody = document.getElementById('printBody'); const targetRID = (mode === 'course') ? currentRID : ""; document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; targetBody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { if (mode === 'course' && rid !== targetRID) return; const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); }); list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { const signImg = a.confirmedBySign ? `<img src="${a.confirmedBySign}" style="height:35px; mix-blend-mode:multiply;">` : ""; targetBody.innerHTML += `<tr><td>${idx+1}</td><td>${a.cName}</td><td>${a.type==='outing'?'외출':'외박'}</td><td>${a.name}</td><td>${a.phone}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${signImg}</td></tr>`; }); window.print(); }
     function toggleMenu(open) { document.getElementById('sideMenu').classList.toggle('open', open); document.getElementById('menuOverlay').style.display = open ? "block" : "none"; }
     function closeSetupModal() { document.getElementById('setupModal').style.display = "none"; }
