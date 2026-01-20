@@ -565,6 +565,20 @@
                 <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
             </div>
 
+<!-- 석식 제외 체크박스 추가 -->
+            <div style="background: #fdf2f2; padding: 12px; border-radius: 12px; border: 1px solid #fee2e2; margin-top: 5px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="skipDinner" style="width:20px; height:20px; accent-color: #ef4444;">
+                    <span style="font-size:15px; font-weight:800; color:#b91c1c;">오늘 저녁 식사를 하지 않습니다.</span>
+                </label>
+                <p style="font-size:11px; color:#ef4444; margin: 8px 0 0 30px; font-weight: 600;">
+                    ※ 16:00 이후에는 변경이 불가합니다.
+                </p>
+            </div>
+
+
+
+
             <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 900; margin-top:5px;">신청서 제출</button>
         </div>
 
@@ -1684,41 +1698,24 @@ let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
 
 
 
-// [최종] 외출/외박 메뉴 열기 (상태에 따른 영역 노출 제어)
+// [최종 통합] 행정 신청 메뉴 열기 (외출/외박 + 석식 제외 동시 체크)
 async function openAdminAction() {
     const uToken = localStorage.getItem('uToken');
     const today = getTodayString();
     
-    // 1. 서버 데이터 확인
-    const snap = await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value');
-    const existingData = snap.val();
+    // 1. 서버에서 외출/외박 정보와 석식 제외 정보를 각각 가져옵니다.
+    const [actionSnap, dinnerSnap] = await Promise.all([
+        firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value'),
+        firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).once('value')
+    ]);
 
-    // 2. 영역별로 일단 모두 숨김
-    document.getElementById('adminActionForm').style.display = 'none';
-    document.getElementById('adminStatusArea').style.display = 'none';
+    const existingData = actionSnap.val();
+    const hasDinnerSkip = dinnerSnap.exists();
 
-    if (existingData) {
-        // [신청 내역이 있는 경우]
-        document.getElementById('adminStatusArea').style.display = 'block';
-        
-        const typeNm = existingData.type === 'outing' ? '외출(당일)' : '외박(익일)';
-        const returnStatus = existingData.returned 
-            ? `<b style="color:#059669;">[복귀 완료 보고됨: ${existingData.returnReportTime}]</b>` 
-            : `<b style="color:#b91c1c;">[미복귀 - 외출 중]</b>`;
-        
-        document.getElementById('adminStatusText').innerHTML = `
-            ${returnStatus}<br>
-            유형: ${typeNm}<br>
-            시간: ${existingData.startTime} ~ ${existingData.endTime}
-        `;
-        
-        // 복귀 완료 여부에 따른 버튼 제어
-        document.getElementById('beforeReturnGroup').style.display = existingData.returned ? 'none' : 'flex';
-        document.getElementById('afterReturnGroup').style.display = existingData.returned ? 'block' : 'none';
-
-    } else {
-        // [신청 내역이 없는 경우] -> 입력 양식을 강제로 보여줌
+    // 2. 아무것도 신청한 게 없다면 -> 입력 양식(Form)을 보여줍니다.
+    if (!existingData && !hasDinnerSkip) {
         document.getElementById('adminActionForm').style.display = 'flex';
+        document.getElementById('adminStatusArea').style.display = 'none';
         
         // 입력창 초기화
         document.getElementById('userDept').value = "";
@@ -1727,8 +1724,47 @@ async function openAdminAction() {
         document.getElementById('destination').value = "";
         document.getElementById('outingReason').value = "";
         document.getElementById('fullPhone').value = localStorage.getItem('kac_user_full_phone') || "";
+        document.getElementById('skipDinner').checked = false;
+        selectedAdminType = 'none';
+        updateAdminTypeButtons();
+    } 
+    // 3. 하나라도 신청한 내역이 있다면 -> 현황창(Status)을 보여줍니다.
+    else {
+        document.getElementById('adminActionForm').style.display = 'none';
+        document.getElementById('adminStatusArea').style.display = 'block';
+
+        let statusTxt = "";
+        
+        // 석식 현황 문구 추가
+        if (hasDinnerSkip) {
+            statusTxt += `<div style="margin-bottom:10px; padding:8px; background:#fff1f2; border-radius:8px; border:1px solid #fda4af;">
+                            <b style="color:#e11d48;">🍴 오늘 석식 제외 신청됨</b>
+                          </div>`;
+        }
+        
+        // 외출/외박 현황 문구 추가
+        if (existingData) {
+            const typeNm = existingData.type === 'outing' ? '외출(당일)' : '외박(익일)';
+            const returnStatus = existingData.returned 
+                ? `<b style="color:#059669;">[복귀 완료 보고됨: ${existingData.returnReportTime}]</b>` 
+                : `<b style="color:#b91c1c;">[미복귀 / 외출 중]</b>`;
+            
+            statusTxt += `<div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #dbeafe;">
+                            ${returnStatus}<br>
+                            <span style="font-size:13px; color:#64748b;">유형: ${typeNm}</span><br>
+                            <span style="font-size:13px; color:#64748b;">시간: ${existingData.startTime} ~ ${existingData.endTime}</span>
+                          </div>`;
+        }
+
+        document.getElementById('adminStatusText').innerHTML = statusTxt;
+        
+        // [버튼 제어] 복귀 완료 여부에 따라 버튼 그룹 노출 결정
+        const isReturned = existingData ? existingData.returned : false;
+        document.getElementById('beforeReturnGroup').style.display = isReturned ? 'none' : 'flex';
+        document.getElementById('afterReturnGroup').style.display = isReturned ? 'block' : 'none';
     }
-    
+
+    // 공통: 오늘 날짜 표시 및 모달 띄우기
     document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
     document.getElementById('adminActionModal').style.display = 'flex';
 }
@@ -1802,6 +1838,7 @@ async function submitAdminAction() {
     const today = getTodayString();
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
+    const phoneShort = localStorage.getItem('kac_user_phone');
     
     const dept = document.getElementById('userDept').value.trim();
     const startTime = document.getElementById('startTime').value;
@@ -1810,33 +1847,55 @@ async function submitAdminAction() {
     const dest = document.getElementById('destination').value.trim();
     const reason = document.getElementById('outingReason').value.trim();
     const fullPhone = document.getElementById('fullPhone').value.trim();
+    const skipDinner = document.getElementById('skipDinner').checked;
 
-    if (selectedAdminType === 'none') { alert("구분을 선택해주세요."); return; }
-    if (!dept || !startTime || !endTime || !dest || !reason || !fullPhone) { alert("모든 항목을 입력해주세요."); return; }
-
-    // [중요] 시간 선후 관계 체크
-    const outFullTime = new Date(`${today}T${startTime}`);
-    const returnFullTime = new Date(`${(selectedAdminType === 'overnight' ? returnDate : today)}T${endTime}`);
-
-    if (returnFullTime <= outFullTime) {
-        alert("⚠️ 복귀 일시는 외출 일시보다 늦어야 합니다.\n시간 설정을 다시 확인해주세요.");
+    // [로직] 아무것도 안 하고 버튼만 눌렀을 때
+    if (selectedAdminType === 'none' && !skipDinner) {
+        alert("외출 유형을 선택하거나 '석식 제외'에 체크해주세요.");
         return;
     }
 
-    try {
-        const actionData = {
-            name: name, dept: dept, startTime: startTime, endTime: endTime,
-            returnDate: selectedAdminType === 'overnight' ? returnDate : today,
-            destination: dest, reason: reason, phone: fullPhone,
-            type: selectedAdminType, timestamp: firebase.database.ServerValue.TIMESTAMP,
-            returned: false // 초기값: 미복귀
-        };
-        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
-        alert("✅ 신청서가 정상 제출되었습니다.");
-        document.getElementById('adminActionModal').style.display = 'none';
-    } catch (e) { alert("저장 실패"); }
-}
+    // [로직] 외출/외박을 선택했을 때만 빈칸 검사
+    if (selectedAdminType !== 'none') {
+        if (!dept || !startTime || !endTime || !dest || !reason || !fullPhone) {
+            alert("외출·외박 기록 대장을 위해 모든 항목을 입력해주세요.");
+            return;
+        }
+        const outFullTime = new Date(`${today}T${startTime}`);
+        const returnFullTime = new Date(`${(selectedAdminType === 'overnight' ? returnDate : today)}T${endTime}`);
+        if (returnFullTime <= outFullTime) {
+            alert("⚠️ 복귀 시간이 외출 시간보다 빠를 수 없습니다.");
+            return;
+        }
+    }
 
+    try {
+        // 1. 외출 정보 저장 (유형 선택했을 때만)
+        if (selectedAdminType !== 'none') {
+            const actionData = {
+                name: name, dept: dept, startTime: startTime, endTime: endTime,
+                returnDate: selectedAdminType === 'overnight' ? returnDate : today,
+                destination: dest, reason: reason, phone: fullPhone,
+                type: selectedAdminType, timestamp: firebase.database.ServerValue.TIMESTAMP,
+                returned: false
+            };
+            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
+        }
+
+        // 2. 석식 제외 저장 (체크했을 때만)
+        if (skipDinner) {
+            const now = new Date();
+            if (now.getHours() >= 16) {
+                alert("⚠️ 석식 신청은 16시에 마감되었습니다.");
+            } else {
+                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
+            }
+        }
+
+        alert("✅ 신청이 완료되었습니다.");
+        document.getElementById('adminActionModal').style.display = 'none';
+    } catch (e) { alert("저장 실패: " + e.message); }
+}
 
 
 
