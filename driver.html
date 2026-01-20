@@ -271,19 +271,24 @@ function renderCourseList() {
       if(!container) return;
       container.innerHTML = "";
 
-      // 1. 과정 데이터 정렬 (1순위: 종료일 빠른순, 2순위: ID순)
+      // 1. 과정 데이터 정렬 (수료일자 빠른순)
       const sortedKeys = Object.keys(allCourses).sort((a, b) => {
         const dateA = allCourses[a].settings?.endDate || "9999-12-31";
         const dateB = allCourses[b].settings?.endDate || "9999-12-31";
-        if (dateA !== dateB) return dateA.localeCompare(dateB); // 날짜 비교
-        return a.localeCompare(b); // ID 비교 (A, B, C...)
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return a.localeCompare(b);
       });
 
-      // 날짜 포맷팅 함수 ('26.1.19 형식)
+      // 날짜 포맷팅 함수 개선
       const formatDate = (dateStr) => {
-        if(!dateStr) return "";
-        const d = new Date(dateStr);
-        return `'${String(d.getFullYear()).slice(2)}.${d.getMonth()+1}.${d.getDate()}`;
+        if(!dateStr || dateStr === "") return null;
+        try {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return null; // 유효하지 않은 날짜 체크
+          return `'${String(d.getFullYear()).slice(2)}.${d.getMonth()+1}.${d.getDate()}`;
+        } catch(e) {
+          return null;
+        }
       };
 
       sortedKeys.forEach(rid => {
@@ -291,16 +296,21 @@ function renderCourseList() {
         if(room.status?.roomStatus !== 'active') return;
 
         const cName = room.settings?.courseName || rid;
-        const sDate = formatDate(room.settings?.startDate);
-        const eDate = formatDate(room.settings?.endDate);
+        
+        // 날짜 가져오기 (데이터 경로 재확인)
+        const rawStart = room.settings?.startDate;
+        const rawEnd = room.settings?.endDate;
+        const sDate = formatDate(rawStart);
+        const eDate = formatDate(rawEnd);
+        
+        // 날짜가 둘 다 있을 때만 표시, 없으면 '기간 미설정'
+        const dateDisplay = (sDate && eDate) ? `(${sDate}~${eDate})` : `<span style="color:#cbd5e1">(기간 미설정)</span>`;
         
         const dep = room.shuttle?.departure || { time: "", date: "" };
         const reqs = room.shuttle?.requests ? Object.values(room.shuttle.requests) : [];
         
         const is13 = dep.time === '13:00' ? 'active' : '';
         const is15 = dep.time === '15:00' ? 'active' : '';
-        
-        // 공지 완료 여부에 따른 클래스 설정
         const statusClass = dep.time ? 'completed' : '';
 
         const card = document.createElement('div');
@@ -309,7 +319,7 @@ function renderCourseList() {
           <div class="course-info">
             <div>
               <span class="course-name">#${rid} ${cName}</span>
-              <span style="font-size:11px; color:#64748b; font-weight:600; margin-left:5px;">(${sDate}~${eDate})</span>
+              <span style="font-size:11px; color:#64748b; font-weight:600; margin-left:5px;">${dateDisplay}</span>
             </div>
             <div class="course-shuttle-info">
               <span style="color:var(--osong)">오송 ${reqs.filter(r=>r.type==='osong').length}</span>
