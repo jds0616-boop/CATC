@@ -1168,23 +1168,22 @@ loadDashboardStats: function() {
             if(qaEl) qaEl.innerText = count;
         });
 
-        // 10. 셔틀 탑승 수요 통합 카운트
-        firebase.database().ref(`courses/${state.room}/shuttle/out`).on('value', s => {
+// 8. 셔틀 탑승 수요 통합 카운트 (개편된 구조 반영)
+        firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', s => {
             const data = s.val() || {};
-            const w1 = data.wave1 || {};
-            const w2 = data.wave2 || {};
-
-            const osong = (w1.osong ? Object.keys(w1.osong).length : 0) + (w2.osong ? Object.keys(w2.osong).length : 0);
-            const term = (w1.terminal ? Object.keys(w1.terminal).length : 0) + (w2.terminal ? Object.keys(w2.terminal).length : 0);
-            const air = (w1.airport ? Object.keys(w1.airport).length : 0) + (w2.airport ? Object.keys(w2.airport).length : 0);
-            const car = (w1.car ? Object.keys(w1.car).length : 0) + (w2.car ? Object.keys(w2.car).length : 0);
+            const items = Object.values(data);
+            
+            const osong = items.filter(i => i.type === 'osong').length;
+            const term = items.filter(i => i.type === 'terminal').length;
+            const air = items.filter(i => i.type === 'airport').length;
+            const car = items.filter(i => i.type === 'car').length;
 
             if(document.getElementById('total-osong')) document.getElementById('total-osong').innerText = osong;
             if(document.getElementById('total-term')) document.getElementById('total-term').innerText = term;
             if(document.getElementById('total-air')) document.getElementById('total-air').innerText = air;
             if(document.getElementById('total-car')) document.getElementById('total-car').innerText = car;
 
-            const totalSum = osong + term + air + car;
+            const totalSum = items.length;
             if(document.getElementById('dashShuttleTotal')) document.getElementById('dashShuttleTotal').innerText = totalSum + "명";
         });
     },
@@ -1771,81 +1770,85 @@ setMode: function(mode) {
 
 
 
-// [최종 수정] 차량 수요조사: 슬림한 레이아웃 및 숫자 강조 디자인 적용
-loadShuttleData: function() {
+
+
+
+
+
+
+
+
+// [개편] 차량 신청 명단 실시간 로드 및 카운트
+ui.loadShuttleData = function() {
     if(!state.room) return;
-    
-    firebase.database().ref(`courses/${state.room}`).on('value', snap => {
-        const roomData = snap.val() || {};
-        const shuttleData = roomData.shuttle?.out || {};
-        const studentData = roomData.students || {};
+
+    // 1. 기사님 공지(출발시간) 실시간 연동
+    firebase.database().ref('system/shuttle_notice').on('value', snap => {
+        const time = snap.val() || "시간 정보 없음";
+        const el = document.getElementById('shuttleDepartureTime');
+        if(el) el.innerText = time;
+    });
+
+    // 2. 신청 명단 실시간 연동
+    firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
+        const requests = snap.val() || {};
+        const tbody = document.getElementById('shuttleListTableBody');
+        if(!tbody) return;
+
+        tbody.innerHTML = "";
+        const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
         
-        // 기둥 요소 가져오기
-        const col1 = document.getElementById('col-wave1');
-        const col2 = document.getElementById('col-wave2');
-        const colCar = document.getElementById('col-car');
-        if(!col1 || !col2 || !colCar) return;
+        // 카운트 초기화
+        let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
 
-        // 화면 초기화
-        col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
+        if (items.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>신청 내역이 없습니다.</td></tr>";
+        }
 
-        // 통계 계산
-        const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-        let totalShuttle = 0;
+        items.forEach((item, idx) => {
+            counts[item.type]++;
+            
+            // 목적지별 색상 설정
+            let color = "#64748b"; // 기본 자차 (회색)
+            if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
+            else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
+            else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
 
-        // 차수 헤더 스타일 (슬림하게 변경)
-        const waveStyle = "padding: 10px; background: #003366; color: white; border-radius: 10px; font-weight: 800; font-size: 14px; text-align:center; margin-bottom:10px;";
+            const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        const waves = [
-            {id: 'wave1', n: '1차 (13:00)', t: col1},
-            {id: 'wave2', n: '2차 (15:00)', t: col2}
-        ];
-
-        waves.forEach(w => {
-            w.t.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.n}</div>`;
-            const locations = [
-                {id: 'osong', n: '오송역', i: 'fa-train'},
-                {id: 'terminal', n: '터미널', i: 'fa-bus-simple'},
-                {id: 'airport', n: '청주공항', i: 'fa-plane'}
-            ];
-
-            locations.forEach(loc => {
-                const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
-                totalShuttle += members.length;
-                w.t.innerHTML += `
-                    <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.n}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; margin-top:8px;">
-                        <div class="dest-header">
-                            <div class="dest-name-group">
-                                <div class="dest-icon-box" style="background:#f1f5f9; color:#64748b;">
-                                    <i class="fa-solid ${loc.i}"></i>
-                                </div>
-                                <div class="dest-title">${loc.n}</div>
-                            </div>
-                            <div class="dest-count-badge">${members.length}명</div>
-                        </div>
-                    </div>`;
-            });
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td style="font-weight:800;">${item.name}</td>
+                    <td>${item.phone}</td>
+                    <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
+                    <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
+                </tr>`;
         });
 
-        // 자차/개별 이동 기둥 (슬림하게 변경)
-        const carMembers = [...Object.entries(shuttleData.wave1?.car || {}), ...Object.entries(shuttleData.wave2?.car || {})];
-        colCar.innerHTML = `<div style="${waveStyle} background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
-        colCar.innerHTML += `
-            <div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; height:158px; display:flex; flex-direction:column; justify-content:center; align-items:center; margin-top:8px;">
-                <div class="dest-icon-box" style="width:40px; height:40px; font-size:18px; background:#f1f5f9; color:#64748b; margin-bottom:10px;">
-                    <i class="fa-solid fa-car-side"></i>
-                </div>
-                <div style="font-size:15px; font-weight:800; color:#1e293b;">자차 / 개별이동</div>
-                <div style="font-size:24px; font-weight:900; color:#003366;">${carMembers.length}명</div>
-            </div>`;
-
-        // 상단 요약 바 숫자 업데이트
-        document.getElementById('total-student-cnt').innerText = totalStudents;
-        document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
-        document.getElementById('total-car-cnt').innerText = carMembers.length;
-        document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - carMembers.length);
+        // 상단 카운트 업데이트
+        document.getElementById('cnt-car').innerText = counts.car;
+        document.getElementById('cnt-osong').innerText = counts.osong;
+        document.getElementById('cnt-terminal').innerText = counts.terminal;
+        document.getElementById('cnt-airport').innerText = counts.airport;
+        document.getElementById('cnt-total').innerText = items.length;
     });
-},
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // [수정] 차량 신청 명단 팝업: 취소 로직 연결 보완
 showShuttleListModal: function(waveId, waveName, locName, members) {
