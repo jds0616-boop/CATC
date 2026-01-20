@@ -1495,12 +1495,20 @@ async function openShuttleApply() {
     
     const uToken = localStorage.getItem('uToken');
 
-    // [기능 1] 기사님 공지(출발시간) 실시간 동기화
-    firebase.database().ref('system/shuttle_notice').on('value', snap => {
-        const time = snap.val() || "시간 정보 없음";
-        const timeEl = document.getElementById('departureTimeText');
-        if(timeEl) timeEl.innerText = time;
-    });
+// 우리 과정 전용 출발시간 동기화 코드
+firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
+    const dep = snap.val();
+    const timeEl = document.getElementById('departureTimeText');
+    if(!timeEl) return;
+
+    if (dep && dep.time) {
+        timeEl.innerText = `${dep.date} ${dep.time}`;
+    } else {
+        firebase.database().ref('system/shuttle_notice').once('value', s => {
+            timeEl.innerText = s.val() || "시간 정보 없음";
+        });
+    }
+});
 
     // [기능 2] 기존 신청 내역 확인 (단일 경로 체크)
     const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
