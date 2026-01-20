@@ -432,65 +432,41 @@
     </div>
 
 
-<!-- 차량 신청용 팝업 (1차/2차 차수 선택 기능 추가) -->
+
+
+
+
+
+<!-- [개편] 차량 신청 팝업 -->
 <div id="shuttleModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:90%; padding: 25px 20px; border-radius: 24px; max-width: 400px;">
-<h3 id="shuttleModalTitle" style="margin-bottom: 5px; color:#1e293b; font-weight:900;">퇴교 차량 탑승 신청</h3>
+        <h3 style="margin-bottom: 5px; color:#1e293b; font-weight:900;">퇴교 차량 신청</h3>
         
-        <!-- [신규] 기사님 안내사항 바 -->
-        <div id="driverNoticeBar" style="display:none; background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 12px; margin-bottom: 15px; text-align: left;">
-            <div style="font-size: 10px; font-weight: 800; color: #b45309; margin-bottom: 3px;"><i class="fa-solid fa-circle-exclamation"></i> 기사님 안내사항</div>
-            <div id="driverNoticeText" style="font-size: 13px; font-weight: 700; color: #92400e; line-height: 1.4;"></div>
+        <!-- 기사님 전달 시간 표시 영역 -->
+        <div id="driverNoticeBar" style="background: #eff6ff; border: 1px solid #dbeafe; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 800; color: #3b82f6; margin-bottom: 4px;">📢 항기원 출발 예정 시간</div>
+            <div id="departureTimeText" style="font-size: 18px; font-weight: 900; color: #1e40af;">시간 정보 없음</div>
         </div>
 
-        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">기사님이 지정한 시간(차수)을 먼저 선택하세요.</p>
-        
-<!-- 1단계: 차수(시간) 선택 또는 자차 신청 (디자인 개선 버전) -->
-        <div id="waveSelectionArea" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
-            
-            <!-- 셔틀버스 그룹 -->
-            <div id="shuttleGroup" style="display:flex; flex-direction:column; gap:8px;">
-                <button id="btnWave1" onclick="selectShuttleWave('wave1', '1차 (13:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
-                    <i class="fa-solid fa-clock"></i> 1차 셔틀 (13:00 출발)
-                </button>
-                <button id="btnWave2" onclick="selectShuttleWave('wave2', '2차 (15:00)')" style="display:none; width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
-                    <i class="fa-solid fa-clock"></i> 2차 셔틀 (15:00 출발)
-                </button>
-            </div>
-
-            <!-- 구분선 -->
-            <div id="shuttleDivider" style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 5px 0;">
-                <div style="flex:1; height:1px; background:#e2e8f0;"></div>
-                <span style="font-size:11px; color:#cbd5e1; font-weight:700;">OR</span>
-                <div style="flex:1; height:1px; background:#e2e8f0;"></div>
-            </div>
-
-            <!-- 자차 신청 (초기 상태 중립화) -->
-            <button id="btnSelfCar" onclick="selectSelfCar()" style="width:100%; padding:15px; border-radius:15px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:15px; color:#64748b;">
-                <i class="fa-solid fa-car"></i> 자차 / 개별이동 신청
-            </button>
-
-            <div id="noShuttleMsg" style="display:none; padding:15px; text-align:center; color:#94a3b8; font-size:12px; font-weight:bold; border:1px dashed #cbd5e1; border-radius:15px;">
-                현재 예약 가능한 셔틀버스가 없습니다.
+        <!-- 신청 전: 버튼 선택 영역 -->
+        <div id="shuttleSelectionArea">
+            <p style="font-size:12px; color:#94a3b8; margin-bottom:15px; text-align: center;">이동 수단을 선택해 주세요.</p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('car', '자차(개별이동)')" style="justify-content: center; height:55px; font-size:17px; background:#f1f5f9; border-color:#e2e8f0; color:#64748b;">자차 (개별이동)</button>
+                <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('osong', '오송역')" style="justify-content: center; height:55px; font-size:17px; border-color:#fca5a5; color:#b91c1c;">오송역</button>
+                <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center; height:55px; font-size:17px; border-color:#93c5fd; color:#1e40af;">청주터미널</button>
+                <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center; height:55px; font-size:17px; border-color:#86efac; color:#166534;">청주국제공항</button>
             </div>
         </div>
 
-        <!-- 2단계: 목적지 버튼 (차수를 선택하기 전까진 가려짐) -->
-        <div id="shuttleButtons" style="display:none; flex-direction:column; gap:8px; padding-top:15px; border-top:1px dashed #cbd5e1;">
-            <p style="font-size:11px; font-weight:800; color:#3b82f6; margin-bottom:10px; text-align:center;">[2단계] 목적지를 선택하세요</p>
-            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('osong', '오송역')" style="justify-content: center; height:55px; font-size:17px;">오송역</button>
-            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('terminal', '청주터미널')" style="justify-content: center; height:55px; font-size:17px;">청주터미널</button>
-            <button class="quiz-opt-btn shuttle-btn" onclick="selectShuttle('airport', '청주공항')" style="justify-content: center; height:55px; font-size:17px;">청주국제공항</button>
+        <!-- 신청 후: 내역 확인 및 취소 영역 -->
+        <div id="shuttleCancelArea" style="display:none; background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; text-align:center;">
+            <p style="font-size: 12px; font-weight: 800; color: #64748b; margin-bottom:5px;">📍 나의 신청 현황</p>
+            <p id="myCurrentShuttleText" style="font-size: 20px; font-weight: 900; color: #1e293b; margin-bottom:20px;"></p>
+            <button onclick="cancelShuttleRequest()" style="width: 100%; padding: 15px; background: #ef4444; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: bold;">신청 취소하기</button>
         </div>
 
-        <!-- 기존 신청 내역 확인 및 취소 -->
-        <div id="shuttleCancelArea" style="display:none; margin-top:20px; background: #f0fdf4; padding: 15px; border-radius: 15px; border: 1px solid #10b981; text-align:left;">
-            <p style="font-size: 12px; font-weight: 800; color: #10b981; margin-bottom:5px;">📍 나의 신청 현황</p>
-            <p id="myCurrentShuttle" style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom:12px;"></p>
-            <button onclick="cancelShuttleRequest()" style="width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold;">신청 취소하기</button>
-        </div>
-
-        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:15px; background:#f1f5f9; color: #475569; font-size: 18px; font-weight: 900; cursor: pointer;">닫기</button>
+        <button onclick="closeShuttleModal()" style="margin-top:20px; width:100%; padding:15px; border:none; border-radius:15px; background:#f1f5f9; color: #475569; font-size: 18px; font-weight: 900;">닫기</button>
     </div>
 </div>
 
@@ -1509,202 +1485,101 @@ function forceCloseQuiz() {
 
 
 
-let tempSelectedLoc = null; 
-let tempSelectedWave = null; 
-let tempSelectedWaveName = ""; 
-let hasExistingRequest = false; // 기존 신청 여부 확인용
-let existingWave = null; // 기존 신청 시간대 저장
-let existingLoc = null; // 기존 신청 장소 저장
+// --- 차량 신청 관련 변수 초기화 ---
+let currentShuttleData = null; // 나의 신청 데이터 저장용
 
-// 1. 차량 신청 팝업 열기 (가장 먼저 기존 내역이 있는지 검사함)
+// 1. 차량 신청 팝업 열기
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    // 초기화 과정
     const uToken = localStorage.getItem('uToken');
-    tempSelectedLoc = null; 
-    tempSelectedWave = null;
-    hasExistingRequest = false;
-    existingWave = null;
-    existingLoc = null;
 
-    // 화면 리셋 (목적지 버튼 숨기기 등)
-    document.getElementById('shuttleButtons').style.display = "none";
-    document.getElementById('shuttleCancelArea').style.display = 'none';
-    document.getElementById('waveSelectionArea').style.display = 'flex'; 
-
-    // 서버(DB)를 뒤져서 내가 이미 신청한 기록이 있는지 확인
-    const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/out`).once('value');
-    const data = snap.val() || {};
-    const locNames = { osong: '오송역', terminal: '청주터미널', airport: '청주공항', car: '자차/개별이동' };
-
-    // 1차와 2차 목록을 모두 확인
-    ['wave1', 'wave2'].forEach(w => {
-        if(data[w]) {
-            for(const loc in data[w]) {
-                if(data[w][loc][uToken]) { 
-                    hasExistingRequest = true; // 신청 기록 발견!
-                    existingWave = w;
-                    existingLoc = loc;
-                }
-            }
-        }
+    // [기능 1] 기사님 공지(출발시간) 실시간 동기화
+    firebase.database().ref('system/shuttle_notice').on('value', snap => {
+        const time = snap.val() || "시간 정보 없음";
+        const timeEl = document.getElementById('departureTimeText');
+        if(timeEl) timeEl.innerText = time;
     });
 
-    if (hasExistingRequest) {
-        // [중요] 이미 신청했다면 선택 버튼들을 다 숨기고 "취소하기" 화면만 보여줌
-        document.getElementById('waveSelectionArea').style.display = 'none';
-        document.getElementById('shuttleButtons').style.display = 'none';
+    // [기능 2] 기존 신청 내역 확인 (단일 경로 체크)
+    const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
+    currentShuttleData = snap.val();
+
+    if (currentShuttleData) {
+        // 신청한 기록이 있으면: 취소 화면 보여주기
+        document.getElementById('shuttleSelectionArea').style.display = 'none';
         document.getElementById('shuttleCancelArea').style.display = 'block';
-        
-        const waveTxt = (existingLoc === 'car') ? '개별이동' : (existingWave === 'wave1' ? '1차(13:00)' : '2차(15:00)');
-        document.getElementById('myCurrentShuttle').innerText = `현재 신청: [${waveTxt}] ${locNames[existingLoc]}`;
+        document.getElementById('myCurrentShuttleText').innerText = currentShuttleData.typeText;
     } else {
-        // 신청 내역이 없다면 정상적인 선택 화면을 보여줌
-        updateShuttleButtonsUI();
+        // 신청한 기록이 없으면: 선택 화면 보여주기
+        document.getElementById('shuttleSelectionArea').style.display = 'block';
+        document.getElementById('shuttleCancelArea').style.display = 'none';
     }
 }
 
-// 2. 셔틀 차수 버튼 보이기/숨기기 (기사님 설정에 따라 다름)
-async function updateShuttleButtonsUI() {
-    const settingsSnap = await firebase.database().ref('system/shuttle_settings').once('value');
-    const settings = settingsSnap.val() || {};
-    
-    const w1Btn = document.getElementById('btnWave1');
-    const w2Btn = document.getElementById('btnWave2');
-    const noMsg = document.getElementById('noShuttleMsg');
+// 2. 차량 선택 시 호출 (오송, 터미널, 공항, 자차 공통)
+function selectShuttle(typeId, typeName) {
+    showKacConfirm(`[${typeName}]\n차량을 신청하시겠습니까?`, async function() {
+        const uToken = localStorage.getItem('uToken');
+        const name = localStorage.getItem('kac_user_name');
+        const phone = localStorage.getItem('kac_user_phone');
 
-    if(w1Btn) w1Btn.style.display = settings.friday_wave1 ? "block" : "none";
-    if(w2Btn) w2Btn.style.display = settings.friday_wave2 ? "block" : "none";
-    
-    if (!settings.friday_wave1 && !settings.friday_wave2) {
-        if(noMsg) noMsg.style.display = "block";
-    }
+        // 서버에 저장할 데이터 구성
+        const requestData = {
+            type: typeId,      // osong, terminal, airport, car
+            typeText: typeName, // 오송역, 청주터미널...
+            name: name,
+            phone: phone,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
 
-    // 모든 버튼의 강조색을 뺌 (초기화)
-    [w1Btn, w2Btn, document.getElementById('btnSelfCar')].forEach(btn => {
-        if(btn) {
-            btn.style.borderColor = "#e2e8f0";
-            btn.style.background = "#fff";
-            btn.style.color = "#64748b";
+        try {
+            // 신규 통합 경로: shuttle/requests 밑에 내 토큰으로 저장
+            await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).set(requestData);
+            alert("✅ 신청이 완료되었습니다.");
+            closeShuttleModal();
+        } catch (e) { 
+            alert("저장 실패. 인터넷 연결을 확인하세요."); 
         }
     });
 }
 
-// 3. 셔틀 시간(1차 또는 2차) 선택 시 실행 (디자인 활성화 버전)
-function selectShuttleWave(waveId, waveName) {
-    if(hasExistingRequest) return; // 신청 내역 있으면 클릭 방지
-
-    tempSelectedWave = waveId;
-    tempSelectedWaveName = waveName;
-    
-    // 버튼들의 활성화 클래스 초기화
-    const btn1 = document.getElementById('btnWave1');
-    const btn2 = document.getElementById('btnWave2');
-    const btnCar = document.getElementById('btnSelfCar');
-
-    if(btn1) btn1.classList.remove('shuttle-active');
-    if(btn2) btn2.classList.remove('shuttle-active');
-    if(btnCar) btnCar.classList.remove('shuttle-active');
-
-    // 선택한 버튼만 녹색으로 활성화
-    const selectedBtn = (waveId === 'wave1') ? btn1 : btn2;
-    if(selectedBtn) selectedBtn.classList.add('shuttle-active');
-
-    // 목적지(2단계) 영역 표시
-    document.getElementById('shuttleButtons').style.display = "flex";
-}
-
-// 4. 자차/개별이동 선택 시 실행
-function selectSelfCar() {
-    if(hasExistingRequest) return;
-
-    // 다른 차수 버튼들 활성화 해제
-    document.getElementById('btnWave1').classList.remove('shuttle-active');
-    document.getElementById('btnWave2').classList.remove('shuttle-active');
-    
-    // 자차 버튼 활성화
-    document.getElementById('btnSelfCar').classList.add('shuttle-active');
-
-    showKacConfirm("자차 또는 개별이동으로\n퇴교 신청하시겠습니까?\n(기존 셔틀 신청은 불가합니다)", function() {
-        tempSelectedWave = 'wave1'; // DB 기록용
-        tempSelectedLoc = { id: 'car', name: '자차/개별이동' };
-        tempSelectedWaveName = '개별이동';
-        submitShuttleRequest();
-    });
-}
-
-// 5. 최종 목적지(오송, 터미널 등) 선택 시 실행
-function selectShuttle(locId, locName) {
-    if(hasExistingRequest) {
-        alert("이미 신청된 내역이 있습니다. 취소 후 다시 신청해주세요.");
-        return;
-    }
-    if(!tempSelectedWave) {
-        alert("시간(차수)을 먼저 선택해주세요.");
-        return;
-    }
-
-    // 모든 목적지 버튼에서 활성화 클래스 제거
-    const destButtons = document.querySelectorAll('.shuttle-btn');
-    destButtons.forEach(btn => btn.classList.remove('shuttle-active'));
-
-    // 클릭한 목적지 버튼만 녹색으로 활성화
-    const clickedBtn = event.currentTarget;
-    clickedBtn.classList.add('shuttle-active');
-
-    // 확인 팝업 띄우기
-    showKacConfirm(`[${tempSelectedWaveName}]\n${locName}행 차량을 신청하시겠습니까?`, function() {
-        tempSelectedLoc = { id: locId, name: locName };
-        submitShuttleRequest();
-    });
-}
-
-// 6. 데이터베이스에 실제로 저장
-async function submitShuttleRequest() {
-    const name = localStorage.getItem('kac_user_name');
-    const phone = localStorage.getItem('kac_user_phone');
-    const uToken = localStorage.getItem('uToken');
-    const fullName = `${name}(${phone})`;
-    
-    try {
-        await firebase.database().ref(`courses/${currentRoom}/shuttle/out/${tempSelectedWave}/${tempSelectedLoc.id}/${uToken}`).set(fullName);
-        alert(`✅ 신청이 완료되었습니다.\n강사님 명단에서 확인 가능합니다.`);
-        closeShuttleModal();
-    } catch (e) { alert("저장 실패. 다시 시도해주세요."); }
-}
-
-// 7. 신청 취소 (이걸 눌러야만 다시 신청할 수 있게 리셋됨)
+// 3. 신청 취소 실행
 async function cancelShuttleRequest() {
-    if (!confirm("정말 신청을 취소하시겠습니까?\n취소 후 다시 선택 가능합니다.")) return;
+    if (!confirm("정말 신청을 취소하시겠습니까?")) return;
+    
     const uToken = localStorage.getItem('uToken');
     try {
-        // 내가 어디에 신청했는지 알고 있으므로 해당 경로를 찾아 삭제함
-        await firebase.database().ref(`courses/${currentRoom}/shuttle/out/${existingWave}/${existingLoc}/${uToken}`).remove();
+        // 서버에서 내 데이터 삭제
+        await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).remove();
         alert("정상적으로 취소되었습니다.");
         
-        // 다시 처음부터 신청할 수 있도록 팝업창을 새로 고침
+        // 다시 신청할 수 있도록 팝업 화면 갱신
         openShuttleApply(); 
-    } catch (e) { alert("취소 처리 중 오류가 발생했습니다."); }
+    } catch (e) { 
+        alert("취소 처리 중 오류가 발생했습니다."); 
+    }
 }
 
-// 8. 팝업창 닫기
+// 4. 팝업창 닫기
 function closeShuttleModal() { 
     document.getElementById('shuttleModal').style.display = 'none'; 
 }
 
 
+
+
+
+
+
+
+
+
+
 // --- [복구] 통합 행정 신청(외출/외박/석식) 로직 ---
 
 let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
-
-
-
-
-
-
-
 
 
 
