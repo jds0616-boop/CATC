@@ -1712,7 +1712,21 @@ setMode: function(mode) {
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
-            if (mode === 'shuttle') ui.loadShuttleData();
+            if (mode === 'shuttle') {
+    this.loadShuttleData();
+    
+    // [추가] 탭 진입 시 'N' 배지 숨기고 현재 시간을 '확인 완료'로 저장
+    const badge = document.getElementById('shuttleNewBadge');
+    if(badge) badge.style.display = 'none';
+
+    // 현재 설정된 시간을 '읽음' 상태로 저장하기 위해 데이터 가져오기
+    firebase.database().ref(`courses/${state.room}/shuttle/departure`).once('value', snap => {
+        const dep = snap.val();
+        if(dep && dep.time) {
+            localStorage.setItem(`last_seen_shuttle_${state.room}`, `${dep.date} ${dep.time}`);
+        }
+    });
+}
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
