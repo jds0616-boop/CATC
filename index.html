@@ -501,76 +501,72 @@
 
 
 
-<!-- [수정] 외출/외박 신청 팝업 (소속 추가 및 시간 UI 개선) -->
+<!-- [최종 수정] 외출/외박 신청 및 복귀 시스템 -->
 <div id="adminActionModal" class="menu-overlay" style="display:none; z-index: 7000;">
     <div class="menu-box" style="width:95%; padding: 20px; border-radius: 20px; max-width: 450px;">
         <h3 style="margin-bottom: 5px; font-weight:900;">외출·외박 신청서 작성</h3>
         <p id="adminActionDate" style="font-size:12px; color:#94a3b8; margin-bottom:15px;">오늘 날짜: 202X-XX-XX</p>
 
+        <!-- 신청 후 상태 화면 -->
         <div id="adminStatusArea" style="display:none; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 20px; text-align: left;">
-            <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 내역</p>
-            <div id="adminStatusText" style="font-size: 14px; color: #1e293b; margin: 0; line-height: 1.4;"></div>
-            <button onclick="cancelAdminAction()" style="width: 100%; margin-top:10px; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold;">신청 취소</button>
+            <p style="font-size: 14px; font-weight: 800; color: #3b82f6; margin: 0 0 5px 0;">현재 신청 및 복귀 현황</p>
+            <div id="adminStatusText" style="font-size: 14px; color: #1e293b; margin: 0; line-height: 1.5;"></div>
+            
+            <div id="returnBtnArea" style="margin-top:15px; display:flex; gap:8px;">
+                <button onclick="confirmReturnAction()" id="btn-return-complete" style="flex:2; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold;">복귀 완료 보고</button>
+                <button onclick="cancelAdminAction()" id="btn-cancel-action" style="flex:1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold;">신청 취소</button>
+            </div>
         </div>
 
+        <!-- 신청 입력 양식 -->
         <div id="adminActionForm" style="text-align: left; display: flex; flex-direction: column; gap: 12px;">
-            <!-- 구분 선택 -->
             <div style="display: flex; gap: 8px;">
                 <button class="quiz-opt-btn admin-type-btn" id="btn-outing" onclick="selectAdminType('outing')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외출 (당일)</button>
                 <button class="quiz-opt-btn admin-type-btn" id="btn-overnight" onclick="selectAdminType('overnight')" style="height:45px; font-size:14px; flex:1; margin-bottom:0;">외박 (익일)</button>
             </div>
 
-            <!-- 소속 입력 추가 -->
             <div>
-                <label style="font-size:11px; font-weight:800; color:#64748b;">소속 (예: 13기, 운영부 등)</label>
-                <input type="text" id="userDept" placeholder="소속을 입력하세요" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
+                <label style="font-size:11px; font-weight:800; color:#64748b;">소속 (예: 김포공항 레이더관제부 등)</label>
+                <input type="text" id="userDept" placeholder="소속 부서를 입력하세요" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
             </div>
 
-            <!-- 시간 입력 (상하 배치로 개선) -->
-            <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px;">
-                <div>
-                    <label style="font-size:11px; font-weight:800; color:#64748b; display: block; margin-bottom: 5px;">외출 시간</label>
-                    <input type="time" id="startTime" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:16px;">
+            <!-- 시간 입력 (칸 넘침 해결: 너비 최적화) -->
+            <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-size:13px; font-weight:800; color:#64748b;">외출 시간</label>
+                    <input type="time" id="startTime" style="width:65%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px;">
                 </div>
-                <div>
-                    <label style="font-size:11px; font-weight:800; color:#64748b; display: block; margin-bottom: 5px;">복귀 시간</label>
-                    <input type="time" id="endTime" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-size:13px; font-weight:800; color:#64748b;">복귀 시간</label>
+                    <input type="time" id="endTime" style="width:65%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px;">
                 </div>
-                <div id="returnDateArea" style="display:none; border-top: 1px dashed #cbd5e1; padding-top:10px;">
-                    <label style="font-size:11px; font-weight:800; color:#e11d48; display: block; margin-bottom: 5px;">복귀 예정 일자</label>
-                    <input type="date" id="returnDate" style="width:100%; padding:10px; border:1px solid #fda4af; border-radius:8px; font-size:16px;">
+                <div id="returnDateArea" style="display:none; border-top: 1px dashed #cbd5e1; padding-top:10px; display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-size:13px; font-weight:800; color:#e11d48;">복귀 날짜</label>
+                    <input type="date" id="returnDate" style="width:65%; padding:8px; border:1px solid #fda4af; border-radius:8px; font-size:14px;">
                 </div>
             </div>
 
             <div>
                 <label style="font-size:11px; font-weight:800; color:#64748b;">행선지</label>
-                <input type="text" id="destination" placeholder="예: 청주시내" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
+                <input type="text" id="destination" placeholder="예: 청주시내" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:15px;">
             </div>
 
             <div>
                 <label style="font-size:11px; font-weight:800; color:#64748b;">신청 사유</label>
-                <input type="text" id="outingReason" placeholder="예: 개인용무, 병원 등" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
+                <input type="text" id="outingReason" placeholder="예: 개인용무 등" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:15px;">
             </div>
 
             <div>
                 <label style="font-size:11px; font-weight:800; color:#64748b;">비상 연락처</label>
-                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; padding:12px; border:1.5px solid #e2e8f0; border-radius:10px; outline:none; font-size:15px;">
-            </div>
-
-            <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px dashed #cbd5e1;">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                    <input type="checkbox" id="skipDinner" style="width:18px; height:18px;">
-                    <span style="font-size:14px; font-weight:700; color:#1e293b;">오늘 저녁 식사를 하지 않습니다.</span>
-                </label>
+                <input type="tel" id="fullPhone" placeholder="010-0000-0000" style="width:100%; padding:10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:15px;">
             </div>
 
             <button onclick="submitAdminAction()" style="width: 100%; padding: 15px; background: #10b981; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 900; margin-top:5px;">신청서 제출</button>
         </div>
 
-        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 15px; font-weight: 800; cursor: pointer;">취소</button>
+        <button onclick="document.getElementById('adminActionModal').style.display='none'" style="margin-top:15px; width:100%; padding:12px; border:none; border-radius:12px; background:#f1f5f9; color: #475569; font-size: 15px; font-weight: 800; cursor: pointer;">닫기</button>
     </div>
 </div>
-
 
 
 
@@ -1684,49 +1680,43 @@ let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
 
 
 
-// [수정] 신청 메뉴 클릭 시 기존 내역 체크 로직
+// 1. 신청 메뉴 열기 (복귀 완료 상태 체크 포함)
 async function openAdminAction() {
     const uToken = localStorage.getItem('uToken');
     const today = getTodayString();
-    
-    // 1. 서버에서 오늘 나의 신청 내역이 있는지 확인
     const snap = await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value');
     const existingData = snap.val();
 
     if (existingData) {
-        // [이미 신청한 경우] 기존 내용을 팝업에 표시하고 양식은 숨김
         document.getElementById('adminActionForm').style.display = 'none';
         document.getElementById('adminStatusArea').style.display = 'block';
         
         const typeNm = existingData.type === 'outing' ? '외출(당일)' : '외박(익일)';
-        const statusHtml = `
-            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #dbeafe; margin-top:5px;">
-                <b style="color:#1e40af;">[${typeNm} 신청됨]</b><br>
-                <small>출발: ${existingData.startTime} / 복귀: ${existingData.endTime}</small><br>
-                <small>행선지: ${existingData.destination}</small>
-            </div>
-            <p style="color:#ef4444; font-size:12px; font-weight:800; margin-top:10px;">
-                ※ 내용을 수정하려면 기존 신청을 취소하고 다시 작성해주세요.
-            </p>
+        const returnStatus = existingData.returned ? `<b style="color:#059669;">[복귀 완료 보고됨]</b>` : `<b style="color:#b91c1c;">[미복귀 - 외출 중]</b>`;
+        
+        document.getElementById('adminStatusText').innerHTML = `
+            ${returnStatus}<br>
+            유형: ${typeNm}<br>
+            시간: ${existingData.startTime} ~ ${existingData.endTime}
         `;
-        document.getElementById('adminStatusText').innerHTML = statusHtml;
+        
+        // 복귀 완료했으면 복귀 버튼 숨기기
+        document.getElementById('btn-return-complete').style.display = existingData.returned ? 'none' : 'block';
     } else {
-        // [신청 내역이 없는 경우] 입력 양식을 보여줌
         document.getElementById('adminActionForm').style.display = 'flex';
         document.getElementById('adminStatusArea').style.display = 'none';
-        
-        // 입력창 초기화
-        document.getElementById('userDept').value = "";
-        document.getElementById('startTime').value = "";
-        document.getElementById('endTime').value = "";
-        document.getElementById('destination').value = "";
-        document.getElementById('outingReason').value = "";
-        document.getElementById('fullPhone').value = localStorage.getItem('kac_user_full_phone') || "";
     }
-
     document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
     document.getElementById('adminActionModal').style.display = 'flex';
 }
+
+
+
+
+
+
+
+
 
 // 1. 외출/외박 타입 선택 시 날짜창 제어
 function selectAdminType(type) {
@@ -1767,48 +1757,44 @@ function updateAdminTypeButtons() {
 
 
 
-// 2. 신청 데이터 전송
+// 2. 신청서 제출 (시간 유효성 검사 강화)
 async function submitAdminAction() {
     const today = getTodayString();
     const uToken = localStorage.getItem('uToken');
     const name = localStorage.getItem('kac_user_name');
     
-    const dept = document.getElementById('userDept').value.trim(); // 소속 데이터 추가
+    const dept = document.getElementById('userDept').value.trim();
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
     const returnDate = document.getElementById('returnDate').value;
     const dest = document.getElementById('destination').value.trim();
     const reason = document.getElementById('outingReason').value.trim();
     const fullPhone = document.getElementById('fullPhone').value.trim();
-    const skipDinner = document.getElementById('skipDinner').checked;
 
     if (selectedAdminType === 'none') { alert("구분을 선택해주세요."); return; }
     if (!dept || !startTime || !endTime || !dest || !reason || !fullPhone) { alert("모든 항목을 입력해주세요."); return; }
 
+    // [중요] 시간 선후 관계 체크
+    const outFullTime = new Date(`${today}T${startTime}`);
+    const returnFullTime = new Date(`${(selectedAdminType === 'overnight' ? returnDate : today)}T${endTime}`);
+
+    if (returnFullTime <= outFullTime) {
+        alert("⚠️ 복귀 일시는 외출 일시보다 늦어야 합니다.\n시간 설정을 다시 확인해주세요.");
+        return;
+    }
+
     try {
         const actionData = {
-            name: name,
-            dept: dept, // DB 저장
-            startTime: startTime,
-            endTime: endTime,
+            name: name, dept: dept, startTime: startTime, endTime: endTime,
             returnDate: selectedAdminType === 'overnight' ? returnDate : today,
-            destination: dest,
-            reason: reason,
-            phone: fullPhone,
-            type: selectedAdminType,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
+            destination: dest, reason: reason, phone: fullPhone,
+            type: selectedAdminType, timestamp: firebase.database.ServerValue.TIMESTAMP,
+            returned: false // 초기값: 미복귀
         };
-
         await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
-
-        if (skipDinner) {
-            const phoneShort = localStorage.getItem('kac_user_phone');
-            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
-        }
-
         alert("✅ 신청서가 정상 제출되었습니다.");
         document.getElementById('adminActionModal').style.display = 'none';
-    } catch (e) { alert("저장 중 오류 발생"); }
+    } catch (e) { alert("저장 실패"); }
 }
 
 
@@ -1843,7 +1829,21 @@ async function cancelAdminAction() {
 
 
 
-
+// 3. 복귀 완료 보고 처리
+async function confirmReturnAction() {
+    if(!confirm("현 시각부로 강의실(생활관)에 복귀하셨습니까?")) return;
+    const uToken = localStorage.getItem('uToken');
+    const today = getTodayString();
+    
+    try {
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).update({
+            returned: true,
+            returnReportTime: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        });
+        alert("✅ 복귀 보고가 완료되었습니다.");
+        document.getElementById('adminActionModal').style.display = 'none';
+    } catch (e) { alert("처리 오류"); }
+}
 
 
 

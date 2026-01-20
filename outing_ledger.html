@@ -125,15 +125,14 @@
 
 
 
-// [수정] 시간 표시 로직: 출발/복귀 두 줄로 분리
+// [찾을 부분] list.sort(...) 바로 아래에 있는 list.forEach 구문입니다.
+
 list.forEach(a => {
     const tr = document.createElement('tr');
     
-    // 시간 칸 디자인 가공
+    // 1. 시간 표시 가공 (출발/복귀 두 줄)
     let startTime = a.startTime || "-";
     let endTime = a.endTime || "-";
-    
-    // 외박일 경우 복귀 날짜 표시 추가
     if(a.type === 'overnight' && a.returnDate) {
         const retDay = a.returnDate.substring(8,10);
         endTime = `익일(${retDay}일) ${endTime}`;
@@ -145,7 +144,10 @@ list.forEach(a => {
         <div style="font-size:12px; font-weight:800; color:#b91c1c;">복귀: ${endTime}</div>
     `;
 
-    // 서명 표시 로직
+    // 2. ★ 여기 추가: 복귀 완료 시 이름 밑에 표시할 문구
+    const returnMark = a.returned ? `<div style="font-size:10px; color:#10b981; font-weight:bold; margin-top:3px;">[복귀보고:${a.returnReportTime}]</div>` : "";
+
+    // 3. 서명 이미지/텍스트 판단
     let confirmDisplay = "";
     if(a.confirmedBySign) {
         confirmDisplay = `<img src="${a.confirmedBySign}" class="stamp-img">`;
@@ -153,11 +155,15 @@ list.forEach(a => {
         confirmDisplay = `<span class="confirm-text">${a.confirmedBy}</span>`;
     }
 
+    // 4. 테이블 한 줄 완성
     tr.innerHTML = `
         <td>${a.date.substring(5)}</td>
         <td style="padding: 5px 2px;">${timeHtml}</td>
         <td><span class="shrink-text">${a.dept || ""}</span></td>
-        <td class="name-cell">${a.name}</td>
+        <td class="name-cell">
+            ${a.name}
+            ${returnMark} <!-- ★ 이름 칸에 복귀 문구가 나오도록 삽입됨 -->
+        </td> 
         <td>${a.destination || ""}</td>
         <td style="font-size:13px;">${a.phone || ""}</td>
         <td><span class="shrink-text">${a.reason || ""}</span></td>

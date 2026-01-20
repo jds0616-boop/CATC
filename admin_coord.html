@@ -675,51 +675,69 @@ const coordMgr = {
 
 
 // [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
-    function updateIndividualView() {
-        const room = globalAllData[currentRID]; if (!room) return;
-        document.getElementById('ind-room-id').innerText = currentRID;
-        document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
-        document.getElementById('ind-period').innerText = room.settings?.period || "-";
-        document.getElementById('ind-prof').innerText = (room.status?.professorName || "-") + " 교수";
-        document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
-        document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
+function updateIndividualView() {
+    const room = globalAllData[currentRID]; 
+    if (!room) return;
 
-        // [최종 수정] 모든 학생장 및 입력된 전체 전화번호 실시간 연동
-        let leaderTxt = "지정된 학생장 없음";
-        if(room.students) {
-            const leaders = Object.values(room.students).filter(s => s.isLeader === true);
-            if(leaders.length > 0) {
-                // 강사 플랫폼에서 수정한 전체 번호(l.phone)를 그대로 가져와서 표시합니다.
-                leaderTxt = leaders.map(l => {
-                    const phoneDisplay = l.phone ? l.phone : '연락처 미등록';
-                    return `${l.name} [${phoneDisplay}]`;
-                }).join('  /  ');
-            }
+    // 1. 상단 과정 정보 업데이트
+    document.getElementById('ind-room-id').innerText = currentRID;
+    document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
+    document.getElementById('ind-period').innerText = room.settings?.period || "-";
+    document.getElementById('ind-prof').innerText = (room.status?.professorName || "-") + " 교수";
+    document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
+    document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
+
+    // 2. 학생장 정보 연동
+    let leaderTxt = "지정된 학생장 없음";
+    if(room.students) {
+        const leaders = Object.values(room.students).filter(s => s.isLeader === true);
+        if(leaders.length > 0) {
+            leaderTxt = leaders.map(l => `${l.name} [${l.phone || '연락처 미등록'}]`).join('  /  ');
         }
-        document.getElementById('ind-leader').innerText = leaderTxt;
-
-        const today = getTodayString();
-        const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
-        const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
-        document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
-        
-        const getSum = (loc) => { const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; return w1 + w2; };
-        document.getElementById('ind-osong').innerText = getSum('osong'); document.getElementById('ind-term').innerText = getSum('terminal'); document.getElementById('ind-air').innerText = getSum('airport'); document.getElementById('ind-car').innerText = getSum('car');
-        
-        const actionTbody = document.getElementById('indActionTableBody');
-        const actions = room.admin_actions?.[today] || {};
-        const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
-        
-        actionTbody.innerHTML = items.length ? items.map(a => {
-            const isSigned = a.confirmed === true;
-            const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img">` : "서명";
-            const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
-            return `<tr><td style="font-weight:800;">${a.name}</td><td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td></tr>`;
-        }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
-        
-        document.getElementById('courseNotice').value = room.coordNotice || ""; 
     }
+    document.getElementById('ind-leader').innerText = leaderTxt;
+
+    // 3. 입교 현황 및 셔틀 집계
+    const today = getTodayString();
+    const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
+    const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
+    document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
+    
+    const getSum = (loc) => { 
+        const w1 = room.shuttle?.out?.wave1?.[loc] ? Object.keys(room.shuttle.out.wave1[loc]).length : 0; 
+        const w2 = room.shuttle?.out?.wave2?.[loc] ? Object.keys(room.shuttle.out.wave2[loc]).length : 0; 
+        return w1 + w2; 
+    };
+    document.getElementById('ind-osong').innerText = getSum('osong'); 
+    document.getElementById('ind-term').innerText = getSum('terminal'); 
+    document.getElementById('ind-air').innerText = getSum('airport'); 
+    document.getElementById('ind-car').innerText = getSum('car');
+    
+    // 4. 외출/외박 신청자 명단 (복귀 배지 로직 포함)
+    const actionTbody = document.getElementById('indActionTableBody');
+    const actions = room.admin_actions?.[today] || {};
+    const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
+    
+    actionTbody.innerHTML = items.length ? items.map(a => {
+        const isSigned = a.confirmed === true;
+        
+        // [핵심] 복귀 완료 배지 생성
+        const returnBadge = a.returned ? `<span style="background:#10b981; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800;">복귀완료</span>` : "";
+
+        // 서명 버튼 디자인
+        const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img">` : "서명";
+        const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
+
+        return `<tr>
+            <td style="font-weight:800;">${a.name}${returnBadge}</td>
+            <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
+            <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
+    
+    document.getElementById('courseNotice').value = room.coordNotice || ""; 
+}
 
 
 
@@ -875,63 +893,68 @@ function renderCourseSelectors() {
 
 
 // [전체현황 하단] 당일 외출/외박 전체 신청자 명단 렌더링 (서명 기능 포함)
-    function renderTotalHistory() {
-        const tbody = document.getElementById('historyTableBody');
-        const label = document.getElementById('historyDateLabel');
-        if(!tbody || !label) return;
+function renderTotalHistory() {
+    const tbody = document.getElementById('historyTableBody');
+    const label = document.getElementById('historyDateLabel');
+    if(!tbody || !label) return;
 
-        const d = new Date(selectedDate);
-        const dateText = `${d.getMonth() + 1}월 ${d.getDate()}일`;
-        
-        label.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span>당일(${dateText}) 외출·외박 전체 신청자 명단</span>
-                <div class="live-badge"><i class="fa-solid fa-sync fa-spin"></i> 실시간 업데이트 중</div>
-            </div>
-        `;
+    const d = new Date(selectedDate);
+    const dateText = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    
+    label.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span>당일(${dateText}) 외출·외박 전체 신청자 명단</span>
+            <div class="live-badge"><i class="fa-solid fa-sync fa-spin"></i> 실시간 업데이트 중</div>
+        </div>
+    `;
 
-        tbody.innerHTML = "";
-        let list = [];
-        Object.keys(globalAllData).forEach(rid => {
-            const actions = globalAllData[rid].admin_actions?.[selectedDate];
-            if(actions) {
-                Object.keys(actions).forEach(token => {
-                    list.push({
-                        ...actions[token], 
-                        rid: rid, // 어느 과정인지 저장
-                        token: token,
-                        cName: globalAllData[rid].settings?.courseName || rid
-                    });
+    tbody.innerHTML = "";
+    let list = [];
+    Object.keys(globalAllData).forEach(rid => {
+        const actions = globalAllData[rid].admin_actions?.[selectedDate];
+        if(actions) {
+            Object.keys(actions).forEach(token => {
+                list.push({
+                    ...actions[token], 
+                    rid: rid, 
+                    token: token,
+                    cName: globalAllData[rid].settings?.courseName || rid
                 });
-            }
-        });
-
-        if(list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">오늘 신청된 내역이 없습니다.</td></tr>';
-            return;
+            });
         }
+    });
 
-        // 시간순 정렬
-        list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
-            const isSigned = a.confirmed === true;
-            const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:30px;">` : "서명";
-            const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
-
-            tbody.innerHTML += `
-                <tr>
-                    <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
-                    <td style="font-weight:800; text-align:center;">${a.name}</td>
-                    <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-                    <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                    <td>
-                        <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
-                                style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px;">
-                            ${btnContent}
-                        </button>
-                    </td>
-                </tr>`;
-        });
+    if(list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">오늘 신청된 내역이 없습니다.</td></tr>';
+        return;
     }
+
+    // 시간순 정렬 및 리스트 생성
+    list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
+        const isSigned = a.confirmed === true;
+        
+        // [핵심 추가] 복귀 완료 배지 로직
+        const returnBadge = a.returned ? `<span style="background:#10b981; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800;">복귀완료</span>` : "";
+
+        // 서명 버튼 디자인
+        const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:30px;">` : "서명";
+        const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
+                <td style="font-weight:800; text-align:center;">${a.name}${returnBadge}</td>
+                <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                <td>
+                    <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                            style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px;">
+                        ${btnContent}
+                    </button>
+                </td>
+            </tr>`;
+    });
+}
 
 
 
