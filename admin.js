@@ -194,40 +194,53 @@ saveInstructorNoticeMain: function() {
         if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
     },
     
+// [수정] 방 이동 시 제어권이 없으면 무조건 비번 창을 띄우고, 실패 시 입장을 원천 차단
     switchRoomAttempt: async function(newRoom) {
         localStorage.setItem('kac_last_mode', 'dashboard');
+        
+        // 내가 이미 주인인 방이면 바로 입장
         if (localStorage.getItem('last_owned_room') === newRoom) {
             this.forceEnterRoom(newRoom);
             return;
         }
+
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
+
+        // 누군가 운영 중인 방이라면
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
-            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverModal').style.display = 'flex'; // 비번창 띄움
             document.getElementById('takeoverPwInput').focus();
         } else {
+            // 비어있는 방이라면 바로 입장 (들어가서 환경설정 해야 하므로)
             this.forceEnterRoom(newRoom);
         }
     },
+
     
+     // [수정] 인증 성공 시에만 세션 ID를 서버에 등록하여 '정식 주인'으로 인정
     verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         let input = document.getElementById('takeoverPwInput').value;
         if(input) input = input.trim(); 
         if (!newRoom || !input) return;
+
         const settingSnap = await firebase.database().ref(`courses/${newRoom}/settings`).get();
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
+
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            alert("인증 성공! 제어권을 가져옵니다."); 
+            // 인증 성공 시에만 세션 ID와 소유권을 업데이트
             localStorage.setItem(`last_owned_room`, newRoom);
-            await firebase.database().ref(`courses/${newRoom}/status`).update({ ownerSessionId: state.sessionId });
+            await firebase.database().ref(`courses/${newRoom}/status`).update({ 
+                ownerSessionId: state.sessionId 
+            });
             this.forceEnterRoom(newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
         } else {
-            ui.showAlert("비밀번호가 일치하지 않습니다.");
+            ui.showAlert("⛔ 비밀번호가 올바르지 않습니다.");
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverPwInput').focus();
         }
@@ -3325,15 +3338,28 @@ const printMgr = {
 
 // [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
-    openSetupModal: function() {
+// [최종] 환경 설정 진입 로직: 비어있는 방은 즉시 오픈, 사용 중인 방은 비번 확인
+    openSetupModal: async function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 1. 교수 및 담당자 목록 동기화
+        // 1. 현재 방의 실시간 상태 확인
+        const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
+        const st = statusSnap.val() || {};
+
+        // 2. [핵심 조건문] 
+        // 방이 '사용 중(active)'인데 + 그 주인이 '내가 아닐(sessionId 다름)' 경우에만 차단
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
+            // 인증창 띄우기 위해 기존에 만든 비번창 소환 함수 호출
+            dataMgr.switchRoomAttempt(state.room); 
+            return;
+        }
+
+        // 3. 위 조건에 걸리지 않으면 (비어있거나 내가 주인이면) 아래 설정창 로직 실행
         let profOptions = '<option value="">(선택 안함)</option>';
         profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
         document.getElementById('setup-prof-select').innerHTML = profOptions;
 
-        // 행정 담당자 명단 불러오기 (admin_coord와 연동)
         firebase.database().ref('system/coordinators').once('value', snap => {
             const coords = snap.val() || {};
             let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
@@ -3341,9 +3367,7 @@ const setupMgr = {
                 coordOptions += `<option value="${c.name}">${c.name}</option>`;
             });
             document.getElementById('setup-coord-select').innerHTML = coordOptions;
-            
-            // 명단을 다 불러온 후 세부 세팅 로드
-            this.loadCurrentSettings();
+            this.loadCurrentSettings(); // 설정 데이터 불러오기
         });
     },
 
