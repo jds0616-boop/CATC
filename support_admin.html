@@ -148,51 +148,111 @@
             <div style="width:40px"></div>
         </header>
 
+
+<!-- [추가] 상단 탭 메뉴 -->
+        <div style="background: var(--navy-dark); padding: 5px 15px 15px 15px; flex-shrink: 0;">
+            <div style="display: flex; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 4px;">
+                <button id="tab-dorm" style="flex: 1; border: none; background: var(--blue-main); color: white; font-weight: 800; font-size: 14px; padding: 12px 0; border-radius: 8px; cursor: pointer;" onclick="setSupportMode('dorm')">생활관 관리</button>
+                <button id="tab-shuttle" style="flex: 1; border: none; background: none; color: rgba(255,255,255,0.6); font-weight: 800; font-size: 14px; padding: 12px 0; border-radius: 8px; cursor: pointer;" onclick="setSupportMode('shuttle')">퇴교 수송 현황</button>
+            </div>
+        </div>
+
+
+
+
+
+
+
+
         <main class="app-content">
-            <div class="period-banner">
-                <div><i class="fa-solid fa-clock-rotate-left"></i> 서버 배정표 유효기간</div>
-                <b id="display-period">로딩 중...</b>
-            </div>
-
-            <div class="section-card">
-                <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 배정표 PDF 신규 업로드</div>
-                
-                <div class="date-input-row">
-                    <div class="input-group"><input type="date" id="period-start" class="navy-input"></div>
-                    <div class="input-group"><input type="date" id="period-end" class="navy-input"></div>
+            <!-- [구역 1] 생활관 관리 (기존 내용) -->
+            <div id="view-dorm">
+                <div class="period-banner">
+                    <div><i class="fa-solid fa-clock-rotate-left"></i> 서버 배정표 유효기간</div>
+                    <b id="display-period">로딩 중...</b>
                 </div>
 
-                <label class="upload-zone" id="dropZone" for="pdfFile">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <div class="upload-text">배정표 PDF 파일을 여기에 드래그하세요</div>
-                    <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
-                </label>
-                
-                <div id="previewResult"></div>
-                <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">데이터 서버 저장 및 확정</button>
-            </div>
-
-            <div class="section-card">
-                <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록</div>
-                <div class="date-input-row">
-                    <input type="text" id="manual-name" class="navy-input" placeholder="성함">
-                    <input type="number" id="manual-room" class="navy-input" placeholder="호실(숫자)">
+                <div class="section-card">
+                    <div class="section-title"><i class="fa-solid fa-file-pdf"></i> 배정표 PDF 신규 업로드</div>
+                    <div class="date-input-row">
+                        <div class="input-group"><input type="date" id="period-start" class="navy-input"></div>
+                        <div class="input-group"><input type="date" id="period-end" class="navy-input"></div>
+                    </div>
+                    <label class="upload-zone" id="dropZone" for="pdfFile">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <div class="upload-text">배정표 PDF 파일을 여기에 드래그하세요</div>
+                        <input type="file" id="pdfFile" accept=".pdf" style="display:none;" onchange="handleFileSelect(this)">
+                    </label>
+                    <div id="previewResult"></div>
+                    <button id="saveBtn" class="navy-btn success" style="display:none;" onclick="saveToFirebase()">데이터 서버 저장 및 확정</button>
                 </div>
-                <select id="manual-bld" class="navy-input" style="margin-bottom:10px; background:#fff;">
-                    <option value="청렴관">청렴관</option><option value="상생관">상생관</option><option value="국제동">국제동</option>
-                </select>
-                <button class="navy-btn warning" onclick="addManual()">명단에 수동 추가</button>
-            </div>
 
-            <div class="section-card" style="margin-bottom:50px;">
-                <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (클릭 시 수정)</div>
-                <div style="overflow-x: auto;">
-                    <table class="navy-table">
-                        <thead><tr><th>성함</th><th>생활관</th><th>호실</th><th width="40"></th></tr></thead>
-                        <tbody id="dormTableBody"></tbody>
-                    </table>
+                <div class="section-card">
+                    <div class="section-title"><i class="fa-solid fa-user-plus"></i> 개별 수동 등록</div>
+                    <div class="date-input-row">
+                        <input type="text" id="manual-name" class="navy-input" placeholder="성함">
+                        <input type="number" id="manual-room" class="navy-input" placeholder="호실(숫자)">
+                    </div>
+                    <select id="manual-bld" class="navy-input" style="margin-bottom:10px; background:#fff;">
+                        <option value="청렴관">청렴관</option><option value="상생관">상생관</option><option value="국제동">국제동</option>
+                    </select>
+                    <button class="navy-btn warning" onclick="addManual()">명단에 수동 추가</button>
                 </div>
-            </div>
+
+                <div class="section-card" style="margin-bottom:50px;">
+                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 실시간 배정 명단 (클릭 시 수정)</div>
+                    <div style="overflow-x: auto;">
+                        <table class="navy-table">
+                            <thead><tr><th>성함</th><th>생활관</th><th>호실</th><th width="40"></th></tr></thead>
+                            <tbody id="dormTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- view-dorm 끝 -->
+
+            <!-- [구역 2] 퇴교 수송 현황 (새로 추가되는 부분) -->
+            <div id="view-shuttle" style="display:none; flex-direction:column; gap:15px;">
+                <!-- 전체 총합판 -->
+                <div class="section-card" style="background: var(--navy-dark); color:white; text-align:center; padding:30px;">
+                    <div style="font-size:13px; opacity:0.8; margin-bottom:8px;">항기원 전체 퇴교 수송 총원</div>
+                    <div style="font-size:55px; font-weight:900; color:var(--blue-main);" id="all-shuttle-total">0<span>명</span></div>
+                </div>
+
+                <!-- 목적지별 집계 -->
+                <div class="section-card">
+                    <div class="shuttle-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; text-align:center;">
+                        <div style="background:#fef2f2; padding:12px; border-radius:12px;">
+                            <span style="font-size:11px; color:#ef4444; font-weight:800; display:block;">오송역</span>
+                            <b id="all-osong" style="font-size:20px; color:#ef4444;">0</b>
+                        </div>
+                        <div style="background:#eff6ff; padding:12px; border-radius:12px;">
+                            <span style="font-size:11px; color:#3b82f6; font-weight:800; display:block;">터미널</span>
+                            <b id="all-term" style="font-size:20px; color:#3b82f6;">0</b>
+                        </div>
+                        <div style="background:#ecfdf5; padding:12px; border-radius:12px;">
+                            <span style="font-size:11px; color:#10b981; font-weight:800; display:block;">공항</span>
+                            <b id="all-air" style="font-size:20px; color:#10b981;">0</b>
+                        </div>
+                        <div style="background:#f8fafc; padding:12px; border-radius:12px;">
+                            <span style="font-size:11px; color:#64748b; font-weight:800; display:block;">자차</span>
+                            <b id="all-car" style="font-size:20px; color:#64748b;">0</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 과정별 요약 표 -->
+                <div class="section-card">
+                    <div class="section-title"><i class="fa-solid fa-list-check"></i> 과정별 신청 현황 요약</div>
+                    <div style="overflow-x: auto;">
+                        <table class="navy-table">
+                            <thead>
+                                <tr><th style="text-align:left; padding-left:15px;">과정명</th><th>오송</th><th>터미</th><th>공항</th><th>자차</th><th>계</th></tr>
+                            </thead>
+                            <tbody id="shuttleSummaryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- view-shuttle 끝 -->
         </main>
 
         <footer class="app-footer">
@@ -219,6 +279,87 @@
         const db = firebase.database();
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         let extractedData = {};
+
+
+
+
+    // ★ 여기에 아래 코드를 붙여넣으세요 ★
+    function setSupportMode(mode) {
+        const isShuttle = (mode === 'shuttle');
+        document.getElementById('view-dorm').style.display = isShuttle ? 'none' : 'block';
+        document.getElementById('view-shuttle').style.display = isShuttle ? 'flex' : 'none';
+        
+        document.getElementById('tab-dorm').style.background = isShuttle ? 'none' : 'var(--blue-main)';
+        document.getElementById('tab-dorm').style.color = isShuttle ? 'rgba(255,255,255,0.6)' : 'white';
+        document.getElementById('tab-shuttle').style.background = isShuttle ? 'var(--blue-main)' : 'none';
+        document.getElementById('tab-shuttle').style.color = isShuttle ? 'white' : 'rgba(255,255,255,0.6)';
+
+        if(isShuttle) updateShuttleStatus();
+    }
+
+    function updateShuttleStatus() {
+        db.ref('courses').on('value', snap => {
+            const data = snap.val() || {};
+            const tbody = document.getElementById('shuttleSummaryTableBody');
+            let total = { osong: 0, terminal: 0, airport: 0, car: 0, all: 0 };
+            tbody.innerHTML = "";
+
+            Object.keys(data).forEach(rid => {
+                const room = data[rid];
+                const requests = room.shuttle?.requests || {};
+                const items = Object.values(requests);
+                
+                if(items.length > 0) {
+                    const rO = items.filter(i => i.type === 'osong').length;
+                    const rT = items.filter(i => i.type === 'terminal').length;
+                    const rA = items.filter(i => i.type === 'airport').length;
+                    const rC = items.filter(i => i.type === 'car').length;
+                    const rSum = items.length;
+
+                    total.osong += rO; total.terminal += rT; total.airport += rA; total.car += rC; total.all += rSum;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="text-align:left; padding-left:15px; font-weight:800;">${room.settings?.courseName || rid}</td>
+                            <td style="color:#ef4444;">${rO}</td>
+                            <td style="color:#3b82f6;">${rT}</td>
+                            <td style="color:#10b981;">${rA}</td>
+                            <td>${rC}</td>
+                            <td style="background:#f0f9ff; font-weight:900;">${rSum}</td>
+                        </tr>`;
+                }
+            });
+
+            document.getElementById('all-shuttle-total').innerHTML = `${total.all}<span>명</span>`;
+            document.getElementById('all-osong').innerText = total.osong;
+            document.getElementById('all-term').innerText = total.terminal;
+            document.getElementById('all-air').innerText = total.airport;
+            document.getElementById('all-car').innerText = total.car;
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         window.onload = function() {
             loadPeriod(); loadDormList(); initDragAndDrop();
