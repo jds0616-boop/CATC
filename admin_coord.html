@@ -430,6 +430,37 @@
       <table class="print-table"><thead><tr><th width="40">No</th><th width="150">과정명</th><th width="60">구분</th><th width="80">성명</th><th width="130">비상연락처</th><th width="90">신청시간</th><th width="100">담당 확인</th></tr></thead><tbody id="printBody"></tbody></table>
   </div>
 
+
+
+
+
+<!-- [신규] 외출/외박 상세 내역 팝업 -->
+<div id="actionDetailModal" class="setup-modal" style="z-index: 8000;">
+    <div class="setup-box" style="max-width: 400px; padding: 0; overflow: hidden;">
+        <div style="background: var(--navy-dark); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 18px;"><i class="fa-solid fa-circle-info"></i> 신청 상세 정보</h3>
+            <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 20px;" onclick="document.getElementById('actionDetailModal').style.display='none'"></i>
+        </div>
+        <div id="actionDetailContent" style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+            <!-- 상세 정보가 여기에 들어갑니다 -->
+        </div>
+        <div style="padding: 15px; background: #f8fafc; border-top: 1px solid #eee;">
+            <button class="navy-btn" style="background: #64748b;" onclick="document.getElementById('actionDetailModal').style.display='none'">닫기</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
   <script src="config.js"></script>
   <script>
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
@@ -716,23 +747,26 @@ function updateIndividualView() {
     
     actionTbody.innerHTML = items.length ? items.map(a => {
         const isSigned = a.confirmed === true;
-        
-        // 배지가 찌그러지지 않게 한 줄로 고정하는 코드 적용됨
         const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
+        const btnText = isSigned ? "서명취소" : "서명";
+        const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
-        const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img">` : "서명";
-        const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
+        // 데이터를 JSON으로 변환해서 함수로 전달
+        const dataStr = encodeURIComponent(JSON.stringify(a));
 
         return `<tr>
-            <td style="font-weight:800;">${a.name}${returnBadge}</td>
+            <td style="font-weight:800; cursor:pointer; text-decoration:underline;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
             <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
             <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td>
+            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;">${btnText}</button></td>
         </tr>`;
     }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
     
     document.getElementById('courseNotice').value = room.coordNotice || ""; 
 }
+
+
+
 
 
 
@@ -926,28 +960,32 @@ function renderTotalHistory() {
 
     list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
         const isSigned = a.confirmed === true;
-        
-        // 배지가 찌그러지지 않게 한 줄로 고정하는 코드 적용됨
         const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
+        const btnText = isSigned ? "서명취소" : "서명";
+        const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
-        const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:30px;">` : "서명";
-        const btnStyle = isSigned ? "background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8;" : "background:var(--blue-main); color:#fff; border:none;";
+        const dataStr = encodeURIComponent(JSON.stringify(a));
 
         tbody.innerHTML += `
             <tr>
                 <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
-                <td style="font-weight:800; text-align:center;">${a.name}${returnBadge}</td>
+                <td style="font-weight:800; text-align:center; cursor:pointer; text-decoration:underline;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
                 <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
                 <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
                 <td>
                     <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
                             style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px;">
-                        ${btnContent}
+                        ${btnText}
                     </button>
                 </td>
             </tr>`;
     });
 }
+
+
+
+
+
 
 
 
@@ -1048,13 +1086,47 @@ function openOutingLedger() {
 
 
 
+// [신규] 상세 내역 팝업 표시 함수
+function showActionDetail(dataJson) {
+    const data = JSON.parse(decodeURIComponent(dataJson));
+    const content = document.getElementById('actionDetailContent');
+    
+    const typeNm = data.type === 'outing' ? '<span style="color:#ea580c;">외출(당일)</span>' : '<span style="color:#dc2626;">외박(익일)</span>';
+    const returnStatus = data.returned ? `<b style="color:#10b981;">[복귀보고 완료: ${data.returnReportTime}]</b>` : `<b style="color:#ef4444;">[미복귀 / 외출중]</b>`;
 
-
-
-
-
-
-
+    content.innerHTML = `
+        <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 5px;">
+            <div style="font-size: 13px; color: #64748b; font-weight: 800;">신청자 및 유형</div>
+            <div style="font-size: 18px; font-weight: 900;">${data.name} <small style="font-size:13px; font-weight:700; margin-left:5px;">(${typeNm})</small></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+                <div style="font-size:11px; color:#94a3b8; font-weight:800;">소속</div>
+                <div style="font-weight:700; font-size:14px;">${data.dept || '-'}</div>
+            </div>
+            <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+                <div style="font-size:11px; color:#94a3b8; font-weight:800;">연락처</div>
+                <div style="font-weight:700; font-size:14px;">${data.phone || '-'}</div>
+            </div>
+        </div>
+        <div style="background:#f0f9ff; padding:12px; border-radius:8px; border:1px solid #e0f2fe;">
+            <div style="font-size:11px; color:#3b82f6; font-weight:800;">외출/복귀 시간</div>
+            <div style="font-weight:800; font-size:15px;">${data.startTime} ~ ${data.endTime}</div>
+            ${data.type === 'overnight' ? `<div style="font-size:12px; color:#64748b; margin-top:2px;">(복귀예정일: ${data.returnDate})</div>` : ''}
+        </div>
+        <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div style="font-size:11px; color:#94a3b8; font-weight:800;">행선지</div>
+            <div style="font-weight:700; font-size:14px; margin-bottom:8px;">${data.destination || '-'}</div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:800;">신청 사유</div>
+            <div style="font-weight:700; font-size:14px;">${data.reason || '-'}</div>
+        </div>
+        <div style="text-align:center; padding:5px;">
+            ${returnStatus}
+        </div>
+    `;
+    
+    document.getElementById('actionDetailModal').style.display = 'flex';
+}
 
 
 
