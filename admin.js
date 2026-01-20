@@ -2420,42 +2420,67 @@ loadDormitoryData: function() {
         }
     },
 
-    // [추가 3] 차량 수요조사 3단 배치 함수
+
+
+
+// [개편 완결본] 차량 신청 명단 실시간 로드 및 카운트
     loadShuttleData: function() {
         if(!state.room) return;
-        firebase.database().ref(`courses/${state.room}`).on('value', snap => {
-            const roomData = snap.val() || {};
-            const shuttleData = roomData.shuttle?.out || {};
-            const studentData = roomData.students || {};
-            const col1 = document.getElementById('col-wave1');
-            const col2 = document.getElementById('col-wave2');
-            const colCar = document.getElementById('col-car');
-            if(!col1 || !col2 || !colCar) return;
-            col1.innerHTML = ""; col2.innerHTML = ""; colCar.innerHTML = "";
 
-            const totalStudents = Object.values(studentData).filter(s => s.name && s.name !== "undefined").length;
-            let totalShuttle = 0;
-            const waveStyle = "padding: 15px; background: linear-gradient(135deg, #003366 0%, #0055aa 100%); color: white; border-radius: 12px; font-weight: 800; font-size: 16px; text-align:center;";
+        // 1. 기사님 전달 시간 실시간 연동 (검정 박스용)
+        firebase.database().ref('system/shuttle_notice').on('value', snap => {
+            const time = snap.val() || "시간 정보 없음";
+            const el = document.getElementById('shuttleDepartureTime');
+            if(el) el.innerText = time;
+        });
 
-            [{id:'wave1', n:'1차 (13:00)', t:col1}, {id:'wave2', n:'2차 (15:00)', t:col2}].forEach(w => {
-                w.t.innerHTML = `<div style="${waveStyle}"><i class="fa-solid fa-clock"></i> ${w.n}</div>`;
-                [{id:'osong', n:'오송역', i:'fa-train'}, {id:'terminal', n:'터미널', i:'fa-bus-simple'}, {id:'airport', n:'청주공항', i:'fa-plane'}].forEach(loc => {
-                    const members = Object.entries(shuttleData[w.id]?.[loc.id] || {});
-                    totalShuttle += members.length;
-                    w.t.innerHTML += `<div class="shuttle-dest-card" onclick="ui.showShuttleListModal('${w.id}', '${w.n}', '${loc.n}', ${JSON.stringify(members).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; margin-top:10px;"><div class="dest-header" style="border:none; padding:20px;"><div class="dest-name-group"><div class="dest-icon-box" style="width:36px; height:36px;"><i class="fa-solid ${loc.i}"></i></div><div class="dest-title" style="font-size:16px;">${loc.n}</div></div><div class="dest-count-badge" style="background:#003366; color:white; font-size:16px;">${members.length}명</div></div></div>`;
-                });
+        // 2. 신청 명단 실시간 연동 (개편된 경로: shuttle/requests)
+        firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
+            const requests = snap.val() || {};
+            const tbody = document.getElementById('shuttleListTableBody');
+            if(!tbody) return;
+
+            tbody.innerHTML = "";
+            // 신청한 시간 순서대로 정렬
+            const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
+            
+            let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
+
+            if (items.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8; text-align:center;'>차량 신청 내역이 없습니다.</td></tr>";
+            }
+
+            items.forEach((item, idx) => {
+                counts[item.type]++;
+                
+                // 목적지별 색상 설정 (요청하신 색상 반영)
+                let color = "#64748b"; // 자차 (회색)
+                if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
+                else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
+                else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
+
+                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td style="font-weight:800;">${item.name}</td>
+                        <td>${item.phone}</td>
+                        <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
+                        <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
+                    </tr>`;
             });
 
-            const carMembers = [...Object.entries(shuttleData.wave1?.car || {}), ...Object.entries(shuttleData.wave2?.car || {})];
-            colCar.innerHTML = `<div style="${waveStyle}; background:#64748b;"><i class="fa-solid fa-car"></i> 개별 이동</div>`;
-            colCar.innerHTML += `<div class="shuttle-dest-card" onclick="ui.showShuttleListModal('both', '개별이동', '자차', ${JSON.stringify(carMembers).replace(/"/g, '&quot;')})" style="cursor:pointer; border:1px solid #e2e8f0; border-radius:12px; background:white; height:180px; display:flex; flex-direction:column; justify-content:center; align-items:center; margin-top:10px;"><div class="dest-icon-box" style="width:50px; height:50px; font-size:20px; background:#f1f5f9; color:#64748b;"><i class="fa-solid fa-car-side"></i></div><div style="font-size:18px; font-weight:800; color:#1e293b;">자차 / 개별이동</div><div style="font-size:32px; font-weight:900; color:#003366;">${carMembers.length}명</div></div>`;
-
-            document.getElementById('total-student-cnt').innerText = totalStudents;
-            document.getElementById('total-shuttle-cnt').innerText = totalShuttle;
-            document.getElementById('total-car-cnt').innerText = carMembers.length;
-            document.getElementById('total-none-cnt').innerText = Math.max(0, totalStudents - totalShuttle - carMembers.length);
+            // 3. 상단 카운트칩(숫자판) 실시간 업데이트
+            if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
+            if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
+            if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
+            if(document.getElementById('cnt-airport')) document.getElementById('cnt-airport').innerText = counts.airport;
+            if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
         });
     },
+
+
 
     // [추가 4] 차량 신청 명단 팝업 함수
     showShuttleListModal: function(waveId, waveName, locName, members) {
