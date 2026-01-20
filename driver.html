@@ -28,9 +28,42 @@
     .app-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
 
     /* 전체 수송 통계 */
-    .summary-card { background: var(--kac-navy); border-radius: 20px; padding: 20px; color: white; display: flex; justify-content: space-around; text-align: center; }
-    .sum-item b { font-size: 24px; display: block; }
-    .sum-item span { font-size: 11px; opacity: 0.7; }
+/* [수정] 상단 통계 카드 - 교육생 플랫폼 배너 스타일 적용 */
+    .summary-card { 
+      background: linear-gradient(135deg, #034ea2 0%, #002c5f 100%); 
+      border-radius: 24px; 
+      padding: 25px 20px; 
+      color: white; 
+      display: flex; 
+      justify-content: space-around; 
+      text-align: center; 
+      box-shadow: 0 10px 20px rgba(0, 44, 95, 0.2);
+      margin-bottom: 5px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* 배경에 살짝 은은한 원형 패턴 추가 (디테일) */
+    .summary-card::after {
+      content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px;
+      background: rgba(255,255,255,0.05); border-radius: 50%;
+    }
+
+    .sum-item { position: relative; z-index: 1; }
+    .sum-item b { font-size: 28px; display: block; margin-top: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .sum-item span { 
+      font-size: 12px; 
+      font-weight: 800; 
+      background: rgba(255,255,255,0.15); 
+      padding: 4px 10px; 
+      border-radius: 30px; 
+      display: inline-block;
+      backdrop-filter: blur(5px);
+    }
+
+    /* 각 항목별 레이블 색상 강조 */
+    .lbl-osong { color: #ffcfcf !important; }
+    .lbl-term { color: #d1e4ff !important; }
+    .lbl-air { color: #d1ffd6 !important; }
 
     /* 과정별 리스트 카드 */
     .course-card { background: white; border-radius: 15px; padding: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
@@ -78,12 +111,12 @@
       <!-- 탭 1: 퇴교 관리 -->
       <div id="view-1" style="display: flex; flex-direction: column; gap: 15px;">
         <div class="summary-card">
-          <div class="sum-item"><span style="color:var(--osong)">오송</span><b id="total-osong">0</b></div>
-          <div class="sum-item"><span style="color:var(--term)">터미널</span><b id="total-term">0</b></div>
-          <div class="sum-item"><span style="color:var(--air)">공항</span><b id="total-air">0</b></div>
-          <div style="width:1px; background:rgba(255,255,255,0.2)"></div>
-          <div class="sum-item"><span>총원</span><b id="total-sum">0</b></div>
-        </div>
+  <div class="sum-item"><span class="lbl-osong">오송</span><b id="total-osong">0</b></div>
+  <div class="sum-item"><span class="lbl-term">터미널</span><b id="total-term">0</b></div>
+  <div class="sum-item"><span class="lbl-air">공항</span><b id="total-air">0</b></div>
+  <div style="width:1px; background:rgba(255,255,255,0.1)"></div>
+  <div class="sum-item"><span>총원</span><b id="total-sum">0</b></div>
+</div>
         
         <div style="font-size:13px; font-weight:800; color:var(--kac-navy); margin-left:5px;">📋 과정별 시간 설정</div>
         <div id="course-list-area" style="display: flex; flex-direction: column; gap: 10px;">
