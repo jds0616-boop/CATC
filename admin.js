@@ -2417,7 +2417,7 @@ loadDormitoryData: function() {
 
 
 
-// [완결본] 차량 신청 명단 실시간 로드 및 카운트 (이미지 레이아웃 대응)
+// [완결본] 차량 신청 명단 실시간 로드 및 카운트 (문구 추가 버전)
     loadShuttleData: function() {
         if(!state.room) return;
 
@@ -2428,14 +2428,20 @@ loadDormitoryData: function() {
             if(!el) return;
 
             if (dep && dep.time) {
-                // 날짜와 시간을 줄바꿈하여 표시 (이미지 디자인 대응)
-                el.innerHTML = `<div style="font-size:24px; opacity:0.8;">${dep.date}</div><div style="font-size:32px; margin-top:5px;">${dep.time}</div>`;
+                // 날짜, 시간, 그리고 "항기원 출발" 문구 추가
+                el.innerHTML = `
+                    <div style="font-size:22px; opacity:0.8; margin-bottom:5px;">${dep.date}</div>
+                    <div style="font-size:42px; font-weight:900; line-height:1;">${dep.time}</div>
+                    <div style="font-size:18px; margin-top:15px; font-weight:800; background:rgba(255,255,255,0.15); padding:5px 15px; border-radius:50px; display:inline-block;">
+                        항기원 출발
+                    </div>
+                `;
                 el.style.color = "white";
             } else {
-                // 설정된 시간이 없을 때 시스템 공지사항 표시
+                // 설정된 시간이 없을 때
                 firebase.database().ref('system/shuttle_notice').once('value', s => {
                     const notice = s.val() || "시간 정보 없음";
-                    el.innerHTML = `<div style="font-size:18px;">${notice}</div>`;
+                    el.innerHTML = `<div style="font-size:18px; opacity:0.7;">${notice}</div>`;
                     el.style.color = "white";
                 });
             }
@@ -2448,10 +2454,8 @@ loadDormitoryData: function() {
             if(!tbody) return;
 
             tbody.innerHTML = "";
-            // 신청한 시간(timestamp) 순서대로 정렬
             const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
             
-            // 카운트 초기화
             let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
 
             if (items.length === 0) {
@@ -2460,11 +2464,10 @@ loadDormitoryData: function() {
                 items.forEach((item, idx) => {
                     counts[item.type]++;
                     
-                    // 목적지별 텍스트 색상 설정 (이미지 가이드 반영)
-                    let color = "#64748b"; // 자차 (기본 회색)
-                    if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
-                    else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
-                    else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
+                    let color = "#64748b"; 
+                    if(item.type === 'osong') color = "#ef4444"; 
+                    else if(item.type === 'terminal') color = "#3b82f6"; 
+                    else if(item.type === 'airport') color = "#10b981"; 
 
                     const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
@@ -2479,7 +2482,6 @@ loadDormitoryData: function() {
                 });
             }
 
-            // 3. 상단 요약 칩(숫자판) 업데이트
             if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
             if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
             if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
