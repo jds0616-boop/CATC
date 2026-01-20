@@ -121,39 +121,54 @@
 
                 list.sort((a,b) => a.timestamp - b.timestamp); // 시간순 정렬
 
-                list.forEach(a => {
-                    const tr = document.createElement('tr');
-                    
-                    // 시간 연동 로직 수정
-                    let timeText = "-";
-                    if(a.startTime && a.endTime) {
-                        timeText = `${a.startTime} ~ ${a.endTime}`;
-                        if(a.type === 'overnight' && a.returnDate) {
-                            const retDay = a.returnDate.substring(8,10);
-                            timeText = `${a.startTime} ~ 익일(${retDay}일) ${a.endTime}`;
-                        }
-                    }
 
-                    // 서명 표시 로직: 이미지 있으면 이미지, 없으면 텍스트
-                    let confirmDisplay = "";
-                    if(a.confirmedBySign) {
-                        confirmDisplay = `<img src="${a.confirmedBySign}" class="stamp-img">`;
-                    } else if(a.confirmedBy) {
-                        confirmDisplay = `<span class="confirm-text">${a.confirmedBy}</span>`;
-                    }
 
-                    tr.innerHTML = `
-                        <td>${a.date.substring(5)}</td>
-                        <td style="font-size:12px;">${timeText}</td>
-                        <td><span class="shrink-text">${a.dept || ""}</span></td>
-                        <td class="name-cell">${a.name}</td>
-                        <td>${a.destination || ""}</td>
-                        <td style="font-size:13px;">${a.phone || ""}</td>
-                        <td><span class="shrink-text">${a.reason || ""}</span></td>
-                        <td>${confirmDisplay}</td>
-                    `;
-                    body.appendChild(tr);
-                });
+
+
+// [수정] 시간 표시 로직: 출발/복귀 두 줄로 분리
+list.forEach(a => {
+    const tr = document.createElement('tr');
+    
+    // 시간 칸 디자인 가공
+    let startTime = a.startTime || "-";
+    let endTime = a.endTime || "-";
+    
+    // 외박일 경우 복귀 날짜 표시 추가
+    if(a.type === 'overnight' && a.returnDate) {
+        const retDay = a.returnDate.substring(8,10);
+        endTime = `익일(${retDay}일) ${endTime}`;
+    }
+
+    const timeHtml = `
+        <div style="font-size:12px; font-weight:800; color:#1e3a8a;">출발: ${startTime}</div>
+        <div style="margin: 3px 5px; border-top: 1px dashed #cbd5e1;"></div>
+        <div style="font-size:12px; font-weight:800; color:#b91c1c;">복귀: ${endTime}</div>
+    `;
+
+    // 서명 표시 로직
+    let confirmDisplay = "";
+    if(a.confirmedBySign) {
+        confirmDisplay = `<img src="${a.confirmedBySign}" class="stamp-img">`;
+    } else if(a.confirmedBy) {
+        confirmDisplay = `<span class="confirm-text">${a.confirmedBy}</span>`;
+    }
+
+    tr.innerHTML = `
+        <td>${a.date.substring(5)}</td>
+        <td style="padding: 5px 2px;">${timeHtml}</td>
+        <td><span class="shrink-text">${a.dept || ""}</span></td>
+        <td class="name-cell">${a.name}</td>
+        <td>${a.destination || ""}</td>
+        <td style="font-size:13px;">${a.phone || ""}</td>
+        <td><span class="shrink-text">${a.reason || ""}</span></td>
+        <td>${confirmDisplay}</td>
+    `;
+    body.appendChild(tr);
+});
+
+
+
+
 
                 // 빈 줄 10줄 유지
                 for(let i=list.length; i<10; i++) {

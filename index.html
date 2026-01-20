@@ -1675,46 +1675,57 @@ function closeShuttleModal() {
 
 let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
 
-// 1. 팝업 열기 & 기존 신청 내역 확인
+
+
+
+
+
+
+
+
+
+// [수정] 신청 메뉴 클릭 시 기존 내역 체크 로직
 async function openAdminAction() {
-    document.getElementById('menuModal').style.display = 'none';
-    const modal = document.getElementById('adminActionModal');
-    modal.style.display = 'flex';
-    
-    // 오늘 날짜 표시
-    const today = getTodayString();
-    document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
-
-    // 입력폼 초기화
-    selectedAdminType = 'none';
-    updateAdminTypeButtons();
-    document.getElementById('skipDinner').checked = false;
-    document.getElementById('fullPhoneArea').style.display = 'none';
-    document.getElementById('fullPhone').value = "";
-
-    // 기존 신청 내역이 있는지 서버에서 조회
     const uToken = localStorage.getItem('uToken');
-    const dinnerRef = firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`);
-    const actionRef = firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`);
-
-    const [dinnerSnap, actionSnap] = await Promise.all([dinnerRef.once('value'), actionRef.once('value')]);
+    const today = getTodayString();
     
-    if (dinnerSnap.exists() || actionSnap.exists()) {
+    // 1. 서버에서 오늘 나의 신청 내역이 있는지 확인
+    const snap = await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value');
+    const existingData = snap.val();
+
+    if (existingData) {
+        // [이미 신청한 경우] 기존 내용을 팝업에 표시하고 양식은 숨김
         document.getElementById('adminActionForm').style.display = 'none';
         document.getElementById('adminStatusArea').style.display = 'block';
         
-        let statusMsg = "";
-        if(dinnerSnap.exists()) statusMsg += "🍴 오늘 저녁 식사 제외 신청됨<br>";
-        if(actionSnap.exists()) {
-            const data = actionSnap.val();
-            const typeNm = data.type === 'outing' ? '외출' : '외박';
-            statusMsg += `📍 ${typeNm} 신청됨 (비상연락처: ${data.phone})`;
-        }
-        document.getElementById('adminStatusText').innerHTML = statusMsg;
+        const typeNm = existingData.type === 'outing' ? '외출(당일)' : '외박(익일)';
+        const statusHtml = `
+            <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #dbeafe; margin-top:5px;">
+                <b style="color:#1e40af;">[${typeNm} 신청됨]</b><br>
+                <small>출발: ${existingData.startTime} / 복귀: ${existingData.endTime}</small><br>
+                <small>행선지: ${existingData.destination}</small>
+            </div>
+            <p style="color:#ef4444; font-size:12px; font-weight:800; margin-top:10px;">
+                ※ 내용을 수정하려면 기존 신청을 취소하고 다시 작성해주세요.
+            </p>
+        `;
+        document.getElementById('adminStatusText').innerHTML = statusHtml;
     } else {
-        document.getElementById('adminActionForm').style.display = 'block';
+        // [신청 내역이 없는 경우] 입력 양식을 보여줌
+        document.getElementById('adminActionForm').style.display = 'flex';
         document.getElementById('adminStatusArea').style.display = 'none';
+        
+        // 입력창 초기화
+        document.getElementById('userDept').value = "";
+        document.getElementById('startTime').value = "";
+        document.getElementById('endTime').value = "";
+        document.getElementById('destination').value = "";
+        document.getElementById('outingReason').value = "";
+        document.getElementById('fullPhone').value = localStorage.getItem('kac_user_full_phone') || "";
     }
+
+    document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
+    document.getElementById('adminActionModal').style.display = 'flex';
 }
 
 // 1. 외출/외박 타입 선택 시 날짜창 제어
@@ -1805,20 +1816,28 @@ async function submitAdminAction() {
 
 
 
-// 5. 신청 취소 로직
+// [수정] 신청 취소 처리
 async function cancelAdminAction() {
-    const now = new Date();
-    const isAfterDeadline = now.getHours() >= 16;
-    showKacConfirm("신청된 내역을 취소하시겠습니까?", async function() {
-        const today = getTodayString();
-        const uToken = localStorage.getItem('uToken');
+    if(!confirm("기존 외출/외박 신청을 취소하시겠습니까?")) return;
+    
+    const today = getTodayString();
+    const uToken = localStorage.getItem('uToken');
+
+    try {
+        // 1. 외출/외박 내역 삭제
         await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
-        if (!isAfterDeadline) {
-            await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
-        }
-        alert("취소되었습니다.");
-        document.getElementById('adminActionModal').style.display = 'none';
-    });
+        
+        // 2. 석식 제외도 같이 신청했다면 삭제
+        await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+
+        alert("신청이 취소되었습니다. 다시 작성하실 수 있습니다.");
+        
+        // 3. UI를 다시 신청 양식으로 전환
+        document.getElementById('adminStatusArea').style.display = 'none';
+        document.getElementById('adminActionForm').style.display = 'flex';
+    } catch (e) {
+        alert("취소 처리 중 오류가 발생했습니다.");
+    }
 }
 
 
