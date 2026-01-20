@@ -1818,83 +1818,6 @@ if (mode === 'shuttle') {
 
 
 
-// [7.5차 수정] 차량 신청 명단 실시간 로드
-loadShuttleData: function() {
-    if(!state.room) return;
-
-
-
-
-// 1. 기사님 전달 출발 시간 실시간 연동 (해당 과정 전용 시간으로 변경)
-    firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-        const dep = snap.val();
-        const el = document.getElementById('shuttleDepartureTime');
-        if(!el) return;
-
-        if (dep && dep.time) {
-            // 기사님이 설정한 날짜와 시간을 합쳐서 표시
-            el.innerText = `${dep.date} ${dep.time}`;
-            el.style.color = "#3b82f6"; // 설정되었을 때 파란색 강조
-        } else {
-            // 설정된 시간이 없을 때만 전체 공지사항(특이사항)을 보여줌
-            firebase.database().ref('system/shuttle_notice').once('value', s => {
-                el.innerText = s.val() || "시간 정보 없음";
-                el.style.color = "white";
-            });
-        }
-    });
-
-
-
-
-
-
-    // 2. 신청 명단 실시간 연동
-    firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
-        const requests = snap.val() || {};
-        const tbody = document.getElementById('shuttleListTableBody');
-        if(!tbody) return;
-
-        tbody.innerHTML = "";
-        const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
-        
-        let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
-
-        if (items.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8; text-align:center;'>차량 신청 내역이 없습니다.</td></tr>";
-        }
-
-        items.forEach((item, idx) => {
-            counts[item.type]++;
-            let color = "#64748b"; // 자차 (회색)
-            if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
-            else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
-            else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
-
-            const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td style="font-weight:800;">${item.name}</td>
-                    <td>${item.phone}</td>
-                    <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
-                    <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
-                </tr>`;
-        });
-
-        // 상단 현황판 숫자 업데이트 (id 존재 여부 확인)
-        if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
-        if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
-        if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
-        if(document.getElementById('cnt-airport')) document.getElementById('cnt-airport').innerText = counts.airport;
-        if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
-    });
-},
-
-
-
-
 // [수정] 차량 신청 명단 팝업: 취소 로직 연결 보완
 showShuttleListModal: function(waveId, waveName, locName, members) {
     if (members.length === 0) return;
@@ -2494,65 +2417,69 @@ loadDormitoryData: function() {
 
 
 
-// [개편 완결본] 차량 신청 명단 실시간 로드 및 카운트
+// [완결본] 차량 신청 명단 실시간 로드 및 카운트 (이미지 레이아웃 대응)
     loadShuttleData: function() {
         if(!state.room) return;
 
-// 해당 과정 전용 출발시간 연동 코드
-firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-    const dep = snap.val();
-    const el = document.getElementById('shuttleDepartureTime');
-    if(!el) return;
+        // 1. 좌측 파란색 박스: 기사님 전달 출발 시간 실시간 연동
+        firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+            const dep = snap.val();
+            const el = document.getElementById('shuttleDepartureTime');
+            if(!el) return;
 
-    if (dep && dep.time) {
-        el.innerText = `${dep.date} ${dep.time}`;
-        el.style.color = "#3b82f6";
-    } else {
-        firebase.database().ref('system/shuttle_notice').once('value', s => {
-            el.innerText = s.val() || "시간 정보 없음";
-            el.style.color = "white";
+            if (dep && dep.time) {
+                // 날짜와 시간을 줄바꿈하여 표시 (이미지 디자인 대응)
+                el.innerHTML = `<div style="font-size:24px; opacity:0.8;">${dep.date}</div><div style="font-size:32px; margin-top:5px;">${dep.time}</div>`;
+                el.style.color = "white";
+            } else {
+                // 설정된 시간이 없을 때 시스템 공지사항 표시
+                firebase.database().ref('system/shuttle_notice').once('value', s => {
+                    const notice = s.val() || "시간 정보 없음";
+                    el.innerHTML = `<div style="font-size:18px;">${notice}</div>`;
+                    el.style.color = "white";
+                });
+            }
         });
-    }
-});
 
-        // 2. 신청 명단 실시간 연동 (개편된 경로: shuttle/requests)
+        // 2. 우측 상단 카운트 및 하단 명단 실시간 연동
         firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
             const requests = snap.val() || {};
             const tbody = document.getElementById('shuttleListTableBody');
             if(!tbody) return;
 
             tbody.innerHTML = "";
-            // 신청한 시간 순서대로 정렬
+            // 신청한 시간(timestamp) 순서대로 정렬
             const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
             
+            // 카운트 초기화
             let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
 
             if (items.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8; text-align:center;'>차량 신청 내역이 없습니다.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='5' style='padding:80px 0; color:#94a3b8; text-align:center; font-weight:600;'>차량 신청 내역이 없습니다.</td></tr>";
+            } else {
+                items.forEach((item, idx) => {
+                    counts[item.type]++;
+                    
+                    // 목적지별 텍스트 색상 설정 (이미지 가이드 반영)
+                    let color = "#64748b"; // 자차 (기본 회색)
+                    if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
+                    else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
+                    else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
+
+                    const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td style="font-weight:800; color:#1e293b;">${item.name}</td>
+                            <td style="color:#64748b;">${item.phone}</td>
+                            <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
+                            <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
+                        </tr>`;
+                });
             }
 
-            items.forEach((item, idx) => {
-                counts[item.type]++;
-                
-                // 목적지별 색상 설정 (요청하신 색상 반영)
-                let color = "#64748b"; // 자차 (회색)
-                if(item.type === 'osong') color = "#ef4444"; // 오송 (빨강)
-                else if(item.type === 'terminal') color = "#3b82f6"; // 터미널 (파랑)
-                else if(item.type === 'airport') color = "#10b981"; // 공항 (녹색)
-
-                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td style="font-weight:800;">${item.name}</td>
-                        <td>${item.phone}</td>
-                        <td style="color:${color}; font-weight:900; font-size:16px;">${item.typeText}</td>
-                        <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
-                    </tr>`;
-            });
-
-            // 3. 상단 카운트칩(숫자판) 실시간 업데이트
+            // 3. 상단 요약 칩(숫자판) 업데이트
             if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
             if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
             if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
