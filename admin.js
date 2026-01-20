@@ -576,7 +576,7 @@ resetCourse: function() {
 
 
 
-// [최종 보강] 수강생 삭제 시 차량 신청 내역(셔틀)까지 완벽하게 삭제하는 로직
+// [수정] 수강생 삭제 시 개편된 차량 신청(shuttle/requests) 내역까지 완벽삭제
 deleteStudent: function(token) {
     if(!state.room) return;
     
@@ -585,30 +585,24 @@ deleteStudent: function(token) {
         if(!targetStudent) return;
         const targetName = targetStudent.name;
         const targetPhone = (targetStudent.phone || "0000").trim();
-        const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부 대조용 키
+        const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부용 키
 
         if(confirm(`🚨 [${targetName}] 수강생의 모든 정보(출석부, 차량신청, 행정내역)를 삭제하시겠습니까?`)) {
             const today = getTodayString();
             const updates = {};
             const rPath = `courses/${state.room}`;
             
-            // 1. 기본 정보 및 행정 신청 삭제
+            // 1. 수강생 기본 정보 삭제
             updates[`${rPath}/students/${token}`] = null;
+
+            // 2. 금일 행정 신청(석식제외, 외출외박) 삭제
             updates[`${rPath}/dinner_skips/${today}/${token}`] = null;
             updates[`${rPath}/admin_actions/${today}/${token}`] = null;
 
-            // 2. 차량 신청 내역(셔틀/자차) 모든 경로 삭제
-            const locations = ['osong', 'terminal', 'airport', 'car'];
-            const waves = ['wave1', 'wave2'];
-            
-            waves.forEach(w => {
-                locations.forEach(loc => {
-                    // 해당 학생의 토큰으로 된 신청 정보가 있다면 삭제
-                    updates[`${rPath}/shuttle/out/${w}/${loc}/${token}`] = null;
-                });
-            });
+            // 3. [핵심수정] 개편된 차량 신청 내역 삭제
+            updates[`${rPath}/shuttle/requests/${token}`] = null;
 
-            // 3. 자체 출석부(모든 날짜) 도장 삭제
+            // 4. 자체 출석부(모든 날짜) 기록 삭제 (기존 로직 유지)
             firebase.database().ref(`${rPath}/internal_attendance`).once('value', attendSnap => {
                 const allAttendData = attendSnap.val() || {};
                 Object.keys(allAttendData).forEach(date => {
@@ -617,9 +611,9 @@ deleteStudent: function(token) {
                     }
                 });
 
-                // 서버에 한꺼번에 적용 (원자적 업데이트)
+                // 모든 삭제 명령을 한꺼번에 서버에 전송
                 firebase.database().ref().update(updates).then(() => {
-                    ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 성공적으로 삭제되었습니다.`);
+                    ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 정상적으로 삭제되었습니다.`);
                 });
             });
         }
