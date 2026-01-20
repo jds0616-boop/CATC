@@ -2429,85 +2429,96 @@ loadDormitoryData: function() {
 
 
 
-// [완결본] 차량 신청 명단 실시간 로드 (상하단 색상 완전 동기화 버전)
-    loadShuttleData: function() {
-        if(!state.room) return;
+// [최종 완결본] 실시간 로드 + 상하단 색상 동기화 + 강제 취소(삭제) 버튼 포함
+loadShuttleData: function() {
+    if(!state.room) return;
 
-        // 1. 좌측 파란색 박스: 날짜, 시간, 문구 레이아웃
-        firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
-            const dep = snap.val();
-            const el = document.getElementById('shuttleDepartureTime');
-            if(!el) return;
+    // 1. 좌측 파란색 박스: 날짜, 시간, 문구 레이아웃
+    firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+        const dep = snap.val();
+        const el = document.getElementById('shuttleDepartureTime');
+        if(!el) return;
 
-            if (dep && dep.time) {
-                el.innerHTML = `
-                    <div style="font-size:20px; opacity:0.8; margin-bottom:2px;">${dep.date}</div>
-                    <div style="font-size:42px; font-weight:900; line-height:1.1;">${dep.time}</div>
-                    <div style="font-size:16px; margin-top:10px; font-weight:800; background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:50px; display:inline-block;">
-                        항기원 출발
-                    </div>
-                `;
+        if (dep && dep.time) {
+            el.innerHTML = `
+                <div style="font-size:20px; opacity:0.8; margin-bottom:2px;">${dep.date}</div>
+                <div style="font-size:42px; font-weight:900; line-height:1.1;">${dep.time}</div>
+                <div style="font-size:16px; margin-top:10px; font-weight:800; background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:50px; display:inline-block;">
+                    항기원 출발
+                </div>
+            `;
+            el.style.color = "white";
+        } else {
+            firebase.database().ref('system/shuttle_notice').once('value', s => {
+                const notice = s.val() || "시간 정보 없음";
+                el.innerHTML = `<div style="font-size:18px; opacity:0.7;">${notice}</div>`;
                 el.style.color = "white";
-            } else {
-                firebase.database().ref('system/shuttle_notice').once('value', s => {
-                    const notice = s.val() || "시간 정보 없음";
-                    el.innerHTML = `<div style="font-size:18px; opacity:0.7;">${notice}</div>`;
-                    el.style.color = "white";
-                });
-            }
-        });
+            });
+        }
+    });
 
-        // 2. 신청 명단 실시간 연동 및 상단 요약 숫자 업데이트
-        firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
-            const requests = snap.val() || {};
-            const tbody = document.getElementById('shuttleListTableBody');
-            if(!tbody) return;
+    // 2. 신청 명단 실시간 연동 및 삭제 버튼 생성
+    firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
+        const requests = snap.val() || {};
+        const tbody = document.getElementById('shuttleListTableBody');
+        if(!tbody) return;
 
-            tbody.innerHTML = "";
-            const items = Object.values(requests).sort((a,b) => a.timestamp - b.timestamp);
-            
-            let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
+        tbody.innerHTML = "";
+        
+        // [수정] 삭제를 위해 token(ID)을 포함하여 리스트 생성
+        const items = Object.keys(requests).map(key => ({
+            token: key,
+            ...requests[key]
+        })).sort((a,b) => a.timestamp - b.timestamp);
+        
+        let counts = { osong: 0, terminal: 0, airport: 0, car: 0 };
 
-            if (items.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' style='padding:80px 0; color:#94a3b8; text-align:center; font-weight:600;'>차량 신청 내역이 없습니다.</td></tr>";
-            } else {
-                items.forEach((item, idx) => {
-                    counts[item.type]++;
-                    
-                    // [색상 통일화 핵심 로직] 
-                    // 칩 색상과 동일하게 강제 매칭 (텍스트에 '오송'이 포함되면 무조건 빨간색 등)
-                    let color = "#64748b"; // 기본 회색 (자차)
-                    const text = item.typeText || "";
-                    
-                    if(item.type === 'osong' || text.includes('오송')) {
-                        color = "#ef4444"; // 상단과 동일한 Red
-                    } else if(item.type === 'terminal' || text.includes('터미널')) {
-                        color = "#3b82f6"; // 상단과 동일한 Blue
-                    } else if(item.type === 'airport' || text.includes('공항')) {
-                        color = "#10b981"; // 상단과 동일한 Green
-                    }
+        if (items.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='6' style='padding:80px 0; color:#94a3b8; text-align:center; font-weight:600;'>차량 신청 내역이 없습니다.</td></tr>";
+        } else {
+            items.forEach((item, idx) => {
+                counts[item.type]++;
+                
+                let color = "#64748b"; // 기본 회색 (자차)
+                const text = item.typeText || "";
+                
+                if(item.type === 'osong' || text.includes('오송')) {
+                    color = "#ef4444"; 
+                } else if(item.type === 'terminal' || text.includes('터미널')) {
+                    color = "#3b82f6"; 
+                } else if(item.type === 'airport' || text.includes('공항')) {
+                    color = "#10b981"; 
+                }
 
-                    const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${idx + 1}</td>
-                            <td style="font-weight:800; color:#1e293b;">${item.name}</td>
-                            <td style="color:#64748b;">${item.phone}</td>
-                            <td style="color:${color} !important; font-weight:900; font-size:16px;">${text}</td>
-                            <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
-                        </tr>`;
-                });
-            }
+                // [핵심] 마지막 열에 삭제(취소) 버튼을 추가했습니다.
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td style="font-weight:800; color:#1e293b;">${item.name}</td>
+                        <td style="color:#64748b;">${item.phone}</td>
+                        <td style="color:${color} !important; font-weight:900; font-size:16px;">${text}</td>
+                        <td style="color:#94a3b8; font-size:12px;">${timeStr}</td>
+                        <td>
+                            <button class="btn-table-action" 
+                                    onclick="ui.deleteShuttleByAdmin('${item.token}', '${item.name}')"
+                                    style="background:#64748b; font-size:11px; padding:5px 8px; border:none; color:white; border-radius:4px; cursor:pointer;">
+                                취소
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+        }
 
-            // 상단 카운트 숫자에 데이터 반영
-            if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
-            if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
-            if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
-            if(document.getElementById('cnt-airport')) document.getElementById('cnt-airport').innerText = counts.airport;
-            if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
-        });
-    },
+        // 상단 통계 숫자 업데이트 (기존과 동일)
+        if(document.getElementById('cnt-car')) document.getElementById('cnt-car').innerText = counts.car;
+        if(document.getElementById('cnt-osong')) document.getElementById('cnt-osong').innerText = counts.osong;
+        if(document.getElementById('cnt-terminal')) document.getElementById('cnt-terminal').innerText = counts.terminal;
+        if(document.getElementById('cnt-airport')) document.getElementById('cnt-airport').innerText = counts.airport;
+        if(document.getElementById('cnt-total')) document.getElementById('cnt-total').innerText = items.length;
+    });
+},
 
 
 
@@ -2534,11 +2545,22 @@ loadDormitoryData: function() {
 
 
 
-    toggleMenuDropdown: function() {
+toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
         if(dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    },
+
+    // [신규 추가] 관리자가 차량 신청만 강제 취소하는 기능
+    deleteShuttleByAdmin: function(token, name) {
+        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?\n(신청 명단에서만 삭제됩니다.)`)) return;
+        
+        firebase.database().ref(`courses/${state.room}/shuttle/requests/${token}`).remove()
+            .then(() => {
+                ui.showAlert("✅ 차량 신청이 취소되었습니다.");
+            })
+            .catch(e => alert("오류 발생: " + e.message));
     }
-}; // <--- ui 객체를 닫는 진짜 문입니다. (이 아래에 quizMgr 등이 나옵니다)
+};
 
 
 
