@@ -1843,11 +1843,21 @@ loadShuttleData: function() {
     if(!state.room) return;
 
     // 1. 기사님 공지(출발시간) 연동
-    firebase.database().ref('system/shuttle_notice').on('value', snap => {
-        const time = snap.val() || "시간 정보 없음";
-        const el = document.getElementById('shuttleDepartureTime');
-        if(el) el.innerText = time;
-    });
+firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+    const dep = snap.val();
+    const el = document.getElementById('shuttleDepartureTime');
+    if(!el) return;
+
+    if (dep && dep.time) {
+        el.innerText = `${dep.date} ${dep.time}`;
+        el.style.color = "#3b82f6";
+    } else {
+        firebase.database().ref('system/shuttle_notice').once('value', s => {
+            el.innerText = s.val() || "시간 정보 없음";
+            el.style.color = "white";
+        });
+    }
+});
 
     // 2. 신청 명단 실시간 연동
     firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
