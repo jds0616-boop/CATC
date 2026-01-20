@@ -2446,22 +2446,34 @@ loadDormitoryData: function() {
     loadShuttleData: function() {
         if(!state.room) return;
 
-// 해당 과정 전용 출발시간 연동 코드
+
+
+// 해당 과정 전용 출발시간 연동 코드 (날짜/시간 줄바꿈 및 문구 추가 버전)
 firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
     const dep = snap.val();
     const el = document.getElementById('shuttleDepartureTime');
     if(!el) return;
 
-    if (dep && dep.time) {
-        el.innerText = `${dep.date} ${dep.time}`;
+    if (dep && dep.time && dep.date) {
+        // 날짜 가공 (2026-01-23 -> 1월 23일)
+        const dateParts = dep.date.split('-');
+        const month = parseInt(dateParts[1]);
+        const day = parseInt(dateParts[2]);
+
+        // HTML을 사용하여 줄바꿈(<br>)과 하단 문구 적용
+        el.innerHTML = `${month}월 ${day}일<br><span style="font-size:22px;">${dep.time} 항기원 출발</span>`;
         el.style.color = "#3b82f6";
     } else {
+        // 설정된 시간이 없을 경우 기사님 전체 공지사항 표시
         firebase.database().ref('system/shuttle_notice').once('value', s => {
             el.innerText = s.val() || "시간 정보 없음";
             el.style.color = "white";
         });
     }
 });
+
+
+
 
         // 2. 신청 명단 실시간 연동 (개편된 경로: shuttle/requests)
         firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', snap => {
