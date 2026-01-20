@@ -75,6 +75,9 @@
     .time-setter { display: flex; gap: 5px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 10px; }
     .quick-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
     .quick-btn:active { background: #e2e8f0; }
+    .quick-btn.active { background: var(--kac-blue) !important; color: white !important; border-color: var(--kac-blue) !important; }
+    /* 안내 문구 스타일 */
+    .status-msg { flex: 1; font-size: 13px; font-weight: 800; color: #1e40af; text-align: center; background: #fff; border: 1px solid #cbd5e1; padding: 7px; border-radius: 6px; }
     .direct-input { flex: 1; border: 1px solid #cbd5e1; padding: 7px; border-radius: 6px; font-size: 13px; text-align: center; }
     .save-btn { background: var(--kac-navy); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; cursor: pointer; }
 
@@ -91,14 +94,39 @@
     .block-teacher { background: #eff6ff; color: #1e40af; border-left: 3px solid #3b82f6; font-weight: 800; font-size: 9px; } /* 강사수송 */
     .block-lunch { background: #f1f5f9; color: #94a3b8; font-style: italic; }
 
-    .app-footer { height: 50px; background: #fff; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #94a3b8; font-weight: 700; }
+    .app-footer { 
+      height: 60px; 
+      background: var(--kac-navy); 
+      border-top: 2px solid var(--kac-blue); 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 0 20px; 
+      color: #fff;
+    }
+    /* 실시간 시계 스타일 */
+    #current-time { 
+      font-size: 18px; 
+      font-weight: 800; 
+      font-family: 'Pretendard', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    /* 하단 로고 스타일 */
+    .footer-logo { 
+      height: 22px; /* 시간 글자 크기와 밸런스를 맞춤 */
+      width: auto;
+      filter: brightness(0) invert(1); /* 로고가 어두운 경우 흰색으로 반전 (필요없으면 삭제) */
+    }
+
+
   </style>
 </head>
 <body>
   <div class="app-container">
     <header class="app-header">
       <i class="fa-solid fa-chevron-left" onclick="location.href='potal.html'"></i>
-      <div class="header-title">KAC 수송 관리 시스템</div>
+      <div class="header-title">항공기술훈련원 차량지원시스템</div>
       <i class="fa-solid fa-rotate" onclick="location.reload()"></i>
     </header>
 
@@ -139,8 +167,12 @@
       </div>
     </main>
 
-    <footer class="app-footer">
-      <div>KAC Training Center Transport Management</div>
+     <footer class="app-footer">
+      <!-- 좌측: 실시간 시계 -->
+      <div id="current-time">00:00:00</div>
+      
+      <!-- 우측: 로고 -->
+      <img src="logo.png" alt="KAC Logo" class="footer-logo">
     </footer>
   </div>
 
@@ -200,6 +232,11 @@
         const dep = room.shuttle?.departure || { time: "", date: "" };
         const reqs = room.shuttle?.requests ? Object.values(room.shuttle.requests) : [];
         
+        // 현재 설정된 시간에 따라 버튼 활성화 체크
+        const is13 = dep.time === '13:00' ? 'active' : '';
+        const is16 = dep.time === '16:00' ? 'active' : '';
+        const isCustom = (dep.time && dep.time !== '13:00' && dep.time !== '16:00') ? 'active' : '';
+
         const card = document.createElement('div');
         card.className = 'course-card';
         card.innerHTML = `
@@ -207,18 +244,20 @@
             <span class="course-name">#${rid} ${cName}</span>
             <div class="course-shuttle-info">
               <span style="color:var(--osong)">오송 ${reqs.filter(r=>r.type==='osong').length}</span>
-              <span style="color:var(--term)">터미 ${reqs.filter(r=>r.type==='terminal').length}</span>
+              <span style="color:var(--term)">터미널 ${reqs.filter(r=>r.type==='terminal').length}</span>
               <span style="color:var(--air)">공항 ${reqs.filter(r=>r.type==='airport').length}</span>
             </div>
           </div>
-          <div style="font-size:12px; color:var(--kac-blue); font-weight:800;">
-            현재 설정: ${dep.time ? dep.date + ' ' + dep.time : '미설정'}
-          </div>
           <div class="time-setter">
-            <button class="quick-btn" onclick="setShuttleTime('${rid}', '13:00')">13:00</button>
-            <button class="quick-btn" onclick="setShuttleTime('${rid}', '15:00')">15:00</button>
-            <input type="time" id="time-${rid}" class="direct-input" value="${dep.time || ''}">
-            <button class="save-btn" onclick="saveCustomTime('${rid}')">저장</button>
+            <button class="quick-btn ${is13}" onclick="setShuttleTime('${rid}', '13:00')">13:00</button>
+            <button class="quick-btn ${is16}" onclick="setShuttleTime('${rid}', '16:00')">16:00</button>
+            
+            <div id="status-${rid}" class="status-msg">
+              ${dep.time ? dep.time + ' 과정 공지완료' : '시간을 선택하세요'}
+            </div>
+
+            <input type="time" id="time-${rid}" class="direct-input" style="display:none;" value="${dep.time || ''}">
+            <button class="save-btn" onclick="toggleEdit('${rid}')" id="edit-btn-${rid}">수동</button>
           </div>
         `;
         container.appendChild(card);
@@ -227,18 +266,41 @@
 
     // 4. 시간 저장 함수 (날짜는 오늘~금요일 자동 판별)
     function setShuttleTime(rid, time) {
-      if(confirm(time + "으로 출발 시간을 설정하시겠습니까?")) {
-        const today = new Date();
-        const friday = new Date();
-        friday.setDate(today.getDate() + (5 - today.getDay())); // 이번 주 금요일 계산
-        const dateStr = friday.toISOString().split('T')[0];
+      const today = new Date();
+      const friday = new Date();
+      friday.setDate(today.getDate() + (5 - today.getDay())); 
+      const dateStr = friday.toISOString().split('T')[0];
 
-        firebase.database().ref(`courses/${rid}/shuttle/departure`).set({
-          time: time,
-          date: dateStr
-        }).then(() => alert("설정 완료"));
+      firebase.database().ref(`courses/${rid}/shuttle/departure`).set({
+        time: time,
+        date: dateStr
+      }).then(() => {
+        // 알림 없이 즉시 UI가 업데이트되도록 (Firebase onValue가 다시 호출됨)
+      });
+    }
+
+    // 수동 입력 토글 기능
+    function toggleEdit(rid) {
+      const msgArea = document.getElementById(`status-${rid}`);
+      const inputArea = document.getElementById(`time-${rid}`);
+      const btn = document.getElementById(`edit-btn-${rid}`);
+
+      if(inputArea.style.display === 'none') {
+        msgArea.style.display = 'none';
+        inputArea.style.display = 'block';
+        btn.innerText = "저장";
+      } else {
+        const customTime = inputArea.value;
+        if(!customTime) return alert("시간을 입력하세요.");
+        setShuttleTime(rid, customTime);
+        msgArea.style.display = 'block';
+        inputArea.style.display = 'none';
+        btn.innerText = "수동";
       }
     }
+
+
+
 
     function saveCustomTime(rid) {
       const time = document.getElementById(`time-${rid}`).value;
@@ -315,6 +377,38 @@
       document.getElementById('tab-btn-2').classList.toggle('active', n === 2);
       if(n === 2) renderSchedule();
     }
+
+
+
+// 실시간 시계 업데이트 함수
+    function startClock() {
+      const timeDisplay = document.getElementById('current-time');
+      
+      function update() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        timeDisplay.innerText = `${hours}:${minutes}:${seconds}`;
+      }
+      
+      setInterval(update, 1000); // 1초마다 갱신
+      update(); // 초기 실행
+    }
+
+    // 기존 init 함수에 시계 실행 추가
+    const originalInit = init;
+    init = function() {
+      originalInit();
+      startClock();
+    };
+
+
+
+
+
+
 
     init();
   </script>
