@@ -56,11 +56,52 @@
     .notice-area { width: 100%; min-height: 60px; border-radius: 8px; border: 1.5px solid var(--border-blue); padding: 12px; font-size: 13px; line-height: 1.5; resize: none; margin-bottom: 8px; background: #fff; font-weight: 600; outline: none; }
 
     /* 상황판 디자인 */
-    .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-    .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 18px 15px; color: white; text-align: center; }
+  .global-status-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 12px; 
+    width: 100%; 
+    margin-bottom: 15px;
+}
+.g-stat-item { 
+    background: #1e293b; /* 진한 네이비 */
+    border-radius: 16px; 
+    padding: 20px 15px; 
+    color: white; 
+    text-align: left; /* 왼쪽 정렬로 변경 */
+    position: relative;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.g-stat-item:active { transform: scale(0.96); }
+
+/* 하이라이트 효과 (이미지의 노란색 바) */
+.g-stat-item.highlight-orange {
+    border-left: 4px solid #fbbf24;
+}
+
+
     .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 6px; font-weight: 700; }
-    .g-stat-val { font-size: 24px; font-weight: 900; color: var(--blue-main); }
-    .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
+.g-stat-val { 
+    font-size: 28px; 
+    font-weight: 900; 
+    color: #fff; 
+    margin-bottom: 5px;
+}
+
+.g-stat-val span { font-size: 14px; margin-left: 3px; opacity: 0.9; }
+
+/* 카드 하단 링크 텍스트 */
+.g-stat-link {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fbbf24; /* 노란색 계열 */
+}
+
+/* 민트색 강조 (4번째 카드용) */
+.card-mint .g-stat-val { color: #10b981; }
 
     /* 개별 과정 현황 박스 */
     .dashboard-split { display: flex; gap: 8px; align-items: stretch; width: 100%; }
@@ -199,33 +240,36 @@
     <main class="app-content">
       <!-- [뷰 1] 전체 과정 현황 -->
       <div id="totalStatusView" style="display:flex; flex-direction:column; gap:12px;">
-          <div class="global-status-grid">
-              <div class="g-stat-item">
-                  <div class="g-stat-label">항기원 전체 교육생</div>
-                  <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
-              </div>
-              <div class="g-stat-item" style="background: var(--blue-deep); cursor:pointer;" onclick="openOutingManager()">
-                  <div class="g-stat-label">금일 총 외출/외박 (관리대장)</div>
-                  <div class="g-stat-val" id="g-today-actions" style="color:#fbbf24;">0<span>건</span></div>
-                  <div style="font-size:10px; margin-top:5px; opacity:0.8;">명단 확인 및 담당자 승인 ></div>
-              </div>
-          </div>
-          <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 리스트</div>
-              <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
-          </div>
-          <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;">
-                  <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
-                  <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
-              </div>
-              <div style="overflow-x: auto; margin-top:10px;">
-                  <table class="navy-table">
-                      <thead><tr><th style="width:25%;">과정명</th><th style="width:15%;">신청자</th><th style="width:15%;">구분</th><th style="width:25%;">시간</th><th style="width:20%;">담당 확인</th></tr></thead>
-                      <tbody id="historyTableBody"></tbody>
-                  </table>
-              </div>
-          </div>
+<!-- 상단 통합 행정 지표 (4개 카드 완성본) -->
+<div class="global-status-grid">
+    <!-- 1. 전체 교육생 현황 -->
+    <div class="g-stat-item" id="card-total-students">
+        <div class="g-stat-label"><i class="fa-solid fa-users"></i> 전체 교육생</div>
+        <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
+        <div class="g-stat-link">명단 보기 ></div>
+    </div>
+
+    <!-- 2. 금일 총 외출·외박 현황 -->
+    <div class="g-stat-item highlight-orange" id="card-outing" onclick="openOutingManager()">
+        <div class="g-stat-label"><i class="fa-solid fa-clock-rotate-left"></i> 외출/외박 신청</div>
+        <div class="g-stat-val" id="g-today-actions">0<span>건</span></div>
+        <div class="g-stat-link">승인 처리하기 ></div>
+    </div>
+
+    <!-- 3. 금일 강사 수송 예약 현황 (클릭 기능 추가됨) -->
+    <div class="g-stat-item" id="card-transport" onclick="openTodayTransportModal()">
+        <div class="g-stat-label"><i class="fa-solid fa-car-side"></i> 강사 수송 예약</div>
+        <div class="g-stat-val" id="g-total-transport">0<span>건</span></div>
+        <div class="g-stat-link">금일 운행 예정 ></div>
+    </div>
+
+    <!-- 4. 금주 퇴교 차량 신청 현황 (클릭 기능 추가됨) -->
+    <div class="g-stat-item card-mint" id="card-shuttle" onclick="openTotalShuttleModal()">
+        <div class="g-stat-label"><i class="fa-solid fa-bus"></i> 퇴교 차량 신청</div>
+        <div class="g-stat-val" id="g-total-shuttle">0<span>명</span></div>
+        <div class="g-stat-link">전체 노선 합계 ></div>
+    </div>
+</div>
       </div>
 
       <!-- [뷰 2] 개별 과정 상세 -->
@@ -451,6 +495,32 @@
           <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('totalStudentListModal').style.display='none'">닫기</button>
       </div>
   </div>
+
+
+
+<!-- 통합 행정 상세 명단 모달 (강사수송/퇴교차량 겸용) -->
+<div id="adminDetailModal" class="setup-modal">
+    <div class="setup-box" style="max-width: 550px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
+            <h3 id="adminDetailTitle" style="margin:0; font-size:17px; color:var(--navy-dark);">상세 명단</h3>
+            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('adminDetailModal').style.display='none'"></i>
+        </div>
+        <div class="modal-scroll-area" style="max-height: 500px;">
+            <table class="navy-table">
+                <thead id="adminDetailHead" style="position:sticky; top:0; z-index:10;">
+                    <!-- 헤더가 유동적으로 변합니다 -->
+                </thead>
+                <tbody id="adminDetailBody">
+                    <!-- 데이터가 여기에 들어갑니다 -->
+                </tbody>
+            </table>
+        </div>
+        <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('adminDetailModal').style.display='none'">닫기</button>
+    </div>
+</div>
+
+
+
 
 
 <!-- --- 여기서부터 추가 (인쇄 과정 선택 모달) --- -->
@@ -683,6 +753,22 @@ const coordMgr = {
         document.getElementById('historyDate').value = selectedDate;
         handleRoomSelection();
         coordMgr.init();
+
+// 금일 강사 수송 예약 실시간 카운트
+firebase.database().ref('system/transport_requests').on('value', snap => {
+    const data = snap.val() || {};
+    const today = getTodayString();
+    // 예약된 데이터 중 날짜가 오늘인 것만 필터링
+    const todayCount = Object.values(data).filter(req => req.date === today).length;
+    
+    const transEl = document.getElementById('g-total-transport');
+    if(transEl) transEl.innerHTML = `${todayCount}<span>건</span>`;
+});
+
+
+
+
+
     }
 
 
@@ -692,67 +778,52 @@ const coordMgr = {
 
 
 // [3. 전체 현황판 실시간 집계 및 명단 팝업]
-    function updateGlobalStatus() {
-        let globalList = []; 
-        let todayA = 0; 
-        const tStr = getTodayString();
+function updateGlobalStatus() {
+    let globalList = []; 
+    let todayA = 0; 
+    let totalShuttle = 0; // 퇴교 차량 합계 변수 추가
+    const tStr = getTodayString();
 
-        Object.keys(globalAllData).forEach(rid => {
-            const room = globalAllData[rid];
-            // 실제 과정명 가져오기 (없으면 Room ID)
-            const cName = room.settings?.courseName || `[미설정] Room ${rid}`;
-            
-            if (room.students) { 
-                Object.values(room.students).forEach(s => {
-                    if (s && s.name && s.name !== "undefined" && s.name.trim() !== "") {
-                        const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
-                        const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
-                        
-                        globalList.push({
-                            courseName: cName, // 실제 과정명 저장
-                            name: s.name.trim(),
-                            phone: last4
-                        });
-                    }
-                });
-            }
-            
-            if (room.admin_actions?.[tStr]) {
-                todayA += Object.keys(room.admin_actions[tStr]).length;
-            }
-        });
+    Object.keys(globalAllData).forEach(rid => {
+        const room = globalAllData[rid];
+        const cName = room.settings?.courseName || `Room ${rid}`;
+        
+        // 1. 전체 교육생 집계 (입교 완료 기준)
+        if (room.students) { 
+            Object.values(room.students).forEach(s => {
+                if (s && s.name && s.name !== "undefined" && s.name.trim() !== "") {
+                    const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
+                    const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
+                    globalList.push({ courseName: cName, name: s.name.trim(), phone: last4 });
+                }
+            });
+        }
+        
+        // 2. 금일 외출/외박 건수 집계
+        if (room.admin_actions?.[tStr]) {
+            todayA += Object.keys(room.admin_actions[tStr]).length;
+        }
 
-        // 중복 제거 (이름 + 뒷자리 기준)
-        const uniqueSet = new Set();
-        const filteredList = globalList.filter(item => {
-            const id = `${item.name}_${item.phone}`;
-            if(uniqueSet.has(id)) return false;
-            uniqueSet.add(id);
-            return true;
-        });
+        // 3. 퇴교 차량 신청자 합계 집계 (추가됨)
+        if (room.shuttle?.requests) {
+            totalShuttle += Object.keys(room.shuttle.requests).length;
+        }
+    });
 
-        document.getElementById('g-total-students').innerHTML = `${uniqueSet.size}<span>명</span>`;
-        document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+    // 중복 제거 후 전체 교육생 수 출력
+    const uniqueSet = new Set();
+    const filteredList = globalList.filter(item => {
+        const id = `${item.name}_${item.phone}`;
+        if(uniqueSet.has(id)) return false;
+        uniqueSet.add(id);
+        return true;
+    });
 
-        const statBox = document.getElementById('g-total-students').parentElement;
-        statBox.onclick = function() {
-            const modal = document.getElementById('totalStudentListModal');
-            const tbody = document.getElementById('totalStudentListBody');
-            
-            // 과정명순 -> 이름순 정렬
-            filteredList.sort((a,b) => a.courseName.localeCompare(b.courseName) || a.name.localeCompare(b.name));
-            
-            tbody.innerHTML = filteredList.length ? filteredList.map(s => `
-                <tr>
-                    <td style="font-size:11px; color:var(--blue-deep); font-weight:800; text-align:left; padding-left:10px;">${s.courseName}</td>
-                    <td style="font-weight:800;">${s.name}</td>
-                    <td style="color:#94a3b8;">${s.phone}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="3" style="padding:20px;">입교생 없음</td></tr>';
-            
-            modal.style.display = 'flex';
-        };
-    }
+    // 화면 반영
+    document.getElementById('g-total-students').innerHTML = `${uniqueSet.size}<span>명</span>`;
+    document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+    document.getElementById('g-total-shuttle').innerHTML = `${totalShuttle}<span>명</span>`;
+}
 
 
 
@@ -1240,7 +1311,56 @@ function showActionDetail(dataJson) {
 
 
 
+// [카드 3 클릭] 금일 강사 수송 예약 상세 조회
+function openTodayTransportModal() {
+    const today = getTodayString();
+    firebase.database().ref('system/transport_requests').once('value', snap => {
+        const data = snap.val() || {};
+        const todayList = Object.values(data)
+            .filter(req => req.date === today)
+            .sort((a, b) => a.time.localeCompare(b.time));
 
+        document.getElementById('adminDetailTitle').innerText = `🚚 금일 강사 수송 명단 (${todayCount = todayList.length}건)`;
+        document.getElementById('adminDetailHead').innerHTML = `<tr><th>시간</th><th>강사명</th><th>운행구간</th></tr>`;
+        
+        const tbody = document.getElementById('adminDetailBody');
+        tbody.innerHTML = todayList.length ? todayList.map(r => `
+            <tr>
+                <td style="font-weight:800; color:var(--blue-deep);">${r.time}</td>
+                <td>${r.prof}</td>
+                <td style="font-size:11px;">${r.dir}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" style="padding:30px;">금일 예약된 수송 내역이 없습니다.</td></tr>';
+        
+        document.getElementById('adminDetailModal').style.display = 'flex';
+    });
+}
+
+// [카드 4 클릭] 전체 과정 퇴교 차량 신청 상세 조회
+function openTotalShuttleModal() {
+    let totalList = [];
+    Object.keys(globalAllData).forEach(rid => {
+        const requests = globalAllData[rid].shuttle?.requests || {};
+        const cName = globalAllData[rid].settings?.courseName || rid;
+        Object.values(requests).forEach(req => {
+            totalList.push({ ...req, cName });
+        });
+    });
+
+    document.getElementById('adminDetailTitle').innerText = `🚌 전체 퇴교 차량 신청 명단 (${totalList.length}명)`;
+    document.getElementById('adminDetailHead').innerHTML = `<tr><th>과정명</th><th>성함</th><th>목적지</th></tr>`;
+
+    const tbody = document.getElementById('adminDetailBody');
+    tbody.innerHTML = totalList.length ? totalList.map(r => `
+        <tr>
+            <td style="font-size:10px; text-align:left; padding-left:10px;">${r.cName}</td>
+            <td style="font-weight:800;">${r.name}</td>
+            <td style="color:var(--blue-deep); font-weight:800;">${r.typeText}</td>
+        </tr>
+    `).join('') : '<tr><td colspan="3" style="padding:30px;">신청된 퇴교 차량 내역이 없습니다.</td></tr>';
+
+    document.getElementById('adminDetailModal').style.display = 'flex';
+}
 
 
 
