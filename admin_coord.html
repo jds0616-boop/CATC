@@ -51,7 +51,7 @@
 
 /* 상단 총괄 상황판 (4구 그리드) */
     .dashboard-header-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; padding: 5px;
     }
     .stat-card {
       background: #fff; border-radius: 12px; padding: 15px;
@@ -686,14 +686,13 @@ const coordMgr = {
 
 
 // [3. 전체 현황판 실시간 집계 및 명단 팝업]
-async function updateGlobalStatus() {
+function updateGlobalStatus() {
         let globalList = []; 
         let todayA = 0; 
-        let totalShuttleCount = 0;
         let totalShuttleList = [];
         const tStr = getTodayString();
 
-        // 1. 모든 과정 데이터 루프 (교육생, 외출외박, 퇴교차량 집계)
+        // 1. 데이터 집계 (모든 과정 루프)
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
             const cName = room.settings?.courseName || `Room ${rid}`;
@@ -712,54 +711,75 @@ async function updateGlobalStatus() {
             if (room.admin_actions?.[tStr]) {
                 todayA += Object.keys(room.admin_actions[tStr]).length;
             }
-            // 퇴교 차량 집계
+            // 차량신청 집계
             if (room.shuttle?.requests) {
-                const reqs = Object.values(room.shuttle.requests);
-                totalShuttleCount += reqs.length;
-                reqs.forEach(r => {
-                    const typeMap = {osong:'오송역', terminal:'터미널', airport:'공항', car:'자차'};
-                    totalShuttleList.push({ type: typeMap[r.type]||'기타', name: r.name, cName: cName });
+                Object.values(room.shuttle.requests).forEach(req => {
+                    const typeNames = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
+                    totalShuttleList.push({ type: typeNames[req.type] || '기타', name: req.name, cName: cName });
                 });
             }
         });
 
-        // 화면 숫자 업데이트
+        // 2. 상단 숫자 업데이트 (오류 방지를 위해 존재 여부 확인 후 업데이트)
         const uniqueStudents = Array.from(new Set(globalList.map(s => `${s.name}_${s.phone}`)));
-        document.getElementById('g-total-students').innerHTML = `${uniqueStudents.size}<span>명</span>`;
-        document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
-        document.getElementById('g-total-shuttle').innerHTML = `${totalShuttleCount}<span>명</span>`;
+        
+        if(document.getElementById('g-total-students')) 
+            document.getElementById('g-total-students').innerHTML = `${uniqueStudents.length}<span>명</span>`;
+        
+        if(document.getElementById('g-today-actions')) 
+            document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+        
+        if(document.getElementById('g-total-shuttle')) 
+            document.getElementById('g-total-shuttle').innerHTML = `${totalShuttleList.length}<span>명</span>`;
 
-        // 2. 강사 수송 예약 실시간 가져오기
+        // 3. 강사 수송 실시간 데이터 (서버 연결)
         firebase.database().ref('system/transport_requests').on('value', snap => {
             const transData = snap.val() || {};
             const transArr = Object.values(transData);
-            document.getElementById('g-total-trans').innerHTML = `${transArr.length}<span>건</span>`;
+            if(document.getElementById('g-total-trans')) 
+                document.getElementById('g-total-trans').innerHTML = `${transArr.length}<span>건</span>`;
             
-            // 강사 수송 팝업 연결
-            document.getElementById('main-total-trans').onclick = () => {
-                const tbody = document.getElementById('totalTransBody'); // HTML 하단에 팝업용 테이블이 있어야 함
-                if(!tbody) return alert("강사 수송 예약: " + transArr.length + "건 현황 존재");
-                transArr.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-                tbody.innerHTML = transArr.map(t => `<tr><td>${t.date}<br>${t.time}</td><td><b>${t.prof}</b></td><td>${t.dir}</td></tr>`).join('');
-                document.getElementById('totalTransModal').style.display = 'flex';
-            };
+            // 강사수송 클릭 시 팝업 열기
+            const btnTrans = document.getElementById('main-total-trans');
+            if(btnTrans) {
+                btnTrans.onclick = () => {
+                    const tbody = document.getElementById('totalTransBody');
+                    if(!tbody) return;
+                    transArr.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+                    tbody.innerHTML = transArr.map(t => `<tr><td>${t.date}<br>${t.time}</td><td><b>${t.prof}</b></td><td>${t.dir}</td></tr>`).join('');
+                    document.getElementById('totalTransModal').style.display = 'flex';
+                };
+            }
         });
 
-        // 3. 나머지 카드 팝업 연결
-        document.getElementById('main-total-students').onclick = () => {
-            const tbody = document.getElementById('totalStudentListBody');
-            globalList.sort((a,b) => a.courseName.localeCompare(b.courseName));
-            tbody.innerHTML = globalList.map(s => `<tr><td>${s.courseName}</td><td><b>${s.name}</b></td><td>${s.phone}</td></tr>`).join('');
-            document.getElementById('totalStudentListModal').style.display = 'flex';
-        };
+        // 4. 나머지 버튼들 팝업 연결
+        // 교육생 명단 버튼
+        const btnTotal = document.getElementById('main-total-students');
+        if(btnTotal) {
+            btnTotal.onclick = () => {
+                const tbody = document.getElementById('totalStudentListBody');
+                if(!tbody) return;
+                globalList.sort((a,b) => a.courseName.localeCompare(b.courseName));
+                tbody.innerHTML = globalList.map(s => `<tr><td>${s.courseName}</td><td><b>${s.name}</b></td><td>${s.phone}</td></tr>`).join('');
+                document.getElementById('totalStudentListModal').style.display = 'flex';
+            };
+        }
 
-        document.getElementById('main-total-shuttle').onclick = () => {
-            const tbody = document.getElementById('totalShuttleBody'); // HTML 하단에 팝업용 테이블이 있어야 함
-            if(!tbody) return alert("퇴교 차량 신청: " + totalShuttleCount + "명 신청 중");
-            totalShuttleList.sort((a,b) => a.type.localeCompare(b.type));
-            tbody.innerHTML = totalShuttleList.map(s => `<tr><td><b style="color:#3b82f6;">${s.type}</b></td><td><b>${s.name}</b></td><td style="font-size:10px;">${s.cName}</td></tr>`).join('');
-            document.getElementById('totalShuttleModal').style.display = 'flex';
-        };
+        // 차량 신청 버튼
+        const btnShuttle = document.getElementById('main-total-shuttle');
+        if(btnShuttle) {
+            btnShuttle.onclick = () => {
+                const tbody = document.getElementById('totalShuttleBody');
+                if(!tbody) return;
+                totalShuttleList.sort((a,b) => a.type.localeCompare(b.type));
+                tbody.innerHTML = totalShuttleList.map(s => `<tr><td><b style="color:#3b82f6;">${s.type}</b></td><td><b>${s.name}</b></td><td style="font-size:10px;">${s.cName}</td></tr>`).join('');
+                document.getElementById('totalShuttleModal').style.display = 'flex';
+            };
+        }
+
+        // ★★★ 중요: 여기서 멈추지 않고 아래쪽 리스트들을 그려주도록 호출함
+        if (typeof renderCourseSelectors === "function") renderCourseSelectors();
+        if (typeof renderTotalHistory === "function") renderTotalHistory();
     }
 
 
