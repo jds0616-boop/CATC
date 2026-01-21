@@ -699,6 +699,7 @@ const coordMgr = {
             globalAllData = snap.val() || {};
             updateGlobalStatus(); 
             renderCourseSelectors(); 
+            handleRoomSelection(); 
             renderTotalHistory();
             if(currentRID) updateIndividualView();
             if(document.getElementById('outingManagerView').style.display === 'flex') renderOutingManager();
@@ -968,7 +969,27 @@ function updateTransDirButtons() {
 
     // [7. 화면 내비게이션 및 유틸]
     function handleBackNav() { if(currentRID) { currentRID = ""; handleRoomSelection(); } else { location.href = 'potal.html'; } }
-    function handleRoomSelection() { const isInd = (currentRID !== ""); document.getElementById('totalStatusView').style.display = isInd ? "none" : "flex"; document.getElementById('individualStatusView').style.display = isInd ? "flex" : "none"; document.getElementById('side-global-menu').style.display = isInd ? "none" : "flex"; document.getElementById('side-individual-menu').style.display = isInd ? "flex" : "none"; if(isInd) { updateIndividualView(); updateQRPreview(); } }
+function handleRoomSelection() {
+        // currentRID가 비어있으면 메인화면, 있으면 개별과정 화면
+        const isInd = (currentRID !== ""); 
+
+        // 1. 화면 전환 (메인 <-> 개별상세)
+        document.getElementById('totalStatusView').style.display = isInd ? "none" : "flex";
+        document.getElementById('individualStatusView').style.display = isInd ? "flex" : "none";
+
+        // 2. 사이드 메뉴 버튼 전환 (핵심!)
+        const globalMenu = document.getElementById('side-global-menu');
+        const individualMenu = document.getElementById('side-individual-menu');
+
+        if (globalMenu) globalMenu.style.display = isInd ? "none" : "flex";
+        if (individualMenu) individualMenu.style.display = isInd ? "flex" : "none";
+
+        // 3. 개별 과정으로 들어갔을 때 추가 작업
+        if (isInd) {
+            updateIndividualView();
+            updateQRPreview();
+        }
+    }
     
 
 
