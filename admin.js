@@ -2827,8 +2827,11 @@ const quizMgr = {
     },
     
 action: function(act) {
-        // [옵저버 제한]
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 퀴즈를 진행할 수 없습니다.");
+        // [옵저버 제어 차단]
+        if(state.isObserver) {
+            ui.showAlert("👁️ 옵저버 모드에서는 퀴즈 상태를 변경할 수 없습니다.");
+            return;
+        }
         
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
         if(act === 'open') { 
@@ -2950,7 +2953,13 @@ action: function(act) {
         }
     },
     
-    showFinalSummary: async function() {
+showFinalSummary: async function() {
+        // [옵저버 종료 차단]
+        if(state.isObserver) {
+            ui.showAlert("👁️ 옵저버는 퀴즈를 종료하거나 결과를 발표할 수 없습니다.");
+            return;
+        }
+
         const snap = await firebase.database().ref(`courses/${state.room}/quizAnswers`).get();
         const allAns = snap.val() || {};
         const totalParticipants = new Set();
@@ -3015,14 +3024,6 @@ action: function(act) {
             `;
         }
         
-        if(questionStats.length > 0) { 
-            questionStats.sort((a,b) => a.accuracy - b.accuracy); 
-            const missArea = document.getElementById('mostMissedArea');
-            const missTxt = document.getElementById('mostMissedText');
-            if(missArea) missArea.style.display = 'block'; 
-            if(missTxt) missTxt.innerText = `"${questionStats[0].title.substring(0,30)}..." (${Math.round(questionStats[0].accuracy)}%)`; 
-        }
-        
         const summaryOverlay = document.getElementById('quizSummaryOverlay');
         if(summaryOverlay) summaryOverlay.style.display = 'flex';
     },
@@ -3063,7 +3064,12 @@ action: function(act) {
         });
     },
     
-    closeQuizMode: function() { 
+closeQuizMode: function() { 
+        // [옵저버는 팝업 없이 그냥 퇴장]
+        if(state.isObserver) {
+            ui.setMode('qa');
+            return;
+        }
         const exitModal = document.getElementById('quizExitModal');
         if(exitModal) exitModal.style.display = 'flex'; 
     },
