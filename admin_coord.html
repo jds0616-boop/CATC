@@ -199,8 +199,10 @@
     </header>
 
     <main class="app-content">
-      <!-- [뷰 1] 전체 과정 현황 -->
+<!-- [뷰 1] 전체 과정 현황 -->
       <div id="totalStatusView" style="display:flex; flex-direction:column; gap:12px;">
+          
+          <!-- 1. 총괄 상황판 (버튼 4개) -->
           <div class="dashboard-header-grid">
               <div class="stat-card" id="main-total-students">
                   <div class="stat-label"><i class="fa-solid fa-users" style="color:#3b82f6;"></i> 전체 교육생</div>
@@ -223,7 +225,37 @@
                   <div class="stat-link">목적지별 현황 ></div>
               </div>
           </div>
+
+          <!-- 2. 현재 운영 중인 과정 리스트 (살려내기) -->
+          <div class="section-card">
+              <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 리스트</div>
+              <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+
+          <!-- 3. 당일 신청자 명단 (살려내기) -->
+          <div class="section-card">
+              <div class="section-title" style="justify-content:space-between;">
+                  <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
+                  <input type="date" id="historyDate" class="navy-select" style="width:125px; height:30px; font-size:11px;" onchange="loadActionHistory(this.value)">
+              </div>
+              <div style="overflow-x: auto; margin-top:10px;">
+                  <table class="navy-table">
+                      <thead><tr><th style="width:25%;">과정명</th><th style="width:15%;">신청자</th><th style="width:15%;">구분</th><th style="width:25%;">시간</th><th style="width:20%;">담당 확인</th></tr></thead>
+                      <tbody id="historyTableBody"></tbody>
+                  </table>
+              </div>
+          </div>
       </div>
+
+
+
+
+
+
+
+
+
+
 
       <!-- [뷰 2] 개별 과정 상세 -->
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:12px;">
@@ -687,99 +719,83 @@ const coordMgr = {
 
 // [3. 전체 현황판 실시간 집계 및 명단 팝업]
 function updateGlobalStatus() {
-        let globalList = []; 
-        let todayA = 0; 
-        let totalShuttleList = [];
-        const tStr = getTodayString();
+        try {
+            let globalList = []; 
+            let todayA = 0; 
+            let totalShuttleList = [];
+            const tStr = getTodayString();
 
-        // 1. 데이터 집계 (모든 과정 루프)
-        Object.keys(globalAllData).forEach(rid => {
-            const room = globalAllData[rid];
-            const cName = room.settings?.courseName || `Room ${rid}`;
-            
-            // 교육생 집계
-            if (room.students) { 
-                Object.values(room.students).forEach(s => {
-                    if (s && s.name && s.name.trim() !== "" && s.name !== "undefined") {
-                        const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
-                        const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
-                        globalList.push({ courseName: cName, name: s.name.trim(), phone: last4 });
-                    }
-                });
-            }
-            // 오늘 외출외박 집계
-            if (room.admin_actions?.[tStr]) {
-                todayA += Object.keys(room.admin_actions[tStr]).length;
-            }
-            // 차량신청 집계
-            if (room.shuttle?.requests) {
-                Object.values(room.shuttle.requests).forEach(req => {
-                    const typeNames = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
-                    totalShuttleList.push({ type: typeNames[req.type] || '기타', name: req.name, cName: cName });
-                });
-            }
-        });
+            // 데이터 집계
+            Object.keys(globalAllData).forEach(rid => {
+                const room = globalAllData[rid];
+                const cName = room.settings?.courseName || `Room ${rid}`;
+                if (room.students) { 
+                    Object.values(room.students).forEach(s => {
+                        if (s && s.name && s.name.trim() !== "" && s.name !== "undefined") {
+                            const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
+                            const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
+                            globalList.push({ courseName: cName, name: s.name.trim(), phone: last4 });
+                        }
+                    });
+                }
+                if (room.admin_actions?.[tStr]) {
+                    todayA += Object.keys(room.admin_actions[tStr]).length;
+                }
+                if (room.shuttle?.requests) {
+                    Object.values(room.shuttle.requests).forEach(req => {
+                        const typeNames = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
+                        totalShuttleList.push({ type: typeNames[req.type] || '기타', name: req.name, cName: cName });
+                    });
+                }
+            });
 
-        // 2. 상단 숫자 업데이트 (오류 방지를 위해 존재 여부 확인 후 업데이트)
-        const uniqueStudents = Array.from(new Set(globalList.map(s => `${s.name}_${s.phone}`)));
-        
-        if(document.getElementById('g-total-students')) 
-            document.getElementById('g-total-students').innerHTML = `${uniqueStudents.length}<span>명</span>`;
-        
-        if(document.getElementById('g-today-actions')) 
-            document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
-        
-        if(document.getElementById('g-total-shuttle')) 
-            document.getElementById('g-total-shuttle').innerHTML = `${totalShuttleList.length}<span>명</span>`;
+            // 상단 숫자 업데이트
+            const uniqueStudents = Array.from(new Set(globalList.map(s => `${s.name}_${s.phone}`)));
+            if(document.getElementById('g-total-students')) document.getElementById('g-total-students').innerHTML = `${uniqueStudents.length}<span>명</span>`;
+            if(document.getElementById('g-today-actions')) document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+            if(document.getElementById('g-total-shuttle')) document.getElementById('g-total-shuttle').innerHTML = `${totalShuttleList.length}<span>명</span>`;
 
-        // 3. 강사 수송 실시간 데이터 (서버 연결)
-        firebase.database().ref('system/transport_requests').on('value', snap => {
-            const transData = snap.val() || {};
-            const transArr = Object.values(transData);
-            if(document.getElementById('g-total-trans')) 
-                document.getElementById('g-total-trans').innerHTML = `${transArr.length}<span>건</span>`;
-            
-            // 강사수송 클릭 시 팝업 열기
-            const btnTrans = document.getElementById('main-total-trans');
-            if(btnTrans) {
-                btnTrans.onclick = () => {
-                    const tbody = document.getElementById('totalTransBody');
-                    if(!tbody) return;
-                    transArr.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
-                    tbody.innerHTML = transArr.map(t => `<tr><td>${t.date}<br>${t.time}</td><td><b>${t.prof}</b></td><td>${t.dir}</td></tr>`).join('');
-                    document.getElementById('totalTransModal').style.display = 'flex';
-                };
-            }
-        });
+            // 강사 수송 실시간 데이터 (서버 연결)
+            firebase.database().ref('system/transport_requests').once('value', snap => {
+                const transData = snap.val() || {};
+                const transArr = Object.values(transData);
+                if(document.getElementById('g-total-trans')) document.getElementById('g-total-trans').innerHTML = `${transArr.length}<span>건</span>`;
+                const btnTrans = document.getElementById('main-total-trans');
+                if(btnTrans) {
+                    btnTrans.onclick = () => {
+                        const tbody = document.getElementById('totalTransBody');
+                        if(!tbody) return;
+                        transArr.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+                        tbody.innerHTML = transArr.map(t => `<tr><td>${t.date}<br>${t.time}</td><td><b>${t.prof}</b></td><td>${t.dir}</td></tr>`).join('');
+                        document.getElementById('totalTransModal').style.display = 'flex';
+                    };
+                }
+            });
 
-        // 4. 나머지 버튼들 팝업 연결
-        // 교육생 명단 버튼
-        const btnTotal = document.getElementById('main-total-students');
-        if(btnTotal) {
-            btnTotal.onclick = () => {
+            // 팝업 이벤트 연결
+            const btnTotal = document.getElementById('main-total-students');
+            if(btnTotal) btnTotal.onclick = () => {
                 const tbody = document.getElementById('totalStudentListBody');
                 if(!tbody) return;
                 globalList.sort((a,b) => a.courseName.localeCompare(b.courseName));
                 tbody.innerHTML = globalList.map(s => `<tr><td>${s.courseName}</td><td><b>${s.name}</b></td><td>${s.phone}</td></tr>`).join('');
                 document.getElementById('totalStudentListModal').style.display = 'flex';
             };
-        }
 
-        // 차량 신청 버튼
-        const btnShuttle = document.getElementById('main-total-shuttle');
-        if(btnShuttle) {
-            btnShuttle.onclick = () => {
+            const btnShuttle = document.getElementById('main-total-shuttle');
+            if(btnShuttle) btnShuttle.onclick = () => {
                 const tbody = document.getElementById('totalShuttleBody');
                 if(!tbody) return;
                 totalShuttleList.sort((a,b) => a.type.localeCompare(b.type));
                 tbody.innerHTML = totalShuttleList.map(s => `<tr><td><b style="color:#3b82f6;">${s.type}</b></td><td><b>${s.name}</b></td><td style="font-size:10px;">${s.cName}</td></tr>`).join('');
                 document.getElementById('totalShuttleModal').style.display = 'flex';
             };
-        }
 
-        // ★★★ 중요: 여기서 멈추지 않고 아래쪽 리스트들을 그려주도록 호출함
-        if (typeof renderCourseSelectors === "function") renderCourseSelectors();
-        if (typeof renderTotalHistory === "function") renderTotalHistory();
+        } catch (e) { console.error(e); }
+
+        // ★ 무조건 아래쪽 리스트들을 다시 그리도록 명령 ★
+        if(typeof renderCourseSelectors === 'function') renderCourseSelectors();
+        if(typeof renderTotalHistory === 'function') renderTotalHistory();
     }
 
 
