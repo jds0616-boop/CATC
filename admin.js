@@ -46,6 +46,7 @@ const state = {
         return id;
     })(),
     room: null,
+    isObserver: false,
     isTestMode: false,
     quizList: [],
     isExternalFileLoaded: false, 
@@ -241,17 +242,16 @@ verifyTakeover: async function() {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
 
-        // 마스터 비번 또는 설정된 비번이 맞을 경우
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            // [중요] 인증 성공 즉시 서버에 나의 현재 sessionId를 주인으로 등록
+            // [추가] 정식 강사 입장 시 옵저버 모드 해제
+            state.isObserver = false; 
+
             await firebase.database().ref(`courses/${newRoom}/status`).update({ 
                 ownerSessionId: state.sessionId,
-                roomStatus: 'active' // 혹시 꺼져있었다면 켬
+                roomStatus: 'active'
             });
             localStorage.setItem(`last_owned_room`, newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
-            
-            // 이제 정식 주인이 되었으므로 방 연결 실행
             this.forceEnterRoom(newRoom);
             ui.showAlert("✅ 제어권을 획득했습니다.");
         } else {
@@ -261,50 +261,75 @@ verifyTakeover: async function() {
         }
     },
     
+
+enterAsObserver: function() {
+        const newRoom = state.pendingRoom;
+        if (!newRoom) return;
+
+        // [중요] 옵저버 상태임을 표시하고 방 입장
+        state.isObserver = true; 
+        document.getElementById('takeoverModal').style.display = 'none';
+        
+        // 주인 기록(ownerSessionId)을 바꾸지 않고 바로 입장 로직 실행
+        this.forceEnterRoom(newRoom);
+        ui.showAlert("👁️ 옵저버 모드로 입장했습니다. (읽기 전용)");
+    },
+
+
+
+
+
+
+
+
+
+
+
+
     cancelTakeover: function() {
         document.getElementById('takeoverModal').style.display = 'none';
         document.getElementById('roomSelect').value = state.room || ""; 
         state.pendingRoom = null;
     },
 
+
+
+
+
+
 forceEnterRoom: async function(room) {
         if(dbRef.status) dbRef.status.off();
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // [수정] 입장 전 제어권 먼저 체크
-        const snap = await firebase.database().ref(`courses/${room}/status`).get();
-        const st = snap.val() || {};
+        // 1. 강사 입장 시 제어권 체크 (옵저버 입장일 때는 건너뜀)
+        if (!state.isObserver) {
+            const snap = await firebase.database().ref(`courses/${room}/status`).get();
+            const st = snap.val() || {};
 
-        // 누군가 사용 중인데, 내 세션ID와 서버에 등록된 ID가 다르면 비밀번호 입력 유도
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            state.pendingRoom = room;
-            document.getElementById('takeoverPwInput').value = "";
-            document.getElementById('takeoverModal').style.display = 'flex';
-            document.getElementById('takeoverPwInput').focus();
-            // 일단 화면은 대기실로 표시 (비밀번호 맞기 전까지 입장 방지)
-            ui.showWaitingRoom();
-            return;
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                state.pendingRoom = room;
+                document.getElementById('takeoverPwInput').value = "";
+                document.getElementById('takeoverModal').style.display = 'flex';
+                document.getElementById('takeoverPwInput').focus();
+                ui.showWaitingRoom();
+                return;
+            }
         }
 
-        // 제어권이 확인되었거나 비어있는 방인 경우 입장 로직 실행
-        firebase.database().ref(`courses/${room}/status`).update({
-            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
-        });
-        
+        // 2. 기본 연결 설정
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
-        
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
 
         document.querySelector('.mode-tabs').style.display = 'flex';
-        document.getElementById('floatingQR').style.display = 'none';
         const btnReset = document.getElementById('btnReset');
+        
+        // [옵저버 제어] 리셋 버튼 및 설정 버튼 상태 제어
         if(btnReset) {
-            btnReset.disabled = false;
-            btnReset.style.opacity = '1';
-            btnReset.style.cursor = 'pointer';
+            btnReset.disabled = state.isObserver;
+            btnReset.style.opacity = state.isObserver ? '0.3' : '1';
         }
 
         const rPath = `courses/${room}`;
@@ -313,43 +338,33 @@ forceEnterRoom: async function(room) {
         dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
         dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
-        dbRef.connections = firebase.database().ref(`${rPath}/connections`);
 
         ui.updateHeaderRoom(room);
         subjectMgr.init();
-        state.qaData = {};
         
-        // 설정 데이터 감시
-        dbRef.settings.on('value', s => {
-            const val = s.val() || {};
-            ui.renderSettings(val);
-            if(localStorage.getItem('kac_last_mode') === 'dashboard') ui.loadDashboardStats();
-        });
-
-        // [중요] 제어권 실시간 감시 (세션이 바뀌어 튕겼을 때 대응)
+        // 3. 실시간 데이터 감시
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const statusData = s.val() || {};
             ui.renderRoomStatus(statusData.roomStatus || 'idle'); 
-            
-            // 만약 서버의 주인 세션ID가 내 현재 세션ID와 달라지면
-            if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
-                ui.checkLockStatus(statusData); // 화면 잠금
-                // 자동으로 제어권 탈취 팝업 띄우기
-                state.pendingRoom = room;
-                document.getElementById('takeoverModal').style.display = 'flex';
-            } else {
-                ui.checkLockStatus(statusData); // 잠금 해제
-            }
 
-            if(statusData.professorName) {
-                const dashProf = document.getElementById('dashProfName');
-                if(dashProf) {
-                    dashProf.innerHTML = `<span onclick="ui.showProfPresentation('${statusData.professorName}')" style="cursor:pointer; color:#3b82f6; font-weight:800;">${statusData.professorName} 교수님</span>`;
+            // [옵저버는 튕기지 않음] 강사일 때만 제어권 상실 여부 감시
+            if (!state.isObserver) {
+                if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
+                    ui.checkLockStatus(statusData);
+                    state.pendingRoom = room;
+                    document.getElementById('takeoverModal').style.display = 'flex';
+                } else {
+                    ui.checkLockStatus(statusData);
                 }
+            } else {
+                // 옵저버는 항상 잠금 레이어 숨김
+                const overlay = document.getElementById('statusOverlay');
+                if(overlay) overlay.style.display = 'none';
             }
         });
 
+        // 나머지 로직 유지
         firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const data = s.val() || {};
             const activeUsers = Object.values(data).filter(user => user.name && user.isOnline === true).length;

@@ -52,13 +52,23 @@
             </div>
         </div>
     </div>
-    <div id="takeoverModal" class="modal-overlay">
+<div id="takeoverModal" class="modal-overlay">
         <div class="modal-box" style="width: 400px;">
             <div class="modal-header"><h3><i class="fa-solid fa-lock"></i> 강의실 제어권 인증</h3></div>
-            <div class="setting-container"><div class="setting-group"><input type="password" id="takeoverPwInput" class="setting-input" style="text-align:center; font-size:18px;" onkeyup="if(event.key==='Enter') dataMgr.verifyTakeover()"></div></div>
-            <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
-                <button class="m-btn m-btn-later" onclick="dataMgr.cancelTakeover()" style="background:#64748b; color:white;">취소</button>
-                <button class="m-btn m-btn-done" onclick="dataMgr.verifyTakeover()">인증 확인</button>
+            <div class="setting-container">
+                <div class="setting-group">
+                    <input type="password" id="takeoverPwInput" class="setting-input" style="text-align:center; font-size:18px;" placeholder="비밀번호 입력" onkeyup="if(event.key==='Enter') dataMgr.verifyTakeover()">
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:25px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; gap:10px; width:100%;">
+                    <button class="m-btn m-btn-later" onclick="dataMgr.cancelTakeover()" style="background:#64748b; color:white; flex:1; justify-content:center;">취소</button>
+                    <button class="m-btn m-btn-done" onclick="dataMgr.verifyTakeover()" style="flex:2; justify-content:center;">제어권 획득 (강사)</button>
+                </div>
+                <!-- [추가] 옵저버 입장 버튼 -->
+                <button class="m-btn" onclick="dataMgr.enterAsObserver()" style="background:#e2e8f0; color:#475569; width:100%; justify-content:center; font-weight:800;">
+                    <i class="fa-solid fa-eye"></i> 단순 모니터링 (옵저버 입장)
+                </button>
             </div>
         </div>
     </div>
