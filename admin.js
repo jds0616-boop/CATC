@@ -444,8 +444,9 @@ forceEnterRoom: async function(room) {
 
 
 
-    deactivateAllRooms: async function() {
-        if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
+deactivateAllRooms: async function() {
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 시스템 설정을 변경할 수 없습니다.");
+        if(!confirm("⚠️ 경고: 모든 강의실을 비활성화하시겠습니까?")) return;
         const updates = {};
         for(let i=65; i<=90; i++) {
             const char = String.fromCharCode(i);
@@ -551,26 +552,39 @@ resetCourse: function() {
         document.getElementById('attendanceQrModal').style.display = 'flex';
     },
 
-    // [추가] 학생장 지정 기능 (연락처 팝업 포함)
+// [최종 수정] 학생장 지정 및 해제 (옵저버 차단 포함)
     toggleLeader: function(token, currentName) {
+        // 1. 옵저버 권한 체크 (변경 권한 차단)
+        if(state.isObserver) {
+            ui.showAlert("👁️ 옵저버 모드에서는 학생장 권한을 수정할 수 없습니다.");
+            return;
+        }
+
         if(!state.room) return;
+
         firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
             const student = snap.val();
+            if(!student) return;
+
             const isNowLeader = !student.isLeader; 
 
             if(isNowLeader) {
+                // 학생장으로 지정할 때
                 const phone = prompt(`[${currentName}] 학생을 학생장으로 지정합니다.\n비상 연락망 관리를 위해 전체 전화번호를 입력하세요.`, "010-0000-0000");
-                if(!phone) return;
+                if(!phone) return; // 취소 누르면 중단
                 
                 firebase.database().ref(`courses/${state.room}/students/${token}`).update({
                     isLeader: true,
                     phone: phone 
                 });
+                ui.showAlert(`👑 [${currentName}] 학생이 학생장으로 지정되었습니다.`);
             } else {
+                // 학생장 권한을 해제할 때
                 if(confirm(`[${currentName}] 학생의 학생장 권한을 해제할까요?`)) {
                     firebase.database().ref(`courses/${state.room}/students/${token}`).update({
                         isLeader: false
                     });
+                    ui.showAlert(`✅ 학생장 권한이 해제되었습니다.`);
                 }
             }
         });
@@ -578,50 +592,53 @@ resetCourse: function() {
 
 
 
-// [수정] 수강생 삭제 시 개편된 차량 신청(shuttle/requests) 내역까지 완벽삭제
-deleteStudent: function(token) {
-    if(!state.room) return;
-    
-    firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
-        const targetStudent = snap.val();
-        if(!targetStudent) return;
-        const targetName = targetStudent.name;
-        const targetPhone = (targetStudent.phone || "0000").trim();
-        const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부용 키
-
-        if(confirm(`🚨 [${targetName}] 수강생의 모든 정보(출석부, 차량신청, 행정내역)를 삭제하시겠습니까?`)) {
-            const today = getTodayString();
-            const updates = {};
-            const rPath = `courses/${state.room}`;
-            
-            // 1. 수강생 기본 정보 삭제
-            updates[`${rPath}/students/${token}`] = null;
-
-            // 2. 금일 행정 신청(석식제외, 외출외박) 삭제
-            updates[`${rPath}/dinner_skips/${today}/${token}`] = null;
-            updates[`${rPath}/admin_actions/${today}/${token}`] = null;
-
-            // 3. [핵심수정] 개편된 차량 신청 내역 삭제
-            updates[`${rPath}/shuttle/requests/${token}`] = null;
-
-            // 4. 자체 출석부(모든 날짜) 기록 삭제 (기존 로직 유지)
-            firebase.database().ref(`${rPath}/internal_attendance`).once('value', attendSnap => {
-                const allAttendData = attendSnap.val() || {};
-                Object.keys(allAttendData).forEach(date => {
-                    if(allAttendData[date][attendanceKey]) {
-                        updates[`${rPath}/internal_attendance/${date}/${attendanceKey}`] = null;
-                    }
-                });
-
-                // 모든 삭제 명령을 한꺼번에 서버에 전송
-                firebase.database().ref().update(updates).then(() => {
-                    ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 정상적으로 삭제되었습니다.`);
-                });
-            });
+// [최종 수정] 수강생 삭제 (개편된 차량신청/출석부 포함 완벽삭제 + 옵저버 차단)
+    deleteStudent: function(token) {
+        // 1. 옵저버 권한 체크
+        if(state.isObserver) {
+            ui.showAlert("👁️ 옵저버 모드에서는 수강생 정보를 삭제할 수 없습니다.");
+            return;
         }
-    });
-},
 
+        if(!state.room) return;
+        
+        firebase.database().ref(`courses/${state.room}/students/${token}`).once('value', snap => {
+            const targetStudent = snap.val();
+            if(!targetStudent) return;
+            const targetName = targetStudent.name;
+            const targetPhone = (targetStudent.phone || "0000").trim();
+            const attendanceKey = `${targetName.trim()}_${targetPhone}`; // 출석부용 고유 키
+
+            if(confirm(`🚨 [${targetName}] 수강생의 모든 정보(출석부, 차량신청, 행정내역)를 삭제하시겠습니까?`)) {
+                const today = getTodayString();
+                const updates = {};
+                const rPath = `courses/${state.room}`;
+                
+                // [A] 기본 정보 및 금일 신청 내역 삭제
+                updates[`${rPath}/students/${token}`] = null;
+                updates[`${rPath}/dinner_skips/${today}/${token}`] = null;
+                updates[`${rPath}/admin_actions/${today}/${token}`] = null;
+                updates[`${rPath}/shuttle/requests/${token}`] = null; // 개편된 차량 신청 내역
+
+                // [B] 자체 출석부 (모든 날짜 기록) 전수 조사 및 삭제
+                firebase.database().ref(`${rPath}/internal_attendance`).once('value', attendSnap => {
+                    const allAttendData = attendSnap.val() || {};
+                    Object.keys(allAttendData).forEach(date => {
+                        if(allAttendData[date][attendanceKey]) {
+                            updates[`${rPath}/internal_attendance/${date}/${attendanceKey}`] = null;
+                        }
+                    });
+
+                    // [C] 서버에 최종 명령 전송
+                    firebase.database().ref().update(updates).then(() => {
+                        ui.showAlert(`✅ [${targetName}]님의 모든 데이터가 정상적으로 삭제되었습니다.`);
+                    }).catch(e => {
+                        ui.showAlert("삭제 실패: " + e.message);
+                    });
+                });
+            }
+        });
+    },
 
 
 
@@ -2219,24 +2236,20 @@ loadDinnerSkipData: function() {
     },
 
 // [신규] 특정 학생 한 명만 석식 제외 명단에서 삭제 (식사 가능 상태로 복구)
-    cancelIndividualDinnerSkip: function(token) {
-        if(!confirm("이 학생을 석식 제외 명단에서 삭제하시겠습니까?\n(정상 식사 가능 상태로 변경됨)")) return;
-        
+cancelIndividualDinnerSkip: function(token) {
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 석식 제외 신청을 취소할 수 없습니다.");
+        if(!confirm("이 학생을 석식 제외 명단에서 삭제하시겠습니까?")) return;
         const today = getTodayString();
         firebase.database().ref(`courses/${state.room}/dinner_skips/${today}/${token}`).remove()
-            .then(() => {
-                ui.showAlert("✅ 해당 학생이 제외 명단에서 삭제되었습니다.");
-            });
+            .then(() => { ui.showAlert("✅ 해당 학생이 제외 명단에서 삭제되었습니다."); });
     },
 
 // [신규] 특정 학생의 외출/외박 신청을 관리자가 강제 취소(삭제)
-    cancelIndividualAdminAction: function(date, token) {
+cancelIndividualAdminAction: function(date, token) {
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청 내역을 삭제할 수 없습니다.");
         if(!confirm("해당 외출/외박 신청을 취소하시겠습니까?")) return;
-        
         firebase.database().ref(`courses/${state.room}/admin_actions/${date}/${token}`).remove()
-            .then(() => {
-                ui.showAlert("✅ 신청 내역이 삭제되었습니다.");
-            });
+            .then(() => { ui.showAlert("✅ 신청 내역이 삭제되었습니다."); });
     },
 
 
@@ -2565,17 +2578,26 @@ toggleMenuDropdown: function() {
         if(dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     },
 
-    // [신규 추가] 관리자가 차량 신청만 강제 취소하는 기능
+// [최종 수정] 관리자가 차량 신청 강제 취소 (옵저버 차단 포함)
     deleteShuttleByAdmin: function(token, name) {
-        if(!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?\n(신청 명단에서만 삭제됩니다.)`)) return;
+        // 1. 옵저버인지 먼저 확인 (이게 없으면 삭제가 됩니다!)
+        if (state.isObserver) {
+            ui.showAlert("👁️ 옵저버 모드에서는 차량 신청을 취소할 수 없습니다.");
+            return;
+        }
+
+        // 2. 강사라면 확인 후 삭제 진행
+        if (!confirm(`[${name}]님의 차량 신청을 취소하시겠습니까?\n(신청 명단에서만 삭제됩니다.)`)) return;
         
         firebase.database().ref(`courses/${state.room}/shuttle/requests/${token}`).remove()
             .then(() => {
                 ui.showAlert("✅ 차량 신청이 취소되었습니다.");
             })
-            .catch(e => alert("오류 발생: " + e.message));
+            .catch(e => {
+                ui.showAlert("오류 발생: " + e.message);
+            });
     }
-};
+}; // <--- ui 객체를 닫아주는 아주 중요한 괄호입니다!
 
 
 
