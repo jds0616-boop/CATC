@@ -140,9 +140,11 @@ logout: async function() {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
 saveInstructorNoticeMain: function() {
+        // [옵저버 제한]
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 공지사항을 수정할 수 없습니다.");
+        
         if(!state.room) return;
         const msg = document.getElementById('instNoticeInputMain').value;
-        // 강사는 오직 자신의 notice 경로에만 저장합니다.
         firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
             ui.showAlert("✅ 강사 공지사항이 교육생에게 게시되었습니다.");
         });
@@ -302,11 +304,10 @@ forceEnterRoom: async function(room) {
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // 1. 강사 입장 시 제어권 체크 (옵저버 입장일 때는 건너뜀)
+        // 1. 강사 입장 시 제어권 체크 (옵저버는 통과)
         if (!state.isObserver) {
             const snap = await firebase.database().ref(`courses/${room}/status`).get();
             const st = snap.val() || {};
-
             if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
                 state.pendingRoom = room;
                 document.getElementById('takeoverPwInput').value = "";
@@ -322,15 +323,21 @@ forceEnterRoom: async function(room) {
         localStorage.setItem('kac_last_room', room); 
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
-
         document.querySelector('.mode-tabs').style.display = 'flex';
+
+        // [옵저버 UI 제어] 중요 버튼들 숨기거나 비활성화
         const btnReset = document.getElementById('btnReset');
+        const quizControls = document.getElementById('quizControls');
+        const setupSaveBtn = document.querySelector('#courseSetupModal .m-btn-done'); // 환경설정 저장버튼
         
-        // [옵저버 제어] 리셋 버튼 및 설정 버튼 상태 제어
         if(btnReset) {
             btnReset.disabled = state.isObserver;
             btnReset.style.opacity = state.isObserver ? '0.3' : '1';
         }
+        // 퀴즈 컨트롤 영역 자체를 숨김
+        if(quizControls) quizControls.style.display = state.isObserver ? 'none' : 'flex';
+        // 설정창 저장 버튼 숨김
+        if(setupSaveBtn) setupSaveBtn.style.display = state.isObserver ? 'none' : 'flex';
 
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
@@ -342,13 +349,11 @@ forceEnterRoom: async function(room) {
         ui.updateHeaderRoom(room);
         subjectMgr.init();
         
-        // 3. 실시간 데이터 감시
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const statusData = s.val() || {};
             ui.renderRoomStatus(statusData.roomStatus || 'idle'); 
 
-            // [옵저버는 튕기지 않음] 강사일 때만 제어권 상실 여부 감시
             if (!state.isObserver) {
                 if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
                     ui.checkLockStatus(statusData);
@@ -358,13 +363,17 @@ forceEnterRoom: async function(room) {
                     ui.checkLockStatus(statusData);
                 }
             } else {
-                // 옵저버는 항상 잠금 레이어 숨김
                 const overlay = document.getElementById('statusOverlay');
                 if(overlay) overlay.style.display = 'none';
             }
+            // 교수님 성함 업데이트 로직 유지
+            if(statusData.professorName) {
+                const dashProf = document.getElementById('dashProfName');
+                if(dashProf) dashProf.innerHTML = `<span onclick="ui.showProfPresentation('${statusData.professorName}')" style="cursor:pointer; color:#3b82f6; font-weight:800;">${statusData.professorName} 교수님</span>`;
+            }
         });
 
-        // 나머지 로직 유지
+        // 수강생 및 질문 로드 로직 유지
         firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const data = s.val() || {};
             const activeUsers = Object.values(data).filter(user => user.name && user.isOnline === true).length;
@@ -445,7 +454,10 @@ forceEnterRoom: async function(room) {
         if(state.room) this.forceEnterRoom(state.room);
     },
     
-    updateQa: function(action) {
+updateQa: function(action) {
+        // [옵저버 제한]
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 질문을 관리(삭제/고정)할 수 없습니다.");
+        
         if(!state.activeQaKey) return;
         const item = state.qaData[state.activeQaKey];
         if (action === 'delete') { 
@@ -2819,7 +2831,10 @@ const quizMgr = {
         });
     },
     
-    action: function(act) {
+action: function(act) {
+        // [옵저버 제한]
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 퀴즈를 진행할 수 없습니다.");
+        
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
         if(act === 'open') { 
             this.startTimer(); 
@@ -3455,6 +3470,9 @@ const setupMgr = {
     },
 
 saveAll: function() {
+        // [옵저버 제한]
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
+
         const name = document.getElementById('setup-course-name').value.trim();
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
@@ -3477,8 +3495,6 @@ saveAll: function() {
         updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
         updates[`courses/${state.room}/settings/coordinatorName`] = coordName;
         updates[`courses/${state.room}/status/professorName`] = profName;
-        
-        // [중요] 설정 저장 시 무조건 '사용중' 상태로 서버에 기록
         updates[`courses/${state.room}/status/roomStatus`] = 'active';
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
@@ -3487,11 +3503,10 @@ saveAll: function() {
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
             localStorage.setItem('last_owned_room', state.room);
-            ui.showAlert("✅ 설정이 저장되었으며, 강의실이 활성화되었습니다.");
+            ui.showAlert("✅ 설정이 저장되었습니다.");
             this.closeSetupModal();
         });
-    }
-};
+    },
 
 // [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
 subjectMgr.renderListInModal = function() {
