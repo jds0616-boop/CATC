@@ -208,10 +208,15 @@ saveInstructorNoticeMain: function() {
     },
     
 // [수정] 방 이동 시 제어권이 없으면 무조건 비번 창을 띄우고, 실패 시 입장을 원천 차단
-    switchRoomAttempt: async function(newRoom) {
+switchRoomAttempt: async function(newRoom) {
         localStorage.setItem('kac_last_mode', 'dashboard');
         
-        // 내가 이미 주인인 방이면 바로 입장
+        // [추가] 새 방으로 이동 시 기존 옵저버 상태 초기화
+        state.isObserver = false;
+        if(sessionStorage.getItem('kac_observer_room') !== newRoom) {
+            sessionStorage.removeItem('kac_observer_room');
+        }
+
         if (localStorage.getItem('last_owned_room') === newRoom) {
             this.forceEnterRoom(newRoom);
             return;
@@ -220,14 +225,12 @@ saveInstructorNoticeMain: function() {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
 
-        // 누군가 운영 중인 방이라면
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
-            document.getElementById('takeoverModal').style.display = 'flex'; // 비번창 띄움
+            document.getElementById('takeoverModal').style.display = 'flex';
             document.getElementById('takeoverPwInput').focus();
         } else {
-            // 비어있는 방이라면 바로 입장 (들어가서 환경설정 해야 하므로)
             this.forceEnterRoom(newRoom);
         }
     },
@@ -261,6 +264,23 @@ verifyTakeover: async function() {
             ui.showAlert("⛔ 비밀번호가 올바르지 않습니다.");
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverPwInput').focus();
+        }
+    },
+
+
+
+
+switchToObserverMode: async function() {
+        if(!state.room || state.isObserver) return;
+        if(confirm("제어권을 내려놓고 '옵저버 모드'로 전환하시겠습니까?\n전환 시 다른 강사님이 제어권을 가져갈 수 있습니다.")) {
+            // 1. 서버에서 내 세션의 점유권 삭제
+            await firebase.database().ref(`courses/${state.room}/status/ownerSessionId`).set(null);
+            // 2. 옵저버 메모를 '현재 방 번호'로 저장 (이 방에서만 옵저버임을 명시)
+            sessionStorage.setItem('kac_observer_room', state.room);
+            state.isObserver = true;
+            // 3. 화면 새로고침 효과
+            this.forceEnterRoom(state.room);
+            ui.showAlert("👁️ 옵저버 모드로 전환되었습니다.");
         }
     },
 
@@ -1659,19 +1679,27 @@ initRoomSelect: function() {
         }
     },
     
-// [6.0차 수정] 모든 페이지의 룸 배지를 한꺼번에 업데이트
+// [최종 수정] 방 번호 배지 및 옵저버 표시 실시간 업데이트
     updateHeaderRoom: function(r) { 
-        // 1. 상단바 텍스트 업데이트
+        // 1. 상단바 텍스트 업데이트 (기본값으로 초기화 후 옵저버일 때만 추가)
         const elTop = document.getElementById('displayRoomName'); 
-        if(elTop) elTop.innerText = `Room #${r}`;
+        if(elTop) {
+            let titleText = `Room #${r}`;
+            // 현재 옵저버 상태가 맞다면 제목 뒤에만 살짝 붙여줌
+            if (state.isObserver) {
+                titleText += " (👁️ 옵저버)";
+            }
+            elTop.innerText = titleText;
+        }
 
         // 2. 모든 섹션 제목 옆의 룸 배지(.room-badge-global)들을 찾아 일괄 변경
+        // (여기는 "옵저버" 글자 없이 순수하게 방 번호만 표시해서 깔끔하게 유지합니다)
         const allBadges = document.querySelectorAll('.room-badge-global');
         allBadges.forEach(badge => {
             badge.innerText = `(Room #${r})`;
         });
 
-        // 3. (구버전 호환용) 대시보드 전용 배지 id도 업데이트
+        // 3. 대시보드 전용 배지 업데이트
         const elDash = document.getElementById('dashRoomBadge');
         if(elDash) elDash.innerText = `(Room #${r})`;
     },
@@ -1905,7 +1933,7 @@ setMode: function(mode) {
             // 4. 상단바에 옵저버 상태 표시
             const roomNameEl = document.getElementById('displayRoomName');
             if(roomNameEl && !roomNameEl.innerText.includes('👁️')) {
-                roomNameEl.innerText += " (👁️ 옵저버)";
+                roomNameEl.innerText = "Room #" + state.room + " (👁️ 옵저버)";
             }
         }
     },
