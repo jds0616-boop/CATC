@@ -46,7 +46,6 @@ const state = {
         return id;
     })(),
     room: null,
-    isObserver: false,
     isTestMode: false,
     quizList: [],
     isExternalFileLoaded: false, 
@@ -140,11 +139,9 @@ logout: async function() {
 // --- 2. Data & Room Logic ---
 const dataMgr = {
 saveInstructorNoticeMain: function() {
-        // [옵저버 제한]
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 공지사항을 수정할 수 없습니다.");
-        
         if(!state.room) return;
         const msg = document.getElementById('instNoticeInputMain').value;
+        // 강사는 오직 자신의 notice 경로에만 저장합니다.
         firebase.database().ref(`courses/${state.room}/notice`).set(msg).then(() => {
             ui.showAlert("✅ 강사 공지사항이 교육생에게 게시되었습니다.");
         });
@@ -244,17 +241,17 @@ verifyTakeover: async function() {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
 
+        // 마스터 비번 또는 설정된 비번이 맞을 경우
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            // [중요] 강사 입장 시 옵저버 모드 및 메모 완전 삭제
-            state.isObserver = false; 
-            sessionStorage.removeItem('kac_is_observer');
-
+            // [중요] 인증 성공 즉시 서버에 나의 현재 sessionId를 주인으로 등록
             await firebase.database().ref(`courses/${newRoom}/status`).update({ 
                 ownerSessionId: state.sessionId,
-                roomStatus: 'active'
+                roomStatus: 'active' // 혹시 꺼져있었다면 켬
             });
             localStorage.setItem(`last_owned_room`, newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
+            
+            // 이제 정식 주인이 되었으므로 방 연결 실행
             this.forceEnterRoom(newRoom);
             ui.showAlert("✅ 제어권을 획득했습니다.");
         } else {
@@ -264,102 +261,92 @@ verifyTakeover: async function() {
         }
     },
     
-
-enterAsObserver: function() {
-        const newRoom = state.pendingRoom;
-        if (!newRoom) return;
-
-        // [수정] 새로고침해도 기억하도록 브라우저에 저장
-        state.isObserver = true; 
-        sessionStorage.setItem('kac_is_observer', 'true');
-        
-        document.getElementById('takeoverModal').style.display = 'none';
-        
-        // 주인 기록(ownerSessionId)을 바꾸지 않고 바로 입장
-        this.forceEnterRoom(newRoom);
-        ui.showAlert("👁️ 옵저버 모드로 입장했습니다. (읽기 전용)");
-    },
-
-
-
-
-
-
-
-
-
-
-
-
     cancelTakeover: function() {
         document.getElementById('takeoverModal').style.display = 'none';
         document.getElementById('roomSelect').value = state.room || ""; 
         state.pendingRoom = null;
     },
 
-
-
-
-
-
 forceEnterRoom: async function(room) {
         if(dbRef.status) dbRef.status.off();
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // [추가] 새로고침 시 옵저버 상태 복구
-        if (sessionStorage.getItem('kac_is_observer') === 'true') {
-            state.isObserver = true;
+        // [수정] 입장 전 제어권 먼저 체크
+        const snap = await firebase.database().ref(`courses/${room}/status`).get();
+        const st = snap.val() || {};
+
+        // 누군가 사용 중인데, 내 세션ID와 서버에 등록된 ID가 다르면 비밀번호 입력 유도
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            state.pendingRoom = room;
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
+            // 일단 화면은 대기실로 표시 (비밀번호 맞기 전까지 입장 방지)
+            ui.showWaitingRoom();
+            return;
         }
 
-        // 1. 강사 입장 시 제어권 체크 (옵저버는 통과)
-        if (!state.isObserver) {
-            const snap = await firebase.database().ref(`courses/${room}/status`).get();
-            const st = snap.val() || {};
-            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-                state.pendingRoom = room;
-                document.getElementById('takeoverPwInput').value = "";
-                document.getElementById('takeoverModal').style.display = 'flex';
-                document.getElementById('takeoverPwInput').focus();
-                ui.showWaitingRoom();
-                return;
-            }
-        }
-
-        // 2. 기본 세팅
+        // 제어권이 확인되었거나 비어있는 방인 경우 입장 로직 실행
+        firebase.database().ref(`courses/${room}/status`).update({
+            lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
+        });
+        
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
+        
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
-        document.querySelector('.mode-tabs').style.display = 'flex';
 
-        // 3. 데이터 연결
+        document.querySelector('.mode-tabs').style.display = 'flex';
+        document.getElementById('floatingQR').style.display = 'none';
+        const btnReset = document.getElementById('btnReset');
+        if(btnReset) {
+            btnReset.disabled = false;
+            btnReset.style.opacity = '1';
+            btnReset.style.cursor = 'pointer';
+        }
+
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
         dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
         dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
         dbRef.status = firebase.database().ref(`${rPath}/status`);
+        dbRef.connections = firebase.database().ref(`${rPath}/connections`);
 
         ui.updateHeaderRoom(room);
         subjectMgr.init();
+        state.qaData = {};
         
+        // 설정 데이터 감시
+        dbRef.settings.on('value', s => {
+            const val = s.val() || {};
+            ui.renderSettings(val);
+            if(localStorage.getItem('kac_last_mode') === 'dashboard') ui.loadDashboardStats();
+        });
+
+        // [중요] 제어권 실시간 감시 (세션이 바뀌어 튕겼을 때 대응)
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const statusData = s.val() || {};
             ui.renderRoomStatus(statusData.roomStatus || 'idle'); 
-
-            if (!state.isObserver) {
-                if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
-                    ui.checkLockStatus(statusData);
-                    state.pendingRoom = room;
-                    document.getElementById('takeoverModal').style.display = 'flex';
-                } else {
-                    ui.checkLockStatus(statusData);
-                }
+            
+            // 만약 서버의 주인 세션ID가 내 현재 세션ID와 달라지면
+            if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
+                ui.checkLockStatus(statusData); // 화면 잠금
+                // 자동으로 제어권 탈취 팝업 띄우기
+                state.pendingRoom = room;
+                document.getElementById('takeoverModal').style.display = 'flex';
             } else {
-                const overlay = document.getElementById('statusOverlay');
-                if(overlay) overlay.style.display = 'none';
+                ui.checkLockStatus(statusData); // 잠금 해제
+            }
+
+            if(statusData.professorName) {
+                const dashProf = document.getElementById('dashProfName');
+                if(dashProf) {
+                    dashProf.innerHTML = `<span onclick="ui.showProfPresentation('${statusData.professorName}')" style="cursor:pointer; color:#3b82f6; font-weight:800;">${statusData.professorName} 교수님</span>`;
+                }
             }
         });
 
@@ -368,6 +355,8 @@ forceEnterRoom: async function(room) {
             const activeUsers = Object.values(data).filter(user => user.name && user.isOnline === true).length;
             const quizEl = document.getElementById('currentJoinCount');
             if(quizEl) quizEl.innerText = activeUsers;
+            const dashCount = document.getElementById('dashStudentCount');
+            if(dashCount) dashCount.innerText = activeUsers + "명";
         });
 
         dbRef.qa.on('value', s => { 
@@ -441,10 +430,7 @@ forceEnterRoom: async function(room) {
         if(state.room) this.forceEnterRoom(state.room);
     },
     
-updateQa: function(action) {
-        // [옵저버 제한]
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 질문을 관리(삭제/고정)할 수 없습니다.");
-        
+    updateQa: function(action) {
         if(!state.activeQaKey) return;
         const item = state.qaData[state.activeQaKey];
         if (action === 'delete') { 
@@ -463,46 +449,65 @@ updateQa: function(action) {
 
 // [최종 수정] 리셋 시 교육생 퇴출용 resetKey를 포함한 초기화 로직
 resetCourse: function() {
-        if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
-            return;
-        }
-        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
-            const rPath = `courses/${state.room}`;
-            const updates = {};
+    if (!state.room) {
+        ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
+        return;
+    }
+    if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
+        const rPath = `courses/${state.room}`;
 
-            // 데이터 삭제 항목들
-            updates[`${rPath}/questions`] = null;
-            updates[`${rPath}/students`] = null;
-            updates[`${rPath}/expectedStudents`] = null; 
-            updates[`${rPath}/activeQuiz`] = null;
-            updates[`${rPath}/quizAnswers`] = null;
-            updates[`${rPath}/quizFinalResults`] = null;
-            updates[`${rPath}/admin_actions`] = null;
-            updates[`${rPath}/dinner_skips`] = null;
-            updates[`${rPath}/shuttle`] = null;
-            updates[`${rPath}/notice`] = null;
-            updates[`${rPath}/attendanceQR`] = null;
-            updates[`${rPath}/connections`] = null;
-            updates[`${rPath}/internal_attendance`] = null;
+        // 1. 초기화할 데이터들을 묶어서 처리
+        const updates = {};
 
-            // 기본값 설정 항목들
-            updates[`${rPath}/settings/courseName`] = "";
-            updates[`${rPath}/settings/subjects`] = null;
-            updates[`${rPath}/status/professorName`] = "";
-            updates[`${rPath}/status/ownerSessionId`] = null;
-            updates[`${rPath}/status/mode`] = "qa";
+        // [데이터 삭제 항목]
+        updates[`${rPath}/questions`] = null;
+        updates[`${rPath}/students`] = null;
+        updates[`${rPath}/expectedStudents`] = null; 
+        updates[`${rPath}/activeQuiz`] = null;
+        updates[`${rPath}/quizAnswers`] = null;
+        updates[`${rPath}/quizFinalResults`] = null;
+        updates[`${rPath}/admin_actions`] = null;
+        updates[`${rPath}/dinner_skips`] = null;
+        updates[`${rPath}/shuttle`] = null;
+        updates[`${rPath}/notice`] = null;
+        updates[`${rPath}/attendanceQR`] = null;
+        updates[`${rPath}/connections`] = null;
 
-            // [중요] 리셋 시 상태를 무조건 '비어있음'으로 변경
-            updates[`${rPath}/status/roomStatus`] = "idle";
-            updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
+       // [핵심 추가] 자체 출석부 데이터도 함께 삭제합니다.
+        updates[`${rPath}/internal_attendance`] = null;
 
-            firebase.database().ref().update(updates).then(() => {
-                ui.showAlert("✅ 초기화되었습니다. 모든 교육생이 퇴출됩니다.");
-                setTimeout(() => location.reload(), 500);
+        // [기본값 설정 항목]
+        updates[`${rPath}/settings/courseName`] = "";
+        updates[`${rPath}/settings/subjects`] = null;
+        updates[`${rPath}/status/roomStatus`] = "idle";
+        updates[`${rPath}/status/professorName`] = "";
+        updates[`${rPath}/status/ownerSessionId`] = null;
+        updates[`${rPath}/status/mode`] = "qa";
+
+        // [가장 중요 - 핵심 추가!] 교육생 앱이 이 값을 보고 즉시 튕겨나갑니다.
+        updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
+
+        // 2. 서버 업데이트 실행
+        firebase.database().ref().update(updates).then(() => {
+            // 강사 화면 UI 비우기
+            const tableIds = ['studentListTableBody', 'adminActionTableBody', 'dinnerSkipTableBody', 'dormitoryTableBody'];
+            tableIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerHTML = "";
             });
-        }
-    },
+
+            document.getElementById('courseNameInput').value = "";
+            document.getElementById('profSelect').value = "";
+            document.getElementById('roomStatusSelect').value = 'idle';
+            document.getElementById('displayCourseTitle').innerText = "";
+
+            ui.showAlert("✅ 초기화되었습니다. 모든 교육생이 퇴출됩니다.");
+
+            // 완벽한 반영을 위해 강사 페이지도 0.5초 뒤 새로고침
+            setTimeout(() => location.reload(), 500);
+        });
+    }
+},
 
 
 // [추가] 공지사항 관리창 열기
@@ -1642,20 +1647,8 @@ initRoomSelect: function() {
         document.getElementById('displayCourseTitle').innerText = d.courseName || "";
     },
     
-renderRoomStatus: function(st) { 
-        const sel = document.getElementById('roomStatusSelect');
-        if(sel) {
-            sel.value = st || 'idle'; 
-            // [수정] 사용자가 직접 클릭해서 상태를 변경하지 못하도록 비활성화 고정
-            sel.disabled = true; 
-            
-            // 시각적으로 가독성을 높이기 위해 색상 처리
-            if(sel.value === 'active') {
-                sel.style.color = '#10b981'; // 사용중일 때 초록색
-            } else {
-                sel.style.color = '#94a3b8'; // 비어있을 때 회색
-            }
-        }
+    renderRoomStatus: function(st) { 
+        document.getElementById('roomStatusSelect').value = st || 'idle'; 
     },
     
     renderQr: function(url) {
@@ -1708,12 +1701,6 @@ renderRoomStatus: function(st) {
         }
     },
 
-
-
-
-
-
-
 setMode: function(mode) {
         // [추가] 플로팅 홈 버튼 제어: 대시보드(홈)일 때는 숨기고 나머지는 보여줌
         const homeBtn = document.getElementById('floatingHomeBtn');
@@ -1757,30 +1744,31 @@ setMode: function(mode) {
             }
 
             let studentMode = (['waiting', 'shuttle', 'admin-action', 'dinner-skip', 'students', 'dashboard', 'notice', 'attendance', 'guide', 'dormitory'].includes(mode)) ? 'qa' : mode;
-            
-            // [옵저버 제한] 옵저버는 교육생의 화면 모드를 강제로 바꿀 수 없음
-            if (!state.isObserver) {
-                firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
-            }
+            firebase.database().ref(`courses/${state.room}/status/mode`).set(studentMode);
             
             if (mode === 'dashboard') ui.loadDashboardStats(); 
             if (mode === 'notice') ui.loadNoticeView(); 
             if (mode === 'attendance') ui.loadAttendanceView();
-            if (mode === 'shuttle') {
-                this.loadShuttleData();
-                const badge = document.getElementById('shuttleNewBadge');
-                if(badge) badge.style.display = 'none';
-                firebase.database().ref(`courses/${state.room}/shuttle/departure`).once('value', snap => {
-                    const dep = snap.val();
-                    if(dep && dep.time) {
-                        localStorage.setItem(`last_seen_shuttle_${state.room}`, `${dep.date} ${dep.time}`);
-                    }
-                });
-            }
+if (mode === 'shuttle') {
+    this.loadShuttleData();
+    
+    // [추가] 탭 진입 시 'N' 배지 숨기고 현재 시간을 '확인 완료'로 저장
+    const badge = document.getElementById('shuttleNewBadge');
+    if(badge) badge.style.display = 'none';
+
+    // 현재 설정된 시간을 '읽음' 상태로 저장하기 위해 데이터 가져오기
+    firebase.database().ref(`courses/${state.room}/shuttle/departure`).once('value', snap => {
+        const dep = snap.val();
+        if(dep && dep.time) {
+            localStorage.setItem(`last_seen_shuttle_${state.room}`, `${dep.date} ${dep.time}`);
+        }
+    });
+}
             if (mode === 'admin-action') ui.loadAdminActionData();
             if (mode === 'dinner-skip') ui.loadDinnerSkipData();
             if (mode === 'students') ui.loadStudentList();
             
+            // [리포트 반영] 생활관 배치현황 로직: 이름 우선 매칭 -> 동명이인 시 전화번호 대조
             if (mode === 'dormitory') {
                 const tbody = document.getElementById('dormitoryTableBody');
                 if(!tbody) return;
@@ -1793,7 +1781,7 @@ setMode: function(mode) {
                     const students = studentSnap.val() || {};
                     const dormData = dormSnap.val() || {}; 
                     tbody.innerHTML = "";
-                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined").sort((a, b) => a.name.localeCompare(b.name));
+                    const studentList = Object.values(students).filter(s => s.name && s.name !== "undefined").sort((a, b) => a.name.localeCompare(b.name)); // 가나다순 정렬
 
                     if (studentList.length === 0) {
                         tbody.innerHTML = "<tr><td colspan='5' style='padding:50px; color:#94a3b8;'>현재 입실한 수강생이 없습니다.</td></tr>";
@@ -1803,35 +1791,32 @@ setMode: function(mode) {
                     studentList.forEach((s, idx) => {
                         const sName = s.name;
                         const sPhone = s.phone ? s.phone.slice(-4) : ""; 
-                        let assignedInfo = dormData[`${sName}_${sPhone}`] || dormData[sName];
+                        
+                        let assignedInfo = null;
+
+                        // 1순위: '이름_전화번호' 형태의 키가 있는지 먼저 확인 (동명이인 처리용)
+                        if (dormData[`${sName}_${sPhone}`]) {
+                            assignedInfo = dormData[`${sName}_${sPhone}`];
+                        } 
+                        // 2순위: 그냥 이름으로 된 키가 있는지 확인
+                        else if (dormData[sName]) {
+                            assignedInfo = dormData[sName];
+                        }
+
                         const bName = assignedInfo ? assignedInfo.building : "-";
                         const rNo = assignedInfo ? assignedInfo.room + "호" : "미배정";
                         const statusColor = assignedInfo ? "#3b82f6" : "#94a3b8";
-                        tbody.innerHTML += `<tr><td>${idx + 1}</td><td style="font-weight:bold;">${sName}</td><td>${sPhone || "-"}</td><td style="color:${statusColor}; font-weight:800;">${bName}</td><td style="color:${statusColor}; font-weight:800;">${rNo}</td></tr>`;
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:bold;">${sName}</td>
+                                <td>${sPhone || "-"}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${bName}</td>
+                                <td style="color:${statusColor}; font-weight:800;">${rNo}</td>
+                            </tr>`;
                     });
                 });
-            }
-        }
-
-        // [옵저버 전용 보안 로직 추가] 탭을 이동할 때마다 실행됨
-        if (state.isObserver) {
-            // 1. 하단/좌측의 모든 '저장', '적용', '게시', '삭제', '리셋' 관련 버튼 숨기기
-            const adminButtons = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn, #btnReset, button.btn-danger');
-            adminButtons.forEach(btn => {
-                const txt = btn.innerText;
-                if(txt.includes('저장') || txt.includes('적용') || txt.includes('게시') || txt.includes('삭제') || txt.includes('리셋') || txt.includes('초기화')) {
-                    btn.style.display = 'none';
-                }
-            });
-
-            // 2. 퀴즈 컨트롤러(시작/이전/다음) 영역 숨기기
-            const quizCtrl = document.getElementById('quizControls');
-            if(quizCtrl) quizCtrl.style.display = 'none';
-
-            // 3. 상단바에 옵저버 상태임을 강조 표시
-            const roomTitle = document.getElementById('displayRoomName');
-            if(roomTitle && !roomTitle.innerText.includes('👁️')) {
-                roomTitle.innerText += " (👁️ 옵저버)";
             }
         }
     },
@@ -2826,10 +2811,7 @@ const quizMgr = {
         });
     },
     
-action: function(act) {
-        // [옵저버 제한]
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 퀴즈를 진행할 수 없습니다.");
-        
+    action: function(act) {
         firebase.database().ref(`courses/${state.room}/activeQuiz`).update({ status: act });
         if(act === 'open') { 
             this.startTimer(); 
@@ -3465,9 +3447,6 @@ const setupMgr = {
     },
 
 saveAll: function() {
-        // [옵저버 제한]
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
-
         const name = document.getElementById('setup-course-name').value.trim();
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
@@ -3475,6 +3454,9 @@ saveAll: function() {
         const profName = document.getElementById('setup-prof-select').value;
         const coordName = document.getElementById('setup-coord-select').value;
 
+        const statusSelect = document.getElementById('roomStatusSelect');
+        if(statusSelect) statusSelect.value = 'active';
+        
         const roomSelectVal = document.getElementById('setup-room-select').value;
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
@@ -3488,7 +3470,7 @@ saveAll: function() {
         updates[`courses/${state.room}/settings/password`] = btoa(rawPw);
         updates[`courses/${state.room}/settings/period`] = `${sDate} ~ ${eDate}`;
         updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
-        updates[`courses/${state.room}/settings/coordinatorName`] = coordName;
+        updates[`courses/${state.room}/settings/coordinatorName`] = coordName; // 담당자 저장 추가
         updates[`courses/${state.room}/status/professorName`] = profName;
         updates[`courses/${state.room}/status/roomStatus`] = 'active';
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
@@ -3498,10 +3480,11 @@ saveAll: function() {
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
             localStorage.setItem('last_owned_room', state.room);
-            ui.showAlert("✅ 설정이 저장되었습니다.");
+            ui.showAlert("✅ 설정이 저장되었으며, 강의실이 활성화되었습니다.");
             this.closeSetupModal();
         });
-    },
+    }
+};
 
 // [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
 subjectMgr.renderListInModal = function() {
