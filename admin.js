@@ -449,66 +449,46 @@ forceEnterRoom: async function(room) {
 
 // [최종 수정] 리셋 시 교육생 퇴출용 resetKey를 포함한 초기화 로직
 resetCourse: function() {
-    if (!state.room) {
-        ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
-        return;
-    }
-    if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
-        const rPath = `courses/${state.room}`;
+        if (!state.room) {
+            ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
+            return;
+        }
+        if(confirm("🚨 경고: [입교안내 가이드]를 제외한 모든 데이터(과정명, 교수, 학생, 각종 신청 내역 등)를 삭제하고 초기화하시겠습니까?")) {
+            const rPath = `courses/${state.room}`;
+            const updates = {};
 
-        // 1. 초기화할 데이터들을 묶어서 처리
-        const updates = {};
+            // 데이터 삭제 항목들
+            updates[`${rPath}/questions`] = null;
+            updates[`${rPath}/students`] = null;
+            updates[`${rPath}/expectedStudents`] = null; 
+            updates[`${rPath}/activeQuiz`] = null;
+            updates[`${rPath}/quizAnswers`] = null;
+            updates[`${rPath}/quizFinalResults`] = null;
+            updates[`${rPath}/admin_actions`] = null;
+            updates[`${rPath}/dinner_skips`] = null;
+            updates[`${rPath}/shuttle`] = null;
+            updates[`${rPath}/notice`] = null;
+            updates[`${rPath}/attendanceQR`] = null;
+            updates[`${rPath}/connections`] = null;
+            updates[`${rPath}/internal_attendance`] = null;
 
-        // [데이터 삭제 항목]
-        updates[`${rPath}/questions`] = null;
-        updates[`${rPath}/students`] = null;
-        updates[`${rPath}/expectedStudents`] = null; 
-        updates[`${rPath}/activeQuiz`] = null;
-        updates[`${rPath}/quizAnswers`] = null;
-        updates[`${rPath}/quizFinalResults`] = null;
-        updates[`${rPath}/admin_actions`] = null;
-        updates[`${rPath}/dinner_skips`] = null;
-        updates[`${rPath}/shuttle`] = null;
-        updates[`${rPath}/notice`] = null;
-        updates[`${rPath}/attendanceQR`] = null;
-        updates[`${rPath}/connections`] = null;
+            // 기본값 설정 항목들
+            updates[`${rPath}/settings/courseName`] = "";
+            updates[`${rPath}/settings/subjects`] = null;
+            updates[`${rPath}/status/professorName`] = "";
+            updates[`${rPath}/status/ownerSessionId`] = null;
+            updates[`${rPath}/status/mode`] = "qa";
 
-       // [핵심 추가] 자체 출석부 데이터도 함께 삭제합니다.
-        updates[`${rPath}/internal_attendance`] = null;
+            // [중요] 리셋 시 상태를 무조건 '비어있음'으로 변경
+            updates[`${rPath}/status/roomStatus`] = "idle";
+            updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
 
-        // [기본값 설정 항목]
-        updates[`${rPath}/settings/courseName`] = "";
-        updates[`${rPath}/settings/subjects`] = null;
-        updates[`${rPath}/status/roomStatus`] = "idle";
-        updates[`${rPath}/status/professorName`] = "";
-        updates[`${rPath}/status/ownerSessionId`] = null;
-        updates[`${rPath}/status/mode`] = "qa";
-
-        // [가장 중요 - 핵심 추가!] 교육생 앱이 이 값을 보고 즉시 튕겨나갑니다.
-        updates[`${rPath}/status/resetKey`] = "reset_" + Date.now();
-
-        // 2. 서버 업데이트 실행
-        firebase.database().ref().update(updates).then(() => {
-            // 강사 화면 UI 비우기
-            const tableIds = ['studentListTableBody', 'adminActionTableBody', 'dinnerSkipTableBody', 'dormitoryTableBody'];
-            tableIds.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.innerHTML = "";
+            firebase.database().ref().update(updates).then(() => {
+                ui.showAlert("✅ 초기화되었습니다. 모든 교육생이 퇴출됩니다.");
+                setTimeout(() => location.reload(), 500);
             });
-
-            document.getElementById('courseNameInput').value = "";
-            document.getElementById('profSelect').value = "";
-            document.getElementById('roomStatusSelect').value = 'idle';
-            document.getElementById('displayCourseTitle').innerText = "";
-
-            ui.showAlert("✅ 초기화되었습니다. 모든 교육생이 퇴출됩니다.");
-
-            // 완벽한 반영을 위해 강사 페이지도 0.5초 뒤 새로고침
-            setTimeout(() => location.reload(), 500);
-        });
-    }
-},
-
+        }
+    },
 
 // [추가] 공지사항 관리창 열기
     openNoticeManage: async function() {
@@ -1647,8 +1627,20 @@ initRoomSelect: function() {
         document.getElementById('displayCourseTitle').innerText = d.courseName || "";
     },
     
-    renderRoomStatus: function(st) { 
-        document.getElementById('roomStatusSelect').value = st || 'idle'; 
+renderRoomStatus: function(st) { 
+        const sel = document.getElementById('roomStatusSelect');
+        if(sel) {
+            sel.value = st || 'idle'; 
+            // [수정] 사용자가 직접 클릭해서 상태를 변경하지 못하도록 비활성화 고정
+            sel.disabled = true; 
+            
+            // 시각적으로 가독성을 높이기 위해 색상 처리
+            if(sel.value === 'active') {
+                sel.style.color = '#10b981'; // 사용중일 때 초록색
+            } else {
+                sel.style.color = '#94a3b8'; // 비어있을 때 회색
+            }
+        }
     },
     
     renderQr: function(url) {
@@ -3454,9 +3446,6 @@ saveAll: function() {
         const profName = document.getElementById('setup-prof-select').value;
         const coordName = document.getElementById('setup-coord-select').value;
 
-        const statusSelect = document.getElementById('roomStatusSelect');
-        if(statusSelect) statusSelect.value = 'active';
-        
         const roomSelectVal = document.getElementById('setup-room-select').value;
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
@@ -3470,8 +3459,10 @@ saveAll: function() {
         updates[`courses/${state.room}/settings/password`] = btoa(rawPw);
         updates[`courses/${state.room}/settings/period`] = `${sDate} ~ ${eDate}`;
         updates[`courses/${state.room}/settings/roomDetailName`] = roomName;
-        updates[`courses/${state.room}/settings/coordinatorName`] = coordName; // 담당자 저장 추가
+        updates[`courses/${state.room}/settings/coordinatorName`] = coordName;
         updates[`courses/${state.room}/status/professorName`] = profName;
+        
+        // [중요] 설정 저장 시 무조건 '사용중' 상태로 서버에 기록
         updates[`courses/${state.room}/status/roomStatus`] = 'active';
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
