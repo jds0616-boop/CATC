@@ -341,18 +341,20 @@ enterAsObserver: function() {
 
 
 forceEnterRoom: async function(room) {
+        // [핵심 수정] 이전 방에 걸려있던 모든 실시간 감시(리스너)를 강제로 종료
         if(dbRef.status) dbRef.status.off();
         if(dbRef.qa) dbRef.qa.off();
+        if(dbRef.settings) dbRef.settings.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // [핵심 수정] 현재 접속하는 방 번호와 메모된 옵저버 방 번호가 일치할 때만 옵저버로 인정
+        // 1. 옵저버 상태 복구 (세션 저장소 확인)
         if (sessionStorage.getItem('kac_observer_room') === room) {
             state.isObserver = true;
         } else {
             state.isObserver = false;
         }
 
-        // 1. 강사 입장 시 제어권 체크 (옵저버는 통과)
+        // 2. 강사 입장 시 제어권 체크 (옵저버는 통과)
         if (!state.isObserver) {
             const snap = await firebase.database().ref(`courses/${room}/status`).get();
             const st = snap.val() || {};
@@ -366,13 +368,14 @@ forceEnterRoom: async function(room) {
             }
         }
 
-        // 2. 기본 연결 및 UI 설정 (기존 로직 유지)
+        // 3. 현재 방 상태 저장
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
         document.querySelector('.mode-tabs').style.display = 'flex';
 
+        // 4. 데이터베이스 경로 재설정
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
@@ -381,9 +384,17 @@ forceEnterRoom: async function(room) {
         dbRef.status = firebase.database().ref(`${rPath}/status`);
 
         ui.updateHeaderRoom(room);
-        ui.updateObserverButton(); // 버튼 모양 업데이트
+        ui.updateObserverButton();
         subjectMgr.init();
         
+        // 5. [중요] 과정 정보(이름 등) 실시간 감시 시작
+        dbRef.settings.on('value', s => {
+            if(state.room !== room) return; // 다른 방 데이터면 무시
+            const val = s.val() || {};
+            ui.renderSettings(val); // 상단바 과정명 업데이트
+            if(localStorage.getItem('kac_last_mode') === 'dashboard') ui.loadDashboardStats();
+        });
+
         dbRef.status.on('value', s => {
             if(state.room !== room) return;
             const statusData = s.val() || {};
@@ -408,6 +419,8 @@ forceEnterRoom: async function(room) {
             const activeUsers = Object.values(data).filter(user => user.name && user.isOnline === true).length;
             const quizEl = document.getElementById('currentJoinCount');
             if(quizEl) quizEl.innerText = activeUsers;
+            const dashCount = document.getElementById('dashStudentCount');
+            if(dashCount) dashCount.innerText = activeUsers + "명";
         });
 
         dbRef.qa.on('value', s => { 
@@ -1135,62 +1148,73 @@ const ui = {
 
 loadDashboardStats: function() {
         if(!state.room) return;
+        const room = state.room; // 현재 방 번호를 변수에 고정
         const today = getTodayString();
 
-        // 1. [수정] 오늘 날짜 표시 부분 삭제 (대신 담당자 이름 표시 로직이 아래 settings listener에 포함됨)
-
-        // 2. 과정 기본 정보 로드 (과정명, 기간, 장소, 담당자)
-        firebase.database().ref(`courses/${state.room}/settings`).on('value', snap => {
+        // 1. 과정 기본 정보 감시 (과정명, 기간, 장소, 담당자)
+        const settingsRef = firebase.database().ref(`courses/${room}/settings`);
+        settingsRef.off(); // 이전 방의 연결이 있다면 끊기
+        settingsRef.on('value', snap => {
+            if(state.room !== room) return; // 방이 바뀌었다면 실행 취소
             const s = snap.val() || {};
-            const titleEl = document.getElementById('dashCourseTitle');
-            if(titleEl) titleEl.innerText = s.courseName || "과정명을 설정해주세요.";
+            if(document.getElementById('dashCourseTitle')) document.getElementById('dashCourseTitle').innerText = s.courseName || "과정명을 설정해주세요.";
             if(document.getElementById('dashPeriod')) document.getElementById('dashPeriod').innerText = s.period || "기간 미설정";
             if(document.getElementById('dashRoomDetail')) document.getElementById('dashRoomDetail').innerText = s.roomDetailName || "장소 미설정";
-            
-            // [추가] 과정 담당자 이름 실시간 표시
-            const coordEl = document.getElementById('dashCoordName');
-            if(coordEl) coordEl.innerText = s.coordinatorName || "미지정";
+            if(document.getElementById('dashCoordName')) document.getElementById('dashCoordName').innerText = s.coordinatorName || "미지정";
         });
 
-        // 3. 공지사항 피드 로드
-        firebase.database().ref(`courses/${state.room}/notice`).on('value', s => {
+        // 2. 담임 교수 공지 로드
+        const noticeRef = firebase.database().ref(`courses/${room}/notice`);
+        noticeRef.off();
+        noticeRef.on('value', s => {
+            if(state.room !== room) return;
             const el = document.getElementById('dashNoticeInst');
             if(el) el.innerText = s.val() || "작성된 담임 교수 공지가 없습니다.";
         });
-        firebase.database().ref(`courses/${state.room}/coordNotice`).on('value', s => {
+
+        // 3. 운영부 과정 공지 로드
+        const coordNoticeRef = firebase.database().ref(`courses/${room}/coordNotice`);
+        coordNoticeRef.off();
+        coordNoticeRef.on('value', s => {
+            if(state.room !== room) return;
             const el = document.getElementById('dashNoticeAdmin');
             if(el) el.innerText = s.val() || "등록된 운영부 과정 공지가 없습니다.";
         });
-        firebase.database().ref(`system/globalNotice`).on('value', s => {
+
+        // 4. 센터 전체 공지 로드
+        const globalNoticeRef = firebase.database().ref(`system/globalNotice`);
+        globalNoticeRef.off();
+        globalNoticeRef.on('value', s => {
             const el = document.getElementById('dashNoticeGlobal');
             if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
         });
 
-        // 4. 담당 교수님 성함 로드
-        firebase.database().ref(`courses/${state.room}/status`).on('value', snap => {
+        // 5. 담당 교수님 성함 로드
+        const statusRef = firebase.database().ref(`courses/${room}/status`);
+        statusRef.off();
+        statusRef.on('value', snap => {
+            if(state.room !== room) return;
             const st = snap.val() || {};
             const profOnlyEl = document.getElementById('dashProfNameOnly');
             if(profOnlyEl) profOnlyEl.innerText = st.professorName || "미지정";
         });
 
-        // 5. 수강생 현황 (숫자 분리 업데이트)
-        const expectedRef = firebase.database().ref(`courses/${state.room}/expectedStudents`);
-        const actualRef = firebase.database().ref(`courses/${state.room}/students`);
-
+        // 6. 수강생 입교 현황 감시
+        const expectedRef = firebase.database().ref(`courses/${room}/expectedStudents`);
+        const actualRef = firebase.database().ref(`courses/${room}/students`);
+        expectedRef.off();
+        actualRef.off();
         expectedRef.on('value', expSnap => {
             const expectedNames = expSnap.val() || [];
             actualRef.on('value', snap => {
+                if(state.room !== room) return;
                 const data = snap.val() || {};
                 const actualStudents = Object.values(data).filter(s => s.name && s.name !== "undefined");
                 const actualNames = actualStudents.map(s => s.name);
                 const combinedNames = Array.from(new Set([...expectedNames, ...actualNames]));
-                
                 const total = combinedNames.length;
                 let arrived = 0;
-                combinedNames.forEach(name => {
-                    if (actualNames.includes(name)) arrived++;
-                });
-
+                combinedNames.forEach(name => { if (actualNames.includes(name)) arrived++; });
                 const arrivedEl = document.getElementById('dashArrivedCount');
                 const totalEl = document.getElementById('dashTotalCount');
                 if(arrivedEl) arrivedEl.innerText = arrived;
@@ -1198,38 +1222,38 @@ loadDashboardStats: function() {
             });
         });
 
-        // 6. 외출/외박 신청자 카운트
-        firebase.database().ref(`courses/${state.room}/admin_actions/${today}`).on('value', s => {
+        // 7. 외출/외박 신청자 카운트
+        const actionRef = firebase.database().ref(`courses/${room}/admin_actions/${today}`);
+        actionRef.off();
+        actionRef.on('value', s => {
+            if(state.room !== room) return;
             const count = Object.keys(s.val() || {}).length;
             if(document.getElementById('dashActionCount')) document.getElementById('dashActionCount').innerText = count;
         });
 
-        // 7. 석식 제외 신청자 카운트
-        firebase.database().ref(`courses/${state.room}/dinner_skips/${today}`).on('value', s => {
+        // 8. 석식 제외 신청자 카운트
+        const dinnerRef = firebase.database().ref(`courses/${room}/dinner_skips/${today}`);
+        dinnerRef.off();
+        dinnerRef.on('value', s => {
+            if(state.room !== room) return;
             const count = Object.keys(s.val() || {}).length;
             const skipEl = document.getElementById('dashDinnerSkipCount');
             if(skipEl) skipEl.innerText = count;
         });
 
-
-
-
-
-
-
-// [최종 수정] 출발시간 연동 (가운데 정렬, 시안성 강화, N배지 로직 포함)
-// [수정] 과정 전용 출발시간 우선 로드
-        firebase.database().ref(`courses/${state.room}/shuttle/departure`).on('value', snap => {
+        // 9. 출발시간 및 기사 공지 연동
+        const departureRef = firebase.database().ref(`courses/${room}/shuttle/departure`);
+        departureRef.off();
+        departureRef.on('value', snap => {
+            if(state.room !== room) return;
             const dep = snap.val();
             const bar = document.getElementById('dashShuttleNotice');
             const txt = document.getElementById('dashShuttleNoticeTxt');
             if(!bar || !txt) return;
-
             if (dep && dep.time) {
                 bar.style.display = "block";
                 txt.innerText = `출발 예정: ${dep.date} ${dep.time}`;
             } else {
-                // 과정 전용 시간이 없으면 기사님 전체 공지사항을 가져옴
                 firebase.database().ref('system/shuttle_notice').once('value', s => {
                     const msg = s.val();
                     if(msg) { bar.style.display = "block"; txt.innerText = msg; }
@@ -1238,39 +1262,22 @@ loadDashboardStats: function() {
             }
         });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // 8. 실시간 질문(Q&A) 건수 카운트
-        firebase.database().ref(`courses/${state.room}/questions`).on('value', s => {
+        // 10. 실시간 질문(Q&A) 건수 카운트
+        const qaCountRef = firebase.database().ref(`courses/${room}/questions`);
+        qaCountRef.off();
+        qaCountRef.on('value', s => {
+            if(state.room !== room) return;
             const data = s.val() || {};
             const count = Object.values(data).filter(q => q.status !== 'delete').length;
             const qaEl = document.getElementById('dashQaCount');
             if(qaEl) qaEl.innerText = count;
         });
 
-// 8. 셔틀 탑승 수요 통합 카운트 (개편된 구조 반영)
-        firebase.database().ref(`courses/${state.room}/shuttle/requests`).on('value', s => {
+        // 11. 셔틀 탑승 수요 통합 카운트
+        const shuttleReqRef = firebase.database().ref(`courses/${room}/shuttle/requests`);
+        shuttleReqRef.off();
+        shuttleReqRef.on('value', s => {
+            if(state.room !== room) return;
             const data = s.val() || {};
             const items = Object.values(data);
             const osong = items.filter(i => i.type === 'osong').length;
@@ -1285,7 +1292,6 @@ loadDashboardStats: function() {
             if(document.getElementById('dashShuttleTotal')) document.getElementById('dashShuttleTotal').innerText = totalSum + "명";
         });
     },
-
 
 
 
