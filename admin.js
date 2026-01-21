@@ -3086,36 +3086,53 @@ showFinalSummary: async function() {
         });
     },
     
-closeQuizMode: function() { 
-        // [옵저버는 팝업 없이 그냥 퇴장]
+
+
+
+// [최종 복구] 퀴즈 모드 종료 시도 (옵저버 여부 체크 포함)
+    closeQuizMode: function() { 
+        // 옵저버는 데이터에 영향이 없으므로 그냥 나갑니다.
         if(state.isObserver) {
             ui.setMode('qa');
             return;
         }
+        // 강사는 팝업창을 띄워 선택하게 합니다.
         const exitModal = document.getElementById('quizExitModal');
         if(exitModal) exitModal.style.display = 'flex'; 
     },
     
-confirmExitQuiz: function(type) {
-        const exitModal = document.getElementById('quizExitModal'); // 'I'로 수정
+    // [최종 복구] 팝업창 버튼 클릭 시 실행 로직 (이어서 하기 / 초기화)
+    confirmExitQuiz: function(type) {
+        const exitModal = document.getElementById('quizExitModal');
         if(exitModal) exitModal.style.display = 'none';
+
         if(type === 'reset') {
+            // 1. [완전 초기화] 모든 진행 데이터 삭제
             state.currentQuizIdx = 0; 
             state.isExternalFileLoaded = false; 
             state.quizList = [];
+            
+            // 서버 데이터 싹 비우기
             firebase.database().ref(`courses/${state.room}/activeQuiz`).set(null);
             firebase.database().ref(`courses/${state.room}/status/quizStep`).set('none');
             firebase.database().ref(`courses/${state.room}/quizAnswers`).set(null);
             firebase.database().ref(`courses/${state.room}/quizFinalResults`).set(null);
+            
+            // 강사 화면 리셋
             quizMgr.renderMiniList();
-            const qTxt = document.getElementById('d-qtext'); // 'I'로 수정
-            const oDiv = document.getElementById('d-options'); // 'I'로 수정
+            const qTxt = document.getElementById('d-qtext');
+            const oDiv = document.getElementById('d-options');
             if(qTxt) qTxt.innerText = "Ready?"; 
             if(oDiv) oDiv.innerHTML = "";
-        }
-        ui.setMode('qa'); // 이 줄이 반드시 있어야 Q&A로 돌아갑니다.
+            
+            ui.showAlert("✅ 퀴즈가 완전히 초기화되었습니다.");
+        } 
+        // 'resume' (이어서 하기)의 경우 데이터를 지우지 않고 화면만 이동합니다.
+
+        // 공통: Q&A 게시판으로 화면 전환
+        ui.setMode('qa'); 
     }
-}; // quizMgr 객체를 닫는 중괄호
+};
 
 
 
