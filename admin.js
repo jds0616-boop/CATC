@@ -211,13 +211,15 @@ saveInstructorNoticeMain: function() {
 switchRoomAttempt: async function(newRoom) {
         localStorage.setItem('kac_last_mode', 'dashboard');
         
-        // [추가] 새 방으로 이동 시 기존 옵저버 상태 초기화
+        // [수정] 방 이동 시 무조건 옵저버 상태를 먼저 끄고 시작
         state.isObserver = false;
-        if(sessionStorage.getItem('kac_observer_room') !== newRoom) {
-            sessionStorage.removeItem('kac_observer_room');
+
+        // 이동하려는 방이 내가 과거에 옵저버로 들어갔던 방인지 확인
+        if(sessionStorage.getItem('kac_observer_room') === newRoom) {
+            state.isObserver = true;
         }
 
-        if (localStorage.getItem('last_owned_room') === newRoom) {
+        if (localStorage.getItem('last_owned_room') === newRoom && !state.isObserver) {
             this.forceEnterRoom(newRoom);
             return;
         }
@@ -225,7 +227,7 @@ switchRoomAttempt: async function(newRoom) {
         const snapshot = await firebase.database().ref(`courses/${newRoom}/status`).get();
         const st = snapshot.val() || {};
 
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId && !state.isObserver) {
             state.pendingRoom = newRoom;
             document.getElementById('takeoverPwInput').value = "";
             document.getElementById('takeoverModal').style.display = 'flex';
@@ -248,9 +250,9 @@ verifyTakeover: async function() {
         const dbPw = settings.password || btoa("7777"); 
 
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            // [중요] 강사 입장 시 옵저버 모드 및 메모 완전 삭제
+            // [수정] 강사 입장 시 해당 방의 옵저버 기록만 정밀 삭제
             state.isObserver = false; 
-            sessionStorage.removeItem('kac_is_observer');
+            sessionStorage.removeItem('kac_observer_room');
 
             await firebase.database().ref(`courses/${newRoom}/status`).update({ 
                 ownerSessionId: state.sessionId,
@@ -270,16 +272,32 @@ verifyTakeover: async function() {
 
 
 
-switchToObserverMode: async function() {
-        if(!state.room || state.isObserver) return;
-        if(confirm("제어권을 내려놓고 '옵저버 모드'로 전환하시겠습니까?\n전환 시 다른 강사님이 제어권을 가져갈 수 있습니다.")) {
-            // 1. 서버에서 내 세션의 점유권 삭제
+// [최종] 강사 <-> 옵저버 통합 토글 핸들러
+    handleModeToggle: function() {
+        if (!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+
+        if (state.isObserver) {
+            // 1. 현재 옵저버인데 클릭했다면? -> 강사 모드로 전환 (비밀번호 창 띄우기)
+            state.pendingRoom = state.room;
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
+        } else {
+            // 2. 현재 강사인데 클릭했다면? -> 옵저버 모드로 전환
+            this.switchToObserverMode();
+        }
+    },
+
+    switchToObserverMode: async function() {
+        if(confirm("제어권을 내려놓고 '옵저버 모드'로 전환하시겠습니까?")) {
+            // 서버 점유권 삭제
             await firebase.database().ref(`courses/${state.room}/status/ownerSessionId`).set(null);
-            // 2. 옵저버 메모를 '현재 방 번호'로 저장 (이 방에서만 옵저버임을 명시)
+            // 옵저버 메모 저장
             sessionStorage.setItem('kac_observer_room', state.room);
             state.isObserver = true;
-            // 3. 화면 새로고침 효과
+            // 화면 갱신
             this.forceEnterRoom(state.room);
+            ui.updateObserverButton(); // 버튼 모양 즉시 변경
             ui.showAlert("👁️ 옵저버 모드로 전환되었습니다.");
         }
     },
@@ -291,17 +309,14 @@ enterAsObserver: function() {
         const newRoom = state.pendingRoom;
         if (!newRoom) return;
 
-        // [수정] 새로고침해도 기억하도록 브라우저 메모리에 저장
+        // [수정] 방 번호를 구체적으로 지정해서 옵저버 메모 저장
         state.isObserver = true; 
-        sessionStorage.setItem('kac_is_observer', 'true');
+        sessionStorage.setItem('kac_observer_room', newRoom);
         
         document.getElementById('takeoverModal').style.display = 'none';
-        
-        // 주인 기록(ownerSessionId)을 바꾸지 않고 바로 입장 로직 실행
         this.forceEnterRoom(newRoom);
-        ui.showAlert("👁️ 옵저버 모드로 입장했습니다. (읽기 전용)");
+        ui.showAlert(`👁️ Room ${newRoom} 옵저버 모드로 입장했습니다.`);
     },
-
 
 
 
@@ -330,9 +345,11 @@ forceEnterRoom: async function(room) {
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // [핵심 추가] 새로고침 시 브라우저 메모리에서 옵저버 여부 복구
-        if (sessionStorage.getItem('kac_is_observer') === 'true') {
+        // [핵심 수정] 현재 접속하는 방 번호와 메모된 옵저버 방 번호가 일치할 때만 옵저버로 인정
+        if (sessionStorage.getItem('kac_observer_room') === room) {
             state.isObserver = true;
+        } else {
+            state.isObserver = false;
         }
 
         // 1. 강사 입장 시 제어권 체크 (옵저버는 통과)
@@ -349,7 +366,7 @@ forceEnterRoom: async function(room) {
             }
         }
 
-        // 2. 기본 연결 설정
+        // 2. 기본 연결 및 UI 설정 (기존 로직 유지)
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         const roomSelect = document.getElementById('roomSelect');
@@ -364,6 +381,7 @@ forceEnterRoom: async function(room) {
         dbRef.status = firebase.database().ref(`${rPath}/status`);
 
         ui.updateHeaderRoom(room);
+        ui.updateObserverButton(); // 버튼 모양 업데이트
         subjectMgr.init();
         
         dbRef.status.on('value', s => {
@@ -1703,6 +1721,47 @@ initRoomSelect: function() {
         const elDash = document.getElementById('dashRoomBadge');
         if(elDash) elDash.innerText = `(Room #${r})`;
     },
+
+
+
+
+
+
+// [신규] 강사 <-> 옵저버 버튼 디자인 실시간 전환
+    updateObserverButton: function() {
+        const btn = document.getElementById('observerToggleButton');
+        if(!btn) return;
+
+        if (state.isObserver) {
+            // 현재 옵저버라면 -> 강사 전환 버튼으로 변경
+            btn.innerHTML = '<i class="fa-solid fa-user-tie"></i> 강사 모드 전환';
+            btn.style.background = "#3b82f6"; // 파란색 강조
+            btn.style.color = "#ffffff";
+        } else {
+            // 현재 강사라면 -> 옵저버 전환 버튼으로 변경
+            btn.innerHTML = '<i class="fa-solid fa-eye"></i> 옵저버로 전환';
+            btn.style.background = "#e2e8f0"; // 회색
+            btn.style.color = "#475569";
+        }
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     renderSettings: function(d) {
         document.getElementById('courseNameInput').value = d.courseName || "";
