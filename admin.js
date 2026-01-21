@@ -1762,10 +1762,22 @@ setMode: function(mode) {
         }
 
         // 1. 모든 view- 로 시작하는 구역을 일단 숨김
-        const allViews = document.querySelectorAll('[id^="view-"]');
-        allViews.forEach(v => { 
+        document.querySelectorAll('[id^="view-"]').forEach(v => { 
             v.style.display = 'none'; 
         });
+
+        // [핵심 추가] 강사 모드일 때 옵저버에 의해 숨겨진 버튼들을 다시 보이게 초기화
+        if (!state.isObserver) {
+            const allAdminBtns = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn, #btnReset, button.btn-danger');
+            allAdminBtns.forEach(btn => {
+                // 원래 숨겨져야 하는 특수 버튼(File관련)이 아니라면 디스플레이 복구
+                if (btn.id !== 'quizFile' && btn.id !== 'studentFile') {
+                    btn.style.display = ''; 
+                }
+            });
+            const quizCtrl = document.getElementById('quizControls');
+            if(quizCtrl) quizCtrl.style.display = 'flex';
+        }
         
         // 2. 현재 선택한 모드에 맞는 구역 ID 결정
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
@@ -1847,11 +1859,9 @@ setMode: function(mode) {
                         const sPhone = s.phone ? s.phone.slice(-4) : ""; 
                         let assignedInfo = null;
 
-                        // 1순위: '이름_전화번호' 형태 확인
                         if (dormData[`${sName}_${sPhone}`]) {
                             assignedInfo = dormData[`${sName}_${sPhone}`];
                         } 
-                        // 2순위: 이름으로 확인
                         else if (dormData[sName]) {
                             assignedInfo = dormData[sName];
                         }
