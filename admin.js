@@ -3665,11 +3665,17 @@ saveAll: function() {
             document.getElementById('roomPw').value = rawPw;
             document.getElementById('displayCourseTitle').innerText = name;
             localStorage.setItem('last_owned_room', state.room);
+            
             ui.showAlert("✅ 설정이 저장되었습니다.");
+            
+            // 1. 팝업창 닫기
             this.closeSetupModal();
+
+            // 2. [핵심 추가] 즉시 방에 다시 입장하여 잠금 화면을 치우고 대시보드를 보여줌
+            dataMgr.forceEnterRoom(state.room);
         });
     }
-};
+}; // <--- setupMgr 객체를 닫아주는 아주 중요한 마침표입니다.
 
 // [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
 subjectMgr.renderListInModal = function() {
