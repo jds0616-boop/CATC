@@ -3413,31 +3413,42 @@ const guideMgr = {
 
 
 
-// --- 5. Print & Report ---
+// --- 5. Print & Report (최종 보강 버전) ---
 const printMgr = {
     openInputModal: function() { 
+        if(!state.room) return ui.showAlert("강의실을 먼저 선택해주세요.");
+        
         const today = new Date();
         const dateIn = document.getElementById('printDateInput');
         const profIn = document.getElementById('printProfInput');
         const modal = document.getElementById('printInputModal');
-        if(dateIn) {
-            dateIn.value = ""; 
-            dateIn.placeholder = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
+        
+        if(modal) {
+            if(dateIn) {
+                dateIn.value = ""; 
+                dateIn.placeholder = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
+            }
+            // 현재 설정된 교수님 성함을 자동으로 가져옴
+            if(profIn) profIn.value = document.getElementById('profSelect')?.value || ""; 
+            
+            modal.style.display = 'flex'; 
         }
-        if(profIn) profIn.value = document.getElementById('profSelect').value || ""; 
-        if(modal) modal.style.display = 'flex'; 
     },
     
     confirmPrint: function(isSkip) { 
         const today = new Date();
         const defDate = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
+        
         this.closeInputModal(); 
+        
         const dateIn = document.getElementById('printDateInput');
         const profIn = document.getElementById('printProfInput');
-        this.openPreview(
-            isSkip ? defDate : ((dateIn && dateIn.value) || defDate), 
-            isSkip ? "" : (profIn ? profIn.value : "")
-        ); 
+        
+        // 정보 입력 없이 진행하면 기본값 사용
+        const finalDate = isSkip ? defDate : (dateIn?.value || dateIn?.placeholder || defDate);
+        const finalProf = isSkip ? "담당 교수" : (profIn?.value || "담당 교수");
+        
+        this.openPreview(finalDate, finalProf); 
     },
     
     closeInputModal: function() { 
@@ -3453,23 +3464,25 @@ const printMgr = {
         const listBody = document.getElementById('docListBody');
         const previewModal = document.getElementById('printPreviewModal');
 
-        if(docCname) docCname.innerText = (cname && cname.value) || "미설정"; 
+        if(docCname) docCname.innerText = cname?.value || "과정명 미설정"; 
         if(docDate) docDate.innerText = date; 
-        if(docProf) docProf.innerText = prof || "담당 교수";
+        if(docProf) docProf.innerText = prof;
         
         if(listBody) {
             listBody.innerHTML = ""; 
+            // 데이터 안전하게 가져오기 (비어있을 때 대비)
             const items = Object.values(state.qaData || {}); 
             
             if (items.length === 0) {
                 listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
             } else { 
-                items.sort((a,b) => a.timestamp - b.timestamp).forEach((item, idx) => { 
+                // 시간순으로 정렬 (에러 방지용 보강)
+                items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).forEach((item, idx) => { 
                     listBody.innerHTML += `
                         <tr>
-                            <td>${idx + 1}</td>
-                            <td style="text-align:left;">${item.text}</td>
-                            <td>❤️ ${item.likes || 0}</td>
+                            <td style="text-align:center;">${idx + 1}</td>
+                            <td style="text-align:left; padding:10px;">${item.text || ""}</td>
+                            <td style="text-align:center;">❤️ ${item.likes || 0}</td>
                         </tr>
                     `; 
                 }); 
@@ -3485,38 +3498,44 @@ const printMgr = {
     },
     
     executePrint: function() { 
-        const content = document.getElementById('official-document').innerHTML;
+        const content = document.getElementById('official-document')?.innerHTML;
+        if(!content) return alert("인쇄할 내용이 없습니다.");
+
         const printWindow = window.open('', '', 'height=900,width=800');
+        if(!printWindow) return alert("팝업 차단을 해제해주세요.");
+
         printWindow.document.write(`
             <html>
             <head>
-                <title>KAC Report</title>
+                <title>KAC Report - ${document.getElementById('courseNameInput')?.value || 'Print'}</title>
                 <style>
                     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"); 
                     * { box-sizing: border-box; } 
-                    body { font-family: "Pretendard", sans-serif; } 
-                    @page { size: A4; margin: 25mm; } 
-                    h2 { margin: 0 0 30px 0; text-align: center; } 
-                    table { width: 100% !important; border-collapse: collapse; } 
-                    .doc-info-table th { text-align: left; width: 120px; padding: 6px 0; } 
-                    .doc-list-table tr { border-bottom: 1px solid #999; } 
-                    .doc-list-table td { padding: 12px 5px; font-size: 13px; } 
-                    .doc-list-table td:first-child { text-align: center; width: 50px; } 
-                    .doc-list-table td:last-child { text-align: center; width: 70px; color: #3b82f6; }
+                    body { font-family: "Pretendard", sans-serif; padding: 20px; } 
+                    @page { size: A4; margin: 20mm; } 
+                    h2 { margin: 0 0 30px 0; text-align: center; font-size: 28px; text-decoration: underline; } 
+                    table { width: 100% !important; border-collapse: collapse; margin-top: 20px; } 
+                    th, td { border: 1px solid #000; padding: 10px; font-size: 14px; }
+                    .doc-info-table { border: none; margin-bottom: 30px; }
+                    .doc-info-table th, .doc-info-table td { border: none; text-align: left; padding: 5px 0; }
+                    .doc-info-table th { width: 100px; font-weight: bold; }
+                    .doc-list-table th { background: #f0f0f0; }
                 </style>
             </head>
             <body>${content}</body>
             </html>
         `);
+        
         printWindow.document.close(); 
         printWindow.focus(); 
+        
+        // 이미지가 로드될 시간을 살짝 준 뒤 인쇄창 띄움
         setTimeout(() => { 
             printWindow.print(); 
             printWindow.close(); 
         }, 500);
     }
 };
-
 
 // [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
