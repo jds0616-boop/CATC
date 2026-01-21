@@ -49,34 +49,12 @@
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
     .notice-area { width: 100%; min-height: 60px; border-radius: 8px; border: 1.5px solid var(--border-blue); padding: 12px; font-size: 13px; line-height: 1.5; resize: none; margin-bottom: 8px; background: #fff; font-weight: 600; outline: none; }
 
-/* 상황판 블루 프리미엄 디자인 */
-    .dashboard-header-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; padding: 5px;
-    }
-    .stat-card {
-      background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-      border-radius: 16px; padding: 20px;
-      display: flex; justify-content: space-between; align-items: center;
-      border: 1px solid #dbeafe; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-      cursor: pointer; transition: 0.3s; position: relative;
-    }
-    .stat-card:active { transform: scale(0.95); background: #e0e7ff; }
-    
-    .stat-left { display: flex; flex-direction: column; gap: 5px; }
-    .stat-label { font-size: 13px; font-weight: 800; color: #1e40af; display: flex; align-items: center; gap: 6px; }
-    .stat-link { font-size: 10px; color: #60a5fa; font-weight: 700; margin-top: 5px; }
-    
-    /* 숫자 크기 3단계 업 (약 40px) */
-    .stat-value { font-size: 40px; font-weight: 900; color: #1e3a8a; letter-spacing: -1px; line-height: 1; }
-    .stat-value span { font-size: 16px; color: #64748b; margin-left: 3px; font-weight: 700; }
-
-    /* 팝업 내부 테이블 디자인 보정 */
-    .pop-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .pop-table th { background: #f1f5f9; padding: 10px; border: 1px solid #e2e8f0; color: #475569; font-weight: 800; }
-    .pop-table td { padding: 10px; border: 1px solid #e2e8f0; text-align: center; background: #fff; }
-    .course-group-title { background: #1e3a8a; color: white; padding: 8px 12px; font-size: 13px; font-weight: 800; margin-top: 15px; border-radius: 6px; }
-    .name-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px; background: #f8fafc; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; }
-    .name-item { font-size: 13px; font-weight: 600; color: #334155; }
+    /* 상황판 디자인 */
+    .global-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+    .g-stat-item { background: var(--navy-dark); border-radius: 12px; padding: 18px 15px; color: white; text-align: center; }
+    .g-stat-label { font-size: 11px; opacity: 0.7; margin-bottom: 6px; font-weight: 700; }
+    .g-stat-val { font-size: 24px; font-weight: 900; color: var(--blue-main); }
+    .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
 
     /* 개별 과정 현황 박스 */
     .dashboard-split { display: flex; gap: 8px; align-items: stretch; width: 100%; }
@@ -213,46 +191,23 @@
     </header>
 
     <main class="app-content">
-
-<!-- 블루 프리미엄 상황판 -->
-          <div class="dashboard-header-grid">
-              <div class="stat-card" id="main-total-students">
-                  <div class="stat-left">
-                      <div class="stat-label"><i class="fa-solid fa-users"></i> 전체 교육생</div>
-                      <div class="stat-link">과정별 명단 보기 ></div>
-                  </div>
-                  <div class="stat-value" id="g-total-students">0<span>명</span></div>
+      <!-- [뷰 1] 전체 과정 현황 -->
+      <div id="totalStatusView" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="global-status-grid">
+              <div class="g-stat-item">
+                  <div class="g-stat-label">항기원 전체 교육생</div>
+                  <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
               </div>
-              <div class="stat-card" onclick="openOutingManager()">
-                  <div class="stat-left">
-                      <div class="stat-label"><i class="fa-solid fa-clock-rotate-left"></i> 오늘 외출/외박</div>
-                      <div class="stat-link">통합 관리대장 ></div>
-                  </div>
-                  <div class="stat-value" id="g-today-actions" style="color:#f59e0b;">0<span>건</span></div>
-              </div>
-              <div class="stat-card" id="main-total-trans">
-                  <div class="stat-left">
-                      <div class="stat-label"><i class="fa-solid fa-car-side"></i> 강사 수송 예약</div>
-                      <div class="stat-link">수송 상세 내역 ></div>
-                  </div>
-                  <div class="stat-value" id="g-total-trans" style="color:#6366f1;">0<span>건</span></div>
-              </div>
-              <div class="stat-card" id="main-total-shuttle">
-                  <div class="stat-left">
-                      <div class="stat-label"><i class="fa-solid fa-bus-simple"></i> 퇴교 차량 신청</div>
-                      <div class="stat-link">과정별 집계 현황 ></div>
-                  </div>
-                  <div class="stat-value" id="g-total-shuttle" style="color:#10b981;">0<span>명</span></div>
+              <div class="g-stat-item" style="background: var(--blue-deep); cursor:pointer;" onclick="openOutingManager()">
+                  <div class="g-stat-label">금일 총 외출/외박 (관리대장)</div>
+                  <div class="g-stat-val" id="g-today-actions" style="color:#fbbf24;">0<span>건</span></div>
+                  <div style="font-size:10px; margin-top:5px; opacity:0.8;">명단 확인 및 담당자 승인 ></div>
               </div>
           </div>
-
-          <!-- 2. 현재 운영 중인 과정 리스트 (살려내기) -->
           <div class="section-card">
               <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 리스트</div>
               <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
-
-          <!-- 3. 당일 신청자 명단 (살려내기) -->
           <div class="section-card">
               <div class="section-title" style="justify-content:space-between;">
                   <span><i class="fa-solid fa-calendar-check"></i> <span id="historyDateLabel">조회 중...</span></span>
@@ -266,16 +221,6 @@
               </div>
           </div>
       </div>
-
-
-
-
-
-
-
-
-
-
 
       <!-- [뷰 2] 개별 과정 상세 -->
       <div id="individualStatusView" style="display:none; flex-direction:column; gap:12px;">
@@ -719,7 +664,6 @@ const coordMgr = {
             globalAllData = snap.val() || {};
             updateGlobalStatus(); 
             renderCourseSelectors(); 
-            handleRoomSelection(); 
             renderTotalHistory();
             if(currentRID) updateIndividualView();
             if(document.getElementById('outingManagerView').style.display === 'flex') renderOutingManager();
@@ -739,119 +683,67 @@ const coordMgr = {
 
 
 // [3. 전체 현황판 실시간 집계 및 명단 팝업]
-function updateGlobalStatus() {
-        try {
-            let studentsByCourse = {}; // 과정별 교육생 묶음
-            let shuttleByCourse = {};  // 과정별 차량 집계
-            let todayA = 0; 
-            let totalStuCount = 0;
-            let totalShuttleCount = 0;
-            const tStr = getTodayString();
+    function updateGlobalStatus() {
+        let globalList = []; 
+        let todayA = 0; 
+        const tStr = getTodayString();
 
-            // 모든 과정 순회하며 데이터 분류
-            Object.keys(globalAllData).forEach(rid => {
-                const room = globalAllData[rid];
-                const cName = room.settings?.courseName || `Room ${rid}`;
-                
-                // 1. 교육생 분류 (과정별 이름 묶기)
-                if (room.students) {
-                    studentsByCourse[cName] = [];
-                    Object.values(room.students).forEach(s => {
-                        if (s && s.name && s.name.trim() !== "" && s.name !== "undefined") {
-                            studentsByCourse[cName].push(s.name.trim());
-                        }
-                    });
-                    studentsByCourse[cName].sort();
-                    totalStuCount += studentsByCourse[cName].length;
-                }
-
-                // 2. 외출외박 카운트
-                if (room.admin_actions?.[tStr]) {
-                    todayA += Object.keys(room.admin_actions[tStr]).length;
-                }
-
-                // 3. 퇴교 차량 집계 (과정별 분류)
-                if (room.shuttle?.requests) {
-                    const reqs = Object.values(room.shuttle.requests);
-                    totalShuttleCount += reqs.length;
-                    shuttleByCourse[cName] = { total: reqs.length, osong: 0, term: 0, air: 0, car: 0 };
-                    reqs.forEach(r => {
-                        if(r.type === 'osong') shuttleByCourse[cName].osong++;
-                        else if(r.type === 'terminal') shuttleByCourse[cName].term++;
-                        else if(r.type === 'airport') shuttleByCourse[cName].air++;
-                        else if(r.type === 'car') shuttleByCourse[cName].car++;
-                    });
-                }
-            });
-
-            // 상단 숫자 업데이트
-            if(document.getElementById('g-total-students')) document.getElementById('g-total-students').innerHTML = `${totalStuCount}<span>명</span>`;
-            if(document.getElementById('g-today-actions')) document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
-            if(document.getElementById('g-total-shuttle')) document.getElementById('g-total-shuttle').innerHTML = `${totalShuttleCount}<span>명</span>`;
-
-            // 강사 수송 데이터 및 팝업
-            firebase.database().ref('system/transport_requests').on('value', snap => {
-                const transData = snap.val() || {};
-                const transArr = Object.values(transData);
-                if(document.getElementById('g-total-trans')) document.getElementById('g-total-trans').innerHTML = `${transArr.length}<span>건</span>`;
-                
-                document.getElementById('main-total-trans').onclick = () => {
-                    const tbody = document.getElementById('totalTransBody');
-                    transArr.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-                    // 연락처 포함 및 일시 대신 픽업시간 강조
-                    tbody.innerHTML = transArr.map(t => `
-                        <tr>
-                            <td><b>${t.prof}</b><br><span style="font-size:11px; color:#64748b;">${t.phone || '-'}</span></td>
-                            <td style="font-size:12px;">${t.dir}</td>
-                            <td style="color:#6366f1; font-weight:800;">${t.time}</td>
-                        </tr>`).join('');
-                    document.getElementById('totalTransModal').style.display = 'flex';
-                };
-            });
-
-            // 교육생 팝업 (과정별 묶음)
-            document.getElementById('main-total-students').onclick = () => {
-                const container = document.getElementById('totalStudentListBody'); // 팝업 내 담을 곳 (tbody 대신 div 권장)
-                let html = "";
-                Object.keys(studentsByCourse).forEach(course => {
-                    if(studentsByCourse[course].length > 0) {
-                        html += `<div class="course-group-title">${course} (${studentsByCourse[course].length}명)</div>`;
-                        html += `<div class="name-grid">`;
-                        studentsByCourse[course].forEach(name => {
-                            html += `<div class="name-item">${name}</div>`;
+        Object.keys(globalAllData).forEach(rid => {
+            const room = globalAllData[rid];
+            // 실제 과정명 가져오기 (없으면 Room ID)
+            const cName = room.settings?.courseName || `[미설정] Room ${rid}`;
+            
+            if (room.students) { 
+                Object.values(room.students).forEach(s => {
+                    if (s && s.name && s.name !== "undefined" && s.name.trim() !== "") {
+                        const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
+                        const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
+                        
+                        globalList.push({
+                            courseName: cName, // 실제 과정명 저장
+                            name: s.name.trim(),
+                            phone: last4
                         });
-                        html += `</div>`;
                     }
                 });
-                container.innerHTML = html || "<div style='padding:20px; text-align:center;'>명단 없음</div>";
-                document.getElementById('totalStudentListModal').style.display = 'flex';
-            };
+            }
+            
+            if (room.admin_actions?.[tStr]) {
+                todayA += Object.keys(room.admin_actions[tStr]).length;
+            }
+        });
 
-            // 차량신청 팝업 (과정별 집계)
-            document.getElementById('main-total-shuttle').onclick = () => {
-                const tbody = document.getElementById('totalShuttleBody');
-                let html = "";
-                Object.keys(shuttleByCourse).forEach(course => {
-                    const s = shuttleByCourse[course];
-                    html += `<tr>
-                        <td style="text-align:left; font-weight:800; font-size:11px;">${course}</td>
-                        <td style="background:#f1f5f9; font-weight:800;">${s.total}</td>
-                        <td>${s.osong}</td>
-                        <td>${s.term}</td>
-                        <td>${s.air}</td>
-                        <td>${s.car}</td>
-                    </tr>`;
-                });
-                tbody.innerHTML = html || "<tr><td colspan='6' style='padding:20px;'>신청 현황 없음</td></tr>";
-                document.getElementById('totalShuttleModal').style.display = 'flex';
-            };
+        // 중복 제거 (이름 + 뒷자리 기준)
+        const uniqueSet = new Set();
+        const filteredList = globalList.filter(item => {
+            const id = `${item.name}_${item.phone}`;
+            if(uniqueSet.has(id)) return false;
+            uniqueSet.add(id);
+            return true;
+        });
 
-        } catch (e) { console.log(e); }
-        if(typeof renderCourseSelectors === 'function') renderCourseSelectors();
-        if(typeof renderTotalHistory === 'function') renderTotalHistory();
+        document.getElementById('g-total-students').innerHTML = `${uniqueSet.size}<span>명</span>`;
+        document.getElementById('g-today-actions').innerHTML = `${todayA}<span>건</span>`;
+
+        const statBox = document.getElementById('g-total-students').parentElement;
+        statBox.onclick = function() {
+            const modal = document.getElementById('totalStudentListModal');
+            const tbody = document.getElementById('totalStudentListBody');
+            
+            // 과정명순 -> 이름순 정렬
+            filteredList.sort((a,b) => a.courseName.localeCompare(b.courseName) || a.name.localeCompare(b.name));
+            
+            tbody.innerHTML = filteredList.length ? filteredList.map(s => `
+                <tr>
+                    <td style="font-size:11px; color:var(--blue-deep); font-weight:800; text-align:left; padding-left:10px;">${s.courseName}</td>
+                    <td style="font-weight:800;">${s.name}</td>
+                    <td style="color:#94a3b8;">${s.phone}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="3" style="padding:20px;">입교생 없음</td></tr>';
+            
+            modal.style.display = 'flex';
+        };
     }
-
-
 
 
 
@@ -1024,27 +916,7 @@ function updateTransDirButtons() {
 
     // [7. 화면 내비게이션 및 유틸]
     function handleBackNav() { if(currentRID) { currentRID = ""; handleRoomSelection(); } else { location.href = 'potal.html'; } }
-function handleRoomSelection() {
-        // currentRID가 비어있으면 메인화면, 있으면 개별과정 화면
-        const isInd = (currentRID !== ""); 
-
-        // 1. 화면 전환 (메인 <-> 개별상세)
-        document.getElementById('totalStatusView').style.display = isInd ? "none" : "flex";
-        document.getElementById('individualStatusView').style.display = isInd ? "flex" : "none";
-
-        // 2. 사이드 메뉴 버튼 전환 (핵심!)
-        const globalMenu = document.getElementById('side-global-menu');
-        const individualMenu = document.getElementById('side-individual-menu');
-
-        if (globalMenu) globalMenu.style.display = isInd ? "none" : "flex";
-        if (individualMenu) individualMenu.style.display = isInd ? "flex" : "none";
-
-        // 3. 개별 과정으로 들어갔을 때 추가 작업
-        if (isInd) {
-            updateIndividualView();
-            updateQRPreview();
-        }
-    }
+    function handleRoomSelection() { const isInd = (currentRID !== ""); document.getElementById('totalStatusView').style.display = isInd ? "none" : "flex"; document.getElementById('individualStatusView').style.display = isInd ? "flex" : "none"; document.getElementById('side-global-menu').style.display = isInd ? "none" : "flex"; document.getElementById('side-individual-menu').style.display = isInd ? "flex" : "none"; if(isInd) { updateIndividualView(); updateQRPreview(); } }
     
 
 
@@ -1383,43 +1255,5 @@ function showActionDetail(dataJson) {
 
     init();
   </script>
-
-<!-- 교육생 팝업 (내용이 div로 바뀌므로 tbody 대신 id 위치 수정) -->
-  <div id="totalStudentListModal" class="setup-modal">
-      <div class="setup-box" style="max-width: 500px;">
-          <h3 style="margin-top:0;"><i class="fa-solid fa-users"></i> 과정별 교육생 명단</h3>
-          <div id="totalStudentListBody" class="modal-scroll-area" style="max-height:450px; border:none;">
-              <!-- JS에서 과정별 묶음이 생성됨 -->
-          </div>
-          <button class="navy-btn" style="margin-top:15px; background:#64748b;" onclick="document.getElementById('totalStudentListModal').style.display='none'">닫기</button>
-      </div>
-  </div>
-
-  <!-- 강사 수송 팝업 (항목: 강사명/연락처, 구간, 픽업시간) -->
-  <div id="totalTransModal" class="setup-modal">
-      <div class="setup-box" style="max-width: 500px;">
-          <h3 style="margin-top:0;">🚖 강사 수송 예약 상세</h3>
-          <table class="pop-table">
-              <thead><tr><th>강사명/연락처</th><th>수송구간</th><th>픽업시간</th></tr></thead>
-              <tbody id="totalTransBody"></tbody>
-          </table>
-          <button class="navy-btn" style="margin-top:15px; background:#64748b;" onclick="document.getElementById('totalTransModal').style.display='none'">닫기</button>
-      </div>
-  </div>
-
-  <!-- 차량 신청 팝업 (항목: 과정명, 전체, 오송, 터미널, 공항, 자차) -->
-  <div id="totalShuttleModal" class="setup-modal">
-      <div class="setup-box" style="max-width: 600px;">
-          <h3 style="margin-top:0;">🚌 과정별 차량 신청 집계</h3>
-          <table class="pop-table" style="font-size:11px;">
-              <thead><tr><th>과정명</th><th>계</th><th>오송</th><th>터미널</th><th>공항</th><th>자차</th></tr></thead>
-              <tbody id="totalShuttleBody"></tbody>
-          </table>
-          <button class="navy-btn" style="margin-top:15px; background:#64748b;" onclick="document.getElementById('totalShuttleModal').style.display='none'">닫기</button>
-      </div>
-  </div>
-
-
-
 </body>
 </html>
