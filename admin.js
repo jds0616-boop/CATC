@@ -96,11 +96,21 @@ const authMgr = {
         }
     },
 
-    logout: async function() {
+logout: async function() {
         if (confirm("로그아웃 하시겠습니까?")) {
             try {
+                // 로그아웃 시 내가 사용 중이던 방이 있다면 서버의 세션 점유 해제
+                if(state.room) {
+                    const snap = await firebase.database().ref(`courses/${state.room}/status`).get();
+                    const st = snap.val() || {};
+                    // 서버에 등록된 주인이 나(내 세션ID)라면 점유 정보만 삭제
+                    if(st.ownerSessionId === state.sessionId) {
+                        await firebase.database().ref(`courses/${state.room}/status/ownerSessionId`).set(null);
+                    }
+                }
                 await firebase.auth().signOut();
                 localStorage.removeItem('last_owned_room');
+                localStorage.removeItem('kac_last_room');
                 location.reload(); 
             } catch (error) {
                 console.error("Logout Error:", error);
@@ -221,7 +231,7 @@ saveInstructorNoticeMain: function() {
 
     
      // [수정] 인증 성공 시에만 세션 ID를 서버에 등록하여 '정식 주인'으로 인정
-    verifyTakeover: async function() {
+verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         let input = document.getElementById('takeoverPwInput').value;
         if(input) input = input.trim(); 
@@ -231,14 +241,19 @@ saveInstructorNoticeMain: function() {
         const settings = settingSnap.val() || {};
         const dbPw = settings.password || btoa("7777"); 
 
+        // 마스터 비번 또는 설정된 비번이 맞을 경우
         if (btoa(input) === dbPw || btoa(input) === "MTMyODE=") {
-            // 인증 성공 시에만 세션 ID와 소유권을 업데이트
-            localStorage.setItem(`last_owned_room`, newRoom);
+            // [중요] 인증 성공 즉시 서버에 나의 현재 sessionId를 주인으로 등록
             await firebase.database().ref(`courses/${newRoom}/status`).update({ 
-                ownerSessionId: state.sessionId 
+                ownerSessionId: state.sessionId,
+                roomStatus: 'active' // 혹시 꺼져있었다면 켬
             });
-            this.forceEnterRoom(newRoom);
+            localStorage.setItem(`last_owned_room`, newRoom);
             document.getElementById('takeoverModal').style.display = 'none';
+            
+            // 이제 정식 주인이 되었으므로 방 연결 실행
+            this.forceEnterRoom(newRoom);
+            ui.showAlert("✅ 제어권을 획득했습니다.");
         } else {
             ui.showAlert("⛔ 비밀번호가 올바르지 않습니다.");
             document.getElementById('takeoverPwInput').value = "";
@@ -252,11 +267,27 @@ saveInstructorNoticeMain: function() {
         state.pendingRoom = null;
     },
 
-    forceEnterRoom: async function(room) {
+forceEnterRoom: async function(room) {
         if(dbRef.status) dbRef.status.off();
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
+        // [수정] 입장 전 제어권 먼저 체크
+        const snap = await firebase.database().ref(`courses/${room}/status`).get();
+        const st = snap.val() || {};
+
+        // 누군가 사용 중인데, 내 세션ID와 서버에 등록된 ID가 다르면 비밀번호 입력 유도
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            state.pendingRoom = room;
+            document.getElementById('takeoverPwInput').value = "";
+            document.getElementById('takeoverModal').style.display = 'flex';
+            document.getElementById('takeoverPwInput').focus();
+            // 일단 화면은 대기실로 표시 (비밀번호 맞기 전까지 입장 방지)
+            ui.showWaitingRoom();
+            return;
+        }
+
+        // 제어권이 확인되었거나 비어있는 방인 경우 입장 로직 실행
         firebase.database().ref(`courses/${room}/status`).update({
             lastAdminEntry: firebase.database.ServerValue.TIMESTAMP
         });
@@ -276,21 +307,6 @@ saveInstructorNoticeMain: function() {
             btnReset.style.cursor = 'pointer';
         }
 
-        const rows = document.querySelectorAll('#statusTableBody tr');
-        rows.forEach(row => {
-            const roomCell = row.querySelector('td:nth-child(2)');
-            if (roomCell && roomCell.innerText.includes(`Room ${room}`)) {
-                row.classList.add('is-my-room');
-                if (!roomCell.querySelector('.my-room-badge')) {
-                    row.querySelector('td:nth-child(2)').innerHTML += '<span class="my-room-badge">MY</span>';
-                }
-            } else {
-                row.classList.remove('is-my-room');
-                const badge = roomCell ? roomCell.querySelector('.my-room-badge') : null;
-                if (badge) badge.remove();
-            }
-        });
-
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
@@ -302,87 +318,56 @@ saveInstructorNoticeMain: function() {
         ui.updateHeaderRoom(room);
         subjectMgr.init();
         state.qaData = {};
-        document.getElementById('qaList').innerHTML = "";
         
+        // 설정 데이터 감시
         dbRef.settings.on('value', s => {
             const val = s.val() || {};
             ui.renderSettings(val);
-            if(localStorage.getItem('kac_last_mode') === 'dashboard') {
-                ui.loadDashboardStats();
-            }
+            if(localStorage.getItem('kac_last_mode') === 'dashboard') ui.loadDashboardStats();
         });
 
-dbRef.status.on('value', s => {
-    if(state.room !== room) return;
-    const st = s.val() || {};
-    ui.renderRoomStatus(st.roomStatus || 'idle'); 
-    ui.checkLockStatus(st);
+        // [중요] 제어권 실시간 감시 (세션이 바뀌어 튕겼을 때 대응)
+        dbRef.status.on('value', s => {
+            if(state.room !== room) return;
+            const statusData = s.val() || {};
+            ui.renderRoomStatus(statusData.roomStatus || 'idle'); 
+            
+            // 만약 서버의 주인 세션ID가 내 현재 세션ID와 달라지면
+            if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
+                ui.checkLockStatus(statusData); // 화면 잠금
+                // 자동으로 제어권 탈취 팝업 띄우기
+                state.pendingRoom = room;
+                document.getElementById('takeoverModal').style.display = 'flex';
+            } else {
+                ui.checkLockStatus(statusData); // 잠금 해제
+            }
 
-    // [핵심] 교수님 성함이 DB에 있다면 사이드바와 대시보드 모두 즉시 업데이트
-    const dashProf = document.getElementById('dashProfName'); // 대시보드의 성함 엘리먼트
-    const sidebarProf = document.getElementById('profSelect'); // 사이드바의 선택창
-
-    if(st.professorName) {
-        if(sidebarProf) sidebarProf.value = st.professorName; // 사이드바 동기화
-        
-        // [수정된 부분] 단순 텍스트 대신 아이콘과 "프로필 보기" 링크를 포함한 HTML을 삽입합니다.
-        if(dashProf) {
-            dashProf.innerHTML = `
-                <span onclick="ui.showProfPresentation('${st.professorName}')" style="cursor:pointer; color:#3b82f6; display:inline-flex; align-items:center; gap:8px; font-weight:800;">
-                    <i class="fa-solid fa-address-card" style="font-size:1.2em;"></i> 
-                    ${st.professorName} 교수님
-                    <small style="font-weight:400; font-size:12px; margin-left:5px; background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #dbeafe;">프로필 보기</small>
-                </span>
-            `;
-        }
-    } else {
-        if(sidebarProf) sidebarProf.value = "";
-        if(dashProf) dashProf.innerText = "담당 교수 미지정";
-    }
-});
+            if(statusData.professorName) {
+                const dashProf = document.getElementById('dashProfName');
+                if(dashProf) {
+                    dashProf.innerHTML = `<span onclick="ui.showProfPresentation('${statusData.professorName}')" style="cursor:pointer; color:#3b82f6; font-weight:800;">${statusData.professorName} 교수님</span>`;
+                }
+            }
+        });
 
         firebase.database().ref(`courses/${room}/students`).on('value', s => {
             const data = s.val() || {};
-            const activeUsers = Object.values(data).filter(user => 
-                user.name && user.name !== "undefined" && user.isOnline === true
-            );
-            const count = activeUsers.length;
+            const activeUsers = Object.values(data).filter(user => user.name && user.isOnline === true).length;
             const quizEl = document.getElementById('currentJoinCount');
-            if(quizEl) quizEl.innerText = count;
+            if(quizEl) quizEl.innerText = activeUsers;
             const dashCount = document.getElementById('dashStudentCount');
-            if(dashCount) dashCount.innerText = count + "명";
+            if(dashCount) dashCount.innerText = activeUsers + "명";
         });
 
         dbRef.qa.on('value', s => { 
-            if(state.room === room) { 
-                state.qaData = s.val() || {}; 
-                ui.renderQaList('all'); 
-            }
+            if(state.room === room) { state.qaData = s.val() || {}; ui.renderQaList('all'); }
         });
 
         this.fetchCodeAndRenderQr(room);
-
-        if(state.newBadgeTimer) clearInterval(state.newBadgeTimer);
-        state.newBadgeTimer = setInterval(() => {
-            const cards = document.querySelectorAll('.q-card.is-new');
-            cards.forEach(card => {
-                const ts = parseInt(card.getAttribute('data-ts'));
-                if (Date.now() - ts >= 120000) {
-                    card.classList.remove('is-new');
-                    const badge = card.querySelector('.new-badge-icon');
-                    if(badge) badge.remove();
-                }
-            });
-        }, 5000);
-
         const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
-        if(roomSelect) {
-            setTimeout(() => { roomSelect.value = room; }, 300);
-        }
         ui.setMode(lastMode);
         guideMgr.init();
     },
-
 
     fetchCodeAndRenderQr: function(room) {
         const pathArr = window.location.pathname.split('/'); 
@@ -395,9 +380,13 @@ dbRef.status.on('value', s => {
         });
     },
 
-    saveSettings: function() {
+
+
+
+
+ saveSettings: function() {
         if (!state.room) {
-            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요."); // 수정됨
+            ui.showAlert("⚠️ 강의실을 먼저 선택해 주세요.");
             return;
         }
 
@@ -405,25 +394,28 @@ dbRef.status.on('value', s => {
         const newName = document.getElementById('courseNameInput').value;
         const statusVal = document.getElementById('roomStatusSelect').value;
         const selectedProf = document.getElementById('profSelect').value;
-        
         const encryptedPw = rawPw ? btoa(rawPw) : "Nzc3Nw==";
 
-        firebase.database().ref(`courses/${state.room}/settings`).update({ 
-            courseName: newName, 
-            password: encryptedPw 
-        });
+        // 설정을 저장하면서 내 세션ID를 다시 한 번 서버에 등록
+        const updates = {};
+        updates[`courses/${state.room}/settings/courseName`] = newName;
+        updates[`courses/${state.room}/settings/password`] = encryptedPw;
+        updates[`courses/${state.room}/status/roomStatus`] = statusVal;
+        updates[`courses/${state.room}/status/professorName`] = (statusVal === 'active' ? selectedProf : "");
+        // 사용중으로 저장할 때만 세션ID 등록
+        updates[`courses/${state.room}/status/ownerSessionId`] = (statusVal === 'active' ? state.sessionId : null);
 
-        firebase.database().ref(`courses/${state.room}/status`).update({ 
-            roomStatus: statusVal, 
-            ownerSessionId: (statusVal === 'active' ? state.sessionId : null),
-            professorName: (statusVal === 'active' ? selectedProf : null) 
-        }).then(() => {
+        firebase.database().ref().update(updates).then(() => {
             localStorage.setItem('last_owned_room', state.room);
-            ui.showAlert("✅ 설정 내용이 안전하게 저장되었습니다.");
+            ui.showAlert("✅ 설정이 저장되었습니다.");
         });
 
         document.getElementById('displayCourseTitle').innerText = newName;
     },
+
+
+
+
 
     deactivateAllRooms: async function() {
         if(!confirm("⚠️ 경고: 모든 강의실(A~Z)을 '비어있음' 상태로 강제 변경합니다.\n계속하시겠습니까?")) return;
@@ -1502,7 +1494,16 @@ loadDashboardStats: function() {
         document.getElementById('changeAdminSecretModal').style.display = 'none';
     },
 
-    initRoomSelect: function() {
+
+
+
+
+
+
+
+
+
+initRoomSelect: function() {
         firebase.database().ref('courses').on('value', s => {
             const d = s.val() || {};
             const sel = document.getElementById('roomSelect');
@@ -1513,7 +1514,6 @@ loadDashboardStats: function() {
             if(tableBody) tableBody.innerHTML = "";
 
             let count = 1;
-
             for(let i=65; i<=90; i++) {
                 const c = String.fromCharCode(i);
                 const roomData = d[c] || {};
@@ -1528,27 +1528,22 @@ loadDashboardStats: function() {
                 const courseName = settings.courseName ? settings.courseName : "-";
                 const profName = st.professorName ? st.professorName : "-";
 
-                let lastTime = "-";
-                if (st.lastAdminEntry) {
-                    const dTime = new Date(st.lastAdminEntry);
-                    lastTime = (dTime.getMonth() + 1) + "/" + dTime.getDate() + " " + dTime.getHours() + ":" + dTime.getMinutes().toString().padStart(2, '0');
-                }
+                // [수정] 진짜 내가 주인인지 서버의 세션ID와 대조하여 판정
+                const isRealMyRoom = isRoomActive && (st.ownerSessionId === state.sessionId);
 
                 if(sel) {
                     const opt = document.createElement('option');
                     opt.value = c;
                     
-                    if(isRoomActive) {
-                        if (st.ownerSessionId === state.sessionId || localStorage.getItem('last_owned_room') === c) {
-                            opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName})`; // 수정 후
-                            opt.style.color = '#3b82f6';
-                            opt.style.fontWeight = 'bold';
-                        } else {
-                            opt.innerText = `Room ${c} (🔴 사용중 - ${profName})`; // 수정 후
-                            opt.style.color = '#ef4444';
-                        }
+                    if(isRealMyRoom) {
+                        opt.innerText = `Room ${c} (🔵 내 강의실 - ${profName})`;
+                        opt.style.color = '#3b82f6';
+                        opt.style.fontWeight = 'bold';
+                    } else if(isRoomActive) {
+                        opt.innerText = `Room ${c} (🔴 사용중 - ${profName})`;
+                        opt.style.color = '#ef4444';
                     } else {
-                        opt.innerText = `Room ${c} (⚪ 대기)`; // 수정 후
+                        opt.innerText = `Room ${c} (⚪ 대기)`;
                     }
                     
                     if(c === savedValue) opt.selected = true;
@@ -1557,11 +1552,7 @@ loadDashboardStats: function() {
 
                 if(tableBody) {
                     const row = document.createElement('tr');
-
-// 현재 내가 제어 중인 방인 경우 클래스 추가
-if (c === state.room) {
-    row.classList.add('is-my-room');
-}
+                    if (c === state.room) row.classList.add('is-my-room');
                     
                     const statusBadge = isRoomActive 
                         ? '<span class="badge-status badge-active">🟢 사용 중</span>' 
@@ -1570,14 +1561,14 @@ if (c === state.room) {
                     row.innerHTML = `
                         <td>${count++}</td>
                         <td style="font-weight:900; color:#3b82f6;">
-    Room ${c}
-    ${c === state.room ? '<span class="my-room-badge">MY</span>' : ''}
-</td>
+                            Room ${c}
+                            ${isRealMyRoom ? '<span class="my-room-badge">MY</span>' : ''}
+                        </td>
                         <td><div class="td-course-name" title="${courseName}">${courseName}</div></td>
                         <td style="font-weight:600;">${profName}</td>
                         <td>${statusBadge}</td>
                         <td style="font-weight:700;">${userCount}명</td>
-                        <td style="color:#94a3b8; font-size:14px;">${lastTime}</td>
+                        <td style="color:#94a3b8; font-size:14px;">-</td>
                         <td>
                             <button class="btn-table-action" onclick="dataMgr.switchRoomAttempt('${c}')">입장하기</button>
                         </td>
@@ -1587,6 +1578,15 @@ if (c === state.room) {
             }
         });
     },
+
+
+
+
+
+
+
+
+
 
     toggleMiniQR: function() {
         const qrBox = document.getElementById('floatingQR');
