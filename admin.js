@@ -233,7 +233,7 @@ saveInstructorNoticeMain: function() {
     },
 
     
-     // [수정] 인증 성공 시에만 세션 ID를 서버에 등록하여 '정식 주인'으로 인정
+
 verifyTakeover: async function() {
         const newRoom = state.pendingRoom;
         let input = document.getElementById('takeoverPwInput').value;
@@ -266,7 +266,6 @@ verifyTakeover: async function() {
 
 
 
-// 이 부분을 통째로 복사해서 verifyTakeover: async function() { ... }, 바로 아래에 붙여넣으세요.
     enterAsObserver: function() {
         const newRoom = state.pendingRoom;
         if (!newRoom) return;
