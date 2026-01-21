@@ -1463,10 +1463,18 @@ loadDashboardStats: function() {
 
 
 
-    showAlert: function(msg) {
+showAlert: function(msg) {
         document.getElementById('customAlertText').innerText = msg;
         document.getElementById('customAlertModal').style.display = 'flex';
     },
+
+    closeAlert: function() {
+        document.getElementById('customAlertModal').style.display = 'none';
+    },
+
+
+
+
     
     requestAdminAuth: function(type) {
         if(type === 'pw') state.adminCallback = () => ui.openPwModal();
@@ -3548,9 +3556,8 @@ window.onload = function() {
     }
 };
 
-// [수정] 전역 클릭 이벤트 (설정창 드래그 시 닫힘 버그 해결)
 window.onclick = function(event) {
-    // 1. 메뉴 드롭다운 외 클릭 시 닫기 로직
+    // 1. 메뉴 드롭다운 외 클릭 시 닫기
     if (!event.target.matches('.dropdown-trigger') && !event.target.closest('.dropdown-trigger')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
@@ -3560,7 +3567,15 @@ window.onclick = function(event) {
         }
     }
 
-    // 2. 중요 설정창(Course Setup)은 드래그 실수로 닫히지 않도록 
-    // "배경 클릭 시 자동 닫기" 기능을 제거했습니다.
-    // 이제 오직 [취소] 버튼이나 [설정 저장] 버튼을 눌러야만 닫힙니다.
+    // 2. [추가] 알림창 배경 클릭 시 닫기
+    const alertModal = document.getElementById('customAlertModal');
+    if (event.target === alertModal) {
+        ui.closeAlert();
+    }
+    
+    // 3. [추가] Q&A 상세창 배경 클릭 시 닫기
+    const qaModal = document.getElementById('qaModal');
+    if (event.target === qaModal) {
+        ui.closeQaModal();
+    }
 };
