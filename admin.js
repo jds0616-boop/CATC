@@ -2070,7 +2070,7 @@ showShuttleListModal: function(waveId, waveName, locName, members) {
                 renderAdminList(todayData, {});
             }
         });
-   
+      },
 
 function renderAdminList(todayData, yesterdayData) {
             tbody.innerHTML = ""; 
