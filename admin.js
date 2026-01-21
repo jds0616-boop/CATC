@@ -271,13 +271,13 @@ enterAsObserver: function() {
         const newRoom = state.pendingRoom;
         if (!newRoom) return;
 
-        // [수정] 새로고침해도 기억하도록 브라우저에 저장
+        // [수정] 새로고침해도 기억하도록 브라우저 메모리에 저장
         state.isObserver = true; 
         sessionStorage.setItem('kac_is_observer', 'true');
         
         document.getElementById('takeoverModal').style.display = 'none';
         
-        // 주인 기록(ownerSessionId)을 바꾸지 않고 바로 입장
+        // 주인 기록(ownerSessionId)을 바꾸지 않고 바로 입장 로직 실행
         this.forceEnterRoom(newRoom);
         ui.showAlert("👁️ 옵저버 모드로 입장했습니다. (읽기 전용)");
     },
@@ -310,7 +310,7 @@ forceEnterRoom: async function(room) {
         if(dbRef.qa) dbRef.qa.off();
         if(dbRef.connections) dbRef.connections.off();
 
-        // [추가] 새로고침 시 옵저버 상태 복구
+        // [핵심 추가] 새로고침 시 브라우저 메모리에서 옵저버 여부 복구
         if (sessionStorage.getItem('kac_is_observer') === 'true') {
             state.isObserver = true;
         }
@@ -329,14 +329,13 @@ forceEnterRoom: async function(room) {
             }
         }
 
-        // 2. 기본 세팅
+        // 2. 기본 연결 설정
         state.room = room; 
         localStorage.setItem('kac_last_room', room); 
         const roomSelect = document.getElementById('roomSelect');
         if(roomSelect) roomSelect.value = room;
         document.querySelector('.mode-tabs').style.display = 'flex';
 
-        // 3. 데이터 연결
         const rPath = `courses/${room}`;
         dbRef.settings = firebase.database().ref(`${rPath}/settings`);
         dbRef.qa = firebase.database().ref(`${rPath}/questions`);
