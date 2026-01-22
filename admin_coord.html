@@ -158,10 +158,61 @@
     .shuttle-item span { font-size: 10px; color: #64748b; display: block; margin-bottom: 4px; font-weight: 700; }
     .shuttle-item b { font-size: 16px; color: var(--navy-dark); font-weight: 900; }
 
-    /* 테이블 공통 */
-    .navy-table { width: 100%; border-collapse: collapse; }
-    .navy-table th { background: #f8fafc; padding: 12px 5px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-align: center; }
-    .navy-table td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 12px; font-weight: 600; color: #1e293b; vertical-align: middle; }
+/* 테이블 레이아웃 최적화 */
+.navy-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.navy-table th { 
+    background: #f8fafc; 
+    padding: 12px 8px; 
+    border-bottom: 2px solid #e2e8f0; 
+    color: #475569; 
+    font-size: 12px; 
+    font-weight: 800;
+}
+.navy-table td { 
+    padding: 14px 8px; 
+    border-bottom: 1px solid #f1f5f9; 
+    font-size: 12px; 
+    color: #1e293b; 
+    vertical-align: middle; 
+}
+/* 마우스 올리면 줄 색상 변경 */
+.navy-table tr:hover td { background-color: #f8fafc; }
+
+
+
+
+/* 상태 배지 디자인 정돈 */
+.badge-status {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-block;
+    white-space: nowrap;
+}
+.badge-pending { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+.badge-approved { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+/* 취소 버튼 디자인 */
+.btn-cancel-mini {
+    background: #fff;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: 0.2s;
+}
+.btn-cancel-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
+
+
+
+
+
+
+
 
     /* 서명 이미지(도장) 스타일 */
     .stamp-img { height: 35px; width: auto; object-fit: contain; mix-blend-mode: multiply; filter: contrast(1.2); }
@@ -1585,7 +1636,7 @@ function renderPickupTable() {
             return;
         }
 
-        // [정렬 로직] 날짜와 시간을 합쳐서 오름차순(가까운 날짜순)으로 정렬
+        // [정렬] 가까운 날짜/시간 순서로 정렬
         items.sort((a, b) => {
             const timeA = (a.date || "") + (a.time || "");
             const timeB = (b.date || "") + (b.time || "");
@@ -1593,39 +1644,39 @@ function renderPickupTable() {
         });
 
         tbody.innerHTML = items.map(r => {
-            // [개선] 과정명 표시 로직 (undefined 방지 및 깔끔한 출력)
+            // 과정명 처리 (가장 긴 텍스트이므로 왼쪽 정렬)
             const roomInfo = globalAllData[r.courseRID];
-            let roomName = "-";
-            if (roomInfo && roomInfo.settings && roomInfo.settings.courseName) {
-                roomName = roomInfo.settings.courseName;
-            } else if (r.courseRID) {
-                roomName = "Room " + r.courseRID;
-            }
+            let roomName = roomInfo?.settings?.courseName || (r.courseRID ? `Room ${r.courseRID}` : "미지정 과정");
 
-            const dirColor = r.dir && r.dir.includes('항기원→') ? '#3b82f6' : '#ea580c';
-            const direction = r.dir && r.dir.includes('항기원→') ? '퇴교' : '입교';
-            const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "미지정");
+            // 방향 배지 스타일
+            const isOut = r.dir && r.dir.includes('항기원→');
+            const dirLabel = isOut ? '퇴교' : '입교';
+            const dirStyle = isOut ? 'color:#3b82f6; background:#eff6ff; border:1px solid #dbeafe;' : 'color:#ea580c; background:#fff7ed; border:1px solid #ffedd5;';
+            const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "-");
             
-            // 승인 상태 배지 및 취소 버튼
-            let statusBadge = "";
-            let cancelBtn = "";
-
-            if (r.status === 'approved') {
-                statusBadge = `<div style="background:#dcfce7; color:#16a34a; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800; display:inline-block;">승인완료</div>`;
-            } else {
-                statusBadge = `<div style="background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800; display:inline-block; margin-bottom:4px;">승인대기</div>`;
-                cancelBtn = `<br><button onclick="deleteTrans('${r.id}')" style="background:#fff; color:#ef4444; border:1px solid #fecaca; padding:2px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:800;">취소</button>`;
-            }
+            // 상태 및 취소 버튼
+            const isPending = r.status !== 'approved';
+            const statusHtml = isPending 
+                ? `<span class="badge-status badge-pending">승인대기</span><button class="btn-cancel-mini" onclick="deleteTrans('${r.id}')">취소</button>`
+                : `<span class="badge-status badge-approved">승인완료</span>`;
 
             return `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:15px 5px; font-size:11px; color:var(--blue-deep); font-weight:800; text-align:center; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${roomName}</td>
-                    <td style="font-weight:800; text-align:center;">${r.prof || '-'}</td>
-                    <td style="font-size:11px; color:#64748b; text-align:center;">${r.phone || '-'}</td>
-                    <td style="font-weight:700; color:#1e293b; text-align:center;">${pickupPlace}</td>
-                    <td style="font-weight:800; color:var(--navy-dark); text-align:center; font-family:monospace;">${r.date}<br><span style="color:#6366f1;">${r.time}</span></td>
-                    <td style="font-size:11px; color:${dirColor}; text-align:center; font-weight:800;">${direction}</td>
-                    <td style="text-align:center; padding:10px 5px;">${statusBadge}${cancelBtn}</td>
+                <tr>
+                    <td style="text-align:left; font-weight:700; color:var(--blue-deep); padding-left:15px;">
+                        <div style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${roomName}">${roomName}</div>
+                    </td>
+                    <td style="text-align:center; font-weight:800;">${r.prof || '-'}</td>
+                    <td style="text-align:center; color:#64748b; font-size:11px;">${r.phone || '-'}</td>
+                    <td style="text-align:center; font-weight:700;">${pickupPlace}</td>
+                    <td style="text-align:center; font-weight:800; letter-spacing:-0.5px;">
+                        <span style="color:#64748b; font-weight:400;">${r.date}</span> ${r.time}
+                    </td>
+                    <td style="text-align:center;">
+                        <span style="padding:2px 6px; border-radius:4px; font-size:10px; font-weight:800; ${dirStyle}">${dirLabel}</span>
+                    </td>
+                    <td style="text-align:center; min-width:100px;">
+                        ${statusHtml}
+                    </td>
                 </tr>`;
         }).join('');
     });
