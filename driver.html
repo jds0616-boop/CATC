@@ -201,6 +201,27 @@
 
 
 
+/* 주간 일정 네비게이션 스타일 */
+.week-nav { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 10px; }
+.nav-arrow { font-size: 20px; color: var(--kac-blue); cursor: pointer; padding: 5px 15px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+/* 일정 상세 팝업 스타일 */
+.detail-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+.detail-box { background: white; width: 100%; max-width: 400px; border-radius: 24px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+.detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+.detail-label { color: #64748b; font-weight: 700; }
+.detail-val { color: #1e293b; font-weight: 800; }
+
+/* 하단 일정 리스트 스타일 */
+.weekly-list-title { font-size: 14px; font-weight: 900; color: var(--kac-navy); margin: 25px 0 10px 5px; display: flex; align-items: center; gap: 8px; }
+.list-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.list-info { display: flex; flex-direction: column; gap: 4px; }
+.list-btn-group { display: flex; gap: 8px; }
+.btn-call-small { width: 40px; height: 40px; border-radius: 10px; background: #ecfdf5; color: #10b981; border: none; font-size: 18px; cursor: pointer; }
+.btn-del-small { width: 40px; height: 40px; border-radius: 10px; background: #fef2f2; color: #ef4444; border: none; font-size: 18px; cursor: pointer; }
+
+
+
   </style>
 </head>
 <body>
@@ -250,17 +271,31 @@
         </div>
       </div>
 
-      <!-- 탭 2: 일정표 -->
-      <div id="view-2" style="display: none; flex-direction: column; gap: 15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b id="week-label">이번 주 일정</b>
-          <div style="font-size:10px; color:#64748b;">*퇴교는 설정 시 2시간 자동 표기</div>
+<!-- 탭 2: 일정표 (주간 이동 및 리스트 통합 버전) -->
+      <div id="view-2" style="display: none; flex-direction: column; gap: 10px;">
+        
+        <!-- 주간 이동 네비게이션 버튼 -->
+        <div class="week-nav" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 10px; background: white; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <i class="fa-solid fa-chevron-left" onclick="changeWeek(-1)" style="cursor:pointer; padding:10px; color:var(--kac-blue); font-size: 18px;"></i>
+          <b id="week-label" style="font-size:16px; color:var(--kac-navy); min-width: 150px; text-align: center;">조회 중...</b>
+          <i class="fa-solid fa-chevron-right" onclick="changeWeek(1)" style="cursor:pointer; padding:10px; color:var(--kac-blue); font-size: 18px;"></i>
         </div>
+
+        <div style="text-align:right; font-size:10px; color:#64748b; margin-bottom:5px;">*스케줄을 누르면 상세 정보가 나타납니다.</div>
+
         <div class="schedule-wrapper">
           <table class="schedule-table">
             <thead><tr id="schedule-header"></tr></thead>
             <tbody id="schedule-body"></tbody>
           </table>
+        </div>
+
+        <!-- 하단 주간 통합 리스트 영역 -->
+        <div style="font-size: 14px; font-weight: 900; color: var(--kac-navy); margin: 25px 0 10px 5px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-list-check" style="color:var(--kac-blue);"></i> 해당 주간 수송 전체 리스트
+        </div>
+        <div id="weekly-summary-list" style="padding-bottom: 50px; display: flex; flex-direction: column; gap: 10px;">
+            <!-- 자바스크립트에서 리스트가 자동으로 생성됩니다 -->
         </div>
       </div>
     </main>
@@ -283,6 +318,11 @@
     let allCourses = {};
     let teacherRequests = {};
     let currentTab = 1;
+    let weekOffset = 0; // 0은 이번주, 1은 다음주, -1은 지난주
+
+
+
+
 
 // [수정] 초기화 함수 - 강사 수송 실시간 승인 관리 로직 포함
 function init() {
@@ -500,65 +540,184 @@ function renderCourseList() {
       setShuttleTime(rid, time);
     }
 
-    // 5. 일정표 렌더링 (2시간 블록 로직 포함)
-    function renderSchedule() {
-      const today = new Date();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [최종 수정] 주간 이동 및 팝업/리스트 기능이 통합된 스케줄러
+function renderSchedule() {
+  const today = new Date();
+  // weekOffset을 반영하여 월요일 계산
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + (weekOffset * 7));
+  
+  const monday = new Date(targetDate);
+  monday.setDate(targetDate.getDate() - (targetDate.getDay() === 0 ? 6 : targetDate.getDay() - 1));
+  
+  // 헤더 및 날짜 라벨 업데이트
+  const weekLabel = document.getElementById('week-label');
+  const header = document.getElementById('schedule-header');
+  header.innerHTML = '<th class="time-col">시간</th>';
+  const dayNames = ['월','화','수','목','금'];
+  const weekDates = [];
+  
+  for(let i=0; i<5; i++) {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    weekDates.push(dateStr);
+    header.innerHTML += `<th>${d.getMonth()+1}/${d.getDate()}<br>${dayNames[i]}</th>`;
+  }
+  weekLabel.innerText = `${weekDates[0].replace(/-/g,'.')} ~ ${weekDates[4].split('-')[2]}`;
+
+  // 스케줄 본문 렌더링
+  const body = document.getElementById('schedule-body');
+  const summaryList = document.getElementById('weekly-summary-list');
+  body.innerHTML = "";
+  summaryList.innerHTML = "";
+  let listItems = []; // 하단 리스트용 임시 배열
+
+  for(let h=8; h<=18; h++) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td class="time-col">${h}:00</td>`;
+    
+    for(let d=0; d<5; d++) {
+      const dateKey = weekDates[d];
+      const td = document.createElement('td');
       
-      // 헤더 생성 (월~금)
-      const header = document.getElementById('schedule-header');
-      header.innerHTML = '<th class="time-col">시간</th>';
-      const dayNames = ['월','화','수','목','금'];
-      const weekDates = [];
-      for(let i=0; i<5; i++) {
-        const d = new Date(monday); d.setDate(monday.getDate() + i);
-        const dateStr = d.toISOString().split('T')[0];
-        weekDates.push(dateStr);
-        header.innerHTML += `<th>${d.getMonth()+1}/${d.getDate()}<br>${dayNames[i]}</th>`;
+      // 1. 월요일 입교 수송 (고정)
+      if(d === 0 && (h === 9 || h === 10)) {
+        td.className = 'block-entrance'; td.innerText = "입교수송";
+      }
+      
+      // 2. 강사 수송 요청 (승인된 건만 표시)
+      const tReq = Object.values(teacherRequests).find(r => r.date === dateKey && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
+      if(tReq) {
+        td.className = 'block-teacher';
+        td.innerText = `${tReq.prof}\n${tReq.dir.split('→')[0]}`;
+        td.onclick = () => showSchedulePop('강사수송', tReq, dateKey);
+        listItems.push({ ...tReq, type: '강사수송', date: dateKey });
       }
 
-      // 바디 생성 (08:00 ~ 18:00)
-      const body = document.getElementById('schedule-body');
-      body.innerHTML = "";
-      for(let h=8; h<=18; h++) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td class="time-col">${h}:00</td>`;
-        
-        for(let d=0; d<5; d++) {
-          const dateKey = weekDates[d];
-          const td = document.createElement('td');
-          
-          // (1) 월요일 입교 수송 (고정)
-          if(d === 0 && (h === 9 || h === 10)) {
-            td.className = 'block-entrance'; td.innerText = "입교수송";
-          }
-          // (2) 점심시간
-          else if(h === 12) {
-            td.className = 'block-lunch'; td.innerText = "점심";
-          }
-          // (3) 강사 수송 요청 (교육운영부 신청 내역)
-          const tReq = Object.values(teacherRequests).find(r => r.date === dateKey && parseInt(r.time.split(':')[0]) === h);
-          if(tReq) {
-            td.className = 'block-teacher'; td.innerText = tReq.prof + "\n" + tReq.dir.split('→')[0];
-          }
-          // (4) 퇴교 수송 (기사님 직접 설정 내역 - 2시간 블록)
-          Object.values(allCourses).forEach(room => {
-            const dep = room.shuttle?.departure;
-            if(dep && dep.date === dateKey) {
-                const depHour = parseInt(dep.time.split(':')[0]);
-                if(h === depHour || h === depHour + 1) { // 설정 시간부터 2시간
-                    td.className = 'block-departure';
-                    td.innerText = room.settings?.courseName?.substring(0,6) + "..\n퇴교수송";
-                }
+      // 3. 퇴교 수송 (기사님 직접 설정 내역)
+      Object.keys(allCourses).forEach(rid => {
+        const room = allCourses[rid];
+        const dep = room.shuttle?.departure;
+        if(dep && dep.date === dateKey) {
+            const depHour = parseInt(dep.time.split(':')[0]);
+            if(h === depHour || h === depHour + 1) { 
+                td.className = 'block-departure';
+                td.innerText = (room.settings?.courseName?.substring(0,6) || rid) + "\n퇴교수송";
+                td.onclick = () => showSchedulePop('교육생퇴교', { prof: room.settings?.courseName, phone: room.settings?.coordinatorName, dir: '훈련원→전체', time: dep.time }, dateKey, rid);
+                if(h === depHour) listItems.push({ id: rid, prof: room.settings?.courseName, time: dep.time, dir: '퇴교수송', type: '교육생퇴교', date: dateKey });
             }
-          });
-
-          row.appendChild(td);
         }
-        body.appendChild(row);
-      }
+      });
+
+      if(h === 12) { td.className = 'block-lunch'; td.innerText = "점심"; }
+      row.appendChild(td);
     }
+    body.appendChild(row);
+  }
+  renderWeeklyList(listItems);
+}
+
+// [추가] 주 단위 이동 함수
+function changeWeek(offset) {
+    weekOffset += offset;
+    renderSchedule();
+}
+
+// [추가] 상세 내역 팝업 표시
+function showSchedulePop(type, data, date, rid = null) {
+    const modal = document.getElementById('scheduleDetailModal');
+    document.getElementById('pop-type').innerText = type;
+    document.getElementById('pop-datetime').innerText = `${date} ${data.time}`;
+    document.getElementById('pop-target').innerText = data.prof;
+    document.getElementById('pop-phone').innerText = data.phone || "미등록";
+    
+    const callBtn = document.getElementById('pop-call-btn');
+    if(data.phone) {
+        callBtn.style.display = "block";
+        callBtn.onclick = () => makeCall(data.phone);
+    } else {
+        callBtn.style.display = "none";
+    }
+    modal.style.display = 'flex';
+}
+
+// [추가] 실제 전화 걸기 로직
+function makeCall(phone) {
+    if(confirm(`${phone} 번호로 전화를 걸까요?`)) {
+        location.href = "tel:" + phone.replace(/-/g, '');
+    }
+}
+
+// [추가] 하단 통합 리스트 렌더링
+function renderWeeklyList(items) {
+    const listDiv = document.getElementById('weekly-summary-list');
+    if(items.length === 0) {
+        listDiv.innerHTML = '<div class="empty-msg" style="text-align:center; padding:30px; color:#94a3b8;">해당 주간 일정이 없습니다.</div>';
+        return;
+    }
+    
+    // 날짜 및 시간순 정렬
+    items.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+    
+    listDiv.innerHTML = items.map(item => `
+        <div class="list-card">
+            <div class="list-info">
+                <div style="font-size:12px; color:var(--kac-blue); font-weight:800;">${item.date.substring(5)} ${item.time}</div>
+                <div style="font-weight:900; color:var(--kac-navy);">${item.prof} (${item.type})</div>
+                <div style="font-size:11px; color:#64748b;">${item.dir}</div>
+            </div>
+            <div class="list-btn-group">
+                <button class="btn-call-small" onclick="makeCall('${item.phone}')"><i class="fa-solid fa-phone"></i></button>
+                <button class="btn-del-small" onclick="cancelTask('${item.id}', '${item.type}')"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// [추가] 일정 취소 로직
+function cancelTask(id, type) {
+    if(!confirm("해당 일정을 취소(삭제)하시겠습니까?")) return;
+    
+    if(type === '강사수송') {
+        firebase.database().ref(`system/transport_requests/${id}`).remove();
+    } else {
+        // 교육생 퇴교는 시간 설정만 초기화
+        firebase.database().ref(`courses/${id}/shuttle/departure`).remove();
+    }
+    alert("취소되었습니다.");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // 유틸리티
     function switchTab(n) {
@@ -612,5 +771,32 @@ function renderCourseList() {
 
     init();
   </script>
+
+
+
+<!-- 일정 상세 팝업 (전화걸기 포함) -->
+  <div id="scheduleDetailModal" class="detail-modal" onclick="if(event.target==this) this.style.display='none'">
+      <div class="detail-box">
+          <h3 id="pop-title" style="margin-top:0; border-bottom:2px solid var(--kac-blue); padding-bottom:10px; color:var(--kac-navy);">수송 상세 내역</h3>
+          <div class="detail-row"><span class="detail-label">일시</span><span class="detail-val" id="pop-datetime">-</span></div>
+          <div class="detail-row"><span class="detail-label">구분</span><span class="detail-val" id="pop-type">-</span></div>
+          <div class="detail-row"><span class="detail-label">대상</span><span class="detail-val" id="pop-target">-</span></div>
+          <div class="detail-row"><span class="detail-label">연락처</span><span class="detail-val" id="pop-phone">-</span></div>
+          <div style="margin-top:25px; display:flex; gap:10px;">
+              <button class="navy-btn" style="flex:1; background:#64748b;" onclick="document.getElementById('scheduleDetailModal').style.display='none'">닫기</button>
+              <button id="pop-call-btn" class="navy-btn" style="flex:2; background:#10b981;"><i class="fa-solid fa-phone"></i> 전화 걸기</button>
+          </div>
+      </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
