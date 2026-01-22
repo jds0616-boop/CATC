@@ -803,36 +803,34 @@ const coordMgr = {
 
 
 
-// [보정] 시스템 초기화 및 실시간 데이터 입구 연결
+// [보정] 시스템 초기화 및 실시간 데이터 연결 완벽 수리
     function init() {
-        // 1. 하단 기록장 날짜를 오늘로 즉시 초기화
+        // 1. 하단 날짜 초기화
         const todayStr = getTodayString();
         selectedDate = todayStr;
-        const historyInput = document.getElementById('historyDate');
-        if(historyInput) {
-            historyInput.value = todayStr;
-        }
+        if(document.getElementById('historyDate')) document.getElementById('historyDate').value = todayStr;
 
-        // 2. 전체 데이터 실시간 감시 시작 (가장 중요)
+        // 2. 전체 데이터 실시간 감시 (이전 자료 방식 복구 + 신규 대응)
         firebase.database().ref('courses').on('value', snap => {
-            // 서버에서 데이터를 새로 가져올 때마다 globalAllData를 업데이트합니다.
             globalAllData = snap.val() || {};
             
-            // 데이터가 도착한 직후에 모든 화면을 갱신해야 숫자가 뜹니다.
+            // 데이터가 올 때마다 모든 화면을 즉시 갱신 (핵심!)
             updateGlobalStatus(); 
             renderCourseSelectors(); 
             renderTotalHistory(); 
             
-            // 현재 열려있는 화면이 있다면 그 안의 데이터도 실시간 갱신
+            // 현재 열려있는 특수 뷰가 있다면 데이터 업데이트
             if(document.getElementById('pickupStatusView').style.display === "flex") renderPickupTable();
             if(document.getElementById('studentShuttleView').style.display === "flex") renderShuttleTotalTable();
+            if(document.getElementById('totalStudentListView').style.display === "flex") renderTotalStudentViewRealtime();
+            
             if(currentRID) updateIndividualView();
+            if(document.getElementById('outingManagerView').style.display === 'flex') renderOutingManager();
         });
 
-        // 3. 센터 전체 공지사항 감시
+        // 3. 전체 공지사항 감시
         firebase.database().ref('system/globalNotice').on('value', s => { 
-            const el = document.getElementById('globalNotice'); 
-            if(el) { el.value = s.val() || ""; autoGrow(el); }
+            const el = document.getElementById('globalNotice'); if(el) { el.value = s.val() || ""; autoGrow(el); }
         });
         
         handleRoomSelection();
@@ -1121,36 +1119,46 @@ function updateTransDirButtons() {
 
 
 
-    // [7. 화면 내비게이션 및 유틸]
-// [수정] 뒤로가기 버튼 로직 (6개 화면 대응)
+// [보정] 뒤로가기 버튼 로직 (6개 화면 완벽 제어)
     function handleBackNav() { 
-        const views = ['pickupStatusView', 'studentShuttleView', 'shuttleDetailView', 'totalStudentListView', 'individualStatusView'];
-        let isOpenAny = false;
+        const shuttleDetail = document.getElementById('shuttleDetailView');
+        const shuttleSummary = document.getElementById('studentShuttleView');
 
-        // 신규 화면들 중 하나라도 열려있다면 전체현황으로 돌아감
-        views.forEach(v => {
-            if(document.getElementById(v).style.display === "flex") isOpenAny = true;
+        // 1. 퇴교 상세 명단을 보고 있었다면 요약 화면으로
+        if(shuttleDetail && shuttleDetail.style.display === "flex") {
+            shuttleDetail.style.display = "none";
+            shuttleSummary.style.display = "flex";
+            return;
+        }
+
+        // 2. 다른 특수 화면(강사픽업 등)이 열려있다면 메인 현황판으로
+        const specialViews = ['pickupStatusView', 'studentShuttleView', 'totalStudentListView'];
+        let isSpecialOpen = false;
+        specialViews.forEach(id => {
+            const el = document.getElementById(id);
+            if(el && el.style.display === "flex") isSpecialOpen = true;
         });
 
-        if(isOpenAny) {
+        if(isSpecialOpen || currentRID) {
             currentRID = ""; 
             handleRoomSelection(); 
         } else { 
-            location.href = 'potal.html'; // 완전 메인이라면 포털로
+            location.href = 'potal.html'; 
         } 
     }
 
-    // [수정] 화면 선택 및 표시 로직 (모든 뷰 통합 제어)
+    // [보정] 모든 뷰(화면) 가시성 통합 제어
     function handleRoomSelection() { 
         const isInd = (currentRID !== ""); 
-        // 1. 모든 신규 뷰 숨기기
+        
+        // 일단 모든 신규/기존 뷰를 다 숨김
         const allViews = ['totalStatusView', 'individualStatusView', 'pickupStatusView', 'studentShuttleView', 'shuttleDetailView', 'totalStudentListView'];
-        allViews.forEach(v => {
-            const el = document.getElementById(v);
+        allViews.forEach(id => {
+            const el = document.getElementById(id);
             if(el) el.style.display = "none";
         });
         
-        // 2. 사이드바 메뉴 가시성 조절
+        // 사이드바 메뉴 가시성 조절
         document.getElementById('side-global-menu').style.display = isInd ? "none" : "flex"; 
         document.getElementById('side-individual-menu').style.display = isInd ? "flex" : "none"; 
 
@@ -1159,6 +1167,7 @@ function updateTransDirButtons() {
             updateIndividualView(); 
             updateQRPreview(); 
         } else {
+            // 상세 과정이 아니면 일단 메인 현황판을 보여줌 (함수에서 다시 제어함)
             document.getElementById('totalStatusView').style.display = "flex";
         }
     }
@@ -1344,16 +1353,17 @@ function openPrintModal() {
 
   function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; document.getElementById('progressFill').style.width = progress + "%"; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } }, 150); }
     function executePrintProcess(mode) { const targetBody = document.getElementById('printBody'); const targetRID = (mode === 'course') ? currentRID : ""; document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; targetBody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { if (mode === 'course' && rid !== targetRID) return; const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); }); list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { const signImg = a.confirmedBySign ? `<img src="${a.confirmedBySign}" style="height:35px; mix-blend-mode:multiply;">` : ""; targetBody.innerHTML += `<tr><td>${idx+1}</td><td>${a.cName}</td><td>${a.type==='outing'?'외출':'외박'}</td><td>${a.name}</td><td>${a.phone}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${signImg}</td></tr>`; }); window.print(); }
-// [보정] 우측 사이드 햄버거 메뉴 열고 닫기
+
+// [보정] 우측 사이드 햄버거 메뉴 작동 수리
     function toggleMenu(open) { 
         const sideMenu = document.getElementById('sideMenu');
         const menuOverlay = document.getElementById('menuOverlay');
         
         if (open) {
-            sideMenu.classList.add('open');
+            sideMenu.style.right = "0px"; // 메뉴를 안으로 밀어 넣음
             menuOverlay.style.display = "block";
         } else {
-            sideMenu.classList.remove('open');
+            sideMenu.style.right = "-280px"; // 메뉴를 밖으로 숨김
             menuOverlay.style.display = "none";
         }
     }
