@@ -482,32 +482,31 @@
 
 
 
-/* 하단 중앙 플로팅 홈 버튼 (짙은 남색 버전) */
+/* 하단 중앙 플로팅 홈 버튼 (팝업 위로 최상단 배치) */
 #floatingHomeBtn {
     position: fixed;
-    bottom: 75px; /* 하단바(60px)에서 살짝 위 */
+    bottom: 75px; 
     left: 50%;
-    transform: translateX(-50%); /* 정확히 가로 중앙 정렬 */
-    background: #0f172a; /* 짙은 남색 (Navy-bg와 동일) */
+    transform: translateX(-50%); 
+    background: #0f172a; 
     color: white;
     padding: 10px 25px;
     border-radius: 50px;
-    display: none; /* JS에서 노출 제어 */
+    display: none; 
     align-items: center;
     justify-content: center;
     gap: 10px;
     font-size: 14px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4); /* 조금 더 입체적인 그림자 */
-    z-index: 2000;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
+    /* 팝업(8000)보다 높은 숫자를 주어 무조건 위에 뜨게 함 */
+    z-index: 10000 !important; 
     transition: all 0.2s ease;
-    border: 1.5px solid rgba(255,255,255,0.1); /* 테두리에 아주 얇은 빛 추가 */
-    white-space: nowrap; /* 글자 줄바꿈 방지 */
+    border: 1.5px solid rgba(255,255,255,0.1); 
+    white-space: nowrap;
 }
-/* 클릭 시 살짝 작아지는 효과 */
 #floatingHomeBtn:active { transform: translateX(-50%) scale(0.95); }
-/* 아이콘 색상 포인트 (하늘색) */
 #floatingHomeBtn i { font-size: 16px; color: #3b82f6; }
 
 
@@ -1533,26 +1532,33 @@ function updateTransDirButtons() {
 
 
     // [7. 화면 내비게이션 및 유틸]
-// [수정] 뒤로가기 버튼 로직 (신규 화면 대응)
-    function handleBackNav() { 
-        const pickupView = document.getElementById('pickupStatusView');
-        const shuttleView = document.getElementById('studentShuttleView');
+// [최종] 모든 팝업과 상세 화면을 닫고 전체 현황(홈)으로 복귀
+function handleBackNav() { 
+    // 1. 열려있을 수 있는 모든 모달(팝업) ID 리스트
+    const allModals = [
+        'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
+        'setupModal', 'transportModal', 'shuttleDetailModal', 
+        'actionDetailModal', 'printSelectModal'
+    ];
+    
+    // 2. 모든 모달 숨기기
+    allModals.forEach(id => {
+        const modal = document.getElementById(id);
+        if(modal) modal.style.display = 'none';
+    });
 
-        // 만약 신규 화면(강사픽업 or 퇴교현황)이 열려있다면 전체현황으로 돌아감
-        if(pickupView.style.display === "flex" || shuttleView.style.display === "flex") {
-            currentRID = ""; 
-            handleRoomSelection(); 
-        } 
-        // 만약 개별 과정 상세페이지라면 전체현황으로 돌아감
-        else if(currentRID) { 
-            currentRID = ""; 
-            handleRoomSelection(); 
-        } 
-        // 전체현황판이라면 포털로 나감
-        else { 
-            location.href = 'potal.html'; 
-        } 
-    }
+    // 3. 별도 뷰(관리대장 등) 숨기기
+    const outingManager = document.getElementById('outingManagerView');
+    if(outingManager) outingManager.style.display = 'none';
+
+    // 4. 메인 상태 초기화 (전체현황으로)
+    currentRID = ""; 
+    handleRoomSelection(); 
+}
+
+
+
+
 
 // [수정] 화면 선택 및 플로팅 버튼 노출 제어
 function handleRoomSelection() { 
@@ -1715,7 +1721,13 @@ function renderTotalHistory() {
 
 
 
-    function openOutingManager() { document.getElementById('outingManagerView').style.display = 'flex'; renderOutingManager(); }
+    // [수정] 통합 관리대장 열기 (홈 버튼 표시 추가)
+function openOutingManager() { 
+    document.getElementById('outingManagerView').style.display = 'flex'; 
+    const homeBtn = document.getElementById('floatingHomeBtn');
+    if(homeBtn) homeBtn.style.display = "flex"; // 홈 버튼 보이게 함
+    renderOutingManager(); 
+}
     function closeOutingManager() { document.getElementById('outingManagerView').style.display = 'none'; }
     function renderOutingManager() { const tbody = document.getElementById('managerTableBody'); const label = document.getElementById('managerDateLabel'); label.innerText = `${selectedDate} 통합 관리 현황`; tbody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.keys(actions).forEach(token => list.push({ ...actions[token], rid, token, cName: globalAllData[rid].settings?.courseName || rid })); }); if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">내역 없음</td></tr>'; return; } list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => { const isSigned = a.confirmed === true; const btnContent = isSigned ? `<img src="${a.confirmedBySign}" class="stamp-img" style="height:32px;">` : "서명하기"; const btnStyle = isSigned ? "background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" : "background: var(--blue-main); color: #fff; border: none;"; tbody.innerHTML += `<tr><td style="width:30%; font-size:10px; text-align:center;">${a.cName}</td><td style="width:18%; font-weight:800; text-align:center;">${a.name}</td><td style="width:12%; color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td><td style="width:20%; font-size:10px; text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td style="width:20%; text-align:center;"><button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px 0; font-size:10px; cursor:pointer; width:100%; height:38px; display:flex; align-items:center; justify-content:center; font-weight:800;">${btnContent}</button></td></tr>`; }); }
     function openSetupModal() { toggleMenu(false); document.getElementById('setupModal').style.display = "flex"; }
@@ -2100,6 +2112,46 @@ async function showShuttleApplicationDetails(rid) {
     document.getElementById('shuttleDetailContent').innerHTML = html;
     document.getElementById('shuttleDetailModal').style.display = 'flex';
 }
+
+
+
+
+// [신규] 어떤 팝업이든 열리면 홈 버튼을 강제로 보여주는 감시 로직
+function showHomeBtnOnPopup() {
+    const homeBtn = document.getElementById('floatingHomeBtn');
+    if(!homeBtn) return;
+
+    // 페이지 내의 모든 'setup-modal' 클래스를 가진 요소를 감시
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'style') {
+                const isAnyModalVisible = Array.from(document.querySelectorAll('.setup-modal, .modal-overlay, #outingManagerView'))
+                    .some(el => el.style.display === 'flex' || el.style.display === 'block');
+                
+                if (isAnyModalVisible || currentRID !== "") {
+                    homeBtn.style.display = 'flex';
+                } else {
+                    homeBtn.style.display = 'none';
+                }
+            }
+        });
+    });
+
+    // 감시 대상 설정
+    document.querySelectorAll('.setup-modal, .modal-overlay, #outingManagerView').forEach(modal => {
+        observer.observe(modal, { attributes: true });
+    });
+}
+
+// 기존 init 함수에 감시 로직 추가
+const originalInitSupport = init;
+init = function() {
+    originalInitSupport();
+    showHomeBtnOnPopup();
+};
+
+
+
 
 
 
