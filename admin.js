@@ -3538,37 +3538,60 @@ const printMgr = {
 // [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
 // [최종] 환경 설정 진입 로직: 비어있는 방은 즉시 오픈, 사용 중인 방은 비번 확인
-    openSetupModal: async function() {
-        if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+
+
+
+
+
+// [수정] 와이드 레이아웃 설정 모달 오픈 및 상태 로드
+openSetupModal: async function() {
+    if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+    
+    const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
+    const st = statusSnap.val() || {};
+
+    if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+        ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
+        dataMgr.switchRoomAttempt(state.room); 
+        return;
+    }
+
+    // 교수 리스트 로드
+    let profOptions = '<option value="">(선택 안함)</option>';
+    profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
+    document.getElementById('setup-prof-select').innerHTML = profOptions;
+
+    // 담당자 리스트 로드
+    firebase.database().ref('system/coordinators').once('value', snap => {
+        const coords = snap.val() || {};
+        let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
+        Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
+        document.getElementById('setup-coord-select').innerHTML = coordOptions;
         
-        // 1. 현재 방의 실시간 상태 확인
-        const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
-        const st = statusSnap.val() || {};
-
-        // 2. [핵심 조건문] 
-        // 방이 '사용 중(active)'인데 + 그 주인이 '내가 아닐(sessionId 다름)' 경우에만 차단
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
-            // 인증창 띄우기 위해 기존에 만든 비번창 소환 함수 호출
-            dataMgr.switchRoomAttempt(state.room); 
-            return;
-        }
-
-        // 3. 위 조건에 걸리지 않으면 (비어있거나 내가 주인이면) 아래 설정창 로직 실행
-        let profOptions = '<option value="">(선택 안함)</option>';
-        profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
-        document.getElementById('setup-prof-select').innerHTML = profOptions;
-
-        firebase.database().ref('system/coordinators').once('value', snap => {
-            const coords = snap.val() || {};
-            let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
-            Object.values(coords).forEach(c => {
-                coordOptions += `<option value="${c.name}">${c.name}</option>`;
-            });
-            document.getElementById('setup-coord-select').innerHTML = coordOptions;
-            this.loadCurrentSettings(); // 설정 데이터 불러오기
+        // 가이드 등록 상태 체크
+        firebase.database().ref(`system/sharedGuide`).once('value', gSnap => {
+            const el = document.getElementById('modalGuideStatus');
+            if(el) {
+                if(gSnap.exists()) {
+                    el.innerHTML = '<i class="fa-solid fa-circle-check"></i> 가이드 PDF가 등록되어 있습니다.';
+                    el.style.color = "#10b981";
+                } else {
+                    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 등록된 가이드 파일이 없습니다.';
+                    el.style.color = "#ef4444";
+                }
+            }
+            this.loadCurrentSettings(); // 나머지 정보 로드
         });
-    },
+    });
+},
+
+
+
+
+
+
+
+
 
     // 설정을 불러오는 내부 함수 분리
     loadCurrentSettings: function() {
