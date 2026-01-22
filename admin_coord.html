@@ -1209,12 +1209,11 @@ const coordMgr = {
 
 
 
-// [최종] 개별 과정 상세 뷰 및 통합 수송 박스 업데이트
+// [수정] 개별 과정 상세 뷰: 행 전체 클릭 범위 확대 및 UI 보정
 function updateIndividualView() {
     const room = globalAllData[currentRID]; 
     if (!room) return;
 
-    // 1. 상단 텍스트 정보 업데이트
     document.getElementById('ind-room-id').innerText = currentRID;
     document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
     document.getElementById('ind-period').innerText = room.settings?.period || "-";
@@ -1222,7 +1221,6 @@ function updateIndividualView() {
     document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
     document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
 
-    // 2. 학생장 정보
     let leaderTxt = "지정된 학생장 없음";
     if(room.students) {
         const leaders = Object.values(room.students).filter(s => s.isLeader === true);
@@ -1232,29 +1230,24 @@ function updateIndividualView() {
     }
     document.getElementById('ind-leader').innerText = leaderTxt;
 
-    // 3. 입교 인원 숫자
     const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
     const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
     document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
     
-    // 4. [중요] 통합 수송 박스 숫자 집계 및 주입
     const requests = room.shuttle?.requests || {};
     const items = Object.values(requests);
-    
     const osong = items.filter(i => i.type === 'osong').length;
     const term = items.filter(i => i.type === 'terminal').length;
     const air = items.filter(i => i.type === 'airport').length;
     const car = items.filter(i => i.type === 'car').length;
     const total = items.length;
 
-    // 그룹 박스 내부 요소들 업데이트
     document.getElementById('ind-shuttle-total').innerText = total;
     document.getElementById('ind-osong').innerText = osong;
     document.getElementById('ind-term').innerText = term;
     document.getElementById('ind-air').innerText = air;
     document.getElementById('ind-car').innerText = car;
 
-    // 5. 외출/외박 테이블 렌더링 (가운데 정렬 포함)
     const actionTbody = document.getElementById('indActionTableBody');
     const today = getTodayString();
     const actions = room.admin_actions?.[today] || {};
@@ -1266,17 +1259,18 @@ function updateIndividualView() {
         const btnText = isSigned ? "서명취소" : "서명";
         const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
         const dataStr = encodeURIComponent(JSON.stringify(a));
+        const rowClickAction = `onclick="showActionDetail('${dataStr}')" style="cursor:pointer;"`;
 
         return `<tr>
-            <td style="font-weight:800; cursor:pointer; text-align:center;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-            <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-            <td style="text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+            <td ${rowClickAction} style="font-weight:800; text-align:center;">${a.name}${returnBadge}</td>
+            <td ${rowClickAction} style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+            <td ${rowClickAction} style="text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
             <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">${btnText}</button></td>
         </tr>`;
     }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
     
     document.getElementById('courseNotice').value = room.coordNotice || ""; 
-} // function updateIndividualView 끝
+}
 
 
 
@@ -1568,19 +1562,20 @@ function renderCourseSelectors() {
 
 
 
-// [수정] 전체 신청자 명단 헤더 한 줄 정렬 및 데이터 렌더링
+// [수정] 전체 신청자 명단 헤더 일렬 정렬 및 행 전체 클릭 범위 확대
 function renderTotalHistory() {
     const tbody = document.getElementById('historyTableBody');
     const label = document.getElementById('historyDateLabel');
     if(!tbody || !label) return;
 
     const d = new Date(selectedDate);
-    const dateText = `${d.getMonth() + 1}/${d.getDate()}`; // 날짜를 조금 더 짧게 수정 (1/22 방식)
+    const dateText = `${d.getMonth() + 1}/${d.getDate()}`;
     
-    // 이 구역이 한 줄 정렬의 핵심입니다.
+    // 제목 영역: 아이콘 + 텍스트 + 실시간 배지 한 줄 정렬
     label.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; overflow:hidden;">
-            <span style="white-space:nowrap; font-weight:800; font-size:14px; flex-shrink:0; color:var(--navy-bg);">당일(${dateText}) 외출·외박 명단</span>
+        <div style="display:flex; align-items:center; gap:8px; width:100%; overflow:hidden;">
+            <i class="fa-solid fa-calendar-check" style="color:var(--blue-main); font-size:16px;"></i>
+            <span style="white-space:nowrap; font-weight:800; font-size:14px; color:var(--navy-bg);">당일(${dateText}) 외출·외박 명단</span>
             <div class="live-badge" style="white-space:nowrap; flex-shrink:0; padding:3px 10px; font-size:10px;">
                 <i class="fa-solid fa-sync fa-spin" style="color:#3b82f6;"></i> 실시간
             </div>
@@ -1611,17 +1606,19 @@ function renderTotalHistory() {
     list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
         const isSigned = a.confirmed === true;
         const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀</span>` : "";
-        const btnText = isSigned ? "취소" : "서명"; // 버튼 글자도 모바일 대응을 위해 짧게 수정
+        const btnText = isSigned ? "취소" : "서명";
         const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
         const dataStr = encodeURIComponent(JSON.stringify(a));
+        // 클릭 시 상세내역을 띄우는 공통 속성
+        const rowClickAction = `onclick="showActionDetail('${dataStr}')" style="cursor:pointer;"`;
 
         tbody.innerHTML += `
             <tr>
-                <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName.substring(0,6)}..</td>
-                <td style="font-weight:800; text-align:center; cursor:pointer;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-                <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-                <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                <td ${rowClickAction} style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName.substring(0,6)}..</td>
+                <td ${rowClickAction} style="font-weight:800; text-align:center;">${a.name}${returnBadge}</td>
+                <td ${rowClickAction} style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                <td ${rowClickAction} style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
                 <td>
                     <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
                             style="${btnStyle} border-radius:6px; width:100%; height:32px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">
