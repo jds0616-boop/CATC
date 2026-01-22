@@ -1277,8 +1277,30 @@ const coordMgr = {
 
 
 
-    // [2. 초기화 및 실시간 동기화]
+// [수정] 보안 체크 기능이 추가된 초기화 함수
     function init() {
+        // --- 보안 체크 시작 ---
+        const sessionKey = 'kac_session_coord'; // 교육운영부 전용 키
+        const savedSession = localStorage.getItem(sessionKey);
+        const FIVE_HOURS = 5 * 60 * 60 * 1000;
+
+        let isAccessDenied = true;
+
+        if (savedSession) {
+            const data = JSON.parse(savedSession);
+            if (Date.now() - data.time < FIVE_HOURS) {
+                isAccessDenied = false; // 5시간 이내이므로 허용
+            }
+        }
+
+        if (isAccessDenied) {
+            alert("보안 세션이 만료되었거나 권한이 없습니다.\n포털 페이지에서 다시 접속해주세요.");
+            location.href = 'potal.html';
+            return;
+        }
+        // --- 보안 체크 끝 ---
+
+        // 기존 데이터 로드 로직 유지
         firebase.database().ref('courses').on('value', snap => {
             globalAllData = snap.val() || {};
             updateGlobalStatus(); 
@@ -1287,14 +1309,15 @@ const coordMgr = {
             if(currentRID) updateIndividualView();
             if(document.getElementById('outingManagerView').style.display === 'flex') renderOutingManager();
         });
+        
         firebase.database().ref('system/globalNotice').on('value', s => { 
             const el = document.getElementById('globalNotice'); if(el) { el.value = s.val() || ""; autoGrow(el); }
         });
+        
         document.getElementById('historyDate').value = selectedDate;
         handleRoomSelection();
         coordMgr.init();
     }
-
 
 
 
@@ -1636,29 +1659,39 @@ function updateTransDirButtons() {
 
 
 
-    // [7. 화면 내비게이션 및 유틸]
-// [최종] 모든 팝업과 상세 화면을 닫고 전체 현황(홈)으로 복귀
+// [수정] 뒤로가기 시 팝업을 닫거나 포탈로 이동
 function handleBackNav() { 
-    // 1. 열려있을 수 있는 모든 모달(팝업) ID 리스트
+    // 열려있는 팝업이 있는지 확인
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
         'actionDetailModal', 'printSelectModal'
     ];
     
-    // 2. 모든 모달 숨기기
+    let isAnyModalOpen = false;
     allModals.forEach(id => {
         const modal = document.getElementById(id);
-        if(modal) modal.style.display = 'none';
+        if(modal && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            isAnyModalOpen = true;
+        }
     });
 
-    // 3. 별도 뷰(관리대장 등) 숨기기
-    const outingManager = document.getElementById('outingManagerView');
-    if(outingManager) outingManager.style.display = 'none';
+    if(isAnyModalOpen) return; // 팝업만 닫았으면 종료
 
-    // 4. 메인 상태 초기화 (전체현황으로)
-    currentRID = ""; 
-    handleRoomSelection(); 
+    const outingManager = document.getElementById('outingManagerView');
+    if(outingManager && outingManager.style.display === 'flex') {
+        outingManager.style.display = 'none';
+        return;
+    }
+
+    // 상세 페이지라면 메인으로, 메인이라면 포탈로 이동
+    if (currentRID !== "") {
+        currentRID = ""; 
+        handleRoomSelection(); 
+    } else {
+        location.href = 'potal.html';
+    }
 }
 
 

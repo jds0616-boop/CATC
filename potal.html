@@ -203,8 +203,22 @@
       return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // PIN 확인 후 페이지 이동
+// [수정] PIN 확인 후 5시간 동안 세션 유지 로직 적용
     async function goWithPin(url, role) {
+      const sessionKey = 'kac_session_' + role;
+      const savedSession = localStorage.getItem(sessionKey);
+      const FIVE_HOURS = 5 * 60 * 60 * 1000; // 5시간을 밀리초로 계산
+
+      // 1. 이미 로그인한 기록이 있고 5시간이 안 지났다면 바로 이동
+      if (savedSession) {
+        const data = JSON.parse(savedSession);
+        if (Date.now() - data.time < FIVE_HOURS) {
+          location.href = url;
+          return;
+        }
+      }
+
+      // 2. 기록이 없거나 5시간이 지났다면 PIN 입력 요청
       const userInput = prompt("접속 PIN 번호 4자리를 입력하세요.");
       if (!userInput) return;
 
@@ -220,7 +234,8 @@
         const userHashed = await hashPin(userInput);
 
         if (userHashed === dbHashed) {
-          sessionStorage.setItem('kac_portal_auth', role);
+          // [핵심] 성공 시 현재 시간을 저장 (5시간 유지용)
+          localStorage.setItem(sessionKey, JSON.stringify({ time: Date.now() }));
           location.href = url;
         } else {
           alert("잘못된 PIN 번호입니다.");
