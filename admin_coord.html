@@ -1236,17 +1236,11 @@ function updateIndividualView() {
     
     const requests = room.shuttle?.requests || {};
     const items = Object.values(requests);
-    const osong = items.filter(i => i.type === 'osong').length;
-    const term = items.filter(i => i.type === 'terminal').length;
-    const air = items.filter(i => i.type === 'airport').length;
-    const car = items.filter(i => i.type === 'car').length;
-    const total = items.length;
-
-    document.getElementById('ind-shuttle-total').innerText = total;
-    document.getElementById('ind-osong').innerText = osong;
-    document.getElementById('ind-term').innerText = term;
-    document.getElementById('ind-air').innerText = air;
-    document.getElementById('ind-car').innerText = car;
+    document.getElementById('ind-shuttle-total').innerText = items.length;
+    document.getElementById('ind-osong').innerText = items.filter(i => i.type === 'osong').length;
+    document.getElementById('ind-term').innerText = items.filter(i => i.type === 'terminal').length;
+    document.getElementById('ind-air').innerText = items.filter(i => i.type === 'airport').length;
+    document.getElementById('ind-car').innerText = items.filter(i => i.type === 'car').length;
 
     const actionTbody = document.getElementById('indActionTableBody');
     const today = getTodayString();
@@ -1259,6 +1253,8 @@ function updateIndividualView() {
         const btnText = isSigned ? "서명취소" : "서명";
         const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
         const dataStr = encodeURIComponent(JSON.stringify(a));
+        
+        // 버튼을 제외한 행 전체를 클릭 영역으로 설정
         const rowClickAction = `onclick="showActionDetail('${dataStr}')" style="cursor:pointer;"`;
 
         return `<tr>
@@ -1562,7 +1558,7 @@ function renderCourseSelectors() {
 
 
 
-// [수정] 전체 신청자 명단 헤더 일렬 정렬 및 행 전체 클릭 범위 확대
+// [수정] 중복 아이콘 제거 및 제목-배지 완벽 한 줄 정렬
 function renderTotalHistory() {
     const tbody = document.getElementById('historyTableBody');
     const label = document.getElementById('historyDateLabel');
@@ -1571,15 +1567,15 @@ function renderTotalHistory() {
     const d = new Date(selectedDate);
     const dateText = `${d.getMonth() + 1}/${d.getDate()}`;
     
-    // 제목 영역: 아이콘 + 텍스트 + 실시간 배지 한 줄 정렬
+    // HTML에 이미 아이콘이 있으므로 JS에서는 아이콘을 빼고 텍스트와 배지만 넣습니다.
+    // display: inline-flex를 사용하여 옆에 있는 아이콘과 높이를 맞춥니다.
     label.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px; width:100%; overflow:hidden;">
-            <i class="fa-solid fa-calendar-check" style="color:var(--blue-main); font-size:16px;"></i>
+        <span style="display:inline-flex; align-items:center; gap:8px; vertical-align:middle;">
             <span style="white-space:nowrap; font-weight:800; font-size:14px; color:var(--navy-bg);">당일(${dateText}) 외출·외박 명단</span>
-            <div class="live-badge" style="white-space:nowrap; flex-shrink:0; padding:3px 10px; font-size:10px;">
-                <i class="fa-solid fa-sync fa-spin" style="color:#3b82f6;"></i> 실시간
+            <div class="live-badge" style="white-space:nowrap; padding:2px 8px; font-size:10px; display:inline-flex; align-items:center; height:20px;">
+                <i class="fa-solid fa-sync fa-spin" style="color:#3b82f6; margin-right:4px;"></i> 실시간
             </div>
-        </div>
+        </span>
     `;
 
     tbody.innerHTML = "";
@@ -1610,7 +1606,7 @@ function renderTotalHistory() {
         const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
         const dataStr = encodeURIComponent(JSON.stringify(a));
-        // 클릭 시 상세내역을 띄우는 공통 속성
+        // 행 전체 클릭을 위한 설정 (서명 버튼 제외)
         const rowClickAction = `onclick="showActionDetail('${dataStr}')" style="cursor:pointer;"`;
 
         tbody.innerHTML += `
@@ -1628,7 +1624,6 @@ function renderTotalHistory() {
             </tr>`;
     });
 }
-
 
 
 
