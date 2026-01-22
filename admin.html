@@ -117,25 +117,11 @@
                     <select id="profSelect" style="display:none;"></select>
                 </div>
 
-                <div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <label class="setting-label">입교안내 가이드 관리</label>
-                    <div id="guideStatusBadge" style="font-size: 11px; margin-bottom: 5px; color: #94a3b8;">등록된 파일 없음</div>
-                    <div class="file-row">
-                        <input type="file" id="guideFileInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
-                        <label for="guideFileInput" class="btn-action btn-secondary btn-small" style="cursor:pointer; flex-grow:1;">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> PDF 업로드
-                        </label>
-                    </div>
-                </div>
 
                 <div class="divider"></div>
                 <div class="setting-group">
                     <label class="setting-label">Student Link</label>
                     <div class="qr-box"><div id="qrcode"></div><button class="btn-action btn-small btn-dark" id="btnCopyLink" onclick="ui.copyLink()"><i class="fa-solid fa-copy"></i> Copy</button><input type="text" id="studentLink" style="opacity:0;position:absolute;z-index:-1;"></div>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">Quiz File (.txt)</label>
-                    <div class="file-row"><input type="file" id="quizFile" accept=".txt" style="display:none;" onchange="alert(this.files[0].name+' 선택됨')"><label for="quizFile" class="btn-action btn-secondary btn-small" style="cursor:pointer;justify-content:center;flex-grow:1;"><i class="fa-solid fa-file-import"></i> Quiz File</label><button class="btn-action btn-small btn-dark" onclick="quizMgr.downloadSample()" style="width:auto;">Sample</button></div>
                 </div>
             </div>
         </div>
