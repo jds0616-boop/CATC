@@ -269,7 +269,82 @@
 
 
 
+/* 수송 리스트 전용 슬림 테이블 디자인 */
+.pickup-grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
 
+.pickup-grid-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 10px 5px;
+    border-bottom: 2px solid #e2e8f0;
+    text-transform: uppercase;
+}
+
+.pickup-grid-table td {
+    padding: 8px 5px; /* 세로 간격을 줄여 슬림하게 만듦 */
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 12px;
+    color: #334155;
+    vertical-align: middle;
+    white-space: nowrap; /* 글자가 절대 줄바꿈되지 않음 */
+}
+
+/* 과정명: 말줄임표 처리 */
+.td-course {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 700;
+    color: #0369a1;
+    text-align: left !important;
+    padding-left: 15px !important;
+}
+
+/* 날짜/시간: 고정폭 폰트와 간결한 배치 */
+.td-time {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+}
+.td-time span { color: #94a3b8; font-size: 10px; font-weight: 400; margin-right: 4px; }
+
+/* 입교/퇴교 배지: 세련된 라운드 캡슐형 */
+.badge-dir {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+}
+.dir-in { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+.dir-out { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+
+/* 기사 승인 상태 */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.dot-pending { width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; display: inline-block; }
+.dot-approved { width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block; }
+
+/* 취소 링크형 버튼 */
+.btn-del-link {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    text-decoration: underline;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+.btn-del-link:hover { color: #ef4444; }
 
 
 
@@ -383,7 +458,7 @@
 
 
 <!-- [수정] 강사 픽업 통합 현황 테이블 -->
-<div id="pickupStatusView" class="view-card-full">
+<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
     <div class="section-card">
         <div class="section-title" style="justify-content:space-between;">
             <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
@@ -392,12 +467,22 @@
             </button>
         </div>
         <div style="overflow-x: auto;">
-            <table class="navy-table">
+            <!-- class 이름을 아래와 같이 교체합니다 -->
+            <table class="pickup-grid-table"> 
                 <thead>
-                    <!-- 기사 승인 컬럼 추가 -->
-                    <tr><th>과정명</th><th>강사명</th><th>연락처</th><th>픽업장소</th><th>픽업시간</th><th>방향</th><th>기사 승인</th></tr>
+                    <tr>
+                        <th style="text-align:left; padding-left:15px;">교육과정명</th>
+                        <th>강사명</th>
+                        <th>연락처</th>
+                        <th>픽업장소</th>
+                        <th>픽업시간</th>
+                        <th>방향</th>
+                        <th>기사 승인</th>
+                    </tr>
                 </thead>
-                <tbody id="pickupTableBody"></tbody>
+                <tbody id="pickupTableBody">
+                    <!-- JS에서 내용 채움 -->
+                </tbody>
             </table>
         </div>
     </div>
@@ -1632,50 +1717,43 @@ function renderPickupTable() {
         const items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
         
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="padding:40px; color:#94a3b8; text-align:center;">예약 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:50px; color:#94a3b8; text-align:center;">현재 예약된 수송 내역이 없습니다.</td></tr>';
             return;
         }
 
-        // [정렬] 가까운 날짜/시간 순서로 정렬
-        items.sort((a, b) => {
-            const timeA = (a.date || "") + (a.time || "");
-            const timeB = (b.date || "") + (b.time || "");
-            return timeA.localeCompare(timeB);
-        });
+        // [정렬] 가장 빠른 시간 순서대로
+        items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
         tbody.innerHTML = items.map(r => {
-            // 과정명 처리 (가장 긴 텍스트이므로 왼쪽 정렬)
             const roomInfo = globalAllData[r.courseRID];
-            let roomName = roomInfo?.settings?.courseName || (r.courseRID ? `Room ${r.courseRID}` : "미지정 과정");
+            let roomName = roomInfo?.settings?.courseName || (r.courseRID ? `Room ${r.courseRID}` : "미배정 과정");
+            if(roomName === "미지정 과정") roomName = `<span style="color:#cbd5e1; font-weight:400;">(과정 미지정)</span>`;
 
-            // 방향 배지 스타일
             const isOut = r.dir && r.dir.includes('항기원→');
-            const dirLabel = isOut ? '퇴교' : '입교';
-            const dirStyle = isOut ? 'color:#3b82f6; background:#eff6ff; border:1px solid #dbeafe;' : 'color:#ea580c; background:#fff7ed; border:1px solid #ffedd5;';
+            const dirClass = isOut ? 'dir-out' : 'dir-in';
+            const dirText = isOut ? '퇴교' : '입교';
             const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "-");
             
-            // 상태 및 취소 버튼
-            const isPending = r.status !== 'approved';
-            const statusHtml = isPending 
-                ? `<span class="badge-status badge-pending">승인대기</span><button class="btn-cancel-mini" onclick="deleteTrans('${r.id}')">취소</button>`
-                : `<span class="badge-status badge-approved">승인완료</span>`;
+            const isApproved = r.status === 'approved';
+            const statusLabel = isApproved 
+                ? `<div class="status-pill"><span class="dot-approved"></span><b>승인완료</b></div>`
+                : `<div class="status-pill"><span class="dot-pending"></span><b style="color:#ea580c">승인대기</b></div>`;
+            const actionHtml = isApproved ? "" : `<button class="btn-del-link" onclick="deleteTrans('${r.id}')">취소</button>`;
 
             return `
                 <tr>
-                    <td style="text-align:left; font-weight:700; color:var(--blue-deep); padding-left:15px;">
-                        <div style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${roomName}">${roomName}</div>
+                    <td class="td-course">${roomName}</td>
+                    <td style="text-align:center; font-weight:700; width:70px;">${r.prof || '-'}</td>
+                    <td style="text-align:center; color:#64748b; width:100px;">${r.phone || '-'}</td>
+                    <td style="text-align:center; font-weight:700; width:80px;">${pickupPlace}</td>
+                    <td class="td-time" style="width:130px;">
+                        <span>${r.date.slice(5)}</span>${r.time}
                     </td>
-                    <td style="text-align:center; font-weight:800;">${r.prof || '-'}</td>
-                    <td style="text-align:center; color:#64748b; font-size:11px;">${r.phone || '-'}</td>
-                    <td style="text-align:center; font-weight:700;">${pickupPlace}</td>
-                    <td style="text-align:center; font-weight:800; letter-spacing:-0.5px;">
-                        <span style="color:#64748b; font-weight:400;">${r.date}</span> ${r.time}
+                    <td style="text-align:center; width:60px;">
+                        <span class="badge-dir ${dirClass}">${dirText}</span>
                     </td>
-                    <td style="text-align:center;">
-                        <span style="padding:2px 6px; border-radius:4px; font-size:10px; font-weight:800; ${dirStyle}">${dirLabel}</span>
-                    </td>
-                    <td style="text-align:center; min-width:100px;">
-                        ${statusHtml}
+                    <td style="text-align:center; width:110px;">
+                        ${statusLabel}${actionHtml}
                     </td>
                 </tr>`;
         }).join('');
