@@ -454,6 +454,30 @@
 
 .badge-dir { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
 
+
+
+
+/* 퇴교 수송 그룹 박스 호버 효과 */
+.shuttle-group-box:hover {
+    background-color: #f8fafc !important;
+    border-color: #3b82f6 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+}
+.shuttle-group-box:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
+
+
+
+
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -624,22 +648,41 @@
                   <div class="section-title" style="margin-bottom:8px; font-size:11px;">
                       <i class="fa-solid fa-bus"></i> 퇴교 차량 수요조사 (실시간)
                   </div>
-<div class="shuttle-grid">
-    <!-- 총 인원 합계 칸 추가 -->
-<div class="shuttle-item" onclick="showShuttleApplicationDetails()" style="background:#f8fafc; border:1.5px solid #e2e8f0; flex:1.2; cursor:pointer;">
-    <span style="color:var(--navy-dark);">총 신청</span><b id="ind-shuttle-total" style="font-size:20px; color:var(--blue-deep);">0</b>
-</div>
-    <div class="shuttle-item" onclick="showShuttleMembers('osong')" style="border-top:3px solid #ef4444;">
-        <span>오송역</span><b id="ind-osong" style="color:#ef4444;">0</b>
+
+----------------------------------
+<div class="shuttle-group-box" onclick="showShuttleApplicationDetails(currentRID)" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 15px; padding: 15px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); height: 75px;">
+    <!-- 왼쪽: 전체 인원 (가장 크게) -->
+    <div style="flex: 1.2; text-align: center; border-right: 1.5px solid #f1f5f9; padding-right: 10px; display: flex; flex-direction: column; justify-content: center;">
+        <span style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 2px;">총 신청</span>
+        <div>
+            <b id="ind-shuttle-total" style="font-size: 26px; font-weight: 900; color: #3b82f6;">0</b>
+            <span style="font-size: 13px; font-weight: 800; color: #3b82f6; margin-left: 2px;">명</span>
+        </div>
     </div>
-    <div class="shuttle-item" onclick="showShuttleMembers('terminal')" style="border-top:3px solid #3b82f6;">
-        <span>터미널</span><b id="ind-term" style="color:#3b82f6;">0</b>
+    
+    <!-- 오른쪽: 목적지별 요약 숫자 (한 줄 배치) -->
+    <div style="flex: 3; display: flex; justify-content: space-around; padding-left: 10px; align-items: center;">
+        <div style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 800; color: #ef4444; display: block; margin-bottom: 2px;">오송</span>
+            <b id="ind-osong" style="font-size: 16px; font-weight: 900; color: #1e293b;">0</b>
+        </div>
+        <div style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 800; color: #3b82f6; display: block; margin-bottom: 2px;">터미널</span>
+            <b id="ind-term" style="font-size: 16px; font-weight: 900; color: #1e293b;">0</b>
+        </div>
+        <div style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 800; color: #10b981; display: block; margin-bottom: 2px;">공항</span>
+            <b id="ind-air" style="font-size: 16px; font-weight: 900; color: #1e293b;">0</b>
+        </div>
+        <div style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 800; color: #64748b; display: block; margin-bottom: 2px;">자차</span>
+            <b id="ind-car" style="font-size: 16px; font-weight: 900; color: #1e293b;">0</b>
+        </div>
     </div>
-    <div class="shuttle-item" onclick="showShuttleMembers('airport')" style="border-top:3px solid #10b981;">
-        <span>공항</span><b id="ind-air" style="color:#10b981;">0</b>
-    </div>
-    <div class="shuttle-item" onclick="showShuttleMembers('car')" style="border-top:3px solid #64748b;">
-        <span>자차</span><b id="ind-car" style="color:#64748b;">0</b>
+    
+    <!-- 우측 끝 화살표 아이콘 -->
+    <div style="color: #cbd5e1; font-size: 14px; margin-left: 5px;">
+        <i class="fa-solid fa-chevron-right"></i>
     </div>
 </div>
               </div>
@@ -658,9 +701,24 @@
               <button class="navy-btn green" onclick="saveGlobalNotice()">전체 공지 업데이트</button>
           </div>
 
-          <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;"><span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span><button class="navy-btn" style="width:140px; height:32px; font-size:12px;" onclick="openOutingLedger()">외출(외박)대장</button></div>
-              <div style="overflow-x: auto;"><table class="navy-table"><thead><tr><th>신청자</th><th>구분</th><th>시간</th><th width="100">담당 확인</th></tr></thead><tbody id="indActionTableBody"></tbody></table></div>
+          <div class="section-card" style="margin-bottom: 50px;">
+              <div class="section-title" style="justify-content:space-between;">
+                  <span><i class="fa-solid fa-user-clock"></i> 외출/외박 신청자 명단</span>
+                  <button class="navy-btn" style="width:140px; height:32px; font-size:12px;" onclick="openOutingLedger()">외출(외박)대장</button>
+              </div>
+              <div style="overflow-x: auto;">
+                  <table class="navy-table">
+                      <thead>
+                          <tr>
+                              <th>신청자</th>
+                              <th>구분</th>
+                              <th>시간</th>
+                              <th width="100">담당 확인</th>
+                          </tr>
+                      </thead>
+                      <tbody id="indActionTableBody"></tbody>
+                  </table>
+              </div>
           </div>
       </div>
     </main>
@@ -1151,11 +1209,12 @@ const coordMgr = {
 
 
 
-// [4. 개별 과정 상세 뷰 및 실시간 명단 렌더링]
+// [최종] 개별 과정 상세 뷰 및 통합 수송 박스 업데이트
 function updateIndividualView() {
     const room = globalAllData[currentRID]; 
     if (!room) return;
 
+    // 1. 상단 텍스트 정보 업데이트
     document.getElementById('ind-room-id').innerText = currentRID;
     document.getElementById('ind-course-name').innerText = room.settings?.courseName || "과정명 미설정";
     document.getElementById('ind-period').innerText = room.settings?.period || "-";
@@ -1163,70 +1222,61 @@ function updateIndividualView() {
     document.getElementById('ind-coord').innerText = room.settings?.coordinatorName || "-";
     document.getElementById('ind-room-loc').innerText = room.settings?.roomDetailName || "-";
 
+    // 2. 학생장 정보
     let leaderTxt = "지정된 학생장 없음";
     if(room.students) {
         const leaders = Object.values(room.students).filter(s => s.isLeader === true);
         if(leaders.length > 0) {
-            leaderTxt = leaders.map(l => `${l.name} [${l.phone || '연락처 미등록'}]`).join('  /  ');
+            leaderTxt = leaders.map(l => `${l.name} [${l.phone || '연락처 미등록'}]`).join(' / ');
         }
     }
     document.getElementById('ind-leader').innerText = leaderTxt;
 
-    const today = getTodayString();
+    // 3. 입교 인원 숫자
     const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
     const uniqueSize = (new Set(students.map(s => `${s.name.trim()}_${(s.phone||"").replace(/-/g,'').trim()}`))).size;
     document.getElementById('ind-entry-cnt').innerHTML = `${uniqueSize}<span>명</span>`;
     
-// [개편] 차량 수요조사 데이터 집계 (총합 포함)
-        const shuttleRef = firebase.database().ref(`courses/${currentRID}/shuttle/requests`);
-        shuttleRef.on('value', s => {
-            const data = s.val() || {};
-            const items = Object.values(data);
-            
-            const osong = items.filter(i => i.type === 'osong').length;
-            const term = items.filter(i => i.type === 'terminal').length;
-            const air = items.filter(i => i.type === 'airport').length;
-            const car = items.filter(i => i.type === 'car').length;
-            const total = osong + term + air + car; // 전체 합계
-
-            document.getElementById('ind-osong').innerText = osong;
-            document.getElementById('ind-term').innerText = term;
-            document.getElementById('ind-air').innerText = air;
-            document.getElementById('ind-car').innerText = car;
-            document.getElementById('ind-shuttle-total').innerText = total; // 화면에 합계 표시
-        });
-
-
-
-
-    const actionTbody = document.getElementById('indActionTableBody');
-    const actions = room.admin_actions?.[today] || {};
-    const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
+    // 4. [중요] 통합 수송 박스 숫자 집계 및 주입
+    const requests = room.shuttle?.requests || {};
+    const items = Object.values(requests);
     
-actionTbody.innerHTML = items.length ? items.map(a => {
-    const isSigned = a.confirmed === true;
-    const returnBadge = a.returned ? `<span style="display:inline-block; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
-    const btnText = isSigned ? "서명취소" : "서명";
-    const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
+    const osong = items.filter(i => i.type === 'osong').length;
+    const term = items.filter(i => i.type === 'terminal').length;
+    const air = items.filter(i => i.type === 'airport').length;
+    const car = items.filter(i => i.type === 'car').length;
+    const total = items.length;
 
-    const dataStr = encodeURIComponent(JSON.stringify(a));
+    // 그룹 박스 내부 요소들 업데이트
+    document.getElementById('ind-shuttle-total').innerText = total;
+    document.getElementById('ind-osong').innerText = osong;
+    document.getElementById('ind-term').innerText = term;
+    document.getElementById('ind-air').innerText = air;
+    document.getElementById('ind-car').innerText = car;
 
-    return `<tr>
-        <td style="font-weight:800; cursor:pointer; text-align:center;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-        <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-        <td style="text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-        <td>
-            <button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" 
-                    style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; margin: 0 auto;"> <!-- margin: 0 auto 추가 -->
-                ${btnText}
-            </button>
-        </td>
-    </tr>`;
-}).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
+    // 5. 외출/외박 테이블 렌더링 (가운데 정렬 포함)
+    const actionTbody = document.getElementById('indActionTableBody');
+    const today = getTodayString();
+    const actions = room.admin_actions?.[today] || {};
+    const actionItems = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
+    
+    actionTbody.innerHTML = actionItems.length ? actionItems.map(a => {
+        const isSigned = a.confirmed === true;
+        const returnBadge = a.returned ? `<span style="display:inline-block; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
+        const btnText = isSigned ? "서명취소" : "서명";
+        const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
+        const dataStr = encodeURIComponent(JSON.stringify(a));
+
+        return `<tr>
+            <td style="font-weight:800; cursor:pointer; text-align:center;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
+            <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+            <td style="text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">${btnText}</button></td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
     
     document.getElementById('courseNotice').value = room.coordNotice || ""; 
-}
-
+} // function updateIndividualView 끝
 
 
 
