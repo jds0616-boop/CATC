@@ -1790,7 +1790,7 @@ function showActionDetail(dataJson) {
 
 
  
-// [최종 개선] 시안성이 강화된 카드형 렌더링
+// [최종 개선] 레이블이 추가된 시안성 강화 카드형 렌더링
 function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -1829,16 +1829,25 @@ function renderPickupTable() {
                         <span class="badge-dir ${dirClass}">${dirText}</span>
                     </div>
                     
-                    <div class="pickup-card-body">
-                        <div class="pickup-main-info">
-                            <div class="pickup-time-big">
-                                <small>${r.date.split('-')[1]}/${r.date.split('-')[2]}</small>${r.time}
+                    <div class="pickup-card-body" style="padding: 18px 15px;">
+                        <div class="pickup-main-info" style="gap: 8px;">
+                            <!-- 시간 레이블 추가 섹션 -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size:11px; color:#94a3b8; font-weight:800; background:#f1f5f9; padding:2px 6px; border-radius:4px; white-space:nowrap;">픽업요청시간</span>
+                                <div class="pickup-time-big" style="font-size: 19px;">
+                                    <small style="color:#3b82f6; font-size:14px;">${r.date.split('-')[1]}/${r.date.split('-')[2]}</small> 
+                                    <span style="margin-left:2px;">${r.time}</span>
+                                </div>
                             </div>
-                            <div class="pickup-loc-big"><i class="fa-solid fa-location-dot"></i> ${pickupPlace}</div>
+                            
+                            <div class="pickup-loc-big" style="font-size: 16px;">
+                                <i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> <b>${pickupPlace}</b>
+                            </div>
                         </div>
+
                         <div style="text-align:right;">
-                            <div style="font-weight:800; color:#1e293b;">${r.prof || '-'} 강사님</div>
-                            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">${r.phone || '-'}</div>
+                            <div style="font-weight:800; color:#1e293b; font-size:15px;">${r.prof || '-'} <small style="font-weight:400; color:#64748b;">강사님</small></div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${r.phone || '-'}</div>
                         </div>
                     </div>
 
@@ -1851,8 +1860,7 @@ function renderPickupTable() {
                 </div>`;
         }).join('');
     });
-}
-
+} // function renderPickupTable 끝
 
 
 
