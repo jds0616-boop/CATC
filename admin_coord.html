@@ -803,7 +803,7 @@ const coordMgr = {
 
 
 
-// [보정] 시스템 초기화 및 실시간 데이터 연결
+// [보정] 시스템 초기화 및 실시간 데이터 입구 연결
     function init() {
         // 1. 하단 기록장 날짜를 오늘로 즉시 초기화
         const todayStr = getTodayString();
@@ -813,24 +813,26 @@ const coordMgr = {
             historyInput.value = todayStr;
         }
 
-        // 2. 전체 데이터 실시간 감시 시작
+        // 2. 전체 데이터 실시간 감시 시작 (가장 중요)
         firebase.database().ref('courses').on('value', snap => {
+            // 서버에서 데이터를 새로 가져올 때마다 globalAllData를 업데이트합니다.
             globalAllData = snap.val() || {};
             
-            // 데이터가 오면 모든 화면 요소를 한꺼번에 즉시 갱신
+            // 데이터가 도착한 직후에 모든 화면을 갱신해야 숫자가 뜹니다.
             updateGlobalStatus(); 
             renderCourseSelectors(); 
             renderTotalHistory(); 
             
-            // 현재 어떤 특수 화면이 열려있다면 해당 데이터도 실시간 갱신
+            // 현재 열려있는 화면이 있다면 그 안의 데이터도 실시간 갱신
             if(document.getElementById('pickupStatusView').style.display === "flex") renderPickupTable();
             if(document.getElementById('studentShuttleView').style.display === "flex") renderShuttleTotalTable();
             if(currentRID) updateIndividualView();
         });
 
-        // 3. 기타 공지사항 및 담당자 초기화
+        // 3. 센터 전체 공지사항 감시
         firebase.database().ref('system/globalNotice').on('value', s => { 
-            const el = document.getElementById('globalNotice'); if(el) { el.value = s.val() || ""; autoGrow(el); }
+            const el = document.getElementById('globalNotice'); 
+            if(el) { el.value = s.val() || ""; autoGrow(el); }
         });
         
         handleRoomSelection();
@@ -841,41 +843,32 @@ const coordMgr = {
 
 
 
-
-// [최종 수정] 전체 현황판 통계 집계 및 화면 전환 연결
+// [보정] 전체 현황판 통계 집계 및 버튼 클릭 연결
     function updateGlobalStatus() {
         let globalList = []; 
         let todayA = 0; 
         const tStr = getTodayString();
 
-        // 1. 모든 강의실 데이터를 돌며 교육생과 오늘 신청건수 수집
+        // 모든 강의실을 돌며 실제 데이터 수집
         Object.keys(globalAllData).forEach(rid => {
             const room = globalAllData[rid];
-            const cName = room.settings?.courseName || `강의실 ${rid}`;
+            const cName = room.settings?.courseName || `Room ${rid}`;
             
-            // 교육생 정보 수집
             if (room.students) { 
                 Object.values(room.students).forEach(s => {
                     if (s && s.name && s.name !== "undefined" && s.name.trim() !== "") {
                         const cleanPhone = (s.phone || "0000").replace(/[^0-9]/g, "");
                         const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
-                        
-                        globalList.push({
-                            courseName: cName,
-                            name: s.name.trim(),
-                            phone: last4
-                        });
+                        globalList.push({ courseName: cName, name: s.name.trim(), phone: last4 });
                     }
                 });
             }
-            
-            // 오늘 날짜 외출/외박 신청자 수 카운트
             if (room.admin_actions && room.admin_actions[tStr]) {
                 todayA += Object.keys(room.admin_actions[tStr]).length;
             }
         });
 
-        // 2. 중복 제거 (이름 + 연락처 뒷자리 기준)
+        // 중복 제거 (이름+뒷자리 기준)
         const uniqueSet = new Set();
         const filteredList = globalList.filter(item => {
             const id = `${item.name}_${item.phone}`;
@@ -884,21 +877,18 @@ const coordMgr = {
             return true;
         });
 
-        // 3. 메인 대시보드 버튼의 숫자 실시간 업데이트
+        // 화면에 숫자 표시
         const studentValEl = document.getElementById('g-total-students');
         const actionValEl = document.getElementById('g-today-actions');
-
         if(studentValEl) studentValEl.innerHTML = `${uniqueSet.size}<span>명</span>`;
         if(actionValEl) actionValEl.innerHTML = `${todayA}<span>건</span>`;
 
-        // 4. [중요] 버튼 클릭 시 팝업이 아닌 "전용 페이지"로 이동하도록 연결
-        // 상단 '항기원 전체 교육생' 카드를 클릭하면 상세 페이지 뷰가 열립니다.
-        const studentCard = document.querySelector('.btn-total-student');
-        if(studentCard) {
-            studentCard.onclick = function() {
-                showTotalStudentView(); // 이미 만들어둔 페이지 전환 함수 호출
-            };
-        }
+        // 상단 버튼(카드) 클릭 시 화면 전환 연결
+        const studentBtn = document.querySelector('.btn-total-student');
+        if(studentBtn) studentBtn.onclick = () => showTotalStudentView();
+
+        const actionBtn = document.querySelector('.btn-today-action');
+        if(actionBtn) actionBtn.onclick = () => openOutingManager();
     }
 
 
@@ -1354,7 +1344,19 @@ function openPrintModal() {
 
   function startPrint(mode) { document.getElementById('outingManagerView').style.display='none'; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = "flex"; let progress = 0; const timer = setInterval(() => { progress += 25; document.getElementById('progressFill').style.width = progress + "%"; if(progress > 100) { clearInterval(timer); overlay.style.display = "none"; executePrintProcess(mode); } }, 150); }
     function executePrintProcess(mode) { const targetBody = document.getElementById('printBody'); const targetRID = (mode === 'course') ? currentRID : ""; document.getElementById('print-info-text').innerText = `대상일자: ${selectedDate}`; targetBody.innerHTML = ""; let list = []; Object.keys(globalAllData).forEach(rid => { if (mode === 'course' && rid !== targetRID) return; const actions = globalAllData[rid].admin_actions?.[selectedDate]; if(actions) Object.values(actions).forEach(a => list.push({ ...a, rid, cName: globalAllData[rid].settings?.courseName || rid })); }); list.sort((a,b)=>a.timestamp-b.timestamp).forEach((a, idx) => { const signImg = a.confirmedBySign ? `<img src="${a.confirmedBySign}" style="height:35px; mix-blend-mode:multiply;">` : ""; targetBody.innerHTML += `<tr><td>${idx+1}</td><td>${a.cName}</td><td>${a.type==='outing'?'외출':'외박'}</td><td>${a.name}</td><td>${a.phone}</td><td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${signImg}</td></tr>`; }); window.print(); }
-    function toggleMenu(open) { document.getElementById('sideMenu').classList.toggle('open', open); document.getElementById('menuOverlay').style.display = open ? "block" : "none"; }
+// [보정] 우측 사이드 햄버거 메뉴 열고 닫기
+    function toggleMenu(open) { 
+        const sideMenu = document.getElementById('sideMenu');
+        const menuOverlay = document.getElementById('menuOverlay');
+        
+        if (open) {
+            sideMenu.classList.add('open');
+            menuOverlay.style.display = "block";
+        } else {
+            sideMenu.classList.remove('open');
+            menuOverlay.style.display = "none";
+        }
+    }
     function closeSetupModal() { document.getElementById('setupModal').style.display = "none"; }
     function closeTransportModal() { document.getElementById('transportModal').style.display = 'none'; }
     function getTodayString(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
