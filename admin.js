@@ -3464,6 +3464,14 @@ const printMgr = {
         document.getElementById('printInputModal').style.display = 'none'; 
     },
     
+
+
+
+
+
+
+
+// [수정] 결재란이 삭제된 종합 결과 보고서 렌더링 로직
     openPreview: async function(date, prof) { 
         const cname = document.getElementById('dashCourseTitle')?.innerText || "과정명 미설정";
         const coord = document.getElementById('dashCoordName')?.innerText || "-";
@@ -3476,64 +3484,70 @@ const printMgr = {
         const actionTotal = document.getElementById('dashActionCount')?.innerText || "0";
         const shuttleTotal = document.getElementById('dashShuttleTotal')?.innerText || "0";
         
-        const listBody = document.getElementById('docListBody');
         const previewModal = document.getElementById('printPreviewModal');
 
-        // 1. Q&A 리스트 생성
+        // 1. Q&A 리스트 생성 (공감순 정렬)
         let qaHtml = "";
         const qaItems = Object.values(state.qaData || {}).filter(q => q.status !== 'delete');
         if (qaItems.length === 0) {
             qaHtml = "<tr><td colspan='3' style='text-align:center; padding:30px; color:#94a3b8;'>수집된 질문이 없습니다.</td></tr>";
         } else { 
             qaItems.sort((a, b) => (b.likes || 0) - (a.likes || 0)).forEach((item, idx) => { 
-                qaHtml += `<tr><td>${idx + 1}</td><td style='text-align:left;'>${item.text}</td><td>❤️ ${item.likes || 0}</td></tr>`; 
+                qaHtml += `<tr><td style='text-align:center; border:1px solid #000; padding:8px;'>${idx + 1}</td><td style='text-align:left; border:1px solid #000; padding:8px;'>${item.text}</td><td style='text-align:center; border:1px solid #000; padding:8px;'>❤️ ${item.likes || 0}</td></tr>`; 
             }); 
         }
 
-        // 2. 보고서 본문(HTML) 조립
+        // 2. 보고서 본문(HTML) 조립 - [결재란 삭제 버전]
         document.getElementById('official-document').innerHTML = `
-            <div style="text-align:right; margin-bottom:20px;">
-                <table style="display:inline-table; border-collapse:collapse; border:1px solid #000;">
-                    <tr><td rowspan="2" style="width:25px; border:1px solid #000; padding:10px; background:#f1f5f9; font-weight:bold;">결<br>재</td><td style="width:80px; border:1px solid #000; height:30px; background:#f1f5f9; font-size:12px; text-align:center;">담임/강사</td><td style="width:80px; border:1px solid #000; background:#f1f5f9; font-size:12px; text-align:center;">과정담당</td></tr>
-                    <tr><td style="height:60px; border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
-                </table>
+            <div style="text-align:center; padding-top:20px; margin-bottom:50px;">
+                <h2 style="font-size:35px; font-weight:900; margin:0; letter-spacing:2px;">교육과정 운영 결과 보고서</h2>
+                <div style="width:100px; height:4px; background:#003366; margin:15px auto;"></div>
             </div>
-
-            <h2 style="text-align:center; font-size:32px; font-weight:900; margin-bottom:40px; text-decoration:underline;">교육과정 운영 결과 보고서</h2>
             
-            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">1. 교육 개요</h4>
-            <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
-                <tr style="height:40px;"><th style="width:150px; background:#f1f5f9; border:1px solid #000;">교 육 과 정 명</th><td style="padding-left:15px; border:1px solid #000; font-weight:bold;">${cname}</td></tr>
-                <tr style="height:40px;"><th style="background:#f1f5f9; border:1px solid #000;">교 육 기 간</th><td style="padding-left:15px; border:1px solid #000;">${date}</td><th style="width:120px; background:#f1f5f9; border:1px solid #000;">강 의 장</th><td style="padding-left:15px; border:1px solid #000;">${roomLoc}</td></tr>
-                <tr style="height:40px;"><th style="background:#f1f5f9; border:1px solid #000;">담 임 교 수</th><td style="padding-left:15px; border:1px solid #000;">${prof}</td><th style="background:#f1f5f9; border:1px solid #000;">과 정 담 당</th><td style="padding-left:15px; border:1px solid #000;">${coord}</td></tr>
+            <h4 style="border-left:6px solid #003366; padding-left:12px; margin-bottom:15px; font-size:19px; color:#333;">1. 교육 개요</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:40px; border:2px solid #000;">
+                <tr style="height:45px;"><th style="width:150px; background:#f1f5f9; border:1px solid #000; text-align:center;">교 육 과 정 명</th><td colspan="3" style="padding-left:15px; border:1px solid #000; font-weight:bold; font-size:16px;">${cname}</td></tr>
+                <tr style="height:45px;"><th style="background:#f1f5f9; border:1px solid #000; text-align:center;">교 육 기 간</th><td style="padding-left:15px; border:1px solid #000; width:35%;">${date}</td><th style="width:120px; background:#f1f5f9; border:1px solid #000; text-align:center;">강 의 장</th><td style="padding-left:15px; border:1px solid #000;">${roomLoc}</td></tr>
+                <tr style="height:45px;"><th style="background:#f1f5f9; border:1px solid #000; text-align:center;">담 임 교 수</th><td style="padding-left:15px; border:1px solid #000;">${prof} 교수</td><th style="background:#f1f5f9; border:1px solid #000; text-align:center;">과 정 담 당</th><td style="padding-left:15px; border:1px solid #000;">${coord}</td></tr>
             </table>
 
-            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">2. 운영 및 참여 현황</h4>
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:30px; text-align:center;">
-                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">입교/접속</span><br><b style="font-size:20px;">${arrivedCount}</b> / ${totalCount}명</div>
-                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">학습질문 건수</span><br><b style="font-size:20px;">${qaTotal}</b>건</div>
-                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">외출/외박 신청</span><br><b style="font-size:20px;">${actionTotal}</b>건</div>
-                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">차량 지원 수요</span><br><b style="font-size:20px;">${shuttleTotal}</b>건</div>
+            <h4 style="border-left:6px solid #003366; padding-left:12px; margin-bottom:15px; font-size:19px; color:#333;">2. 운영 및 참여 현황</h4>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:40px; text-align:center;">
+                <div style="padding:20px; border:1px solid #000; background:#fff;"><span style="font-size:13px; color:#64748b; font-weight:bold;">입교/접속</span><br><b style="font-size:22px; color:#003366;">${arrivedCount}</b> <small>/ ${totalCount}명</small></div>
+                <div style="padding:20px; border:1px solid #000; background:#fff;"><span style="font-size:13px; color:#64748b; font-weight:bold;">학습질문 건수</span><br><b style="font-size:22px; color:#003366;">${qaTotal}</b> <small>건</small></div>
+                <div style="padding:20px; border:1px solid #000; background:#fff;"><span style="font-size:13px; color:#64748b; font-weight:bold;">외출/외박 신청</span><br><b style="font-size:22px; color:#003366;">${actionTotal}</b> <small>건</small></div>
+                <div style="padding:20px; border:1px solid #000; background:#fff;"><span style="font-size:13px; color:#64748b; font-weight:bold;">차량 지원 수요</span><br><b style="font-size:22px; color:#003366;">${shuttleTotal}</b> <small>건</small></div>
             </div>
 
-            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">3. 학습 소통 현황 (Q&A)</h4>
-            <table class="doc-list-table" style="width:100%; border-collapse:collapse;">
+            <h4 style="border-left:6px solid #003366; padding-left:12px; margin-bottom:15px; font-size:19px; color:#333;">3. 학습 소통 현황 (Q&A)</h4>
+            <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
                 <thead style="background:#f1f5f9;">
-                    <tr style="height:35px;">
-                        <th style="width:60px; border:1px solid #000;">순번</th>
-                        <th style="border:1px solid #000;">질 문 내 용 (공감순)</th>
-                        <th style="width:80px; border:1px solid #000;">공감</th>
+                    <tr style="height:40px;">
+                        <th style="width:60px; border:1px solid #000; text-align:center;">순번</th>
+                        <th style="border:1px solid #000; text-align:center;">질 문 내 용 (교육생 공감순 정렬)</th>
+                        <th style="width:80px; border:1px solid #000; text-align:center;">공감</th>
                     </tr>
                 </thead>
-                <tbody style="text-align:center;">${qaHtml}</tbody>
+                <tbody>${qaHtml}</tbody>
             </table>
             
-            <div style="margin-top:50px; text-align:center; font-size:14px; color:#94a3b8;">위와 같이 교육과정 운영 결과를 보고합니다.</div>
+            <div style="margin-top:70px; text-align:center; font-size:15px; color:#333; font-weight:bold;">위와 같이 교육과정 운영 결과를 보고합니다.</div>
+            <div style="margin-top:10px; text-align:center; font-size:14px; color:#666;">${new Date().toLocaleDateString('ko-KR', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
         `;
         
         if(previewModal) previewModal.style.display = 'flex'; 
     },
     
+
+
+
+
+
+
+
+
+
+
     closePreview: function() { 
         document.getElementById('printPreviewModal').style.display = 'none'; 
     },
