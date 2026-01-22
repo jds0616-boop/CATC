@@ -24,67 +24,30 @@
 
 
 
-:root {
-    /* 교육생 플랫폼과 동일한 딥 네이비 배경색 */
-    --navy-bg: #0f172a;      
-    --navy-content: #1e293b; 
-    --blue-main: #3b82f6;    
-    --blue-deep: #2563eb;
-    --green-save: #10b981;
-    --card-white: #ffffff;
-    --text-dark: #1e293b;
-    --border-light: #e2e8f0;
-    --danger: #ef4444;
-}
-
-body {
-    margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
-    background: #000000; /* 바깥쪽 완전 검정 */
-    display: flex; justify-content: center; color: var(--text-dark);
-    overflow-x: hidden;
-}
-
-.app-container { 
-    width: 100%; max-width: 600px; min-height: 100dvh; 
-    background: var(--navy-bg); /* 안쪽 딥 네이비 */
-    position: relative; display: flex; flex-direction: column; 
-    box-shadow: 0 0 50px rgba(0,0,0,0.5); 
-}
-    
-    /* 상단바 디자인 개선 */
-    .app-header { 
-      height: 60px; background: var(--navy-bg); 
-      display: flex; align-items: center; justify-content: space-between; 
-      padding: 0 20px; flex-shrink: 0; 
-      border-bottom: 1px solid rgba(255,255,255,0.1); 
-      position: sticky; top:0; z-index: 1000; 
+    :root {
+      --navy-dark: #0f172a; --blue-main: #0ea5e9; --blue-deep: #0369a1;
+      --green-save: #10b981; --bg-cool: #f1f5f9; --card-white: #ffffff;
+      --text-dark: #1e293b; --border-blue: #e2e8f0; --danger: #ef4444;
     }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0; padding: 0; font-family: 'Pretendard', sans-serif;
+      background: #cfd8e3; display: flex; justify-content: center; color: var(--text-dark);
+      overflow-x: hidden;
+    }
+    .app-container { width: 100%; max-width: 600px; min-height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); }
+    
+    /* 상단바 */
+    .app-header { height: 55px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
     .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
     .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
 
-    /* 메인 콘텐츠 영역 배경 */
-    .app-content { 
-      flex: 1; padding: 15px; display: flex; flex-direction: column; 
-      gap: 15px; overflow-y: auto; 
-      background: var(--navy-bg); /* 배경색 일치 */
-    }
-
-    /* 섹션 카드가 배경 위에서 잘 보이도록 그림자 및 테두리 조정 */
-    .section-card { 
-      background: var(--card-white); 
-      border-radius: 20px; 
-      padding: 20px; 
-      border: 1px solid rgba(255,255,255,0.1); 
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-    }
-    .section-title { 
-      font-size: 14px; font-weight: 800; color: var(--navy-bg); 
-      margin-bottom: 15px; display: flex; align-items: center; 
-      justify-content: flex-start; gap: 8px; 
-    }
+    .app-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .section-card { background: var(--card-white); border-radius: 12px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
     
-    .navy-select, .navy-input { width: 100%; height: 45px; border-radius: 12px; border: 1.5px solid var(--border-light); background: #f8fafc; padding: 0 12px; font-size: 14px; font-weight: 700; color: var(--navy-bg); outline: none; }
-    .notice-area { width: 100%; min-height: 80px; border-radius: 12px; border: 1.5px solid var(--border-light); padding: 15px; font-size: 14px; line-height: 1.6; resize: none; margin-bottom: 10px; background: #fff; font-weight: 600; outline: none; }
+    .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
+    .notice-area { width: 100%; min-height: 60px; border-radius: 8px; border: 1.5px solid var(--border-blue); padding: 12px; font-size: 13px; line-height: 1.5; resize: none; margin-bottom: 8px; background: #fff; font-weight: 600; outline: none; }
 
 
 
@@ -136,21 +99,17 @@ body {
     margin-bottom: 20px;
 }
 
-
-
-
-
 /* [핵심] 모든 버튼형 카드의 공통 기반 스타일 */
 .dashboard-card-btn {
-    height: 120px; 
-    border-radius: 20px; /* 좀 더 둥글게 */
+    height: 120px; /* 모든 버튼 높이 통일 */
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.3); /* 남색 배경에 어울리는 깊은 그림자 */
+    cursor: pointer; /* 마우스 손가락 모양 */
+    transition: all 0.25s ease; /* 애니메이션 부드럽게 */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     border: none;
     position: relative;
     overflow: hidden;
@@ -159,32 +118,47 @@ body {
     padding: 10px;
 }
 
-/* 마우스 올렸을 때 효과 */
-.dashboard-card-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
+/* 마우스 올렸을 때 (Hover) - 살짝 떠오르고 밝아짐 */
+.dashboard-card-btn:hover {
+    transform: translateY(-5px); 
+    box-shadow: 0 12px 20px rgba(0,0,0,0.12);
+    filter: brightness(1.08);
+}
 
-/* 내부 텍스트 스타일 */
+/* 클릭했을 때 (Active) - 눌리는 느낌 */
+.dashboard-card-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    filter: brightness(0.95);
+}
+
+/* 내부 텍스트 공통 스타일 */
 .dashboard-card-btn .label { font-size: 11px; font-weight: 700; margin-bottom: 4px; opacity: 0.8; }
-.dashboard-card-btn .val { font-size: 26px; font-weight: 900; }
+.dashboard-card-btn .val { font-size: 24px; font-weight: 900; }
 .dashboard-card-btn .val span { font-size: 14px; margin-left: 2px; }
+.dashboard-card-btn .sub-text { font-size: 10px; margin-top: 5px; opacity: 0.7; }
 
-/* 1번, 2번 카드: 네이비/블루 배경 유지 (포인트) */
-.stat-dark { background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.1); }
-.stat-dark .val { color: #3b82f6; }
+/* 1번 카드: 전체 교육생 (네이비) */
+.stat-dark { background: #0f172a; color: white; }
+.stat-dark .val { color: #0ea5e9; }
 
-.stat-blue { background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.1); }
+/* 2번 카드: 외출/외박 (딥블루) */
+.stat-blue { background: #0369a1; color: white; }
 .stat-blue .val { color: #fbbf24; }
 
-/* 3번, 4번 카드: 흰색으로 강조 (시안성 확보) */
+/* 3, 4번 카드: 하단 액션 버튼 (화이트) */
 .action-white { 
     background: #ffffff; 
-    color: #0f172a;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    border: 1px solid #e2e8f0; 
+    color: #1e293b;
 }
 .action-white i { font-size: 28px; margin-bottom: 10px; }
 .action-white span { font-size: 13px; font-weight: 800; }
 
-.icon-pickup { color: #3b82f6; }
+/* 아이콘 개별 컬러 */
+.icon-pickup { color: #6366f1; }
 .icon-shuttle { color: #f59e0b; }
+
 
 
 
@@ -376,8 +350,6 @@ body {
 }
 .dot-pending { width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; display: inline-block; }
 .dot-approved { width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block; }
-
-
 
 /* 취소 링크형 버튼 */
 .btn-del-link {
