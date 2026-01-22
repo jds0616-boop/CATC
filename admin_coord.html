@@ -56,25 +56,21 @@
 /* 상황판 디자인 - 4개 버튼 크기 통일 버전 */
 .global-status-grid { 
     display: grid; 
-    grid-template-columns: 1fr 1fr; /* 2열 배치 */
-    gap: 10px; /* 버튼 사이 간격 */
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
     width: 100%; 
-    margin-bottom: 12px;
 }
 
 /* 상단 2개(어두운 버튼)와 하단 2개(밝은 버튼)의 공통 크기 설정 */
 .g-stat-item, .menu-btn-item {
-    height: 110px; /* 모든 버튼의 높이를 110px로 통일 */
-    border-radius: 12px;
+    height: 110px; /* 높이를 일정하게 맞춰서 4개가 사각형으로 보이게 함 */
     display: flex;
     flex-direction: column;
-    justify-content: center; /* 세로 중앙 정렬 */
-    align-items: center;     /* 가로 중앙 정렬 */
-    padding: 15px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    padding: 10px;
     box-sizing: border-box;
-    transition: 0.2s;
-    text-decoration: none;
-    cursor: pointer;
 }
 
 /* 어두운 버튼 스타일 (기존 유지) */
@@ -84,10 +80,10 @@
 .g-stat-val span { font-size: 14px; color: white; margin-left: 2px; }
 
 /* 밝은 버튼 스타일 (기존 유지) */
-.menu-btn-item {
-    background: var(--card-white);
-    border: 1.5px solid var(--border-blue);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+/* 메뉴 버튼 내부 아이콘 크기 조정 */
+.menu-btn-item i {
+    font-size: 24px;
+    margin-bottom: 8px;
 }
 
 .menu-btn-item:active { transform: scale(0.95); background: #f8fafc; }
@@ -238,30 +234,30 @@
     </header>
 
     <main class="app-content">
-      <!-- [뷰 1] 전체 과정 현황 -->
+<!-- [뷰 1] 전체 과정 현황 -->
 <div id="totalStatusView" style="display:flex; flex-direction:column; gap:12px;">
-    <!-- 모든 버튼을 하나의 그리드 안에 배치 -->
+    <!-- 모든 상황판과 버튼을 하나의 2열 그리드 안에 배치 -->
     <div class="global-status-grid">
-        <!-- 1. 항기원 전체 교육생 -->
+        <!-- 1. 항기원 전체 교육생 카드 -->
         <div class="g-stat-item">
             <div class="g-stat-label">항기원 전체 교육생</div>
             <div class="g-stat-val" id="g-total-students">0<span>명</span></div>
         </div>
 
-        <!-- 2. 외출/외박 관리대장 -->
-        <div class="g-stat-item" style="background: var(--blue-deep);" onclick="openOutingManager()">
-            <div class="g-stat-label">금일 총 외출/외박</div>
+        <!-- 2. 금일 총 외출/외박 카드 (여기에 닫는 </div>가 누락되었었습니다) -->
+        <div class="g-stat-item" style="background: var(--blue-deep); cursor:pointer;" onclick="openOutingManager()">
+            <div class="g-stat-label">금일 총 외출/외박 (관리대장)</div>
             <div class="g-stat-val" id="g-today-actions" style="color:#fbbf24;">0<span>건</span></div>
-            <div style="font-size:10px; margin-top:2px; opacity:0.8;">명단 확인/승인 ></div>
-        </div>
+            <div style="font-size:10px; margin-top:5px; opacity:0.8;">명단 확인 및 담당자 승인 ></div>
+        </div> <!-- 이 닫는 태그가 매우 중요합니다! -->
 
-        <!-- 3. 강사 픽업요청 (밝은 버튼) -->
+        <!-- 3. 강사 픽업요청 버튼 (그리드 자식으로 바로 넣기) -->
         <div class="menu-btn-item btn-inst-pickup" onclick="showPickupView()">
             <i class="fa-solid fa-car-side"></i>
             <span>강사 픽업요청 현황</span>
         </div>
 
-        <!-- 4. 교육생 퇴교 신청 (밝은 버튼) -->
+        <!-- 4. 교육생 퇴교 신청 버튼 -->
         <div class="menu-btn-item btn-student-shuttle" onclick="showStudentShuttleView()">
             <i class="fa-solid fa-bus"></i>
             <span>교육생 퇴교 신청 현황</span>
