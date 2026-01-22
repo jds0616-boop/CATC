@@ -181,7 +181,17 @@
 
 
 
-    <div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()"><div class="qr-big-box" id="qrBigTarget"></div></div>
+<!-- [수정] 디자인이 보강된 QR 확대 팝업창 -->
+<div id="qrModal" class="modal-overlay" onclick="ui.closeQrModal()" style="z-index: 9999;">
+    <div class="qr-big-box" style="background: white; padding: 30px; border-radius: 24px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
+        <div id="qrBigTarget" style="display: flex; justify-content: center; margin-bottom: 20px;"></div>
+        <h3 style="margin: 0; color: #0f172a; font-size: 18px; font-weight: 900;">Student Join QR</h3>
+        <p style="margin: 8px 0 0 0; color: #64748b; font-size: 13px; font-weight: 500;">스마트폰으로 스캔하여 강의실에 입장하세요.</p>
+        <div style="margin-top: 20px; font-size: 11px; color: #cbd5e1; border-top: 1px solid #f1f5f9; padding-top: 15px;">바탕 화면을 클릭하면 창이 닫힙니다.</div>
+    </div>
+</div>
+
+
         <div id="statusOverlay" class="status-overlay">
             <div class="lock-message"><i class="fa-solid fa-lock"></i><h3>강의 대기 중 (Room Idle)</h3><p>현재 강의실이 '비어있음' 상태입니다.<br>좌측 사이드바에서 <b>[Room Status]</b>를<br><span style="color:#fbbf24;">'사용중'</span>으로 변경하고 <span class="text-badge">교육과정 환경 설정 (통합)</span>버튼을 눌러주세요.</p></div>
         </div>

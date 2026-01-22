@@ -186,26 +186,40 @@ saveInstructorNoticeMain: function() {
         });
     },
     
-    loadInitialData: function() {
-        const lastRoom = localStorage.getItem('kac_last_room');
-        ui.initRoomSelect();
+// [최종] 초기 데이터 로드 및 삭제된 버튼 오류 방지 + QR 클릭 복구
+loadInitialData: function() {
+    const lastRoom = localStorage.getItem('kac_last_room');
+    ui.initRoomSelect();
 
-        if (lastRoom) {
-            this.forceEnterRoom(lastRoom);
-        } else {
-            ui.showWaitingRoom();
-        }
+    if (lastRoom) {
+        this.forceEnterRoom(lastRoom);
+    } else {
+        ui.showWaitingRoom();
+    }
 
-        state.quizList = DEFAULT_QUIZ_DATA;
-        state.isExternalFileLoaded = false;
-        quizMgr.renderMiniList();
-        document.getElementById('roomSelect').onchange = (e) => { 
+    state.quizList = DEFAULT_QUIZ_DATA;
+    state.isExternalFileLoaded = false;
+    quizMgr.renderMiniList();
+
+    // 1. 강의실 선택 이벤트 연결
+    const roomSel = document.getElementById('roomSelect');
+    if(roomSel) {
+        roomSel.onchange = (e) => { 
             if(e.target.value) this.switchRoomAttempt(e.target.value); 
         };
-        document.getElementById('quizFile').onchange = (e) => quizMgr.loadFile(e);
-        const qrEl = document.getElementById('qrcode'); 
-        if(qrEl) qrEl.onclick = function() { ui.openQrModal(); };
-    },
+    }
+
+    // 2. [중요] 삭제된 quizFile/guideFile 관련 코드는 여기서 제거하여 오류를 방지함
+
+    // 3. [복구] 사이드바 작은 QR 코드를 클릭하면 크게 띄우기
+    const qrEl = document.getElementById('qrcode'); 
+    if(qrEl) {
+        qrEl.style.cursor = "pointer"; // 마우스 손가락 모양
+        qrEl.onclick = function() { 
+            ui.openQrModal(); 
+        };
+    }
+},
     
 // [수정] 방 이동 시 제어권이 없으면 무조건 비번 창을 띄우고, 실패 시 입장을 원천 차단
 switchRoomAttempt: async function(newRoom) {
@@ -1799,19 +1813,30 @@ renderRoomStatus: function(st) {
         } catch(e) {}
     },
     
+// [확인 및 교체] 큰 QR 팝업창 열기 함수
     openQrModal: function() {
         const url = document.getElementById('studentLink').value; 
-        if(!url) return;
-        document.getElementById('qrModal').style.display = 'flex';
+        if(!url) return; // 링크가 없으면 중단
+
+        const modal = document.getElementById('qrModal');
         const target = document.getElementById('qrBigTarget');
-        if(!target) return;
-        target.innerHTML = ""; 
-        setTimeout(() => new QRCode(target, { 
-            text: url, 
-            width: 300, 
-            height: 300 
-        }), 50);
-    },
+        
+        if(modal && target) {
+            modal.style.display = 'flex'; // 팝업창 보이기
+            target.innerHTML = ""; // 기존에 그려진 QR 삭제
+            
+            // 팝업창이 뜨는 애니메이션 시간을 고려해 0.05초 뒤에 QR 생성
+            setTimeout(() => {
+                new QRCode(target, { 
+                    text: url, 
+                    width: 350, 
+                    height: 350 
+                });
+            }, 50);
+        } else {
+            alert("QR 팝업용 HTML 요소가 없습니다.");
+        }
+    }, // <-- 함수가 끝나고 콤마(,)가 있는지 꼭 확인하세요!
     
     closeQrModal: function() { 
         document.getElementById('qrModal').style.display = 'none'; 
