@@ -12,11 +12,25 @@
 
 
 /* --- 여기서부터 추가 (스타일) --- */
-    .course-item-card {
-      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; 
-      display: flex; align-items: center; cursor: pointer; margin-bottom: 10px; 
-      overflow: hidden; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
+.course-item-card {
+    background: #ffffff; 
+    border-radius: 16px; 
+    display: flex; 
+    align-items: center; 
+    cursor: pointer; 
+    margin-bottom: 12px; 
+    /* 선명한 남색 실선 적용 (경계선 강화) */
+    border: 1.5px solid #0f172a; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+/* 마우스를 올렸을 때 테두리가 더 강조되는 효과 */
+.course-item-card:hover {
+    border-color: var(--blue-main);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+}
     .course-item-card:active { transform: scale(0.98); }
     .course-color-bar { width: 6px; height: 60px; flex-shrink: 0; }
     .course-info-content { flex: 1; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
@@ -43,7 +57,15 @@
     .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
 
     .app-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-    .section-card { background: var(--card-white); border-radius: 12px; padding: 15px; border: 1px solid var(--border-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.section-card { 
+    background: var(--card-white); 
+    border-radius: 20px; 
+    padding: 20px; 
+    /* 얇고 살짝 투명한 남색 실선으로 경계 확정 */
+    border: 1px solid rgba(15, 23, 42, 0.15); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+    margin-bottom: 5px;
+}
     .section-title { font-size: 13px; font-weight: 800; color: var(--blue-deep); margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
     
     .navy-select, .navy-input { width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid var(--border-blue); background: #f8fafc; padding: 0 10px; font-size: 13px; font-weight: 800; color: var(--navy-dark); outline: none; }
@@ -110,7 +132,7 @@
     cursor: pointer;
     transition: all 0.25s ease;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* 어두운 버튼용 */
     position: relative;
     overflow: hidden;
     text-align: center;
@@ -150,26 +172,38 @@
     margin-top: 5px;
 }
 
-/* 1번 카드: 전체 교육생 (다크 네이비) */
-.stat-dark { background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.1); }
-.stat-dark .val { color: #3b82f6; }
-.stat-dark i { color: #3b82f6; }
+/* [통일] 모든 상황판 버튼을 헤더와 동일한 딥블루 그라데이션으로 변경 */
 
-/* 2번 카드: 외출/외박 (다크 네이비) */
-.stat-blue { background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.1); }
-.stat-blue .val { color: #fbbf24; }
-.stat-blue i { color: #fbbf24; }
-
-/* 3, 4번 카드: 하단 액션 버튼 (화이트 강조) */
-.action-white { 
-    background: #ffffff; 
-    color: #0f172a;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+/* 1번 카드: 전체 교육생 */
+.stat-dark { 
+    background: linear-gradient(135deg, #003366 0%, #0055aa 100%) !important; 
+    color: white !important; 
+    border: 1px solid rgba(255, 255, 255, 0.2) !important; /* 은은한 흰색 테두리 */
 }
-.action-white .label { color: #64748b; }
-.action-white .icon-pickup { color: #6366f1; }
-.action-white .icon-shuttle { color: #f59e0b; }
+.stat-dark .val { color: #60a5fa !important; } /* 밝은 하늘색 숫자 */
+.stat-dark i { color: #60a5fa !important; }
 
+/* 2번 카드: 외출/외박 */
+.stat-blue { 
+    background: linear-gradient(135deg, #003366 0%, #0055aa 100%) !important; 
+    color: white !important; 
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.stat-blue .val { color: #fbbf24 !important; } /* 노란색 숫자 */
+.stat-blue i { color: #fbbf24 !important; }
+
+/* 3, 4번 카드: 하단 액션 버튼 (화이트에서 딥블루로 변경) */
+.action-white { 
+    background: linear-gradient(135deg, #003366 0%, #0055aa 100%) !important; 
+    color: white !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+/* 3, 4번 카드의 내부 글자와 아이콘 색상 보정 */
+.action-white .label { color: rgba(255, 255, 255, 0.7) !important; }
+.action-white .val { color: white !important; }
+.action-white .icon-pickup { color: #a5b4fc !important; } /* 연보라색 아이콘 */
+.action-white .icon-shuttle { color: #fcd34d !important; } /* 황금색 아이콘 */
 
 
 
