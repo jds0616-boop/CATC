@@ -471,28 +471,33 @@
 
 
 
-/* 하단 플로팅 홈 버튼 디자인 */
+/* 하단 중앙 플로팅 홈 버튼 (짙은 남색 버전) */
 #floatingHomeBtn {
     position: fixed;
-    bottom: 80px; /* 하단바(60px)보다 약간 위 */
-    right: 20px;
-    background: var(--navy-bg);
+    bottom: 75px; /* 하단바(60px)에서 살짝 위 */
+    left: 50%;
+    transform: translateX(-50%); /* 정확히 가로 중앙 정렬 */
+    background: #0f172a; /* 짙은 남색 (Navy-bg와 동일) */
     color: white;
-    padding: 12px 20px;
+    padding: 10px 25px;
     border-radius: 50px;
-    display: none; /* 기본은 숨김 */
+    display: none; /* JS에서 노출 제어 */
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 10px;
     font-size: 14px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4); /* 조금 더 입체적인 그림자 */
     z-index: 2000;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.2s ease;
+    border: 1.5px solid rgba(255,255,255,0.1); /* 테두리에 아주 얇은 빛 추가 */
+    white-space: nowrap; /* 글자 줄바꿈 방지 */
 }
-#floatingHomeBtn:active { transform: scale(0.9); }
-#floatingHomeBtn i { font-size: 16px; color: var(--blue-main); }
+/* 클릭 시 살짝 작아지는 효과 */
+#floatingHomeBtn:active { transform: translateX(-50%) scale(0.95); }
+/* 아이콘 색상 포인트 (하늘색) */
+#floatingHomeBtn i { font-size: 16px; color: #3b82f6; }
 
 
 
