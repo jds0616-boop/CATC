@@ -331,27 +331,29 @@
 
 
 
-<!-- [신규 뷰 3] 강사 픽업 통합 현황 -->
-      <div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
-          <div class="section-card">
-              <div class="section-title" style="justify-content:space-between;">
-                  <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
-                  <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
-                      <i class="fa-solid fa-plus"></i> 수송 추가요청
-                  </button>
-              </div>
-              <div style="overflow-x: auto;">
-                  <table class="navy-table">
-                      <thead>
-                          <tr><th>과정명</th><th>강사명</th><th>연락처</th><th>픽업장소</th><th>픽업시간</th><th>방향</th></tr>
-                      </thead>
-                      <tbody id="pickupTableBody">
-                          <!-- JS에서 내용 채움 -->
-                      </tbody>
-                  </table>
-              </div>
-          </div>
-      </div>
+<!-- [수정] 강사 픽업 통합 현황 테이블 -->
+<div id="pickupStatusView" class="view-card-full">
+    <div class="section-card">
+        <div class="section-title" style="justify-content:space-between;">
+            <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
+            <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
+                <i class="fa-solid fa-plus"></i> 수송 추가요청
+            </button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="navy-table">
+                <thead>
+                    <!-- 기사 승인 컬럼 추가 -->
+                    <tr><th>과정명</th><th>강사명</th><th>연락처</th><th>픽업장소</th><th>픽업시간</th><th>방향</th><th>기사 승인</th></tr>
+                </thead>
+                <tbody id="pickupTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
 
       <!-- [신규 뷰 4] 교육생 퇴교차량 통합 현황 -->
       <div id="studentShuttleView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
@@ -531,20 +533,47 @@
       </div>
   </div>
 
-  <!-- 수송 요청 모달 -->
+<!-- 수송 요청 모달 -->
   <div id="transportModal" class="setup-modal" style="z-index: 8000;">
       <div class="setup-box" style="max-width: 450px;">
-          <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center; margin:-25px -25px 20px -25px; border-radius:24px 24px 0 0;"><h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청 관리</h3><i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i></div>
+          <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center; margin:-25px -25px 20px -25px; border-radius:24px 24px 0 0;">
+              <h3 style="margin:0; font-size:17px;">🚖 강사 수송 요청 관리</h3>
+              <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i>
+          </div>
           <div style="display:flex; flex-direction:column; gap:15px;">
-              <select id="reqLoc" class="navy-select" onchange="updateTransDirButtons()">
-                  <option value="오송역">오송역</option>
-                  <option value="청주터미널">청주터미널</option>
-                  <option value="청주공항">청주공항</option>
-              </select>
+              <!-- [추가] 과정 선택 영역: 전체 페이지에서만 노출됨 -->
+              <div id="reqCourseSelectRow" style="display:none;">
+                  <label class="setup-label">대상 교육과정</label>
+                  <select id="reqCourseRID" class="navy-select">
+                      <option value="">--- 과정을 선택하세요 ---</option>
+                  </select>
+              </div>
+
+              <div>
+                  <label class="setup-label">픽업 장소</label>
+                  <select id="reqLoc" class="navy-select" onchange="updateTransDirButtons()">
+                      <option value="오송역">오송역</option>
+                      <option value="청주터미널">청주터미널</option>
+                      <option value="청주공항">청주공항</option>
+                  </select>
+              </div>
+
               <div style="display:flex; gap:5px;"><input type="date" id="reqDate" class="navy-input"><input type="time" id="reqTime" class="navy-input"></div>
-              <div style="display:flex; gap:8px;"><button id="btnTransTo" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('to')">장소→항기원</button><button id="btnTransFrom" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('from')">항기원→장소</button></div>
-              <input type="text" id="reqProf" class="navy-input" placeholder="강사명 성함"><input type="tel" id="reqPhone" class="navy-input" placeholder="강사 연락처"><button class="navy-btn" style="background:#6366f1; height:45px;" onclick="submitTransReq()">수송 예약 등록</button>
-              <div style="margin-top:10px; border-top:1px dashed #eee; padding-top:15px;"><span style="font-weight:800; font-size:12px; color:#ef4444;">📜 실시간 예약 리스트</span><div id="courseReqList" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div></div>
+              
+              <div style="display:flex; gap:8px;">
+                  <button id="btnTransTo" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('to')">장소→항기원</button>
+                  <button id="btnTransFrom" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('from')">항기원→장소</button>
+              </div>
+
+              <input type="text" id="reqProf" class="navy-input" placeholder="강사명 성함">
+              <input type="tel" id="reqPhone" class="navy-input" placeholder="강사 연락처">
+              
+              <button class="navy-btn" style="background:#6366f1; height:45px;" onclick="submitTransReq()">수송 예약 등록</button>
+              
+              <div style="margin-top:10px; border-top:1px dashed #eee; padding-top:15px;">
+                  <span style="font-weight:800; font-size:12px; color:#ef4444;">📜 실시간 예약 리스트</span>
+                  <div id="courseReqList" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
+              </div>
           </div>
           <button class="navy-btn" style="margin-top:15px; background:#64748b;" onclick="closeTransportModal()">닫기</button>
       </div>
@@ -1005,24 +1034,42 @@ async function toggleConfirm(rid, date, token, currentStatus) {
     // [6. 강사 수송 관리 시스템]
    // [수정] 강사 수송 모달 열기 (통합 현황에서도 작동하도록 개선)
 function openTransportModal() { 
-    // 만약 강의실을 선택하지 않은 상태(통합 뷰)에서 눌렀다면
-    if(!currentRID) {
-        const pick = prompt("강사를 배정할 강의실 알파벳을 입력하세요 (예: A, B, C...)", "");
-        if(!pick) return;
-        const rid = pick.toUpperCase().trim();
-        if(rid.length !== 1 || rid < 'A' || rid > 'Z') {
-            alert("알파벳 한 글자(A~Z)만 입력 가능합니다.");
-            return;
-        }
-        currentRID = rid; // 임시로 지정
-    }
-    
     toggleMenu(false); 
     document.getElementById('transportModal').style.display = "flex"; 
     document.getElementById('reqDate').value = getTodayString(); 
+    
+    const row = document.getElementById('reqCourseSelectRow');
+    const sel = document.getElementById('reqCourseRID');
+
+    // 과정 목록 초기화 및 생성 (운영 중인 과정만)
+    sel.innerHTML = '<option value="">--- 과정을 선택하세요 ---</option>';
+    Object.keys(globalAllData).forEach(rid => {
+        const room = globalAllData[rid];
+        if (room.status && room.status.roomStatus === 'active') {
+            const courseName = room.settings?.courseName || `Room ${rid}`;
+            const opt = new Option(courseName, rid);
+            sel.add(opt);
+        }
+    });
+
+    if (currentRID) {
+        // [개별 과정 페이지] 과정 선택창 숨기고 현재 과정으로 자동 지정
+        row.style.display = "none";
+        sel.value = currentRID;
+    } else {
+        // [전체 관리자 페이지] 과정 선택창 보여주고 선택 유도
+        row.style.display = "block";
+        sel.value = "";
+    }
+
     updateTransDirButtons(); 
     loadCourseTransList(); 
 }
+
+
+
+
+
     function loadCourseTransList() {
         const div = document.getElementById('courseReqList'); if(!div) return;
         firebase.database().ref('system/transport_requests').on('value', snap => {
@@ -1032,11 +1079,56 @@ function openTransportModal() {
             div.innerHTML = myList.map(r => `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"><div style="font-size:12px; line-height:1.4;"><b style="color:var(--blue-deep);">${r.date} ${r.time}</b><br><span style="font-weight:800;">${r.prof}</span> (${r.dir})</div><button onclick="deleteTrans('${r.id}')" style="background:#fee2e2; color:#ef4444; border:none; padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:800;">삭제</button></div>`).join('');
         });
     }
-    async function submitTransReq() {
-        const loc = document.getElementById('reqLoc').value; const date = document.getElementById('reqDate').value; const time = document.getElementById('reqTime').value; const prof = document.getElementById('reqProf').value.trim(); const phone = document.getElementById('reqPhone').value.trim();
-        if(!transDir) return alert("수송 방향을 선택하세요."); if(!date || !time || !prof) return alert("필수 항목 확인!");
-        try { await firebase.database().ref('system/transport_requests').push({ courseRID: currentRID, dir: transDir, date, time, prof, phone, timestamp: firebase.database.ServerValue.TIMESTAMP }); alert("✅ 예약 완료"); document.getElementById('reqProf').value = ""; document.getElementById('reqPhone').value = ""; document.getElementById('reqTime').value = ""; updateTransDirButtons(); } catch(e) { alert("오류: " + e.message); }
+
+
+
+
+
+
+async function submitTransReq() {
+    const rid = document.getElementById('reqCourseRID').value; // 선택된 과정 ID
+    const loc = document.getElementById('reqLoc').value; 
+    const date = document.getElementById('reqDate').value; 
+    const time = document.getElementById('reqTime').value; 
+    const prof = document.getElementById('reqProf').value.trim(); 
+    const phone = document.getElementById('reqPhone').value.trim();
+
+    if(!rid) return alert("대상 교육과정을 선택해주세요.");
+    if(!transDir) return alert("수송 방향을 선택하세요."); 
+    if(!date || !time || !prof) return alert("강사명과 시간을 입력해주세요.");
+
+    try { 
+        await firebase.database().ref('system/transport_requests').push({ 
+            courseRID: rid, 
+            dir: transDir, 
+            date, 
+            time, 
+            prof, 
+            phone,
+            status: 'pending', // 기사 승인 연동용 상태값
+            timestamp: firebase.database.ServerValue.TIMESTAMP 
+        }); 
+        alert("✅ 수송 예약이 등록되었습니다."); 
+        
+        // 입력 필드 초기화
+        document.getElementById('reqProf').value = ""; 
+        document.getElementById('reqPhone').value = ""; 
+        document.getElementById('reqTime').value = "";
+        
+        loadCourseTransList(); 
+    } catch(e) { 
+        alert("저장 오류: " + e.message); 
     }
+}
+
+
+
+
+
+
+
+
+
     async function deleteTrans(id) { if(confirm("삭제?")) await firebase.database().ref(`system/transport_requests/${id}`).remove(); }
 function setTransDir(d) { 
         const loc = document.getElementById('reqLoc').value; 
@@ -1472,28 +1564,39 @@ function renderPickupTable() {
     const tbody = document.getElementById('pickupTableBody');
     if(!tbody) return;
     
-    // .once 대신 .on을 써서 누가 예약/삭제하면 즉시 화면이 바뀝니다.
     firebase.database().ref('system/transport_requests').on('value', snap => {
         const data = snap.val() || {};
         const items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
         
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="padding:40px; color:#94a3b8;">예약 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:40px; color:#94a3b8;">예약 내역이 없습니다.</td></tr>';
             return;
         }
 
+        // 날짜/시간순 정렬
         items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
         tbody.innerHTML = items.map(r => {
-            const roomName = globalAllData[r.courseRID]?.settings?.courseName || `Room ${r.courseRID}`;
+            const roomInfo = globalAllData[r.courseRID];
+            const roomName = roomInfo?.settings?.courseName || `Room ${r.courseRID}`;
             const dirColor = r.dir.includes('항기원→') ? '#3b82f6' : '#ea580c';
+            
+            // 승인 상태에 따른 배지 생성
+            let statusBadge = "";
+            if (r.status === 'approved') {
+                statusBadge = `<span style="background:#dcfce7; color:#16a34a; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인완료</span>`;
+            } else {
+                statusBadge = `<span style="background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인대기</span>`;
+            }
+
             return `<tr>
                 <td style="font-size:11px; color:var(--blue-deep); font-weight:800;">${roomName}</td>
                 <td style="font-weight:800;">${r.prof}</td>
-                <td style="font-size:11px;">${r.phone}</td>
+                <td style="font-size:11px;">${r.phone || '-'}</td>
                 <td style="font-weight:700; color:${dirColor};">${r.dir.split('→')[0]}</td>
                 <td style="font-weight:800; color:var(--navy-dark);">${r.date} ${r.time}</td>
                 <td style="font-size:11px; color:#94a3b8;">${r.dir.includes('항기원→') ? '퇴교' : '입교'}</td>
+                <td>${statusBadge}</td>
             </tr>`;
         }).join('');
     });
