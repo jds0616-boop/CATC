@@ -615,7 +615,17 @@
 #floatingHomeBtn i { font-size: 16px; color: #3b82f6; }
 
 
+/* 팝업 열렸을 때 뒷배경 스크롤 방지 클래스 */
+body.modal-open {
+    overflow: hidden !important;
+    touch-action: none; /* 모바일 터치 스크롤 방지 */
+}
 
+/* 팝업 내용물 영역 스크롤 최적화 */
+.setup-box {
+    overscroll-behavior: contain; /* 스크롤이 끝에 닿아도 부모로 전달되지 않음 */
+    -webkit-overflow-scrolling: touch;
+}
 
 
 
@@ -1659,9 +1669,9 @@ function updateTransDirButtons() {
 
 
 
-// [최종 완성] 스마트 뒤로가기: 상세화면에서는 '현황판'으로, 현황판에서는 '포탈'로 이동
+// [최종] 홈/뒤로가기 클릭 시 모든 상태 해제 및 스크롤 잠금 해제
 function handleBackNav() { 
-    // 1. 열려있는 모든 팝업(모달) 먼저 닫기
+    // 모든 팝업 닫기
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
@@ -1676,27 +1686,26 @@ function handleBackNav() {
             isModalClosed = true;
         }
     });
-    // 팝업을 하나라도 닫았다면 거기서 중단 (화면은 유지)
+
+    // 팝업을 닫을 때 배경 스크롤 차단 해제
+    document.body.classList.remove('modal-open');
+
     if(isModalClosed) return;
 
-    // 2. 통합 관리대장 뷰가 열려있다면 닫기
     const outingManager = document.getElementById('outingManagerView');
     if(outingManager && outingManager.style.display === 'flex') {
         outingManager.style.display = 'none';
         return;
     }
 
-    // 3. [핵심 로직] 현재 위치 확인
     const pickupView = document.getElementById('pickupStatusView');
     const shuttleView = document.getElementById('studentShuttleView');
     const individualView = document.getElementById('individualStatusView');
 
-    // 만약 강사픽업, 퇴교현황, 혹은 개별과정 상세페이지 중 하나라도 보고 있다면?
     if ( (pickupView && pickupView.style.display === "flex") || 
          (shuttleView && shuttleView.style.display === "flex") || 
          (currentRID !== "") ) {
         
-        // --- 현황판(홈)으로 이동하는 처리 ---
         currentRID = ""; 
         if(pickupView) pickupView.style.display = "none";
         if(shuttleView) shuttleView.style.display = "none";
@@ -1705,13 +1714,8 @@ function handleBackNav() {
         const totalView = document.getElementById('totalStatusView');
         if(totalView) totalView.style.display = "flex";
         
-        handleRoomSelection(); // 사이드바 및 버튼 상태 동기화
-        console.log("현황판으로 이동했습니다.");
-
+        handleRoomSelection();
     } else {
-        // 4. 이미 현황판(홈)인 상태에서 뒤로가기를 눌렀다면?
-        // --- 드디어 포탈로 이동 ---
-        console.log("포탈로 이동합니다.");
         location.href = 'potal.html';
     }
 }
@@ -2273,15 +2277,16 @@ function renderShuttleTotalTable() {
 
 
 
-// [수정] 퇴교 차량 상세 신청 현황 보기 (전체/개별 공용)
+// [최종 완성] 퇴교 차량 상세 현황 팝업 (뒷배경 스크롤 방지 로직 포함)
 async function showShuttleApplicationDetails(rid) {
-    // 인자로 넘어온 rid가 없으면 현재 페이지의 currentRID 사용
     const targetRID = rid || currentRID;
     const room = globalAllData[targetRID];
     if (!room) return;
 
+    // ★ 핵심 추가: 팝업이 열릴 때 뒷배경(body)의 스크롤을 완전히 잠금 ★
+    document.body.classList.add('modal-open');
+
     const cName = room.settings?.courseName || targetRID;
-    const students = Object.values(room.students || {}).filter(s => s && s.name && s.name !== "undefined");
     const requests = room.shuttle?.requests || {};
     const appliedData = Object.values(requests);
 
@@ -2372,7 +2377,7 @@ init = function() {
     <div class="setup-box" style="max-width: 600px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
             <h3 style="margin:0; font-size:18px; color:var(--navy-dark);"><i class="fa-solid fa-list-check"></i> 퇴교 차량 상세 신청 내역</h3>
-            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('shuttleDetailModal').style.display='none'"></i>
+            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('shuttleDetailModal').style.display='none'; document.body.classList.remove('modal-open');"></i>
         </div>
         <div id="shuttleDetailContent" style="max-height: 500px; overflow-y: auto;">
             <!-- JS에서 내용 생성 -->
