@@ -3437,128 +3437,123 @@ const guideMgr = {
 
 
 // --- 5. Print & Report (최종 보강 버전) ---
+// [최종 고도화] 교육과정 종합 결과 보고서 생성 및 인쇄 매니저
 const printMgr = {
     openInputModal: function() { 
         if(!state.room) return ui.showAlert("강의실을 먼저 선택해주세요.");
-        
         const today = new Date();
         const dateIn = document.getElementById('printDateInput');
         const profIn = document.getElementById('printProfInput');
         const modal = document.getElementById('printInputModal');
         
         if(modal) {
-            if(dateIn) {
-                dateIn.value = ""; 
-                dateIn.placeholder = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
-            }
-            // 현재 설정된 교수님 성함을 자동으로 가져옴
-            if(profIn) profIn.value = document.getElementById('profSelect')?.value || ""; 
-            
+            if(dateIn) dateIn.value = document.getElementById('dashPeriod')?.innerText || "";
+            if(profIn) profIn.value = document.getElementById('dashProfNameOnly')?.innerText || ""; 
             modal.style.display = 'flex'; 
         }
     },
     
-    confirmPrint: function(isSkip) { 
-        const today = new Date();
-        const defDate = `${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
-        
+    confirmPrint: function() { 
         this.closeInputModal(); 
-        
-        const dateIn = document.getElementById('printDateInput');
-        const profIn = document.getElementById('printProfInput');
-        
-        // 정보 입력 없이 진행하면 기본값 사용
-        const finalDate = isSkip ? defDate : (dateIn?.value || dateIn?.placeholder || defDate);
-        const finalProf = isSkip ? "담당 교수" : (profIn?.value || "담당 교수");
-        
-        this.openPreview(finalDate, finalProf); 
+        const date = document.getElementById('printDateInput')?.value || "-";
+        const prof = document.getElementById('printProfInput')?.value || "-";
+        this.openPreview(date, prof); 
     },
     
     closeInputModal: function() { 
-        const modal = document.getElementById('printInputModal');
-        if(modal) modal.style.display = 'none'; 
+        document.getElementById('printInputModal').style.display = 'none'; 
     },
     
-    openPreview: function(date, prof) { 
-        const cname = document.getElementById('courseNameInput');
-        const docCname = document.getElementById('doc-cname');
-        const docDate = document.getElementById('doc-date');
-        const docProf = document.getElementById('doc-prof');
+    openPreview: async function(date, prof) { 
+        const cname = document.getElementById('dashCourseTitle')?.innerText || "과정명 미설정";
+        const coord = document.getElementById('dashCoordName')?.innerText || "-";
+        const roomLoc = document.getElementById('dashRoomDetail')?.innerText || "-";
+        
+        // --- [종합 데이터 집계] ---
+        const arrivedCount = document.getElementById('dashArrivedCount')?.innerText || "0";
+        const totalCount = document.getElementById('dashTotalCount')?.innerText || "0";
+        const qaTotal = document.getElementById('dashQaCount')?.innerText || "0";
+        const actionTotal = document.getElementById('dashActionCount')?.innerText || "0";
+        const shuttleTotal = document.getElementById('dashShuttleTotal')?.innerText || "0";
+        
         const listBody = document.getElementById('docListBody');
         const previewModal = document.getElementById('printPreviewModal');
 
-        if(docCname) docCname.innerText = cname?.value || "과정명 미설정"; 
-        if(docDate) docDate.innerText = date; 
-        if(docProf) docProf.innerText = prof;
-        
-        if(listBody) {
-            listBody.innerHTML = ""; 
-            // 데이터 안전하게 가져오기 (비어있을 때 대비)
-            const items = Object.values(state.qaData || {}); 
-            
-            if (items.length === 0) {
-                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:50px;'>수집된 질문이 없습니다.</td></tr>";
-            } else { 
-                // 시간순으로 정렬 (에러 방지용 보강)
-                items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).forEach((item, idx) => { 
-                    listBody.innerHTML += `
-                        <tr>
-                            <td style="text-align:center;">${idx + 1}</td>
-                            <td style="text-align:left; padding:10px;">${item.text || ""}</td>
-                            <td style="text-align:center;">❤️ ${item.likes || 0}</td>
-                        </tr>
-                    `; 
-                }); 
-            }
+        // 1. Q&A 리스트 생성
+        let qaHtml = "";
+        const qaItems = Object.values(state.qaData || {}).filter(q => q.status !== 'delete');
+        if (qaItems.length === 0) {
+            qaHtml = "<tr><td colspan='3' style='text-align:center; padding:30px; color:#94a3b8;'>수집된 질문이 없습니다.</td></tr>";
+        } else { 
+            qaItems.sort((a, b) => (b.likes || 0) - (a.likes || 0)).forEach((item, idx) => { 
+                qaHtml += `<tr><td>${idx + 1}</td><td style='text-align:left;'>${item.text}</td><td>❤️ ${item.likes || 0}</td></tr>`; 
+            }); 
         }
+
+        // 2. 보고서 본문(HTML) 조립
+        document.getElementById('official-document').innerHTML = `
+            <div style="text-align:right; margin-bottom:20px;">
+                <table style="display:inline-table; border-collapse:collapse; border:1px solid #000;">
+                    <tr><td rowspan="2" style="width:25px; border:1px solid #000; padding:10px; background:#f1f5f9; font-weight:bold;">결<br>재</td><td style="width:80px; border:1px solid #000; height:30px; background:#f1f5f9; font-size:12px; text-align:center;">담임/강사</td><td style="width:80px; border:1px solid #000; background:#f1f5f9; font-size:12px; text-align:center;">과정담당</td></tr>
+                    <tr><td style="height:60px; border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+                </table>
+            </div>
+
+            <h2 style="text-align:center; font-size:32px; font-weight:900; margin-bottom:40px; text-decoration:underline;">교육과정 운영 결과 보고서</h2>
+            
+            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">1. 교육 개요</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+                <tr style="height:40px;"><th style="width:150px; background:#f1f5f9; border:1px solid #000;">교 육 과 정 명</th><td style="padding-left:15px; border:1px solid #000; font-weight:bold;">${cname}</td></tr>
+                <tr style="height:40px;"><th style="background:#f1f5f9; border:1px solid #000;">교 육 기 간</th><td style="padding-left:15px; border:1px solid #000;">${date}</td><th style="width:120px; background:#f1f5f9; border:1px solid #000;">강 의 장</th><td style="padding-left:15px; border:1px solid #000;">${roomLoc}</td></tr>
+                <tr style="height:40px;"><th style="background:#f1f5f9; border:1px solid #000;">담 임 교 수</th><td style="padding-left:15px; border:1px solid #000;">${prof}</td><th style="background:#f1f5f9; border:1px solid #000;">과 정 담 당</th><td style="padding-left:15px; border:1px solid #000;">${coord}</td></tr>
+            </table>
+
+            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">2. 운영 및 참여 현황</h4>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:30px; text-align:center;">
+                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">입교/접속</span><br><b style="font-size:20px;">${arrivedCount}</b> / ${totalCount}명</div>
+                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">학습질문 건수</span><br><b style="font-size:20px;">${qaTotal}</b>건</div>
+                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">외출/외박 신청</span><br><b style="font-size:20px;">${actionTotal}</b>건</div>
+                <div style="padding:15px; border:1px solid #000; background:#f8fafc;"><span style="font-size:12px; color:#64748b; font-weight:bold;">차량 지원 수요</span><br><b style="font-size:20px;">${shuttleTotal}</b>건</div>
+            </div>
+
+            <h4 style="border-left:5px solid #003366; padding-left:10px; margin-bottom:15px; font-size:18px;">3. 학습 소통 현황 (Q&A)</h4>
+            <table class="doc-list-table" style="width:100%; border-collapse:collapse;">
+                <thead style="background:#f1f5f9;">
+                    <tr style="height:35px;">
+                        <th style="width:60px; border:1px solid #000;">순번</th>
+                        <th style="border:1px solid #000;">질 문 내 용 (공감순)</th>
+                        <th style="width:80px; border:1px solid #000;">공감</th>
+                    </tr>
+                </thead>
+                <tbody style="text-align:center;">${qaHtml}</tbody>
+            </table>
+            
+            <div style="margin-top:50px; text-align:center; font-size:14px; color:#94a3b8;">위와 같이 교육과정 운영 결과를 보고합니다.</div>
+        `;
         
         if(previewModal) previewModal.style.display = 'flex'; 
     },
     
     closePreview: function() { 
-        const modal = document.getElementById('printPreviewModal');
-        if(modal) modal.style.display = 'none'; 
+        document.getElementById('printPreviewModal').style.display = 'none'; 
     },
     
     executePrint: function() { 
-        const content = document.getElementById('official-document')?.innerHTML;
-        if(!content) return alert("인쇄할 내용이 없습니다.");
-
-        const printWindow = window.open('', '', 'height=900,width=800');
-        if(!printWindow) return alert("팝업 차단을 해제해주세요.");
-
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>KAC Report - ${document.getElementById('courseNameInput')?.value || 'Print'}</title>
-                <style>
-                    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"); 
-                    * { box-sizing: border-box; } 
-                    body { font-family: "Pretendard", sans-serif; padding: 20px; } 
-                    @page { size: A4; margin: 20mm; } 
-                    h2 { margin: 0 0 30px 0; text-align: center; font-size: 28px; text-decoration: underline; } 
-                    table { width: 100% !important; border-collapse: collapse; margin-top: 20px; } 
-                    th, td { border: 1px solid #000; padding: 10px; font-size: 14px; }
-                    .doc-info-table { border: none; margin-bottom: 30px; }
-                    .doc-info-table th, .doc-info-table td { border: none; text-align: left; padding: 5px 0; }
-                    .doc-info-table th { width: 100px; font-weight: bold; }
-                    .doc-list-table th { background: #f0f0f0; }
-                </style>
-            </head>
-            <body>${content}</body>
-            </html>
-        `);
-        
-        printWindow.document.close(); 
-        printWindow.focus(); 
-        
-        // 이미지가 로드될 시간을 살짝 준 뒤 인쇄창 띄움
-        setTimeout(() => { 
-            printWindow.print(); 
-            printWindow.close(); 
-        }, 500);
+        const content = document.getElementById('official-document').innerHTML;
+        const printWindow = window.open('', '', 'height=900,width=900');
+        printWindow.document.write('<html><head><title>KAC Report</title>');
+        printWindow.document.write('<style>@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"); * { box-sizing: border-box; } body { font-family: "Pretendard", sans-serif; padding: 40px; } table { width:100%; border-collapse:collapse; } th, td { border:1px solid #000; padding:8px; font-size:13px; } </style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(content);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
     }
 };
+
+
+
+
 
 // [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
