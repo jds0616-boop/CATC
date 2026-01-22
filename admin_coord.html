@@ -1129,7 +1129,15 @@ async function submitTransReq() {
 
 
 
-    async function deleteTrans(id) { if(confirm("삭제?")) await firebase.database().ref(`system/transport_requests/${id}`).remove(); }
+async function deleteTrans(id) { 
+    if(confirm("해당 강사픽업 예약을 취소하시겠습니까?")) {
+        await firebase.database().ref(`system/transport_requests/${id}`).remove();
+        alert("취소되었습니다.");
+    }
+}
+
+
+
 function setTransDir(d) { 
         const loc = document.getElementById('reqLoc').value; 
         const btnTo = document.getElementById('btnTransTo'); 
@@ -1559,6 +1567,10 @@ function showActionDetail(dataJson) {
         renderShuttleTotalTable();
     }
 
+
+
+
+
     // [수정] 강사 픽업 테이블 그리기 (실시간 업데이트 버전)
 function renderPickupTable() {
     const tbody = document.getElementById('pickupTableBody');
@@ -1583,10 +1595,15 @@ function renderPickupTable() {
             
             // 승인 상태에 따른 배지 생성
             let statusBadge = "";
+            let cancelBtn = ""; // 취소 버튼 변수 추가
+
             if (r.status === 'approved') {
                 statusBadge = `<span style="background:#dcfce7; color:#16a34a; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인완료</span>`;
+                cancelBtn = ""; // 승인 완료 시 취소 불가
             } else {
                 statusBadge = `<span style="background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인대기</span>`;
+                // 승인 대기 상태일 때만 취소 버튼 노출
+                cancelBtn = `<button onclick="deleteTrans('${r.id}')" style="margin-left:5px; background:#fff; color:#ef4444; border:1px solid #fecaca; padding:3px 7px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:800; vertical-align:middle;">취소</button>`;
             }
 
             return `<tr>
@@ -1596,11 +1613,15 @@ function renderPickupTable() {
                 <td style="font-weight:700; color:${dirColor};">${r.dir.split('→')[0]}</td>
                 <td style="font-weight:800; color:var(--navy-dark);">${r.date} ${r.time}</td>
                 <td style="font-size:11px; color:#94a3b8;">${r.dir.includes('항기원→') ? '퇴교' : '입교'}</td>
-                <td>${statusBadge}</td>
+                <td>${statusBadge}${cancelBtn}</td>
             </tr>`;
         }).join('');
     });
 }
+
+
+
+
 
     // [신규] 교육생 퇴교차량 통합 테이블 그리기
     function renderShuttleTotalTable() {
