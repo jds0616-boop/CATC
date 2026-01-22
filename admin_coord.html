@@ -1568,19 +1568,22 @@ function renderCourseSelectors() {
 
 
 
-// [전체현황 하단] 당일 외출/외박 전체 신청자 명단 렌더링 (서명 기능 포함)
+// [수정] 전체 신청자 명단 헤더 한 줄 정렬 및 데이터 렌더링
 function renderTotalHistory() {
     const tbody = document.getElementById('historyTableBody');
     const label = document.getElementById('historyDateLabel');
     if(!tbody || !label) return;
 
     const d = new Date(selectedDate);
-    const dateText = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    const dateText = `${d.getMonth() + 1}/${d.getDate()}`; // 날짜를 조금 더 짧게 수정 (1/22 방식)
     
+    // 이 구역이 한 줄 정렬의 핵심입니다.
     label.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <span>당일(${dateText}) 외출·외박 전체 신청자 명단</span>
-            <div class="live-badge"><i class="fa-solid fa-sync fa-spin"></i> 실시간 업데이트 중</div>
+        <div style="display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; overflow:hidden;">
+            <span style="white-space:nowrap; font-weight:800; font-size:14px; flex-shrink:0; color:var(--navy-bg);">당일(${dateText}) 외출·외박 명단</span>
+            <div class="live-badge" style="white-space:nowrap; flex-shrink:0; padding:3px 10px; font-size:10px;">
+                <i class="fa-solid fa-sync fa-spin" style="color:#3b82f6;"></i> 실시간
+            </div>
         </div>
     `;
 
@@ -1601,31 +1604,31 @@ function renderTotalHistory() {
     });
 
     if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">오늘 신청된 내역이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center; font-size:13px;">오늘 신청된 내역이 없습니다.</td></tr>';
         return;
     }
 
     list.sort((a,b) => a.timestamp - b.timestamp).forEach(a => {
         const isSigned = a.confirmed === true;
-        const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
-        const btnText = isSigned ? "서명취소" : "서명";
+        const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀</span>` : "";
+        const btnText = isSigned ? "취소" : "서명"; // 버튼 글자도 모바일 대응을 위해 짧게 수정
         const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
         const dataStr = encodeURIComponent(JSON.stringify(a));
 
-tbody.innerHTML += `
-    <tr>
-        <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
-        <td style="font-weight:800; text-align:center; cursor:pointer;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-        <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-        <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-        <td>
-            <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
-                    style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">
-                ${btnText}
-            </button>
-        </td>
-    </tr>`;
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName.substring(0,6)}..</td>
+                <td style="font-weight:800; text-align:center; cursor:pointer;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
+                <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+                <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                <td>
+                    <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                            style="${btnStyle} border-radius:6px; width:100%; height:32px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">
+                        ${btnText}
+                    </button>
+                </td>
+            </tr>`;
     });
 }
 
