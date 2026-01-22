@@ -1703,53 +1703,51 @@ initRoomSelect: function() {
         }
     },
     
-// [최종 수정] 방 번호 배지 및 옵저버 표시 실시간 업데이트
-    updateHeaderRoom: function(r) { 
-        // 1. 상단바 텍스트 업데이트 (기본값으로 초기화 후 옵저버일 때만 추가)
-        const elTop = document.getElementById('displayRoomName'); 
-        if(elTop) {
-            let titleText = `Room #${r}`;
-            // 현재 옵저버 상태가 맞다면 제목 뒤에만 살짝 붙여줌
-            if (state.isObserver) {
-                titleText += " (👁️ 옵저버)";
-            }
-            elTop.innerText = titleText;
-        }
-
-        // 2. 모든 섹션 제목 옆의 룸 배지(.room-badge-global)들을 찾아 일괄 변경
-        // (여기는 "옵저버" 글자 없이 순수하게 방 번호만 표시해서 깔끔하게 유지합니다)
-        const allBadges = document.querySelectorAll('.room-badge-global');
-        allBadges.forEach(badge => {
-            badge.innerText = `(Room #${r})`;
-        });
-
-        // 3. 대시보드 전용 배지 업데이트
-        const elDash = document.getElementById('dashRoomBadge');
-        if(elDash) elDash.innerText = `(Room #${r})`;
-    },
-
-
-
-
-
-
-// [신규] 강사 <-> 옵저버 버튼 디자인 실시간 전환
-    updateObserverButton: function() {
-        const btn = document.getElementById('observerToggleButton');
-        if(!btn) return;
-
+// [수정] 무서운 눈 이모지를 깔끔한 아이콘으로 교체
+updateHeaderRoom: function(r) { 
+    // 1. 상단바 텍스트 업데이트
+    const elTop = document.getElementById('displayRoomName'); 
+    if(elTop) {
+        let titleText = `Room #${r}`;
+        // 무서운 눈(👁️) 대신 폰트어썸 아이콘 사용
         if (state.isObserver) {
-            // 현재 옵저버라면 -> 강사 전환 버튼으로 변경
-            btn.innerHTML = '<i class="fa-solid fa-user-tie"></i> 강사 모드 전환';
-            btn.style.background = "#3b82f6"; // 파란색 강조
-            btn.style.color = "#ffffff";
-        } else {
-            // 현재 강사라면 -> 옵저버 전환 버튼으로 변경
-            btn.innerHTML = '<i class="fa-solid fa-eye"></i> 옵저버로 전환';
-            btn.style.background = "#e2e8f0"; // 회색
-            btn.style.color = "#475569";
+            titleText += ` <span style="font-size:14px; margin-left:8px; color:#94a3b8; font-weight:normal;">(<i class="fa-solid fa-eye" style="font-size:12px;"></i> 옵저버)</span>`;
         }
-    },
+        elTop.innerHTML = titleText; // innerText 대신 innerHTML 사용
+    }
+
+    // 2. 모든 섹션 제목 옆의 룸 배지 업데이트
+    const allBadges = document.querySelectorAll('.room-badge-global');
+    allBadges.forEach(badge => {
+        badge.innerText = `(Room #${r})`;
+    });
+
+    // 3. 대시보드 전용 배지 업데이트
+    const elDash = document.getElementById('dashRoomBadge');
+    if(elDash) elDash.innerText = `(Room #${r})`;
+},
+
+
+
+
+
+// [수정] 옵저버 버튼 아이콘 보정
+updateObserverButton: function() {
+    const btn = document.getElementById('observerToggleButton');
+    if(!btn) return;
+
+    if (state.isObserver) {
+        // 옵저버 상태일 때 -> 강사로 돌아가기
+        btn.innerHTML = '<i class="fa-solid fa-user-tie"></i> 강사 모드 전환';
+        btn.style.background = "#3b82f6"; 
+        btn.style.color = "#ffffff";
+    } else {
+        // 강사 상태일 때 -> 옵저버로 가기
+        btn.innerHTML = '<i class="fa-solid fa- binoculars"></i> 옵저버 모드'; // 쌍안경 아이콘으로 변경 (선택사항)
+        btn.style.background = "#e2e8f0"; 
+        btn.style.color = "#475569";
+    }
+},
 
 
 
@@ -1997,8 +1995,8 @@ setMode: function(mode) {
 
             // 4. 상단바에 옵저버 상태 표시
             const roomNameEl = document.getElementById('displayRoomName');
-            if(roomNameEl && !roomNameEl.innerText.includes('👁️')) {
-                roomNameEl.innerText = "Room #" + state.room + " (👁️ 옵저버)";
+            if(roomNameEl && !roomNameEl.innerHTML.includes('fa-eye')) {
+                roomNameEl.innerHTML = "Room #" + state.room + ` <span style="font-size:14px; margin-left:8px; color:#94a3b8; font-weight:normal;">(<i class="fa-solid fa-eye" style="font-size:12px;"></i> 옵저버)</span>`;
             }
         }
     },
