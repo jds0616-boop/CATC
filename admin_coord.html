@@ -1659,42 +1659,61 @@ function updateTransDirButtons() {
 
 
 
-// [최종 수정] 홈으로 버튼 클릭 시 포털로 나가지 않고 '전체현황판'으로 복귀
+// [최종 완성] 스마트 뒤로가기: 상세화면에서는 '현황판'으로, 현황판에서는 '포탈'로 이동
 function handleBackNav() { 
-    // 1. 열려있을 수 있는 모든 팝업(모달) 닫기
+    // 1. 열려있는 모든 팝업(모달) 먼저 닫기
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
         'actionDetailModal', 'printSelectModal'
     ];
     
+    let isModalClosed = false;
     allModals.forEach(id => {
         const modal = document.getElementById(id);
-        if(modal) modal.style.display = 'none';
+        if(modal && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            isModalClosed = true;
+        }
     });
+    // 팝업을 하나라도 닫았다면 거기서 중단 (화면은 유지)
+    if(isModalClosed) return;
 
-    // 2. 통합 관리대장 뷰 숨기기
+    // 2. 통합 관리대장 뷰가 열려있다면 닫기
     const outingManager = document.getElementById('outingManagerView');
-    if(outingManager) outingManager.style.display = 'none';
+    if(outingManager && outingManager.style.display === 'flex') {
+        outingManager.style.display = 'none';
+        return;
+    }
 
-    // 3. [핵심] 현재 선택된 과정(RID)을 비우고 메인 화면으로 강제 이동
-    currentRID = ""; 
-
-    // 4. 모든 서브 뷰(강사픽업, 퇴교현황 등)를 숨기고 전체현황판만 표시
+    // 3. [핵심 로직] 현재 위치 확인
     const pickupView = document.getElementById('pickupStatusView');
     const shuttleView = document.getElementById('studentShuttleView');
-    const totalView = document.getElementById('totalStatusView');
     const individualView = document.getElementById('individualStatusView');
 
-    if(pickupView) pickupView.style.display = "none";
-    if(shuttleView) shuttleView.style.display = "none";
-    if(individualView) individualView.style.display = "none";
-    if(totalView) totalView.style.display = "flex";
+    // 만약 강사픽업, 퇴교현황, 혹은 개별과정 상세페이지 중 하나라도 보고 있다면?
+    if ( (pickupView && pickupView.style.display === "flex") || 
+         (shuttleView && shuttleView.style.display === "flex") || 
+         (currentRID !== "") ) {
+        
+        // --- 현황판(홈)으로 이동하는 처리 ---
+        currentRID = ""; 
+        if(pickupView) pickupView.style.display = "none";
+        if(shuttleView) shuttleView.style.display = "none";
+        if(individualView) individualView.style.display = "none";
+        
+        const totalView = document.getElementById('totalStatusView');
+        if(totalView) totalView.style.display = "flex";
+        
+        handleRoomSelection(); // 사이드바 및 버튼 상태 동기화
+        console.log("현황판으로 이동했습니다.");
 
-    // 5. 사이드 메뉴 및 홈 버튼 상태 갱신
-    handleRoomSelection(); 
-
-    // 이제 더 이상 location.href = 'potal.html' 을 실행하지 않습니다.
+    } else {
+        // 4. 이미 현황판(홈)인 상태에서 뒤로가기를 눌렀다면?
+        // --- 드디어 포탈로 이동 ---
+        console.log("포탈로 이동합니다.");
+        location.href = 'potal.html';
+    }
 }
 
 
