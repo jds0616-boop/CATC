@@ -366,57 +366,85 @@
 
 
 
-/* 강사 수송 카드 스타일 (모바일 최적화) */
+/* [개선] 강사 수송 카드 시안성 강화 디자인 */
 .pickup-item-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 15px;
-    padding: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    border-radius: 16px;
+    padding: 0; /* 내부 섹션 구분을 위해 0으로 설정 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
 }
-.pickup-card-line1 {
+/* 카드 상단 헤더 (과정명) */
+.pickup-card-header {
+    background: #f8fafc;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed #f1f5f9;
-    padding-bottom: 8px;
 }
 .pickup-card-course {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
-    color: #0369a1;
+    color: #1e293b;
+    max-width: 75%;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 70%;
 }
-.pickup-card-line2 {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 8px;
-    font-size: 13px;
-}
-.pickup-info-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #475569;
-}
-.pickup-info-item i {
-    width: 14px;
-    color: #94a3b8;
-    text-align: center;
-}
-.pickup-card-footer {
+/* 카드 몸통 (시간 & 장소 강조) */
+.pickup-card-body {
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 5px;
 }
+.pickup-main-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.pickup-time-big {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+}
+.pickup-time-big small {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 600;
+    margin-right: 5px;
+}
+.pickup-loc-big {
+    font-size: 15px;
+    font-weight: 800;
+    color: #3b82f6; /* 장소를 파란색으로 강조 */
+}
+/* 카드 하단 (강사 정보) */
+.pickup-card-sub {
+    padding: 10px 15px;
+    background: #ffffff;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #475569;
+}
+/* 카드 푸터 (상태 바) */
+.pickup-card-footer {
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.status-bar-pending { background: #fff7ed; color: #ea580c; border-top: 1px solid #ffedd5; }
+.status-bar-approved { background: #f0fdf4; color: #16a34a; border-top: 1px solid #dcfce7; }
 
+.badge-dir { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
 
   </style>
 </head>
@@ -1762,7 +1790,7 @@ function showActionDetail(dataJson) {
 
 
  
-// [수정] 강사 픽업 리스트를 카드 형태로 그리기 (모바일 최적화)
+// [최종 개선] 시안성이 강화된 카드형 렌더링
 function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -1776,7 +1804,6 @@ function renderPickupTable() {
             return;
         }
 
-        // [정렬] 가장 빠른 시간 순서대로
         items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
         container.innerHTML = items.map(r => {
@@ -1789,35 +1816,42 @@ function renderPickupTable() {
             const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "-");
             
             const isApproved = r.status === 'approved';
-            const statusLabel = isApproved 
-                ? `<span style="color:#10b981; font-weight:800;"><i class="fa-solid fa-circle-check"></i> 승인완료</span>`
-                : `<span style="color:#f59e0b; font-weight:800;"><i class="fa-solid fa-clock"></i> 승인대기</span>`;
+            const statusLabel = isApproved ? "승인완료" : "승인대기";
+            const statusClass = isApproved ? "status-bar-approved" : "status-bar-pending";
+            const statusIcon = isApproved ? "fa-circle-check" : "fa-clock";
                 
-            const deleteBtn = isApproved ? "" : `<button class="btn-del-link" onclick="deleteTrans('${r.id}')">취소</button>`;
+            const deleteBtn = isApproved ? "" : `<button class="btn-del-link" onclick="deleteTrans('${r.id}')" style="color:#94a3b8;">취소</button>`;
 
-            // 카드 한 장 생성
             return `
                 <div class="pickup-item-card">
-                    <div class="pickup-card-line1">
+                    <div class="pickup-card-header">
                         <div class="pickup-card-course">${roomName}</div>
                         <span class="badge-dir ${dirClass}">${dirText}</span>
                     </div>
                     
-                    <div class="pickup-card-line2">
-                        <div class="pickup-info-item"><i class="fa-solid fa-calendar-day"></i> ${r.date} <b style="color:#1e293b; margin-left:5px;">${r.time}</b></div>
-                        <div class="pickup-info-item"><i class="fa-solid fa-location-dot"></i> <b>${pickupPlace}</b></div>
-                        <div class="pickup-info-item"><i class="fa-solid fa-user-tie"></i> ${r.prof || '-'}</div>
-                        <div class="pickup-info-item"><i class="fa-solid fa-phone"></i> ${r.phone || '-'}</div>
+                    <div class="pickup-card-body">
+                        <div class="pickup-main-info">
+                            <div class="pickup-time-big">
+                                <small>${r.date.split('-')[1]}/${r.date.split('-')[2]}</small>${r.time}
+                            </div>
+                            <div class="pickup-loc-big"><i class="fa-solid fa-location-dot"></i> ${pickupPlace}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800; color:#1e293b;">${r.prof || '-'} 강사님</div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">${r.phone || '-'}</div>
+                        </div>
                     </div>
 
-                    <div class="pickup-card-footer">
-                        <div style="font-size:12px;">${statusLabel}</div>
+                    <div class="pickup-card-footer ${statusClass}">
+                        <div style="font-size:12px; font-weight:900;">
+                            <i class="fa-solid ${statusIcon}"></i> ${statusLabel}
+                        </div>
                         ${deleteBtn}
                     </div>
                 </div>`;
         }).join('');
     });
-} // function renderPickupTable 끝
+}
 
 
 
