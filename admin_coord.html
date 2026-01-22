@@ -1659,41 +1659,43 @@ function updateTransDirButtons() {
 
 
 
-// [수정] 뒤로가기 시 팝업을 닫거나 포탈로 이동
+// [최종 수정] 홈으로 버튼 클릭 시 포털로 나가지 않고 '전체현황판'으로 복귀
 function handleBackNav() { 
-    // 열려있는 팝업이 있는지 확인
+    // 1. 열려있을 수 있는 모든 팝업(모달) 닫기
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
         'actionDetailModal', 'printSelectModal'
     ];
     
-    let isAnyModalOpen = false;
     allModals.forEach(id => {
         const modal = document.getElementById(id);
-        if(modal && modal.style.display === 'flex') {
-            modal.style.display = 'none';
-            isAnyModalOpen = true;
-        }
+        if(modal) modal.style.display = 'none';
     });
 
-    if(isAnyModalOpen) return; // 팝업만 닫았으면 종료
-
+    // 2. 통합 관리대장 뷰 숨기기
     const outingManager = document.getElementById('outingManagerView');
-    if(outingManager && outingManager.style.display === 'flex') {
-        outingManager.style.display = 'none';
-        return;
-    }
+    if(outingManager) outingManager.style.display = 'none';
 
-    // 상세 페이지라면 메인으로, 메인이라면 포탈로 이동
-    if (currentRID !== "") {
-        currentRID = ""; 
-        handleRoomSelection(); 
-    } else {
-        location.href = 'potal.html';
-    }
+    // 3. [핵심] 현재 선택된 과정(RID)을 비우고 메인 화면으로 강제 이동
+    currentRID = ""; 
+
+    // 4. 모든 서브 뷰(강사픽업, 퇴교현황 등)를 숨기고 전체현황판만 표시
+    const pickupView = document.getElementById('pickupStatusView');
+    const shuttleView = document.getElementById('studentShuttleView');
+    const totalView = document.getElementById('totalStatusView');
+    const individualView = document.getElementById('individualStatusView');
+
+    if(pickupView) pickupView.style.display = "none";
+    if(shuttleView) shuttleView.style.display = "none";
+    if(individualView) individualView.style.display = "none";
+    if(totalView) totalView.style.display = "flex";
+
+    // 5. 사이드 메뉴 및 홈 버튼 상태 갱신
+    handleRoomSelection(); 
+
+    // 이제 더 이상 location.href = 'potal.html' 을 실행하지 않습니다.
 }
-
 
 
 
