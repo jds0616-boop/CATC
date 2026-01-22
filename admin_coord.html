@@ -1581,44 +1581,55 @@ function renderPickupTable() {
         const items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
         
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="padding:40px; color:#94a3b8;">예약 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:40px; color:#94a3b8; text-align:center;">예약 내역이 없습니다.</td></tr>';
             return;
         }
 
-        // 날짜/시간순 정렬
-        items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+        // [정렬 로직] 날짜와 시간을 합쳐서 오름차순(가까운 날짜순)으로 정렬
+        items.sort((a, b) => {
+            const timeA = (a.date || "") + (a.time || "");
+            const timeB = (b.date || "") + (b.time || "");
+            return timeA.localeCompare(timeB);
+        });
 
         tbody.innerHTML = items.map(r => {
+            // [개선] 과정명 표시 로직 (undefined 방지 및 깔끔한 출력)
             const roomInfo = globalAllData[r.courseRID];
-            const roomName = roomInfo?.settings?.courseName || `Room ${r.courseRID}`;
-            const dirColor = r.dir.includes('항기원→') ? '#3b82f6' : '#ea580c';
-            
-            // 승인 상태에 따른 배지 생성
-            let statusBadge = "";
-            let cancelBtn = ""; // 취소 버튼 변수 추가
-
-            if (r.status === 'approved') {
-                statusBadge = `<span style="background:#dcfce7; color:#16a34a; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인완료</span>`;
-                cancelBtn = ""; // 승인 완료 시 취소 불가
-            } else {
-                statusBadge = `<span style="background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:800;">승인대기</span>`;
-                // 승인 대기 상태일 때만 취소 버튼 노출
-                cancelBtn = `<button onclick="deleteTrans('${r.id}')" style="margin-left:5px; background:#fff; color:#ef4444; border:1px solid #fecaca; padding:3px 7px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:800; vertical-align:middle;">취소</button>`;
+            let roomName = "-";
+            if (roomInfo && roomInfo.settings && roomInfo.settings.courseName) {
+                roomName = roomInfo.settings.courseName;
+            } else if (r.courseRID) {
+                roomName = "Room " + r.courseRID;
             }
 
-            return `<tr>
-                <td style="font-size:11px; color:var(--blue-deep); font-weight:800;">${roomName}</td>
-                <td style="font-weight:800;">${r.prof}</td>
-                <td style="font-size:11px;">${r.phone || '-'}</td>
-                <td style="font-weight:700; color:${dirColor};">${r.dir.split('→')[0]}</td>
-                <td style="font-weight:800; color:var(--navy-dark);">${r.date} ${r.time}</td>
-                <td style="font-size:11px; color:#94a3b8;">${r.dir.includes('항기원→') ? '퇴교' : '입교'}</td>
-                <td>${statusBadge}${cancelBtn}</td>
-            </tr>`;
+            const dirColor = r.dir && r.dir.includes('항기원→') ? '#3b82f6' : '#ea580c';
+            const direction = r.dir && r.dir.includes('항기원→') ? '퇴교' : '입교';
+            const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "미지정");
+            
+            // 승인 상태 배지 및 취소 버튼
+            let statusBadge = "";
+            let cancelBtn = "";
+
+            if (r.status === 'approved') {
+                statusBadge = `<div style="background:#dcfce7; color:#16a34a; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800; display:inline-block;">승인완료</div>`;
+            } else {
+                statusBadge = `<div style="background:#fff7ed; color:#ea580c; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800; display:inline-block; margin-bottom:4px;">승인대기</div>`;
+                cancelBtn = `<br><button onclick="deleteTrans('${r.id}')" style="background:#fff; color:#ef4444; border:1px solid #fecaca; padding:2px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:800;">취소</button>`;
+            }
+
+            return `
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:15px 5px; font-size:11px; color:var(--blue-deep); font-weight:800; text-align:center; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${roomName}</td>
+                    <td style="font-weight:800; text-align:center;">${r.prof || '-'}</td>
+                    <td style="font-size:11px; color:#64748b; text-align:center;">${r.phone || '-'}</td>
+                    <td style="font-weight:700; color:#1e293b; text-align:center;">${pickupPlace}</td>
+                    <td style="font-weight:800; color:var(--navy-dark); text-align:center; font-family:monospace;">${r.date}<br><span style="color:#6366f1;">${r.time}</span></td>
+                    <td style="font-size:11px; color:${dirColor}; text-align:center; font-weight:800;">${direction}</td>
+                    <td style="text-align:center; padding:10px 5px;">${statusBadge}${cancelBtn}</td>
+                </tr>`;
         }).join('');
     });
 }
-
 
 
 
