@@ -185,13 +185,21 @@
     font-size: 12px; 
     font-weight: 800;
 }
-.navy-table td { 
+
+
+
+.navy-table th, .navy-table td { 
     padding: 14px 8px; 
     border-bottom: 1px solid #f1f5f9; 
-    font-size: 12px; 
+    font-size: 13px; 
     color: #1e293b; 
     vertical-align: middle; 
+    text-align: center !important; /* 가로 정렬 가운데 강제 */
 }
+
+
+
+
 /* 마우스 올리면 줄 색상 변경 */
 .navy-table tr:hover td { background-color: #f8fafc; }
 
@@ -1195,22 +1203,26 @@ function updateIndividualView() {
     const actions = room.admin_actions?.[today] || {};
     const items = Object.keys(actions).map(k=>({...actions[k], token:k})).sort((a,b)=>a.timestamp-b.timestamp);
     
-    actionTbody.innerHTML = items.length ? items.map(a => {
-        const isSigned = a.confirmed === true;
-        const returnBadge = a.returned ? `<span style="display:inline-block; white-space:nowrap; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
-        const btnText = isSigned ? "서명취소" : "서명";
-        const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
+actionTbody.innerHTML = items.length ? items.map(a => {
+    const isSigned = a.confirmed === true;
+    const returnBadge = a.returned ? `<span style="display:inline-block; background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:800; vertical-align:middle;">복귀완료</span>` : "";
+    const btnText = isSigned ? "서명취소" : "서명";
+    const btnStyle = isSigned ? "background:#94a3b8; color:#fff; border:none;" : "background:var(--blue-main); color:#fff; border:none;";
 
-        // 데이터를 JSON으로 변환해서 함수로 전달
-        const dataStr = encodeURIComponent(JSON.stringify(a));
+    const dataStr = encodeURIComponent(JSON.stringify(a));
 
-        return `<tr>
-            <td style="font-weight:800; cursor:pointer; text-decoration:underline;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-            <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800;">${a.type==='outing'?'외출':'외박'}</td>
-            <td>${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-            <td><button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;">${btnText}</button></td>
-        </tr>`;
-    }).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
+    return `<tr>
+        <td style="font-weight:800; cursor:pointer; text-align:center;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
+        <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+        <td style="text-align:center;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+        <td>
+            <button onclick="toggleConfirm('${currentRID}', '${today}', '${a.token}', ${isSigned})" 
+                    style="${btnStyle} border-radius:5px; padding:2px; cursor:pointer; min-width:85px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; margin: 0 auto;"> <!-- margin: 0 auto 추가 -->
+                ${btnText}
+            </button>
+        </td>
+    </tr>`;
+}).join('') : '<tr><td colspan="4" style="padding:20px; color:#94a3b8; text-align:center;">신청 명단 없음</td></tr>';
     
     document.getElementById('courseNotice').value = room.coordNotice || ""; 
 }
@@ -1551,19 +1563,19 @@ function renderTotalHistory() {
 
         const dataStr = encodeURIComponent(JSON.stringify(a));
 
-        tbody.innerHTML += `
-            <tr>
-                <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
-                <td style="font-weight:800; text-align:center; cursor:pointer; text-decoration:underline;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
-                <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
-                <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                <td>
-                    <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
-                            style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px;">
-                        ${btnText}
-                    </button>
-                </td>
-            </tr>`;
+tbody.innerHTML += `
+    <tr>
+        <td style="text-align:center; font-size:11px; color:var(--blue-deep); font-weight:700;">${a.cName}</td>
+        <td style="font-weight:800; text-align:center; cursor:pointer;" onclick="showActionDetail('${dataStr}')">${a.name}${returnBadge}</td>
+        <td style="color:${a.type==='outing'?'#ea580c':'#dc2626'}; font-weight:800; text-align:center;">${a.type==='outing'?'외출':'외박'}</td>
+        <td style="text-align:center; font-size:11px; color:#94a3b8;">${new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+        <td>
+            <button onclick="toggleConfirm('${a.rid}', '${selectedDate}', '${a.token}', ${isSigned})" 
+                    style="${btnStyle} border-radius:5px; width:100%; height:35px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; font-size:11px; margin: 0 auto;">
+                ${btnText}
+            </button>
+        </td>
+    </tr>`;
     });
 }
 
