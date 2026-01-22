@@ -114,16 +114,35 @@
 
 .shuttle-detail-section { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
 .shuttle-detail-header { padding: 10px 15px; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; }
-.shuttle-detail-list { padding: 10px 15px; background: #fff; font-size: 13px; line-height: 1.8; color: #334155; }
+/* [변경] 상세 명단 리스트 - 3열 격자 정렬 (바둑판 모양) */
+.shuttle-detail-list { 
+    display: grid;
+    /* 화면 너비에 맞춰 3칸씩 똑같이 나눔 */
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 8px; /* 칸 사이 간격 */
+    padding: 15px; 
+    background: #fff; 
+}
+
+/* 개별 이름표 스타일 */
 .shuttle-detail-list span {
-    background: #f1f5f9;
-    padding: 4px 10px;
-    border-radius: 6px;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-    margin: 2px;
+    padding: 8px 2px; /* 위아래 여백 */
+    border-radius: 8px;
+    font-size: 11.5px; /* 글자가 박스를 넘지 않도록 살짝 조절 */
+    font-weight: 700;
+    color: #334155;
+    text-align: center;
+    white-space: nowrap; /* 글자 줄바꿈 방지 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 모바일 화면이 아주 작을 경우를 대비해 2열로 자동 조절 */
+@media (max-width: 360px) {
+    .shuttle-detail-list { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* 테이블 행 호버 효과 */
@@ -2277,24 +2296,27 @@ function renderShuttleTotalTable() {
 
 
 
-// [최종 완성] 퇴교 차량 상세 현황 팝업 (뒷배경 스크롤 방지 로직 포함)
+// [최종] 격자 정렬 및 스크롤 잠금이 적용된 퇴교 차량 상세 팝업
 async function showShuttleApplicationDetails(rid) {
     const targetRID = rid || currentRID;
     const room = globalAllData[targetRID];
     if (!room) return;
 
-    // ★ 핵심 추가: 팝업이 열릴 때 뒷배경(body)의 스크롤을 완전히 잠금 ★
+    // 팝업 열 때 배경 스크롤 차단
     document.body.classList.add('modal-open');
 
     const cName = room.settings?.courseName || targetRID;
     const requests = room.shuttle?.requests || {};
     const appliedData = Object.values(requests);
 
+    // 가나다순 정렬을 미리 수행
+    appliedData.sort((a, b) => a.name.localeCompare(b.name));
+
     const categories = {
-        osong: { title: "오송역 신청자", color: "bg-osong", icon: "fa-train", members: [] },
-        terminal: { title: "청주터미널 신청자", color: "bg-terminal", icon: "fa-bus", members: [] },
-        airport: { title: "청주공항 신청자", color: "bg-airport", icon: "fa-plane", members: [] },
-        car: { title: "자차/개별 신청자", color: "bg-car", icon: "fa-car", members: [] }
+        osong: { title: "오송역", color: "bg-osong", icon: "fa-train", members: [] },
+        terminal: { title: "청주터미널", color: "bg-terminal", icon: "fa-bus", members: [] },
+        airport: { title: "청주공항", color: "bg-airport", icon: "fa-plane", members: [] },
+        car: { title: "자차/개별", color: "bg-car", icon: "fa-car", members: [] }
     };
 
     appliedData.forEach(req => {
@@ -2304,17 +2326,17 @@ async function showShuttleApplicationDetails(rid) {
         }
     });
 
-    let html = `<div style="margin-bottom:15px; font-weight:800; color:var(--navy-dark); font-size:15px;">[${cName}] 신청 내역</div>`;
+    let html = `<div style="margin-bottom:15px; font-weight:800; color:var(--navy-bg); font-size:15px; padding-left:5px;">[${cName}] 수송 명단</div>`;
     
     Object.keys(categories).forEach(key => {
         const cat = categories[key];
         html += `
             <div class="shuttle-detail-section">
-                <div class="shuttle-detail-header ${cat.color}">
-                    <span><i class="fa-solid ${cat.icon}"></i> ${cat.title} (${cat.members.length}명)</span>
+                <div class="shuttle-detail-header ${cat.color}" style="border-bottom:1px solid rgba(0,0,0,0.05);">
+                    <span style="font-weight:900;"><i class="fa-solid ${cat.icon}"></i> ${cat.title} (${cat.members.length}명)</span>
                 </div>
                 <div class="shuttle-detail-list">
-                    ${cat.members.length > 0 ? cat.members.map(m => `<span>${m}</span>`).join('') : '<span style="color:#94a3b8; background:none; border:none;">신청자 없음</span>'}
+                    ${cat.members.length > 0 ? cat.members.map(m => `<span>${m}</span>`).join('') : '<div style="grid-column: span 3; padding: 20px; color: #cbd5e1; text-align: center; font-size: 12px;">신청자 없음</div>'}
                 </div>
             </div>
         `;
