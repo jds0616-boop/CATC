@@ -52,6 +52,26 @@
 
 
 
+.shuttle-detail-section { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.shuttle-detail-header { padding: 10px 15px; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; }
+.shuttle-detail-list { padding: 10px 15px; background: #fff; font-size: 13px; line-height: 1.8; color: #334155; }
+.shuttle-detail-list span { display: inline-block; margin-right: 8px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+/* 항목별 컬러 */
+.bg-osong { background: #fee2e2; color: #ef4444; }
+.bg-terminal { background: #dbeafe; color: #3b82f6; }
+.bg-airport { background: #dcfce7; color: #10b981; }
+.bg-car { background: #f1f5f9; color: #64748b; }
+.bg-none { background: #fef3c7; color: #d97706; }
+
+
+
+
+
+
+
+
+
 
 /* 상황판 그리드 전체 디자인 - 2x2 배치 */
 .global-status-grid { 
@@ -276,7 +296,6 @@
         <div class="dashboard-card-btn stat-blue" onclick="openOutingManager()">
             <div class="label">금일 총 외출/외박 (관리대장)</div>
             <div class="val" id="g-today-actions">1<span>건</span></div>
-            <div class="sub-label">명단 확인 및 담당자 승인 ></div>
         </div>
 
         <!-- 3번 버튼: 강사 픽업요청 -->
@@ -379,9 +398,9 @@
                   </div>
 <div class="shuttle-grid">
     <!-- 총 인원 합계 칸 추가 -->
-    <div class="shuttle-item" style="background:#f8fafc; border:1.5px solid #e2e8f0; flex:1.2;">
-        <span style="color:var(--navy-dark);">총 신청</span><b id="ind-shuttle-total" style="font-size:20px; color:var(--blue-deep);">0</b>
-    </div>
+<div class="shuttle-item" onclick="showShuttleApplicationDetails()" style="background:#f8fafc; border:1.5px solid #e2e8f0; flex:1.2; cursor:pointer;">
+    <span style="color:var(--navy-dark);">총 신청</span><b id="ind-shuttle-total" style="font-size:20px; color:var(--blue-deep);">0</b>
+</div>
     <div class="shuttle-item" onclick="showShuttleMembers('osong')" style="border-top:3px solid #ef4444;">
         <span>오송역</span><b id="ind-osong" style="color:#ef4444;">0</b>
     </div>
@@ -1518,7 +1537,62 @@ function renderPickupTable() {
 
 
 
+// 퇴교 차량 상세 신청 현황 보기 함수
+async function showShuttleApplicationDetails() {
+    const room = globalAllData[currentRID];
+    if (!room) return;
 
+    const students = Object.values(room.students || {}).filter(s => s.name && s.name !== "undefined");
+    const requests = room.shuttle?.requests || {};
+    const appliedData = Object.values(requests);
+
+    const categories = {
+        osong: { title: "오송역", color: "bg-osong", members: [] },
+        terminal: { title: "청주터미널", color: "bg-terminal", members: [] },
+        airport: { title: "청주공항", color: "bg-airport", members: [] },
+        car: { title: "자차/개별", color: "bg-car", members: [] }
+    };
+
+    appliedData.forEach(req => {
+        if (categories[req.type]) {
+            categories[req.type].members.push(`${req.name}(${(req.phone || '').slice(-4)})`);
+        }
+    });
+
+    const appliedNames = appliedData.map(r => r.name);
+    const nonApplicants = students
+        .filter(s => !appliedNames.includes(s.name))
+        .map(s => `${s.name}(${(s.phone || '').slice(-4)})`);
+
+    let html = "";
+    Object.keys(categories).forEach(key => {
+        const cat = categories[key];
+        html += `
+            <div class="shuttle-detail-section">
+                <div class="shuttle-detail-header ${cat.color}">
+                    <span><i class="fa-solid fa-circle-check"></i> ${cat.title} 신청자 (${cat.members.length}명)</span>
+                </div>
+                <div class="shuttle-detail-list">
+                    ${cat.members.length > 0 ? cat.members.map(m => `<span>${m}</span>`).join('') : '<span style="color:#94a3b8; background:none;">신청자 없음</span>'}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `
+        <div class="shuttle-detail-section" style="border-color:#fbbf24;">
+            <div class="shuttle-detail-header bg-none">
+                <span><i class="fa-solid fa-circle-exclamation"></i> 미신청자 (${nonApplicants.length}명)</span>
+            </div>
+            <div class="shuttle-detail-list">
+                ${nonApplicants.length > 0 ? nonApplicants.map(m => `<span>${m}</span>`).join('') : '<span style="color:#94a3b8; background:none;">모두 신청 완료</span>'}
+            </div>
+        </div>
+    `;
+
+    document.getElementById('shuttleDetailContent').innerHTML = html;
+    document.getElementById('shuttleDetailModal').style.display = 'flex';
+}
 
 
 
@@ -1526,5 +1600,27 @@ function renderPickupTable() {
 
     init();
   </script>
+
+
+<!-- 퇴교 차량 상세 신청 현황 모달 -->
+<div id="shuttleDetailModal" class="setup-modal" style="display:none;">
+    <div class="setup-box" style="max-width: 600px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; font-size:18px; color:var(--navy-dark);"><i class="fa-solid fa-list-check"></i> 퇴교 차량 상세 신청 내역</h3>
+            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('shuttleDetailModal').style.display='none'"></i>
+        </div>
+        <div id="shuttleDetailContent" style="max-height: 500px; overflow-y: auto;">
+            <!-- JS에서 내용 생성 -->
+        </div>
+        <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('shuttleDetailModal').style.display='none'">닫기</button>
+    </div>
+</div>
+
+
+
+
+
+
+
 </body>
 </html>
