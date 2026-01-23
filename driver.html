@@ -187,6 +187,31 @@
     .m-btn { flex: 1; height: 52px; border-radius: 14px; border: none; font-weight: 900; font-size: 16px; cursor: pointer; }
     .m-btn.ok { background: var(--blue); color: #fff; }
     .m-btn.no { background: #f1f5f9; color: #64748b; }
+
+/* 팝업 내 이름 바둑판 그리드 설정 */
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 5열 정렬 */
+      gap: 6px; /* 이름 칸 사이 간격 */
+      padding: 10px 0;
+    }
+
+    /* 개별 이름 칸 스타일 */
+    .grid-name-item {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 2px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #1e293b;
+      text-align: center;
+      white-space: nowrap; /* 이름 잘림 방지 */
+      cursor: pointer;
+    }
+    .grid-name-item:active { background: #e2e8f0; }
+
+
   </style>
 </head>
 <body>
@@ -591,8 +616,7 @@ function renderTraineeManagement() {
 
 
 
-// 상세 명단 팝업 함수 (없으시면 이 내용을 통째로 붙여넣으세요)
-  function showDrillDown(type, filterRid = null) {
+function showDrillDown(type, filterRid = null) {
     const area = document.getElementById('m-content');
     const title = document.getElementById('m-title');
     document.getElementById('m-call-btn').style.display = 'none';
@@ -601,14 +625,11 @@ function renderTraineeManagement() {
     let list = [];
     Object.keys(allCourses).forEach(rid => {
         if(filterRid && rid !== filterRid) return;
-        
-        // 과정명을 팝업 제목으로 설정
         const roomName = allCourses[rid].settings?.courseName || "상세 명단";
         if(filterRid) title.innerText = roomName; 
         
         const reqs = Object.values(allCourses[rid].shuttle?.requests || {});
         reqs.forEach(req => {
-            // 자차가 아닌 경우(오송, 터미널, 공항)만 명단에 추가
             if(req.type !== 'car') list.push({...req});
         });
     });
@@ -616,7 +637,6 @@ function renderTraineeManagement() {
     if(list.length === 0) {
         area.innerHTML = "<div style='text-align:center; padding:20px;'>신청자가 없습니다.</div>";
     } else {
-        // 사람이 읽기 쉽게 목적지별로 그룹화 (🚅오송, 🚌터미널, ✈️공항)
         const groups = {
             osong: { name: "🚅 오송역", items: [] },
             terminal: { name: "🚌 터미널", items: [] },
@@ -634,20 +654,21 @@ function renderTraineeManagement() {
                         <div class="group-title">
                             <span>${g.name}</span> 
                             <span style="color:#0ea5e9;">${g.items.length}명</span>
-                        </div>`;
+                        </div>
+                        <div class="group-grid">`; // 그리드 시작
+                
                 g.items.forEach(person => {
                     groupHTML += `
-                        <div class="group-item" onclick="window.location.href='tel:${person.phone}'">
-                            <span class="p-name">${person.name}</span>
-                            <span class="p-phone">${person.phone} <i class="fa-solid fa-phone" style="font-size:10px; color:#10b981;"></i></span>
+                        <div class="grid-name-item" onclick="window.location.href='tel:${person.phone}'">
+                            ${person.name}
                         </div>`;
                 });
-                groupHTML += `</div>`;
+
+                groupHTML += `</div></div>`; // 그리드 및 그룹 종료
             }
         });
         area.innerHTML = groupHTML;
     }
-    // 팝업창 보이기
     document.getElementById('detailModal').style.display = 'flex';
   }
 
