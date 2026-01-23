@@ -391,38 +391,65 @@
 
   function renderAll() { renderSchedule(); renderInstructorList(); renderTraineeManagement(); }
 
-  // --- [탭 0] 일정표 ---
+// --- [탭 0] 일정표 (종료된 과정 자동 숨김 로직 추가) ---
   function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
     const dayNames = ['월','화','수','목','금'];
+    
+    // 오늘 날짜 (YYYY-MM-DD 형식)
+    const today = new Date().toISOString().split('T')[0];
+
     document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
     head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
     body.innerHTML = '';
+
     for(let h=8; h<=18; h++) {
       let row = `<tr><td class="time-col">${h}:00</td>`;
       for(let d=0; d<5; d++) {
         const curDate = range[d];
         let content = '';
+
+        // 1. 운행 중단 체크
         if(profReqs.some(r => r.date === curDate && r.prof === '운행중단')) {
           content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
-        } else if(d === 0 && (h === 9 || h === 10)) { content = `<div class="cell-event block-entry">입교수송</div>`; }
-        else if(h === 12) { content = `<div class="cell-event block-lunch">점심</div>`; }
+        } 
+        // 2. 월요일 입교 수송 체크
+        else if(d === 0 && (h === 9 || h === 10)) { 
+          content = `<div class="cell-event block-entry">입교수송</div>`; 
+        }
+        // 3. 점심시간 체크
+        else if(h === 12) { 
+          content = `<div class="cell-event block-lunch">점심</div>`; 
+        }
+        // 4. 강사 수송 및 교육생 퇴교 체크
         else {
           const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
+          
           if(matchedProf.length > 0) {
             const names = matchedProf.length > 1 ? `${matchedProf[0].prof} 외` : matchedProf[0].prof;
             content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProf[0]).replace(/"/g, '&quot;')})">${matchedProf[0].dir.replace('항공기술훈련원','항기원')}<br>${names}</div>`;
           } else {
+            // 교육생 퇴교 일정 체크
             Object.keys(allCourses).forEach(rid => {
-              const dep = allCourses[rid].shuttle?.departure;
+              const room = allCourses[rid];
+              
+              // [추가된 로직] 과정 종료일 체크
+              const period = room.settings?.period || "";
+              if (period.includes(" ~ ")) {
+                  const endDate = period.split(" ~ ")[1];
+                  if (endDate < today) return; // 오늘보다 이전 날짜에 끝난 과정이면 무시
+              }
+
+              const dep = room.shuttle?.departure;
               if(dep && dep.date === curDate) {
                 const depH = parseInt(dep.time.split(':')[0]);
-                const reqs = Object.values(allCourses[rid].shuttle.requests || {});
+                const reqs = Object.values(room.shuttle.requests || {});
                 const duration = new Set(reqs.map(r => r.type)).size >= 2 ? 2 : 1; 
                 if(h >= depH && h < depH + duration) {
-                  content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교 (${rid})</div>`;
+                  const cName = room.settings?.courseName || rid;
+                  content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">${cName}</div>`;
                 }
               }
             });
@@ -433,7 +460,6 @@
       body.innerHTML += row + '</tr>';
     }
   }
-
 
 
 
@@ -643,7 +669,8 @@ function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     area.innerHTML = '';
     
-    // 표 제목(헤더) 구조
+    const today = new Date().toISOString().split('T')[0];
+    
     let listHTML = `
       <div class="list-wrapper">
         <div class="list-header">
@@ -653,55 +680,43 @@ function renderTraineeManagement() {
           <div class="t-cell">공지</div>
         </div>`;
 
-    let stats = { o:0, t:0, a:0, total:0 };
-
     Object.keys(allCourses).forEach(rid => {
       const room = allCourses[rid];
       if(room.status?.roomStatus !== 'active') return;
 
+      // 기간 데이터(2026-01-19 ~ 2026-01-23)에서 종료일 체크
+      const period = room.settings?.period || "";
+      if (period.includes(" ~ ")) {
+          const endDate = period.split(" ~ ")[1];
+          if (endDate < today) return; // 오늘이 종료일보다 이후면 리스트에서 제외
+      }
+
       const dep = room.shuttle?.departure || { time: "" };
       const reqs = Object.values(room.shuttle?.requests || {});
-      
       const cO = reqs.filter(r=>r.type==='osong').length;
       const cT = reqs.filter(r=>r.type==='terminal').length;
       const cA = reqs.filter(r=>r.type==='airport').length;
       const subTotal = (cO + cT + cA);
-
-      stats.o += cO; stats.t += cT; stats.a += cA;
-      stats.total += subTotal;
-
       const cName = room.settings?.courseName || '과정명';
 
       listHTML += `
         <div class="course-row" onclick="showDrillDown('course', '${rid}')">
-          <!-- 1. 과정명 -->
           <div class="t-cell name">${cName}</div>
-          
-          <!-- 2. 퇴교총원 -->
           <div class="t-cell count">${subTotal}명</div>
-          
-          <!-- 3. 항기원 출발시간 (버튼) -->
           <div class="t-cell btns">
             <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00')">13:00</button>
             <button class="mini-btn ${dep.time==='15:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '15:00')">15:00</button>
             <button class="mini-btn ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="event.stopPropagation(); promptManual('${rid}')">수동</button>
           </div>
-
-          <!-- 4. 공지여부 (체크 표시) -->
           <div class="t-cell status">
-            ${dep.time 
-              ? `<i class="fa-solid fa-circle-check notice-on"></i>` 
-              : `<i class="fa-solid fa-minus notice-off"></i>`}
+            ${dep.time ? `<i class="fa-solid fa-circle-check notice-on"></i>` : `<i class="fa-solid fa-minus notice-off"></i>`}
           </div>
         </div>`;
     });
 
     listHTML += `</div>`;
     area.innerHTML = listHTML;
-    
-    // (이 부분에 있던 상단 대시보드 업데이트 코드 4줄을 삭제했습니다)
   }
-
 
 
 
