@@ -1734,13 +1734,14 @@ async function submitTransReq() {
 
 
 
-// [수정] 요청을 삭제하는 대신 'cancelled' 상태로 변경하여 채팅 기록 유지
+// [수정] 승인 여부와 상관없이 '취소' 처리 가능하도록 변경
 async function deleteTrans(id) { 
-    if(confirm("해당 수송 요청을 취소하시겠습니까? (채팅창에 취소 내역이 남습니다)")) {
+    const msg = "해당 수송 요청을 취소하시겠습니까?\n기사님께도 취소 알림이 전달되며 기록이 남습니다.";
+    if(confirm(msg)) {
         await firebase.database().ref(`system/transport_requests/${id}`).update({
             status: 'cancelled'
         });
-        alert("취소되었습니다.");
+        alert("취소 처리가 완료되었습니다.");
     }
 }
 
@@ -2315,7 +2316,7 @@ function renderPickupTable() {
             }
 
             const roomInfo = globalAllData[group.courseRID];
-            const cName = roomInfo?.settings?.courseName || `Room ${group.courseRID}`;
+            const cName = roomInfo?.settings?.courseName || `과정`;
             const dayNames = ["일","월","화","수","목","금","토"];
             const dIdx = new Date(group.date).getDay();
 
@@ -2327,8 +2328,9 @@ function renderPickupTable() {
                 return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':''}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소됨)':''}</div>`;
             }).join('');
             
+            // [수정] 이미 취소된(cancelled) 것이 아니라면 승인(approved) 상태여도 취소 버튼을 보여줌
             const cancelButtons = group.requests.map(r => 
-                (r.status !== 'approved' && r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">요청취소(${r.time})</button>` : ''
+                (r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">${r.status==='approved'?'승인취소':'요청취소'}(${r.time})</button>` : ''
             ).join(' ');
 
             html += `
@@ -2345,9 +2347,10 @@ function renderPickupTable() {
                             <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
+                    <div class="chat-time">나(운영부)</div>
                 </div>`;
 
-            // --- 2. 기사님의 답변 (좌측) ---
+            // --- 2. 기사님의 답변 및 시스템 알림 (좌측) ---
             group.requests.forEach(r => {
                 if(r.status === 'approved') {
                     html += `
@@ -2356,10 +2359,10 @@ function renderPickupTable() {
                             <div class="bubble-driver">
                                 네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
                             </div>
+                            <div class="chat-time">운전원</div>
                         </div>`;
                 } else if(r.status === 'cancelled') {
-                   // 운영부가 취소했을 때 뜨는 시스템 메시지 스타일
-                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0;">🚫 [${r.time} ${r.prof} 강사님] 요청이 취소되었습니다.</div>`;
+                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0; font-weight:800; background:rgba(255,255,255,0.5); padding:5px; border-radius:10px;">🚫 [${r.time} ${r.prof} 강사님] 일정이 취소되었습니다.</div>`;
                 }
             });
         });
@@ -2368,6 +2371,12 @@ function renderPickupTable() {
         container.scrollTop = container.scrollHeight;
     });
   }
+
+
+
+
+
+
 
 
 
