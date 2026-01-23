@@ -87,7 +87,16 @@
     .t-cell:last-child { border-right: none; }
 
     /* 과정명: 왼쪽 정렬 및 강조 */
-    .t-cell.name { justify-content: flex-start; padding-left: 12px; font-size: 14px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 과정명 셀: 중앙 정렬로 변경 */
+    .t-cell.name { 
+      justify-content: center; 
+      font-size: 14px; 
+      font-weight: 800; 
+      color: #1e293b; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+    }
 
     /* 총원: 파란색 강조 및 배경 */
     .t-cell.count { font-size: 14px; font-weight: 900; color: #0284c7; background: #f0f9ff; }
