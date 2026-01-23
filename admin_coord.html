@@ -1067,14 +1067,16 @@ body.modal-open {
                   <input type="date" id="reqDate" class="navy-input">
               </div>
               
-              <!-- 시간 입력 영역: 왕복 대응 -->
+              <!-- 시간 입력 영역 (라벨 ID 포함 버전) -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1.5px solid #e2e8f0;">
                   <div style="display: flex; flex-direction: column; gap: 5px;">
-                      <label style="font-size: 10px; font-weight: 800; color: #64748b;">장소 → 항기원 (입교)</label>
+                      <!-- 여기에 id="labelTo" 가 반드시 있어야 합니다 -->
+                      <label id="labelTo" style="font-size: 10px; font-weight: 800; color: #64748b;">오송역 → 항기원</label>
                       <input type="time" id="reqTimeTo" class="navy-input">
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 5px;">
-                      <label style="font-size: 10px; font-weight: 800; color: #64748b;">항기원 → 장소 (퇴교)</label>
+                      <!-- 여기에 id="labelFrom" 이 반드시 있어야 합니다 -->
+                      <label id="labelFrom" style="font-size: 10px; font-weight: 800; color: #64748b;">항기원 → 오송역</label>
                       <input type="time" id="reqTimeFrom" class="navy-input">
                   </div>
               </div>
