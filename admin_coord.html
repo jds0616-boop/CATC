@@ -1648,15 +1648,47 @@ function openTransportModal() {
 
 
 
-    function loadCourseTransList() {
-        const div = document.getElementById('courseReqList'); if(!div) return;
-        firebase.database().ref('system/transport_requests').on('value', snap => {
-            const allData = snap.val() || {}; const myList = Object.keys(allData).map(key => ({ id: key, ...allData[key] })).filter(req => req.courseRID === currentRID);
-            if (myList.length === 0) { div.innerHTML = "<div style='color:#94a3b8; text-align:center; padding:15px; font-size:12px;'>예약 내역 없음</div>"; return; }
-            myList.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-            div.innerHTML = myList.map(r => `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"><div style="font-size:12px; line-height:1.4;"><b style="color:var(--blue-deep);">${r.date} ${r.time}</b><br><span style="font-weight:800;">${r.prof}</span> (${r.dir})</div><button onclick="deleteTrans('${r.id}')" style="background:#fee2e2; color:#ef4444; border:none; padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:800;">삭제</button></div>`).join('');
-        });
-    }
+// [수정] 수송 예약 리스트 로드 함수 (개별과정/전체현황 모두 대응)
+  function loadCourseTransList() {
+    const div = document.getElementById('courseReqList'); 
+    if(!div) return;
+
+    firebase.database().ref('system/transport_requests').on('value', snap => {
+        const allData = snap.val() || {}; 
+        let myList = Object.keys(allData).map(key => ({ id: key, ...allData[key] }));
+
+        // [핵심 수정] 
+        // 1. 개별 과정 상세페이지에서 열었을 때: 해당 과정(currentRID) 것만 필터링
+        // 2. 전체 현황 페이지에서 열었을 때: 모든 과정의 수송 내역을 다 보여줌
+        if (currentRID) {
+            myList = myList.filter(req => req.courseRID === currentRID);
+        }
+
+        if (myList.length === 0) { 
+            div.innerHTML = "<div style='color:#94a3b8; text-align:center; padding:15px; font-size:12px;'>예약 내역 없음</div>"; 
+            return; 
+        }
+
+        // 날짜와 시간 순으로 정렬
+        myList.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+        div.innerHTML = myList.map(r => {
+            // 전체 현황에서 볼 때 어떤 과정인지 알 수 있도록 과정명 추출
+            const roomInfo = globalAllData[r.courseRID];
+            const cName = roomInfo?.settings?.courseName || `Room ${r.courseRID}`;
+
+            return `
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <div style="font-size:12px; line-height:1.4;">
+                        <div style="font-size:10px; color:#64748b; font-weight:800; margin-bottom:2px;">[${cName}]</div>
+                        <b style="color:var(--blue-deep);">${r.date} ${r.time}</b><br>
+                        <span style="font-weight:800;">${r.prof}</span> 강사님 (${r.dir})
+                    </div>
+                    <button onclick="deleteTrans('${r.id}')" style="background:#fee2e2; color:#ef4444; border:none; padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:800;">삭제</button>
+                </div>`;
+        }).join('');
+    });
+  }
 
 
 
