@@ -2348,7 +2348,7 @@ function showStudentShuttleView() {
                             &lt;${cName}&gt;
                             - ${group.date}(${dayNames[dIdx]})
                             - ${group.prof} 강사님
-                            (${group.phone})
+(${formatPhone(group.phone)})
                             ${timeLines}
                         </div>
                         <div class="talk-footer" style="justify-content: flex-end;">
@@ -2506,7 +2506,18 @@ init = function() {
 
 
 
-
+// 숫자를 휴대폰 번호 형식(하이픈)으로 바꿔주는 함수
+  function formatPhone(num) {
+    if (!num) return "";
+    // 숫자만 남기기
+    const s = num.replace(/[^0-9]/g, "");
+    if (s.length === 11) {
+      return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    } else if (s.length === 10) {
+      return s.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+    }
+    return num; // 형식이 안 맞으면 그냥 원본 출력
+  }
 
 
 

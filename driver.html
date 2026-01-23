@@ -291,6 +291,38 @@
     }
 
 
+/* 말풍선 내 개별 일정 행 */
+    .talk-leg-item {
+      padding: 8px 0;
+      border-bottom: 1px dashed #eee;
+    }
+    .talk-leg-item:last-child { border-bottom: none; }
+    
+    /* 개별 일정 내 버튼 레이아웃 */
+    .leg-actions {
+      display: flex; gap: 5px; margin-top: 5px;
+    }
+    .mini-talk-btn {
+      flex: 1; height: 30px; border-radius: 6px; border: 1px solid #e2e8f0;
+      background: #fff; font-size: 11px; font-weight: 800; cursor: pointer;
+    }
+    .mini-talk-btn.ok { color: #3b82f6; border-color: #dbeafe; }
+    .mini-talk-btn.no { color: #ef4444; border-color: #fecaca; }
+    
+    /* 승인된 항목 표시 */
+    .leg-status-done {
+      font-size: 11px; color: #10b981; font-weight: 900; margin-top: 5px;
+    }
+
+    /* 과거 일정 처리 */
+    .leg-is-past { opacity: 0.5; filter: grayscale(0.8); }
+
+
+
+
+
+
+
 
   </style>
 
@@ -526,79 +558,98 @@
 
 
 
-// [탭 1] 실시간 톡 렌더링 (지난 일정 비활성화 기능 포함)
+// [탭 1] 실시간 톡 렌더링 (왕복 그룹화 및 개별 승인 버전)
   function renderInstructorList() {
-    const newZone = document.getElementById('new-request-container');
     const allZone = document.getElementById('all-request-container');
-    
+    const newZone = document.getElementById('new-request-container');
     newZone.innerHTML = '';
     allZone.innerHTML = '<div class="chat-container" id="chat-box"></div>';
     const chatBox = document.getElementById('chat-box');
 
-    // 현재 시간 계산 (지난 일정 체크용)
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // "2026-01-23" 형태
+    const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
-    // 날짜순 정렬
-    const sorted = profReqs.filter(r => r.prof !== '운행중단').sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+    // 1. 데이터를 "강사명 + 날짜" 기준으로 그룹화
+    const grouped = {};
+    profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
+        const groupKey = `${r.prof}_${r.date}`;
+        if (!grouped[groupKey]) {
+            grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, legs: [] };
+        }
+        grouped[groupKey].legs.push(r);
+    });
+
+    const sortedGroups = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
 
     let lastDate = "";
-    sorted.forEach(r => {
-        if(r.date !== lastDate) {
-            chatBox.innerHTML += `<div class="chat-date-line"><span>${r.date}</span></div>`;
-            lastDate = r.date;
+    sortedGroups.forEach(group => {
+        if(group.date !== lastDate) {
+            chatBox.innerHTML += `<div class="chat-date-line"><span>${group.date}</span></div>`;
+            lastDate = group.date;
         }
 
-        const isApp = r.status === 'approved';
         const dayNames = ["일","월","화","수","목","금","토"];
-        const dIdx = new Date(r.date).getDay();
+        const dIdx = new Date(group.date).getDay();
+        
+        // 시간순 정렬
+        group.legs.sort((a,b) => a.time.localeCompare(b.time));
 
-        // [핵심] 지난 일정인지 체크 (오늘 이전 날짜이거나, 오늘인데 시간이 지났거나)
-        const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
+        // --- 왼쪽 말풍선 (운영부 요청) 내용 생성 ---
+        let legsHtml = "";
+        group.legs.forEach(r => {
+            const isApp = r.status === 'approved';
+            const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
+            
+            legsHtml += `
+                <div class="talk-leg-item ${isPast ? 'leg-is-past' : ''}">
+                    <div style="font-weight:800; color:#0369a1;">
+                        ${r.time} ${r.dir.replace('→',' >> ')} ${isPast ? '(만료)' : ''}
+                    </div>
+                    ${(!isApp && !isPast) ? `
+                        <div class="leg-actions">
+                            <button class="mini-talk-btn ok" onclick="handleSmartApprove('${r.id}')">승인</button>
+                            <button class="mini-talk-btn no" onclick="confirmAction('delete', '${r.id}')">불가</button>
+                        </div>
+                    ` : (isApp ? `<div class="leg-status-done"><i class="fa-solid fa-check"></i> 배차 승인됨</div>` : '')}
+                </div>`;
+        });
 
-        // 1. 운영부 요청 말풍선 (왼쪽)
-        let msg = `
-            <div class="chat-bubble chat-left ${isPast ? 'is-past' : ''}">
-                <div class="talk-header">운영부 수송요청 ${isPast ? '(만료)' : ''}</div>
+        chatBox.innerHTML += `
+            <div class="chat-bubble chat-left">
+                <div class="talk-header">운영부 수송요청</div>
                 <div class="bubble-content">
                     <div class="talk-body">
                         &lt;교육과정 수송요청&gt;
-                        - ${r.date}(${dayNames[dIdx]})
-                        - ${r.prof} 강사님
+                        - ${group.date}(${dayNames[dIdx]})
+                        - ${group.prof} 강사님
                     </div>
-                    <a href="tel:${r.phone}" class="talk-link">${r.phone}</a>
-                    <div class="talk-body" style="color:#0369a1;">
-                        ${r.time} ${r.dir.replace('→',' >> ')}
+                    <a href="tel:${group.phone}" class="talk-link">${formatPhone(group.phone)}</a>
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px;">
+                        ${legsHtml}
                     </div>
-                    
-                    ${(!isApp && !isPast) ? `
-                    <div class="talk-actions">
-                        <button class="talk-btn btn-approve" onclick="handleSmartApprove('${r.id}')">승인하기</button>
-                        <button class="talk-btn btn-reject" onclick="confirmAction('delete', '${r.id}')">배차불가</button>
-                    </div>` : ''}
                 </div>
                 <div class="chat-time">운영부</div>
             </div>`;
 
-        // 2. 기사님 답변 말풍선 (오른쪽)
-        if(isApp) {
-            msg += `
-                <div class="chat-bubble chat-right ${isPast ? 'is-past' : ''}" onclick="confirmAction('cancel', '${r.id}')">
+        // --- 오른쪽 말풍선 (기사님 답변) ---
+        // 하나라도 승인된 일정이 있다면 답변 표시
+        const approvedLegs = group.legs.filter(l => l.status === 'approved');
+        if(approvedLegs.length > 0) {
+            const times = approvedLegs.map(l => l.time).join(', ');
+            chatBox.innerHTML += `
+                <div class="chat-bubble chat-right">
                     <div class="bubble-reply">
-                        네, 확인했습니다.<br>배차 승인 완료되었습니다.
+                        네, 확인했습니다.<br>[${times}] 배차 승인했습니다.
                     </div>
                     <div class="chat-time" style="align-self: flex-start;">나(기사)</div>
                 </div>`;
         }
-        
-        chatBox.innerHTML += msg;
     });
 
     const contentArea = document.getElementById('main-content');
     contentArea.scrollTop = contentArea.scrollHeight;
   }
-
 
 
 
@@ -965,7 +1016,18 @@ function showDrillDown(type, filterRid = null) {
   }
 
 
-
+// 숫자를 휴대폰 번호 형식(하이픈)으로 바꿔주는 함수
+  function formatPhone(num) {
+    if (!num) return "";
+    // 숫자만 남기기
+    const s = num.replace(/[^0-9]/g, "");
+    if (s.length === 11) {
+      return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    } else if (s.length === 10) {
+      return s.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+    }
+    return num; // 형식이 안 맞으면 그냥 원본 출력
+  }
 
 
 
