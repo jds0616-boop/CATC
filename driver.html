@@ -282,9 +282,24 @@
 </head>
 <body>
 
+
+
+
+
+
+
+
+
+
+
+
 <div class="app-container">
   <header class="app-header">
-    <div style="width:40px; color:#fff; font-size:20px; cursor:pointer;" onclick="location.href='portal.html'"><i class="fa-solid fa-chevron-left"></i></div>
+    <!-- 뒤로가기 버튼: 탭에 따라 Portal 또는 Back으로 글자가 바뀝니다 -->
+    <div id="back-btn-area" style="min-width:80px; color:#fff; font-size:15px; font-weight:800; cursor:pointer; display:flex; align-items:center;" onclick="handleBack()">
+        <i class="fa-solid fa-chevron-left" style="margin-right:5px;"></i>
+        <span id="back-btn-text">Portal</span>
+    </div>
     <div class="header-title">항공기술훈련원 차량지원 시스템</div>
     <div class="sync-status"><i class="fa-solid fa-sync fa-spin"></i> 실시간 모니터링</div>
   </header>
@@ -318,12 +333,32 @@
       <div id="all-request-container"></div> 
     </div>
 
-<!-- 탭 2: 교육생 퇴교 -->
+    <!-- 탭 2: 교육생 퇴교 -->
     <div id="view-2" style="display: none;">
       <!-- 상황판을 삭제하고 리스트만 남겼습니다 -->
       <div id="trainee-course-list"></div>
     </div>
-</main>
+  </main>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   <!-- 하단바는 지우고, 동동 떠 있는 홈 버튼만 남깁니다 -->
   <div class="footer-home" id="floating-home" onclick="switchTab(0)"><i class="fa-solid fa-house"></i></div>
@@ -766,12 +801,28 @@ function renderTraineeManagement() {
     modal.style.display = 'flex';
   }
 
-function switchTab(n) {
+// 현재 탭 번호를 기억할 변수 (맨 위에 선언하거나 함수 밖에 둡니다)
+  let currentTab = 0;
+
+  function switchTab(n) {
+    currentTab = n; // 현재 몇 번 탭인지 저장
+    
+    // 1. 탭 버튼 활성화 상태 변경
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
+    
+    // 2. 화면 뷰 전환
     document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
     
-    // 0번 탭(종합 일정표)이 아닐 때만 하단 홈 버튼을 보여줌
+    // 3. 하단 홈 버튼 표시 여부 (0번 탭이 아닐 때만 노출)
     document.getElementById('floating-home').style.display = (n === 0) ? 'none' : 'flex';
+
+    // 4. 상단 뒤로가기 버튼 텍스트 변경
+    const btnText = document.getElementById('back-btn-text');
+    if (n === 0) {
+        btnText.innerText = "Portal";
+    } else {
+        btnText.innerText = "Back";
+    }
   }
 
   function getWeekDates(offset) {
@@ -860,7 +911,16 @@ function showDrillDown(type, filterRid = null) {
 
 
 
-
+// 뒤로가기 버튼 클릭 시 동작 제어
+  function handleBack() {
+    if (currentTab === 0) {
+        // 종합 일정표(0번)라면 포탈 페이지로 이동
+        location.href = 'portal.html';
+    } else {
+        // 다른 탭이라면 종합 일정표(0번)로 이동
+        switchTab(0);
+    }
+  }
 
 
 
