@@ -1055,11 +1055,11 @@ body.modal-open {
 
               <div>
                   <label class="setup-label">픽업 장소</label>
-                  <select id="reqLoc" class="navy-select">
-                      <option value="오송역">오송역</option>
-                      <option value="청주터미널">청주터미널</option>
-                      <option value="청주공항">청주공항</option>
-                  </select>
+                  <select id="reqLoc" class="navy-select" onchange="updateTransLabels()">
+    <option value="오송역">오송역</option>
+    <option value="청주터미널">청주터미널</option>
+    <option value="청주공항">청주공항</option>
+</select>
               </div>
 
               <div>
@@ -1582,8 +1582,13 @@ async function toggleConfirm(rid, date, token, currentStatus) {
     }
 }
 
-    // [6. 강사 수송 관리 시스템]
-   // [수정] 강사 수송 모달 열기 (통합 현황에서도 작동하도록 개선)
+
+
+
+
+
+
+// [수정] 강사 수송 모달 열기 함수
 function openTransportModal() { 
     toggleMenu(false); 
     document.getElementById('transportModal').style.display = "flex"; 
@@ -1592,7 +1597,6 @@ function openTransportModal() {
     const row = document.getElementById('reqCourseSelectRow');
     const sel = document.getElementById('reqCourseRID');
 
-    // 과정 목록 초기화 및 생성 (운영 중인 과정만)
     sel.innerHTML = '<option value="">--- 과정을 선택하세요 ---</option>';
     Object.keys(globalAllData).forEach(rid => {
         const room = globalAllData[rid];
@@ -1604,18 +1608,39 @@ function openTransportModal() {
     });
 
     if (currentRID) {
-        // [개별 과정 페이지] 과정 선택창 숨기고 현재 과정으로 자동 지정
         row.style.display = "none";
         sel.value = currentRID;
     } else {
-        // [전체 관리자 페이지] 과정 선택창 보여주고 선택 유도
         row.style.display = "block";
         sel.value = "";
     }
 
-    updateTransDirButtons(); 
+    // [중요] 열릴 때 현재 선택된 장소에 맞춰 라벨을 업데이트함
+    updateTransLabels(); 
     loadCourseTransList(); 
 }
+
+
+
+
+
+
+
+
+
+// 선택한 장소(오송역, 터미널 등)에 따라 입력창 라벨을 즉시 바꾸는 함수
+  function updateTransLabels() {
+    const loc = document.getElementById('reqLoc').value;
+    const toLabel = document.getElementById('labelTo');
+    const fromLabel = document.getElementById('labelFrom');
+    
+    if(toLabel && fromLabel) {
+        toLabel.innerText = `${loc} → 항기원`;
+        fromLabel.innerText = `항기원 → ${loc}`;
+    }
+  }
+
+
 
 
 
