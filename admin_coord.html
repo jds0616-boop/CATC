@@ -2322,13 +2322,11 @@ function renderPickupTable() {
 
             group.requests.sort((a,b) => a.time.localeCompare(b.time));
 
-            // --- 1. 내가 보낸 요청 (우측) ---
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':''}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소됨)':''}</div>`;
             }).join('');
             
-            // [수정] 이미 취소된(cancelled) 것이 아니라면 승인(approved) 상태여도 취소 버튼을 보여줌
             const cancelButtons = group.requests.map(r => 
                 (r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">${r.status==='approved'?'승인취소':'요청취소'}(${r.time})</button>` : ''
             ).join(' ');
@@ -2347,17 +2345,19 @@ function renderPickupTable() {
                             <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
-                    <div class="chat-time">나(운영부)</div>
                 </div>`;
 
-            // --- 2. 기사님의 답변 및 시스템 알림 (좌측) ---
             group.requests.forEach(r => {
                 if(r.status === 'approved') {
+                    // [수정 포인트] r.dir (노선 정보) 추가
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
                             <div class="bubble-driver">
-                                네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
+                                네 확인했습니다.<br>
+                                <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
+                                [${r.time}] ${r.dir.replace('→',' >> ')}<br>
+                                배차 승인 완료!
                             </div>
                             <div class="chat-time">운전원</div>
                         </div>`;
@@ -2371,7 +2371,6 @@ function renderPickupTable() {
         container.scrollTop = container.scrollHeight;
     });
   }
-
 
 
 

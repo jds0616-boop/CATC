@@ -600,7 +600,6 @@ function renderInstructorList() {
             const isCan = r.status === 'cancelled';
             const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
             
-            // 취소된 요청은 기사님 화면에서도 취소선 처리
             if(isCan) {
                 legsHtml += `<div style="padding:8px; opacity:0.5; text-decoration:line-through;">🚫 취소됨: ${r.time} ${r.dir}</div>`;
                 return;
@@ -620,16 +619,19 @@ function renderInstructorList() {
                 </div>`;
 
             if(isApp) {
+                // [수정 포인트] r.dir (노선 정보) 추가
                 repliesHtml += `
                     <div class="chat-bubble chat-right">
                         <div class="bubble-reply">
-                            네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
+                            네 확인했습니다.<br>
+                            <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
+                            [${r.time}] ${r.dir.replace('→',' >> ')}<br>
+                            배차 승인 완료!
                         </div>
                     </div>`;
             }
         });
 
-        // 운영부 요청 말풍선
         chatBox.innerHTML += `
             <div class="chat-bubble chat-left">
                 <div class="talk-header">운영부 수송요청</div>
