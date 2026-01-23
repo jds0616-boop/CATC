@@ -57,56 +57,55 @@
 
 
 
-/* 리스트 상단 헤더 - 정렬 및 너비 최적화 */
-    .list-header {
-      display: flex; align-items: center; padding: 12px 15px;
-      background: #f8fafc; border-bottom: 2px solid #e2e8f0;
-      font-size: 12px; font-weight: 900; color: #64748b;
-    }
-    .header-name { flex: 1; text-align: left; } /* 과정명: 남는 공간 다 차지 */
-    .header-count { width: 70px; text-align: center; } /* 퇴교총원: 고정폭 */
-    .header-time { width: 200px; text-align: center; } /* 출발시간: 버튼 공간 확보 */
+/* 리스트wrapper: 외곽선 */
+    .list-wrapper { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; width: 100%; }
 
-    /* 리스트wrapper 및 행 - 여백 제거 및 가로 꽉 채우기 */
-    .list-wrapper { background: #fff; border-radius: 12px; border: 1px solid #e2e880; overflow: hidden; width: 100%; }
-    .course-row {
-      display: flex; align-items: center; padding: 14px 15px;
-      border-bottom: 1px solid #f1f5f9; cursor: pointer;
+    /* 리스트 헤더 및 행: 격자(Grid) 레이아웃 적용 */
+    .list-header, .course-row {
+      display: grid;
+      /* 과정명(자유) | 퇴교총원(70px) | 출발시간(150px) | 공지여부(60px) */
+      grid-template-columns: 1fr 70px 150px 60px;
+      align-items: center;
     }
+
+    .list-header { background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; font-weight: 900; color: #64748b; }
+    .course-row { border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
     .course-row:last-child { border-bottom: none; }
     .course-row:active { background: #f8fafc; }
 
-    /* 과정명: 최대한 넓게 */
-    .row-title {
-      flex: 1; font-size: 15px; font-weight: 800; color: #1e293b;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      text-align: left;
+    /* 공통 셀(Cell) 스타일: 세로선(|) 추가 */
+    .t-cell {
+      padding: 12px 8px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #f1f5f9; /* 세로줄 구분선 */
+      overflow: hidden;
     }
-    
-    /* 퇴교총원: 중앙 정렬 */
-    .row-total-tag {
-      font-size: 13px; font-weight: 900; color: #0ea5e9; width: 70px;
-      background: #f0f9ff; padding: 5px 0; border-radius: 6px; text-align: center;
-      margin: 0 5px;
-    }
+    .t-cell:last-child { border-right: none; } /* 마지막 칸은 세로선 제외 */
 
-    /* 버튼 영역: 우측 정렬 및 간격 확보 */
-    .row-actions { 
-      display: flex; align-items: center; gap: 6px; width: 200px; justify-content: flex-end; 
-    }
-    
+    /* 과정명 셀: 왼쪽 정렬 */
+    .t-cell.name { justify-content: flex-start; font-size: 14px; font-weight: 800; color: #1e293b; white-space: nowrap; text-overflow: ellipsis; }
+
+    /* 퇴교총원 셀: 하늘색 강조 */
+    .t-cell.count { font-size: 13px; font-weight: 900; color: #0ea5e9; }
+
+    /* 출발시간 셀: 버튼 간격 */
+    .t-cell.btns { gap: 4px; padding: 8px 4px; }
     .mini-btn {
-      height: 36px; flex: 1; border-radius: 8px; border: 1px solid #e2e8f0;
-      background: #fff; font-size: 11px; font-weight: 800; color: #64748b;
-      transition: 0.1s;
+      height: 32px; flex: 1; border-radius: 6px; border: 1px solid #e2e8f0;
+      background: #fff; font-size: 10px; font-weight: 800; color: #64748b;
     }
-    .mini-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    
-    /* 상태 시간 텍스트 */
-    .status-time { 
-      font-size: 12px; font-weight: 900; color: #10b981; 
-      min-width: 45px; text-align: right; margin-right: 4px;
-    }
+    .mini-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; }
+
+    /* 공지여부 셀: 체크 아이콘 */
+    .t-cell.status { font-size: 18px; }
+    .notice-on { color: #10b981; } /* 공지됨: 녹색 체크 */
+    .notice-off { color: #e2e8f0; } /* 공지전: 회색 대시 */
+
+    /* 상단 대시보드 너비 보정 */
+    .dashboard-container { margin-top: 5px; }
 
 
 
@@ -441,12 +440,14 @@ function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     area.innerHTML = '';
     
+    // 표 제목(헤더) 구조: 과정명 | 퇴교총원 | 항기원 출발시간 | 공지여부
     let listHTML = `
       <div class="list-wrapper">
         <div class="list-header">
-          <div class="header-name">과정명</div>
-          <div class="header-count">퇴교총원</div>
-          <div class="header-time">항기원 출발시간</div>
+          <div class="t-cell name" style="justify-content:center;">과정명</div>
+          <div class="t-cell">퇴교총원</div>
+          <div class="t-cell">항기원 출발시간</div>
+          <div class="t-cell">공지여부</div>
         </div>`;
 
     let stats = { o:0, t:0, a:0, total:0 };
@@ -470,18 +471,24 @@ function renderTraineeManagement() {
 
       listHTML += `
         <div class="course-row" onclick="showDrillDown('course', '${rid}')">
-          <!-- 1. 과정명 (넓게) -->
-          <div class="row-title">${cName}</div>
+          <!-- 1. 과정명 -->
+          <div class="t-cell name">${cName}</div>
           
           <!-- 2. 퇴교총원 -->
-          <div class="row-total-tag">${subTotal}명</div>
+          <div class="t-cell count">${subTotal}명</div>
           
-          <!-- 3. 버튼 및 상태 영역 -->
-          <div class="row-actions">
-            <span class="status-time">${dep.time ? dep.time : ''}</span>
+          <!-- 3. 항기원 출발시간 (버튼) -->
+          <div class="t-cell btns">
             <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00')">13:00</button>
             <button class="mini-btn ${dep.time==='15:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '15:00')">15:00</button>
             <button class="mini-btn ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="event.stopPropagation(); promptManual('${rid}')">수동</button>
+          </div>
+
+          <!-- 4. 공지여부 (체크 표시) -->
+          <div class="t-cell status">
+            ${dep.time 
+              ? `<i class="fa-solid fa-circle-check notice-on"></i>` 
+              : `<i class="fa-solid fa-minus notice-off"></i>`}
           </div>
         </div>`;
     });
@@ -489,7 +496,7 @@ function renderTraineeManagement() {
     listHTML += `</div>`;
     area.innerHTML = listHTML;
 
-    // 상단 대시보드 데이터 업데이트
+    // 상단 대시보드 수치 업데이트
     document.getElementById('sum-total').innerText = stats.total + "명";
     document.getElementById('sum-osong').innerText = stats.o;
     document.getElementById('sum-term').innerText = stats.t;
