@@ -285,7 +285,7 @@
 <div class="app-container">
   <header class="app-header">
     <div style="width:40px; color:#fff; font-size:20px; cursor:pointer;" onclick="location.href='portal.html'"><i class="fa-solid fa-chevron-left"></i></div>
-    <div class="header-title">KAC 차량지원 통합 마스터</div>
+    <div class="header-title">항공기술훈련원 차량지원 시스템</div>
     <div class="sync-status"><i class="fa-solid fa-sync fa-spin"></i> 실시간 모니터링</div>
   </header>
 
@@ -320,25 +320,7 @@
 
 <!-- 탭 2: 교육생 퇴교 -->
     <div id="view-2" style="display: none;">
-      <!-- 행정 플랫폼 스타일의 2x2 상황판 -->
-      <div class="global-status-grid">
-        <div class="stat-card-new">
-            <span class="stat-label">전체 퇴교탑승</span>
-            <div class="stat-val" id="sum-total">0<small>명</small></div>
-        </div>
-        <div class="stat-card-new">
-            <span class="stat-label">오송역 신청</span>
-            <div class="stat-val orange" id="sum-osong">0<small>명</small></div>
-        </div>
-        <div class="stat-card-new">
-            <span class="stat-label">터미널 신청</span>
-            <div class="stat-val" id="sum-term">0<small>명</small></div>
-        </div>
-        <div class="stat-card-new">
-            <span class="stat-label">공항 신청</span>
-            <div class="stat-val green" id="cnt-air">0<small>명</small></div>
-        </div>
-      </div>
+      <!-- 상황판을 삭제하고 리스트만 남겼습니다 -->
       <div id="trainee-course-list"></div>
     </div>
 </main>
@@ -661,11 +643,12 @@ function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     area.innerHTML = '';
     
+    // 표 제목(헤더) 구조
     let listHTML = `
       <div class="list-wrapper">
         <div class="list-header">
           <div class="t-cell name" style="justify-content:center;">과정명</div>
-          <div class="t-cell">총원</div>
+          <div class="t-cell">퇴교총원</div>
           <div class="t-cell">항기원 출발시간</div>
           <div class="t-cell">공지</div>
         </div>`;
@@ -694,7 +677,7 @@ function renderTraineeManagement() {
           <!-- 1. 과정명 -->
           <div class="t-cell name">${cName}</div>
           
-          <!-- 2. 퇴교총원 (위치 이동) -->
+          <!-- 2. 퇴교총원 -->
           <div class="t-cell count">${subTotal}명</div>
           
           <!-- 3. 항기원 출발시간 (버튼) -->
@@ -704,7 +687,7 @@ function renderTraineeManagement() {
             <button class="mini-btn ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="event.stopPropagation(); promptManual('${rid}')">수동</button>
           </div>
 
-          <!-- 4. 공지여부 -->
+          <!-- 4. 공지여부 (체크 표시) -->
           <div class="t-cell status">
             ${dep.time 
               ? `<i class="fa-solid fa-circle-check notice-on"></i>` 
@@ -715,12 +698,8 @@ function renderTraineeManagement() {
 
     listHTML += `</div>`;
     area.innerHTML = listHTML;
-
-    // 대시보드 숫자 업데이트
-    document.getElementById('sum-total').innerText = stats.total;
-    document.getElementById('sum-osong').innerText = stats.o;
-    document.getElementById('sum-term').innerText = stats.t;
-    document.getElementById('cnt-air').innerText = stats.a;
+    
+    // (이 부분에 있던 상단 대시보드 업데이트 코드 4줄을 삭제했습니다)
   }
 
 
