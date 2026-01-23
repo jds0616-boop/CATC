@@ -55,40 +55,72 @@
 
 
 
-/* 리스트 상단 헤더 */
+
+
+/* 리스트 상단 헤더 - 정렬 및 너비 최적화 */
     .list-header {
-      display: flex; align-items: center; padding: 10px 12px;
+      display: flex; align-items: center; padding: 12px 15px;
       background: #f8fafc; border-bottom: 2px solid #e2e8f0;
-      font-size: 11px; font-weight: 900; color: #64748b; gap: 10px;
+      font-size: 12px; font-weight: 900; color: #64748b;
     }
-    .header-name { flex: 1; }
-    .header-count { width: 45px; text-align: center; }
-    .header-time { width: 140px; text-align: center; }
+    .header-name { flex: 1; text-align: left; } /* 과정명: 남는 공간 다 차지 */
+    .header-count { width: 70px; text-align: center; } /* 퇴교총원: 고정폭 */
+    .header-time { width: 200px; text-align: center; } /* 출발시간: 버튼 공간 확보 */
 
-    /* 리스트wrapper 및 행 */
-    .list-wrapper { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+    /* 리스트wrapper 및 행 - 여백 제거 및 가로 꽉 채우기 */
+    .list-wrapper { background: #fff; border-radius: 12px; border: 1px solid #e2e880; overflow: hidden; width: 100%; }
     .course-row {
-      display: flex; align-items: center; padding: 12px;
-      border-bottom: 1px solid #f1f5f9; gap: 10px; cursor: pointer;
+      display: flex; align-items: center; padding: 14px 15px;
+      border-bottom: 1px solid #f1f5f9; cursor: pointer;
     }
-    .course-row:active { background: #f1f5f9; }
+    .course-row:last-child { border-bottom: none; }
+    .course-row:active { background: #f8fafc; }
 
+    /* 과정명: 최대한 넓게 */
     .row-title {
-      flex: 1; font-size: 14px; font-weight: 800; color: #1e293b;
+      flex: 1; font-size: 15px; font-weight: 800; color: #1e293b;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      text-align: left;
     }
+    
+    /* 퇴교총원: 중앙 정렬 */
     .row-total-tag {
-      font-size: 12px; font-weight: 900; color: #0ea5e9; width: 45px;
-      background: #f0f9ff; padding: 4px 0; border-radius: 6px; text-align: center;
+      font-size: 13px; font-weight: 900; color: #0ea5e9; width: 70px;
+      background: #f0f9ff; padding: 5px 0; border-radius: 6px; text-align: center;
+      margin: 0 5px;
     }
 
-    .row-actions { display: flex; align-items: center; gap: 5px; width: 140px; justify-content: flex-end; }
-    .mini-btn {
-      height: 34px; width: 44px; border-radius: 8px; border: 1px solid #e2e8f0;
-      background: #fff; font-size: 11px; font-weight: 800; color: #64748b;
+    /* 버튼 영역: 우측 정렬 및 간격 확보 */
+    .row-actions { 
+      display: flex; align-items: center; gap: 6px; width: 200px; justify-content: flex-end; 
     }
-    .mini-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; }
-    .status-time { font-size: 11px; font-weight: 900; color: #10b981; margin-right: 2px; }
+    
+    .mini-btn {
+      height: 36px; flex: 1; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; font-size: 11px; font-weight: 800; color: #64748b;
+      transition: 0.1s;
+    }
+    .mini-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    
+    /* 상태 시간 텍스트 */
+    .status-time { 
+      font-size: 12px; font-weight: 900; color: #10b981; 
+      min-width: 45px; text-align: right; margin-right: 4px;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /* 상세 팝업 내부 스타일 */
     .popup-group { margin-bottom: 20px; text-align: left; }
@@ -409,7 +441,6 @@ function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     area.innerHTML = '';
     
-    // 리스트 상단에 표 제목(헤더) 추가
     let listHTML = `
       <div class="list-wrapper">
         <div class="list-header">
@@ -439,9 +470,13 @@ function renderTraineeManagement() {
 
       listHTML += `
         <div class="course-row" onclick="showDrillDown('course', '${rid}')">
+          <!-- 1. 과정명 (넓게) -->
           <div class="row-title">${cName}</div>
+          
+          <!-- 2. 퇴교총원 -->
           <div class="row-total-tag">${subTotal}명</div>
           
+          <!-- 3. 버튼 및 상태 영역 -->
           <div class="row-actions">
             <span class="status-time">${dep.time ? dep.time : ''}</span>
             <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00')">13:00</button>
@@ -454,7 +489,7 @@ function renderTraineeManagement() {
     listHTML += `</div>`;
     area.innerHTML = listHTML;
 
-    // 상단 대시보드 숫자 업데이트
+    // 상단 대시보드 데이터 업데이트
     document.getElementById('sum-total').innerText = stats.total + "명";
     document.getElementById('sum-osong').innerText = stats.o;
     document.getElementById('sum-term').innerText = stats.t;
