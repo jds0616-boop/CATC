@@ -296,9 +296,8 @@
 <div class="app-container">
   <header class="app-header">
     <!-- 뒤로가기 버튼: 탭에 따라 Portal 또는 Back으로 글자가 바뀝니다 -->
-    <div id="back-btn-area" style="min-width:80px; color:#fff; font-size:15px; font-weight:800; cursor:pointer; display:flex; align-items:center;" onclick="handleBack()">
-        <i class="fa-solid fa-chevron-left" style="margin-right:5px;"></i>
-        <span id="back-btn-text">Portal</span>
+    <div id="back-btn-area" style="min-width:60px; color:#fff; font-size:18px; font-weight:900; cursor:pointer; display:flex; align-items:center;" onclick="handleBack()">
+        <span id="back-btn-text">&lt;&lt;</span>
     </div>
     <div class="header-title">항공기술훈련원 차량지원 시스템</div>
     <div class="sync-status"><i class="fa-solid fa-sync fa-spin"></i> 실시간 모니터링</div>
@@ -804,24 +803,19 @@ function renderTraineeManagement() {
 // 현재 탭 번호를 기억할 변수 (맨 위에 선언하거나 함수 밖에 둡니다)
   let currentTab = 0;
 
-  function switchTab(n) {
-    currentTab = n; // 현재 몇 번 탭인지 저장
-    
-    // 1. 탭 버튼 활성화 상태 변경
+function switchTab(n) {
+    currentTab = n; 
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
-    
-    // 2. 화면 뷰 전환
     document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
     
-    // 3. 하단 홈 버튼 표시 여부 (0번 탭이 아닐 때만 노출)
-    document.getElementById('floating-home').style.display = (n === 0) ? 'none' : 'flex';
+    // 홈 버튼 표시 제어
+    const homeBtn = document.getElementById('floating-home');
+    if(homeBtn) homeBtn.style.display = (n === 0) ? 'none' : 'flex';
 
-    // 4. 상단 뒤로가기 버튼 텍스트 변경
+    // 상단 버튼 글자 변경 (종합일정표일 때만 << 표시)
     const btnText = document.getElementById('back-btn-text');
-    if (n === 0) {
-        btnText.innerText = "Portal";
-    } else {
-        btnText.innerText = "Back";
+    if (btnText) {
+        btnText.innerText = (n === 0) ? "<<" : "Back";
     }
   }
 
@@ -911,13 +905,13 @@ function showDrillDown(type, filterRid = null) {
 
 
 
-// 뒤로가기 버튼 클릭 시 동작 제어
+// 뒤로가기 클릭 시 동작
   function handleBack() {
     if (currentTab === 0) {
-        // 종합 일정표(0번)라면 포탈 페이지로 이동
-        location.href = 'portal.html';
+        // 종합 일정표라면 사용자가 제공한 potal.html로 이동
+        location.href = 'potal.html';
     } else {
-        // 다른 탭이라면 종합 일정표(0번)로 이동
+        // 다른 탭이라면 종합 일정표(홈)로 이동
         switchTab(0);
     }
   }
