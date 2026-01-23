@@ -558,8 +558,7 @@
 
 
 
-// [탭 1] 실시간 톡 렌더링 (왕복 그룹화 및 개별 승인 버전)
-  function renderInstructorList() {
+function renderInstructorList() {
     const allZone = document.getElementById('all-request-container');
     const newZone = document.getElementById('new-request-container');
     newZone.innerHTML = '';
@@ -570,37 +569,43 @@
     const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
-    // 1. 데이터를 "강사명 + 날짜" 기준으로 그룹화
     const grouped = {};
     profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
-        const groupKey = `${r.prof}_${r.date}`;
-        if (!grouped[groupKey]) {
-            grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, legs: [] };
-        }
+        const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
+        if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, legs: [] };
         grouped[groupKey].legs.push(r);
     });
 
     const sortedGroups = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
-
     let lastDate = "";
+
     sortedGroups.forEach(group => {
         if(group.date !== lastDate) {
             chatBox.innerHTML += `<div class="chat-date-line"><span>${group.date}</span></div>`;
             lastDate = group.date;
         }
 
+        const roomInfo = allCourses[group.courseRID];
+        const cName = roomInfo?.settings?.courseName || `과정`;
         const dayNames = ["일","월","화","수","목","금","토"];
         const dIdx = new Date(group.date).getDay();
         
-        // 시간순 정렬
+        let legsHtml = "";
+        let repliesHtml = "";
+
         group.legs.sort((a,b) => a.time.localeCompare(b.time));
 
-        // --- 왼쪽 말풍선 (운영부 요청) 내용 생성 ---
-        let legsHtml = "";
         group.legs.forEach(r => {
             const isApp = r.status === 'approved';
+            const isCan = r.status === 'cancelled';
             const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
             
+            // 취소된 요청은 기사님 화면에서도 취소선 처리
+            if(isCan) {
+                legsHtml += `<div style="padding:8px; opacity:0.5; text-decoration:line-through;">🚫 취소됨: ${r.time} ${r.dir}</div>`;
+                return;
+            }
+
             legsHtml += `
                 <div class="talk-leg-item ${isPast ? 'leg-is-past' : ''}">
                     <div style="font-weight:800; color:#0369a1;">
@@ -613,44 +618,31 @@
                         </div>
                     ` : (isApp ? `<div class="leg-status-done"><i class="fa-solid fa-check"></i> 배차 승인됨</div>` : '')}
                 </div>`;
+
+            if(isApp) {
+                repliesHtml += `
+                    <div class="chat-bubble chat-right">
+                        <div class="bubble-reply">
+                            네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
+                        </div>
+                    </div>`;
+            }
         });
 
+        // 운영부 요청 말풍선
         chatBox.innerHTML += `
             <div class="chat-bubble chat-left">
                 <div class="talk-header">운영부 수송요청</div>
                 <div class="bubble-content">
-                    <div class="talk-body">
-                        &lt;교육과정 수송요청&gt;
-                        - ${group.date}(${dayNames[dIdx]})
-                        - ${group.prof} 강사님
-                    </div>
-                    <a href="tel:${group.phone}" class="talk-link">${formatPhone(group.phone)}</a>
-                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px;">
-                        ${legsHtml}
-                    </div>
+                    <div class="talk-body">&lt;${cName}&gt; ${group.prof} 강사님 (${formatPhone(group.phone)})</div>
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px;">${legsHtml}</div>
                 </div>
-                <div class="chat-time">운영부</div>
-            </div>`;
-
-        // --- 오른쪽 말풍선 (기사님 답변) ---
-        // 하나라도 승인된 일정이 있다면 답변 표시
-        const approvedLegs = group.legs.filter(l => l.status === 'approved');
-        if(approvedLegs.length > 0) {
-            const times = approvedLegs.map(l => l.time).join(', ');
-            chatBox.innerHTML += `
-                <div class="chat-bubble chat-right">
-                    <div class="bubble-reply">
-                        네, 확인했습니다.<br>[${times}] 배차 승인했습니다.
-                    </div>
-                    <div class="chat-time" style="align-self: flex-start;">나(기사)</div>
-                </div>`;
-        }
+            </div>` + repliesHtml;
     });
 
     const contentArea = document.getElementById('main-content');
     contentArea.scrollTop = contentArea.scrollHeight;
   }
-
 
 
 
