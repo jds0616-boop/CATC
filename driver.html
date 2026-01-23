@@ -62,11 +62,14 @@
     /* 2. 격자형 리스트 (세로줄 및 중앙 정렬 강화) */
     .list-wrapper { background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
+/* 표의 열 너비를 비율로 조정하여 치우침 해결 */
     .list-header, .course-row {
       display: grid;
-      grid-template-columns: 1fr 55px 160px 55px; 
+      /* 과정명(1.5) : 총원(0.6) : 출발시간(1.8) : 공지(0.6) 비율로 배분 */
+      grid-template-columns: 1.5fr 0.6fr 1.8fr 0.6fr; 
       align-items: center;
       text-align: center;
+      width: 100%;
     }
 
     .list-header { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; font-weight: 900; color: #475569; }
@@ -74,28 +77,29 @@
     .course-row:last-child { border-bottom: none; }
     .course-row:active { background: #f8fafc; }
 
-    /* 세로줄 구분선 (|) 셀 스타일 */
+    /* 각 칸의 세로줄과 정렬 보정 */
     .t-cell {
       padding: 12px 5px;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-right: 1px solid #e2e8f0; /* 세로줄 구분선 */
+      border-right: 1px solid #f1f5f9;
+      overflow: hidden;
     }
     .t-cell:last-child { border-right: none; }
 
 
+
+
+
     /* 과정명 셀의 텍스트가 총원 쪽(오른쪽)으로 너무 붙지 않게 여백을 살짝 줍니다. */
-    .t-cell.name {
-      justify-content: center;
-      padding-right: 10px; /* 총원 칸과 너무 붙어 보이면 이 숫자를 조절하세요 */
-      font-size: 14px;
-      font-weight: 800;
-      color: #1e293b;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+   .t-cell.name { 
+      justify-content: center; 
+      font-size: 14px; 
+      font-weight: 800; 
+      color: #1e293b; 
+      padding: 0 10px;
     }
 
     /* 총원 셀의 너비를 맞춤 */
@@ -107,7 +111,11 @@
     }
 
     /* 출발시간 버튼 영역 */
-    .t-cell.btns { gap: 4px; padding: 8px 4px; }
+    .t-cell.btns { 
+      gap: 4px; 
+      padding: 8px 6px; 
+      width: 100%;
+    }
     .mini-btn {
       height: 34px; flex: 1; border-radius: 6px; border: 1px solid #e2e8f0;
       background: #fff; font-size: 11px; font-weight: 800; color: #64748b; cursor: pointer;
