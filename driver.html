@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>KAC 차량지원 통합 마스터 센터</title>
+  <title>항공기술훈련원 차량지원 시스템</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -210,10 +210,23 @@
     /* 신규 요청 제목 */
     .new-req-title { font-size: 14px; font-weight: 900; color: #b45309; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 
-    /* 하단바 및 기타 */
-    .app-footer { height: 65px; background: var(--navy); border-top: 2px solid var(--blue); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
-    .footer-home { width: 56px; height: 56px; background: var(--blue); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); box-shadow: 0 8px 20px rgba(0,0,0,0.3); cursor: pointer; border: 4px solid var(--navy); z-index: 100; display: none; }
-    .footer-clock { font-size: 14px; font-weight: 900; color: #fff; font-family: monospace; }
+/* 기존 하단바 스타일 삭제 후 홈 버튼 스타일만 유지/수정 */
+    .footer-home { 
+      width: 56px; height: 56px; 
+      background: var(--blue); color: #fff; 
+      border-radius: 50%; 
+      display: none; align-items: center; justify-content: center; 
+      font-size: 24px; 
+      position: absolute; 
+      bottom: 30px; /* 바닥에서 30px 띄움 */
+      left: 50%; transform: translateX(-50%); 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+      cursor: pointer; 
+      border: 4px solid #fff; /* 흰색 테두리로 강조 */
+      z-index: 10000; 
+      transition: 0.2s; 
+    }
+    .footer-home:active { transform: translateX(-50%) scale(0.9); }
 
     /* 모달 레이아웃 */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
@@ -311,13 +324,10 @@
       </div>
       <div id="trainee-course-list"></div>
     </div>
-  </main>
+</main>
 
+  <!-- 하단바는 지우고, 동동 떠 있는 홈 버튼만 남깁니다 -->
   <div class="footer-home" id="floating-home" onclick="switchTab(0)"><i class="fa-solid fa-house"></i></div>
-  <footer class="app-footer">
-    <div class="footer-clock" id="clock">0000.00.00 00:00:00</div>
-    <img src="logo.png" alt="KAC" style="height:22px; filter: brightness(0) invert(1);">
-  </footer>
 </div>
 
 <!-- 공용 모달 -->
@@ -352,7 +362,6 @@
   const alarmAudio = new Audio('timer.mp3');
 
   function init() {
-    setInterval(updateClock, 1000);
     firebase.database().ref('courses').on('value', snap => { allCourses = snap.val() || {}; renderAll(); });
     firebase.database().ref('system/transport_requests').on('value', snap => {
       const raw = snap.val() || {};
@@ -701,9 +710,11 @@ function renderTraineeManagement() {
     modal.style.display = 'flex';
   }
 
-  function switchTab(n) {
+function switchTab(n) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
     document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
+    
+    // 0번 탭(종합 일정표)이 아닐 때만 하단 홈 버튼을 보여줌
     document.getElementById('floating-home').style.display = (n === 0) ? 'none' : 'flex';
   }
 
@@ -802,11 +813,7 @@ function showDrillDown(type, filterRid = null) {
 
 
 
-  function updateClock() {
-    const now = new Date();
-    const days = ['일','월','화','수','목','금','토'];
-    document.getElementById('clock').innerText = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}시 ${String(now.getMinutes()).padStart(2,'0')}분 ${String(now.getSeconds()).padStart(2,'0')}초`;
-  }
+
   init();
 </script>
 </body>
