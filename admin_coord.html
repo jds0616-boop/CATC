@@ -639,25 +639,27 @@ body.modal-open {
 
 
 
-/* 강사수송 탭: 타이틀+버튼 라인 완벽 틀고정 */
+/* 강사수송 탭: 상단바 바로 밑에 완벽하게 틀고정 */
     .sticky-transport-bar {
       position: sticky;
-      top: 55px; /* 메인 상단바(55px) 바로 아래 딱 붙음 */
-      z-index: 500; /* 말풍선보다 위에 있도록 설정 */
-      background: #f1f5f9; /* 배경색을 채워서 뒤에 올라오는 글자가 안 보이게 함 */
-      padding: 10px 12px 5px 12px;
-      margin: 0;
+      /* app-content의 padding-top(12px)을 상쇄하기 위해 -12px 지점에 고정 */
+      top: -12px; 
+      z-index: 1000; /* 최상단 레이어 */
+      background: var(--bg-cool); /* 컨테이너 배경색과 동일하게 */
+      padding: 12px 0 8px 0; /* 위아래 여백 */
+      margin-bottom: 0;
+      width: 100%;
     }
 
-    /* 틀고정 되는 카드 디자인 */
+    /* 틀고정 되는 카드 내부 여백 보정 */
     .sticky-transport-bar .section-card {
-      margin-bottom: 0 !important;
+      margin: 0 !important;
       border-radius: 20px;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
     
-    /* 채팅창 컨테이너 설정 */
+    /* 채팅창 컨테이너: 카톡 배경색 및 스크롤 영역 */
     #pickupCardContainer {
       background: #abc1d1;
       display: flex;
@@ -665,8 +667,9 @@ body.modal-open {
       gap: 15px;
       padding: 15px;
       border-radius: 16px;
-      /* 틀고정 영역과 겹치지 않도록 내부 여백 조절 */
+      /* 고정바와 겹치지 않도록 위쪽 여백 부여 */
       margin-top: 5px; 
+      min-height: 600px;
     }
 
 
@@ -783,24 +786,24 @@ body.modal-open {
 
 
 
-<!-- [수정] 강사 픽업 통합 현황 (타이틀 라인 틀고정 구조) -->
-<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:0;">
+<!-- [수정] 강사 픽업 통합 현황 (완벽 틀고정 구조) -->
+<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column;">
     
-    <!-- 1. 이 영역이 화면 상단바 바로 밑에 고정됩니다 (틀고정) -->
+    <!-- 1. 고정 영역 (스크롤해도 상단바 밑에 남음) -->
     <div class="sticky-transport-bar">
         <div class="section-card" style="padding: 15px 20px;">
             <div class="section-title" style="justify-content:space-between; margin-bottom:0;">
                 <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
-                <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
+                <button class="navy-btn" style="width:110px; height:32px; font-size:11px;" onclick="openTransportModal()">
                     <i class="fa-solid fa-plus"></i> 수송 추가요청
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 2. 이 채팅 영역이 고정바 밑으로 들어가며 위로 올라갑니다 -->
+    <!-- 2. 채팅 영역 (위로 올라가며 고정 영역 밑으로 사라짐) -->
     <div id="pickupCardContainer">
-        <!-- 자바스크립트가 여기에 채팅 내용을 채웁니다 -->
+        <!-- 자바스크립트가 내용을 채웁니다 -->
     </div>
 </div>
 
