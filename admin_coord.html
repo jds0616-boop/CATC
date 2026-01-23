@@ -2285,7 +2285,8 @@ function showStudentShuttleView() {
 
 
  
-function renderPickupTable() {
+// [수정] 강사 수송 통합 현황 (날짜 정보 추가 버전)
+  function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
     
@@ -2300,7 +2301,7 @@ function renderPickupTable() {
         const grouped = {};
         items.forEach(r => {
             const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
-            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, courseRID: r.courseRID, phone: r.phone, requests: [] };
+            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, requests: [] };
             grouped[groupKey].requests.push(r);
         });
 
@@ -2315,20 +2316,20 @@ function renderPickupTable() {
             }
 
             const roomInfo = globalAllData[group.courseRID];
-            const cName = roomInfo?.settings?.courseName || `Room ${group.courseRID}`;
+            const cName = roomInfo?.settings?.courseName || `과정`;
             const dayNames = ["일","월","화","수","목","금","토"];
             const dIdx = new Date(group.date).getDay();
+            const dateWithDay = `${group.date}(${dayNames[dIdx]})`;
 
             group.requests.sort((a,b) => a.time.localeCompare(b.time));
 
-            // --- 1. 내가 보낸 요청 (우측) ---
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':''}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소됨)':''}</div>`;
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
-                (r.status !== 'approved' && r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">요청취소(${r.time})</button>` : ''
+                (r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">${r.status==='approved'?'승인취소':'요청취소'}(${r.time})</button>` : ''
             ).join(' ');
 
             html += `
@@ -2337,7 +2338,7 @@ function renderPickupTable() {
                     <div class="bubble-admin">
                         <div class="talk-body">
                             &lt;${cName}&gt;
-                            - ${group.date}(${dayNames[dIdx]})
+                            - ${dateWithDay}
                             - ${group.prof} 강사님 (${formatPhone(group.phone)})
                             ${timeLines}
                         </div>
@@ -2345,21 +2346,26 @@ function renderPickupTable() {
                             <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
+                    <div class="chat-time">나(운영부)</div>
                 </div>`;
 
-            // --- 2. 기사님의 답변 (좌측) ---
             group.requests.forEach(r => {
                 if(r.status === 'approved') {
+                    // [수정 포인트] 날짜(dateWithDay) 정보 추가
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
                             <div class="bubble-driver">
-                                네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
+                                네 확인했습니다.<br>
+                                <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
+                                ${dateWithDay} [${r.time}]<br>
+                                ${r.dir.replace('→',' >> ')}<br>
+                                배차 승인 완료!
                             </div>
+                            <div class="chat-time">운전원</div>
                         </div>`;
                 } else if(r.status === 'cancelled') {
-                   // 운영부가 취소했을 때 뜨는 시스템 메시지 스타일
-                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0;">🚫 [${r.time} ${r.prof} 강사님] 요청이 취소되었습니다.</div>`;
+                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0; font-weight:800; background:rgba(255,255,255,0.5); padding:5px; border-radius:10px;">🚫 [${r.time} ${r.prof} 강사님] 일정이 취소되었습니다.</div>`;
                 }
             });
         });
@@ -2368,7 +2374,6 @@ function renderPickupTable() {
         container.scrollTop = container.scrollHeight;
     });
   }
-
 
 
 // [수정] 교육생 퇴교차량 통합 테이블 그리기
