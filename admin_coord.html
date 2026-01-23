@@ -515,85 +515,53 @@
 
 
 
-/* [개선] 강사 수송 카드 시안성 강화 디자인 */
-.pickup-item-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 0; /* 내부 섹션 구분을 위해 0으로 설정 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    margin-bottom: 5px;
-}
-/* 카드 상단 헤더 (과정명) */
-.pickup-card-header {
-    background: #f8fafc;
-    padding: 12px 15px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.pickup-card-course {
-    font-size: 14px;
-    font-weight: 800;
-    color: #1e293b;
-    max-width: 75%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-/* 카드 몸통 (시간 & 장소 강조) */
-.pickup-card-body {
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.pickup-main-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.pickup-time-big {
-    font-size: 20px;
-    font-weight: 900;
-    color: #0f172a;
-}
-.pickup-time-big small {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 600;
-    margin-right: 5px;
-}
-.pickup-loc-big {
-    font-size: 15px;
-    font-weight: 800;
-    color: #3b82f6; /* 장소를 파란색으로 강조 */
-}
-/* 카드 하단 (강사 정보) */
-.pickup-card-sub {
-    padding: 10px 15px;
-    background: #ffffff;
-    border-top: 1px dashed #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #475569;
-}
-/* 카드 푸터 (상태 바) */
-.pickup-card-footer {
-    padding: 8px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.status-bar-pending { background: #fff7ed; color: #ea580c; border-top: 1px solid #ffedd5; }
-.status-bar-approved { background: #f0fdf4; color: #16a34a; border-top: 1px solid #dcfce7; }
+/* 관리자용 실시간 수송 톡 배경 */
+    #pickupCardContainer {
+      background: #abc1d1; /* 카톡 배경색 */
+      display: flex; flex-direction: column; gap: 15px;
+      padding: 15px; border-radius: 16px; min-height: 500px;
+    }
 
-.badge-dir { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+    /* 날짜 구분선 */
+    .chat-date-line { text-align: center; margin: 10px 0; }
+    .chat-date-line span {
+      background: rgba(0,0,0,0.15); color: #fff;
+      padding: 5px 15px; border-radius: 20px; font-size: 11px; font-weight: 800;
+    }
+
+    /* 말풍선 공통 */
+    .chat-bubble { max-width: 85%; position: relative; display: flex; flex-direction: column; margin-bottom: 5px; }
+    
+    /* 기사님 답변 (왼쪽 - 나에게 온 메시지) */
+    .chat-left { align-self: flex-start; }
+    .bubble-driver {
+      background: #fff; padding: 12px; border-radius: 0 12px 12px 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 13px; font-weight: 800; color: #1e293b;
+    }
+
+    /* 내가 보낸 요청 (오른쪽 - 내가 보낸 메시지) */
+    .chat-right { align-self: flex-end; }
+    .bubble-admin {
+      background: #fee500; padding: 12px; border-radius: 12px 0 12px 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 14px; line-height: 1.5; color: #1e293b;
+    }
+
+    /* 톡 양식 내부 텍스트 */
+    .talk-header { font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 800; }
+    .talk-body { font-weight: 700; white-space: pre-line; }
+    
+    /* 톡 하단 관리 도구 */
+    .talk-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1);
+    }
+    .btn-cancel-talk {
+      background: none; border: none; color: #ef4444; font-size: 11px; 
+      font-weight: 800; text-decoration: underline; cursor: pointer;
+    }
+
+    .chat-time { font-size: 10px; color: #666; margin-top: 4px; }
+    .chat-right .chat-time { align-self: flex-end; }
 
 
 
@@ -2314,8 +2282,8 @@ function showStudentShuttleView() {
 
 
  
-// [최종 개선] 레이블이 추가된 시안성 강화 카드형 렌더링
-function renderPickupTable() {
+// [수정] 강사 수송 통합 현황을 '실시간 톡' 방식으로 렌더링 (관리자용)
+  function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
     
@@ -2324,67 +2292,66 @@ function renderPickupTable() {
         const items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
         
         if (items.length === 0) {
-            container.innerHTML = '<div style="padding:50px; color:#94a3b8; text-align:center; font-size:14px;">현재 예약된 수송 내역이 없습니다.</div>';
+            container.innerHTML = '<div style="padding:50px; color:#fff; text-align:center; font-size:14px; font-weight:800;">현재 예약된 수송 내역이 없습니다.</div>';
             return;
         }
 
+        // 날짜/시간순 정렬
         items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
-        container.innerHTML = items.map(r => {
-            const roomInfo = globalAllData[r.courseRID];
-            let roomName = roomInfo?.settings?.courseName || (r.courseRID ? `Room ${r.courseRID}` : "미배정 과정");
+        let html = "";
+        let lastDate = "";
 
-            const isOut = r.dir && r.dir.includes('항기원→');
-            const dirClass = isOut ? 'dir-out' : 'dir-in';
-            const dirText = isOut ? '퇴교' : '입교';
-            const pickupPlace = r.dir ? r.dir.split('→')[0] : (r.loc || "-");
-            
+        items.forEach(r => {
+            // 날짜 구분선
+            if(r.date !== lastDate) {
+                html += `<div class="chat-date-line"><span>${r.date}</span></div>`;
+                lastDate = r.date;
+            }
+
             const isApproved = r.status === 'approved';
-            const statusLabel = isApproved ? "승인완료" : "승인대기";
-            const statusClass = isApproved ? "status-bar-approved" : "status-bar-pending";
-            const statusIcon = isApproved ? "fa-circle-check" : "fa-clock";
-                
-            const deleteBtn = isApproved ? "" : `<button class="btn-del-link" onclick="deleteTrans('${r.id}')" style="color:#94a3b8;">취소</button>`;
+            const roomInfo = globalAllData[r.courseRID];
+            const cName = roomInfo?.settings?.courseName || `Room ${r.courseRID}`;
+            const dayNames = ["일","월","화","수","목","금","토"];
+            const dIdx = new Date(r.date).getDay();
 
-            return `
-                <div class="pickup-item-card">
-                    <div class="pickup-card-header">
-                        <div class="pickup-card-course">${roomName}</div>
-                        <span class="badge-dir ${dirClass}">${dirText}</span>
-                    </div>
-                    
-                    <div class="pickup-card-body" style="padding: 18px 15px;">
-                        <div class="pickup-main-info" style="gap: 8px;">
-                            <!-- 시간 레이블 추가 섹션 -->
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size:11px; color:#94a3b8; font-weight:800; background:#f1f5f9; padding:2px 6px; border-radius:4px; white-space:nowrap;">픽업요청시간</span>
-                                <div class="pickup-time-big" style="font-size: 19px;">
-                                    <small style="color:#3b82f6; font-size:14px;">${r.date.split('-')[1]}/${r.date.split('-')[2]}</small> 
-                                    <span style="margin-left:2px;">${r.time}</span>
-                                </div>
-                            </div>
-                            
-                            <div class="pickup-loc-big" style="font-size: 16px;">
-                                <i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> <b>${pickupPlace}</b>
-                            </div>
+            // 1. 내가 보낸 요청 메시지 (오른쪽 - 노란색 말풍선)
+            html += `
+                <div class="chat-bubble chat-right">
+                    <div class="talk-header" style="text-align:right;">보낸 수송요청</div>
+                    <div class="bubble-admin">
+                        <div class="talk-body">
+                            &lt;${cName}&gt;
+                            - ${r.date}(${dayNames[dIdx]})
+                            - ${r.prof} 강사님
+                            - ${r.time} ${r.dir.replace('→',' >> ')}
                         </div>
-
-                        <div style="text-align:right;">
-                            <div style="font-weight:800; color:#1e293b; font-size:15px;">${r.prof || '-'} <small style="font-weight:400; color:#64748b;">강사님</small></div>
-                            <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${r.phone || '-'}</div>
+                        <div class="talk-footer">
+                            <span style="font-size:11px; color:#64748b;">${r.phone}</span>
+                            ${!isApproved ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">요청취소</button>` : ''}
                         </div>
                     </div>
-
-                    <div class="pickup-card-footer ${statusClass}">
-                        <div style="font-size:12px; font-weight:900;">
-                            <i class="fa-solid ${statusIcon}"></i> ${statusLabel}
-                        </div>
-                        ${deleteBtn}
-                    </div>
+                    <div class="chat-time">나(운영부)</div>
                 </div>`;
-        }).join('');
+
+            // 2. 기사님의 승인 답변 메시지 (왼쪽 - 흰색 말풍선)
+            if(isApproved) {
+                html += `
+                    <div class="chat-bubble chat-left">
+                        <div class="talk-header">기사님 회신</div>
+                        <div class="bubble-driver">
+                            네, 확인했습니다.<br>해당 강사님 배차 승인했습니다.
+                        </div>
+                        <div class="chat-time">운전원</div>
+                    </div>`;
+            }
+        });
+
+        container.innerHTML = html;
+        // 스크롤을 항상 최신 메시지(하단)로 이동
+        container.scrollTop = container.scrollHeight;
     });
-} // function renderPickupTable 끝
+  }
 
 
 
