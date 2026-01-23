@@ -2282,7 +2282,7 @@ function showStudentShuttleView() {
 
 
  
-// [수정] 강사 수송 통합 현황 (왕복 일정을 하나의 말풍선으로 묶어서 표시)
+// [수정] 강사 수송 통합 현황 (강사명 아래 연락처 표기 및 그룹화)
   function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -2296,7 +2296,7 @@ function showStudentShuttleView() {
             return;
         }
 
-        // 1. 데이터를 "강사명 + 날짜 + 과정" 기준으로 그룹화합니다.
+        // 1. 데이터를 "강사명 + 날짜 + 과정" 기준으로 그룹화
         const grouped = {};
         items.forEach(r => {
             const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
@@ -2312,14 +2312,12 @@ function showStudentShuttleView() {
             grouped[groupKey].requests.push(r);
         });
 
-        // 2. 그룹화된 데이터를 날짜순으로 정렬하여 출력합니다.
         const sortedGroups = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
 
         let html = "";
         let lastDate = "";
 
         sortedGroups.forEach(group => {
-            // 날짜 구분선
             if(group.date !== lastDate) {
                 html += `<div class="chat-date-line"><span>${group.date}</span></div>`;
                 lastDate = group.date;
@@ -2330,22 +2328,18 @@ function showStudentShuttleView() {
             const dayNames = ["일","월","화","수","목","금","토"];
             const dIdx = new Date(group.date).getDay();
 
-            // 같은 그룹 내 시간들을 시간순 정렬
             group.requests.sort((a,b) => a.time.localeCompare(b.time));
-
-            // 모든 일정이 승인되었는지 확인
-            const isAllApproved = group.requests.every(r => r.status === 'approved');
-            // 하나라도 승인되었는지 확인 (기사 답변 표시용)
             const isAnyApproved = group.requests.some(r => r.status === 'approved');
 
-            // 1. 내가 보낸 요청 메시지 (우측 노란색)
+            // 시간 라인 생성
             let timeLines = group.requests.map(r => `- ${r.time} ${r.dir.replace('→',' >> ')}`).join('\n');
             
-            // 삭제 버튼 로직 (승인 안 된 것만 개별 삭제 가능하게 하거나, 묶음 처리)
+            // 취소 버튼 생성 (승인 안 된 것만)
             const cancelButtons = group.requests.map(r => 
                 r.status !== 'approved' ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` : ''
             ).join(' ');
 
+            // [수정 포인트] 강사명 아래에 (연락처) 추가
             html += `
                 <div class="chat-bubble chat-right">
                     <div class="talk-header" style="text-align:right;">보낸 수송요청</div>
@@ -2354,19 +2348,17 @@ function showStudentShuttleView() {
                             &lt;${cName}&gt;
                             - ${group.date}(${dayNames[dIdx]})
                             - ${group.prof} 강사님
+                            (${group.phone})
                             ${timeLines}
                         </div>
-                        <div class="talk-footer">
-                            <span style="font-size:11px; color:#64748b;">${group.phone}</span>
-                            <div style="display:flex; gap:5px;">${cancelButtons}</div>
+                        <div class="talk-footer" style="justify-content: flex-end;">
+                            <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
                     <div class="chat-time">나(운영부)</div>
                 </div>`;
 
-            // 2. 기사님의 승인 답변 메시지 (좌측 흰색)
             if(isAnyApproved) {
-                // 승인된 시간들만 표시
                 const approvedTimes = group.requests.filter(r => r.status === 'approved').map(r => r.time).join(', ');
                 html += `
                     <div class="chat-bubble chat-left">
