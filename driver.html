@@ -269,6 +269,15 @@
     .grid-name-item:active { background: #e2e8f0; }
 
 
+/* 지난 일정 비활성화 스타일 */
+    .chat-bubble.is-past {
+      filter: grayscale(1); /* 흑백 처리 */
+      opacity: 0.5; /* 투명하게 */
+      pointer-events: none; /* 클릭 방지 */
+    }
+
+
+
   </style>
 </head>
 <body>
@@ -450,22 +459,25 @@
 
 
 
-// [탭 1] 강사 수송 리스트를 '실시간 톡' 방식으로 렌더링
+// [탭 1] 실시간 톡 렌더링 (지난 일정 비활성화 기능 포함)
   function renderInstructorList() {
     const newZone = document.getElementById('new-request-container');
     const allZone = document.getElementById('all-request-container');
     
-    // 두 구역을 하나로 합쳐서 채팅창처럼 보여줍니다.
     newZone.innerHTML = '';
     allZone.innerHTML = '<div class="chat-container" id="chat-box"></div>';
     const chatBox = document.getElementById('chat-box');
+
+    // 현재 시간 계산 (지난 일정 체크용)
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // "2026-01-23" 형태
+    const currentTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
     // 날짜순 정렬
     const sorted = profReqs.filter(r => r.prof !== '운행중단').sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
     let lastDate = "";
     sorted.forEach(r => {
-        // 날짜가 바뀌면 구분선 표시
         if(r.date !== lastDate) {
             chatBox.innerHTML += `<div class="chat-date-line"><span>${r.date}</span></div>`;
             lastDate = r.date;
@@ -475,10 +487,13 @@
         const dayNames = ["일","월","화","수","목","금","토"];
         const dIdx = new Date(r.date).getDay();
 
+        // [핵심] 지난 일정인지 체크 (오늘 이전 날짜이거나, 오늘인데 시간이 지났거나)
+        const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
+
         // 1. 운영부 요청 말풍선 (왼쪽)
         let msg = `
-            <div class="chat-bubble chat-left">
-                <div class="talk-header">운영부 수송요청</div>
+            <div class="chat-bubble chat-left ${isPast ? 'is-past' : ''}">
+                <div class="talk-header">운영부 수송요청 ${isPast ? '(만료)' : ''}</div>
                 <div class="bubble-content">
                     <div class="talk-body">
                         &lt;교육과정 수송요청&gt;
@@ -490,7 +505,7 @@
                         ${r.time} ${r.dir.replace('→',' >> ')}
                     </div>
                     
-                    ${!isApp ? `
+                    ${(!isApp && !isPast) ? `
                     <div class="talk-actions">
                         <button class="talk-btn btn-approve" onclick="handleSmartApprove('${r.id}')">승인하기</button>
                         <button class="talk-btn btn-reject" onclick="confirmAction('delete', '${r.id}')">배차불가</button>
@@ -499,10 +514,10 @@
                 <div class="chat-time">운영부</div>
             </div>`;
 
-        // 2. 기사님 답변 말풍선 (오른쪽 - 승인되었을 때만 등장)
+        // 2. 기사님 답변 말풍선 (오른쪽)
         if(isApp) {
             msg += `
-                <div class="chat-bubble chat-right" onclick="confirmAction('cancel', '${r.id}')">
+                <div class="chat-bubble chat-right ${isPast ? 'is-past' : ''}" onclick="confirmAction('cancel', '${r.id}')">
                     <div class="bubble-reply">
                         네, 확인했습니다.<br>배차 승인 완료되었습니다.
                     </div>
@@ -513,7 +528,6 @@
         chatBox.innerHTML += msg;
     });
 
-    // 채팅창이 길어지면 맨 아래로 스크롤 (필요시)
     const contentArea = document.getElementById('main-content');
     contentArea.scrollTop = contentArea.scrollHeight;
   }
