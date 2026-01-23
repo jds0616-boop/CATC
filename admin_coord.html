@@ -11,6 +11,28 @@
   <style>
 
 
+
+/* 수송 요청 시간 그리드 */
+.trans-time-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+.time-input-group { display: flex; flex-direction: column; gap: 5px; }
+.time-input-group label { font-size: 10px; font-weight: 800; color: #64748b; }
+
+
+
+
+
+
+
+
+
 /* [변경] 리스트 카드 - 부드러운 화이트 카드 스타일 */
 .course-item-card {
     background: #ffffff; 
@@ -1003,7 +1025,19 @@ body.modal-open {
       </div>
   </div>
 
-<!-- 수송 요청 모달 -->
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 수송 요청 모달 (왕복/편도 통합 버전) -->
   <div id="transportModal" class="setup-modal" style="z-index: 8000;">
       <div class="setup-box" style="max-width: 450px;">
           <div style="background:#6366f1; color:white; padding:18px; display:flex; justify-content:space-between; align-items:center; margin:-25px -25px 20px -25px; border-radius:24px 24px 0 0;">
@@ -1011,7 +1045,7 @@ body.modal-open {
               <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="closeTransportModal()"></i>
           </div>
           <div style="display:flex; flex-direction:column; gap:15px;">
-              <!-- [추가] 과정 선택 영역: 전체 페이지에서만 노출됨 -->
+              <!-- 과정 선택 영역 -->
               <div id="reqCourseSelectRow" style="display:none;">
                   <label class="setup-label">대상 교육과정</label>
                   <select id="reqCourseRID" class="navy-select">
@@ -1021,19 +1055,30 @@ body.modal-open {
 
               <div>
                   <label class="setup-label">픽업 장소</label>
-                  <select id="reqLoc" class="navy-select" onchange="updateTransDirButtons()">
+                  <select id="reqLoc" class="navy-select">
                       <option value="오송역">오송역</option>
                       <option value="청주터미널">청주터미널</option>
                       <option value="청주공항">청주공항</option>
                   </select>
               </div>
 
-              <div style="display:flex; gap:5px;"><input type="date" id="reqDate" class="navy-input"><input type="time" id="reqTime" class="navy-input"></div>
-              
-              <div style="display:flex; gap:8px;">
-                  <button id="btnTransTo" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('to')">장소→항기원</button>
-                  <button id="btnTransFrom" class="navy-btn" style="flex:1; background:#fff; color:#64748b; border:1px solid #e2e8f0;" onclick="setTransDir('from')">항기원→장소</button>
+              <div>
+                  <label class="setup-label">수송 날짜</label>
+                  <input type="date" id="reqDate" class="navy-input">
               </div>
+              
+              <!-- 시간 입력 영역: 왕복 대응 -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1.5px solid #e2e8f0;">
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                      <label style="font-size: 10px; font-weight: 800; color: #64748b;">장소 → 항기원 (입교)</label>
+                      <input type="time" id="reqTimeTo" class="navy-input">
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 5px;">
+                      <label style="font-size: 10px; font-weight: 800; color: #64748b;">항기원 → 장소 (퇴교)</label>
+                      <input type="time" id="reqTimeFrom" class="navy-input">
+                  </div>
+              </div>
+              <p style="font-size:10px; color:#94a3b8; margin:-5px 0 0 5px;">* 편도 요청 시 한쪽 시간만 입력하세요.</p>
 
               <input type="text" id="reqProf" class="navy-input" placeholder="강사명 성함">
               <input type="tel" id="reqPhone" class="navy-input" placeholder="강사 연락처">
@@ -1591,42 +1636,69 @@ function openTransportModal() {
 
 
 
+// [수정] 수송 요청 등록 함수 (왕복/편도 자동 처리)
 async function submitTransReq() {
-    const rid = document.getElementById('reqCourseRID').value; // 선택된 과정 ID
-    const loc = document.getElementById('reqLoc').value; 
-    const date = document.getElementById('reqDate').value; 
-    const time = document.getElementById('reqTime').value; 
-    const prof = document.getElementById('reqProf').value.trim(); 
+    const rid = document.getElementById('reqCourseRID').value;
+    const loc = document.getElementById('reqLoc').value;
+    const date = document.getElementById('reqDate').value;
+    const timeTo = document.getElementById('reqTimeTo').value;   // 입교 시간
+    const timeFrom = document.getElementById('reqTimeFrom').value; // 퇴교 시간
+    const prof = document.getElementById('reqProf').value.trim();
     const phone = document.getElementById('reqPhone').value.trim();
 
     if(!rid) return alert("대상 교육과정을 선택해주세요.");
-    if(!transDir) return alert("수송 방향을 선택하세요."); 
-    if(!date || !time || !prof) return alert("강사명과 시간을 입력해주세요.");
+    if(!date || !prof) return alert("날짜와 강사명을 입력해주세요.");
+    if(!timeTo && !timeFrom) return alert("최소 한 개의 수송 시간을 입력해주세요.");
 
-    try { 
-        await firebase.database().ref('system/transport_requests').push({ 
-            courseRID: rid, 
-            dir: transDir, 
-            date, 
-            time, 
-            prof, 
-            phone,
-            status: 'pending', // 기사 승인 연동용 상태값
-            timestamp: firebase.database.ServerValue.TIMESTAMP 
-        }); 
-        alert("✅ 수송 예약이 등록되었습니다."); 
+    try {
+        const requests = [];
+
+        // 1. 입교(장소->원) 데이터 생성
+        if(timeTo) {
+            requests.push({
+                courseRID: rid,
+                dir: `${loc}→항기원`,
+                date,
+                time: timeTo,
+                prof,
+                phone,
+                status: 'pending',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // 2. 퇴교(원->장소) 데이터 생성
+        if(timeFrom) {
+            requests.push({
+                courseRID: rid,
+                dir: `항기원→${loc}`,
+                date,
+                time: timeFrom,
+                prof,
+                phone,
+                status: 'pending',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // Firebase에 순차적으로 저장
+        for(let req of requests) {
+            await firebase.database().ref('system/transport_requests').push(req);
+        }
+
+        alert(`✅ ${requests.length}건의 수송 예약이 등록되었습니다.`);
         
         // 입력 필드 초기화
-        document.getElementById('reqProf').value = ""; 
-        document.getElementById('reqPhone').value = ""; 
-        document.getElementById('reqTime').value = "";
+        document.getElementById('reqTimeTo').value = "";
+        document.getElementById('reqTimeFrom').value = "";
+        document.getElementById('reqProf').value = "";
+        document.getElementById('reqPhone').value = "";
         
         loadCourseTransList(); 
-    } catch(e) { 
-        alert("저장 오류: " + e.message); 
+    } catch(e) {
+        alert("저장 오류: " + e.message);
     }
 }
-
 
 
 
