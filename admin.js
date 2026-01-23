@@ -1708,97 +1708,15 @@ initRoomSelect: function() {
         }
     },
     
-// [수정] 강사 권한 충돌 시 자동 옵저버 전환 로직
     checkLockStatus: function(st) {
         const overlay = document.getElementById('statusOverlay');
-        
-        // 1. 방 자체가 '비어있음(idle)' 상태인 경우 -> 누구나 비번 창을 봐야 함
-        if (st.roomStatus !== 'active') {
-            overlay.style.display = 'flex';
-            return;
-        }
-
-        // 2. 방이 '사용중(active)'인 경우
-        if (st.ownerSessionId === state.sessionId) {
-            // [강사 모드] 내가 현재 이 방의 주인임
-            state.isObserver = false;
+        if (st.roomStatus === 'active' && st.ownerSessionId === state.sessionId) {
             overlay.style.display = 'none';
         } else {
-            // [옵저버 모드 전환] 다른 사람이 강사 권한을 가져갔으므로 나는 자동으로 옵저버가 됨
-            state.isObserver = true;
-            overlay.style.display = 'none'; // 화면을 가리지 않음
-            
-            // 옵저버 모드임을 세션에도 기록 (새로고침 대비)
-            sessionStorage.setItem('kac_observer_room', state.room);
+            overlay.style.display = 'flex';
         }
-
-        // UI 상태 동기화 (버튼 가리기, 상단바 텍스트 변경 등)
-        ui.updateObserverButton();
-        ui.updateHeaderRoom(state.room);
-        ui.applyObserverRestrictions(); 
     },
     
-
-
-
-
-
-
-// [신규] 옵저버 권한에 따른 버튼/기능 실시간 제한
-    applyObserverRestrictions: function() {
-        if (!state.isObserver) {
-            // [강사 모드] 모든 관리 버튼 보이기
-            const allAdminBtns = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn, #btnReset, .btn-danger, .btn-del-mini');
-            allAdminBtns.forEach(btn => {
-                if (btn.id !== 'quizFile' && btn.id !== 'studentFile') {
-                    btn.style.display = ''; 
-                }
-            });
-            if(document.getElementById('quizControls')) document.getElementById('quizControls').style.display = 'flex';
-            return;
-        }
-
-        // [옵저버 모드] 관리 권한 차단
-        // 1. 리셋, 삭제 관련 버튼 숨기기
-        const dangerBtns = document.querySelectorAll('#btnReset, .btn-danger, .btn-del-mini, .m-btn-del');
-        dangerBtns.forEach(b => b.style.display = 'none');
-
-        // 2. 저장, 게시, 적용 등 데이터 변경 버튼 숨기기
-        const saveBtns = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn');
-        saveBtns.forEach(b => {
-            const t = b.innerText || "";
-            if(t.includes('저장') || t.includes('적용') || t.includes('게시') || t.includes('등록') || t.includes('확인')) {
-                b.style.display = 'none';
-            }
-        });
-
-        // 3. 퀴즈 컨트롤 숨기기
-        if(document.getElementById('quizControls')) document.getElementById('quizControls').style.display = 'none';
-
-        // 4. 상단바 옵저버 표시 갱신
-        const roomNameEl = document.getElementById('displayRoomName');
-        if(roomNameEl && !roomNameEl.innerHTML.includes('fa-eye')) {
-            roomNameEl.innerHTML = "Room #" + state.room + ` <span style="font-size:13px; margin-left:8px; color:#94a3b8; font-weight:normal;">(<i class="fa-solid fa-eye"></i> 옵저버)</span>`;
-        }
-    },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // [수정] 무서운 눈 이모지를 깔끔한 아이콘으로 교체
 updateHeaderRoom: function(r) { 
     // 1. 상단바 텍스트 업데이트
@@ -2106,7 +2024,6 @@ setMode: function(mode) {
                 roomNameEl.innerHTML = "Room #" + state.room + ` <span style="font-size:14px; margin-left:8px; color:#94a3b8; font-weight:normal;">(<i class="fa-solid fa-eye" style="font-size:12px;"></i> 옵저버)</span>`;
             }
         }
-           this.applyObserverRestrictions(); 
     },
 
 
@@ -2786,6 +2703,42 @@ toggleMenuDropdown: function() {
         const dropdown = document.getElementById('menuDropdown');
         if(dropdown) dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     },
+
+
+
+
+
+// [신규] 차량 신청 명단 전체 초기화 (옵저버 차단 포함)
+resetShuttleRequests: function() {
+    // 1. 옵저버 권한 체크
+    if (state.isObserver) {
+        ui.showAlert("👁️ 옵저버 모드에서는 명단을 초기화할 수 없습니다.");
+        return;
+    }
+
+    if (!state.room) return;
+
+    // 2. 관리자 재확인
+    if (confirm("🚨 경고: 현재 등록된 모든 수강생의 차량 신청 내역을 삭제하시겠습니까?\n(다음 주차 조사를 위해 명단을 비웁니다. 이 작업은 되돌릴 수 없습니다.)")) {
+        
+        firebase.database().ref(`courses/${state.room}/shuttle/requests`).set(null)
+            .then(() => {
+                ui.showAlert("✅ 차량 신청 명단이 깨끗하게 초기화되었습니다.");
+            })
+            .catch(e => {
+                ui.showAlert("초기화 실패: " + e.message);
+            });
+    }
+},
+
+
+
+
+
+
+
+
+
 
 // [최종 수정] 관리자가 차량 신청 강제 취소 (옵저버 차단 포함)
     deleteShuttleByAdmin: function(token, name) {
