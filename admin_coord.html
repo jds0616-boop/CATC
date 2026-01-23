@@ -638,51 +638,6 @@ body.modal-open {
 
 
 
-
-/* 강사수송 탭 전체 화면 (Flex 영향 차단) */
-    #pickupStatusView {
-      display: none;
-      width: 100%;
-      flex: none; /* 부모 flex-column에서 독립적인 블록으로 작동 */
-    }
-
-    /* 상단바 밑에 완벽 틀고정 (레이아웃 깨짐 방지) */
-    .sticky-transport-bar {
-      position: -webkit-sticky;
-      position: sticky;
-      /* app-content의 padding 12px 지점에 딱 붙임 */
-      top: -12px; 
-      z-index: 999;
-      background: #f1f5f9; /* 배경색을 채워서 위로 올라오는 말풍선을 가림 */
-      padding: 12px 0 10px 0;
-      margin: -12px 0 0 0; /* 위쪽 여백만 제거하여 상단바에 밀착 */
-      width: 100%;
-    }
-
-    .sticky-transport-bar .section-card {
-      margin: 0 !important;
-      border-radius: 20px;
-      border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      background: #ffffff;
-      box-sizing: border-box;
-    }
-    
-    /* 채팅창 컨테이너: 가로폭 100% 고정 및 정렬 */
-    #pickupCardContainer {
-      background: #abc1d1;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      padding: 15px;
-      border-radius: 16px;
-      margin-top: 10px;
-      width: 100%;
-      box-sizing: border-box; /* 패딩이 너비를 넘지 않게 함 */
-      min-height: 600px;
-    }
-
-
   </style>
 </head>
 <body>
@@ -795,28 +750,25 @@ body.modal-open {
 
 
 
-<!-- 강사 픽업 통합 현황 (정렬 보정 버전) -->
-<div id="pickupStatusView">
-    
-    <!-- 이 영역이 상단바(남색) 바로 밑에 자석처럼 고정됩니다 -->
-    <div class="sticky-transport-bar">
-        <div class="section-card" style="padding: 15px 20px;">
-            <div class="section-title" style="justify-content:space-between; margin-bottom:0; width: 100%;">
-                <span style="font-size:13px; font-weight:800; color:var(--blue-deep);">
-                    <i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트
-                </span>
-                <button class="navy-btn" style="width:110px; height:32px; font-size:11px;" onclick="openTransportModal()">
-                    <i class="fa-solid fa-plus"></i> 수송 추가요청
-                </button>
-            </div>
+<!-- [수정] 강사 픽업 통합 현황 테이블 -->
+<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
+    <div class="section-card">
+        <div class="section-title" style="justify-content:space-between;">
+            <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
+            <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
+                <i class="fa-solid fa-plus"></i> 수송 추가요청
+            </button>
+        </div>
+        <div style="overflow-x: auto;">
+<!-- 수송 리스트를 담을 모바일 대응 컨테이너 -->
+<div id="pickupCardContainer" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+    <!-- 자바스크립트가 여기에 카드들을 채워넣습니다 -->
+</div>
+
         </div>
     </div>
-
-    <!-- 스크롤되는 채팅 영역 (중앙 정렬됨) -->
-    <div id="pickupCardContainer">
-        <!-- 자바스크립트가 내용을 채웁니다 -->
-    </div>
 </div>
+
 
 
 
@@ -1782,14 +1734,13 @@ async function submitTransReq() {
 
 
 
-// [수정] 승인 여부와 상관없이 '취소' 처리 가능하도록 변경
+// [수정] 요청을 삭제하는 대신 'cancelled' 상태로 변경하여 채팅 기록 유지
 async function deleteTrans(id) { 
-    const msg = "해당 수송 요청을 취소하시겠습니까?\n기사님께도 취소 알림이 전달되며 기록이 남습니다.";
-    if(confirm(msg)) {
+    if(confirm("해당 수송 요청을 취소하시겠습니까? (채팅창에 취소 내역이 남습니다)")) {
         await firebase.database().ref(`system/transport_requests/${id}`).update({
             status: 'cancelled'
         });
-        alert("취소 처리가 완료되었습니다.");
+        alert("취소되었습니다.");
     }
 }
 
@@ -2334,8 +2285,7 @@ function showStudentShuttleView() {
 
 
  
-// [수정] 강사 수송 통합 현황 (날짜 정보 추가 버전)
-  function renderPickupTable() {
+function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
     
@@ -2350,7 +2300,7 @@ function showStudentShuttleView() {
         const grouped = {};
         items.forEach(r => {
             const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
-            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, requests: [] };
+            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, courseRID: r.courseRID, phone: r.phone, requests: [] };
             grouped[groupKey].requests.push(r);
         });
 
@@ -2365,20 +2315,20 @@ function showStudentShuttleView() {
             }
 
             const roomInfo = globalAllData[group.courseRID];
-            const cName = roomInfo?.settings?.courseName || `과정`;
+            const cName = roomInfo?.settings?.courseName || `Room ${group.courseRID}`;
             const dayNames = ["일","월","화","수","목","금","토"];
             const dIdx = new Date(group.date).getDay();
-            const dateWithDay = `${group.date}(${dayNames[dIdx]})`;
 
             group.requests.sort((a,b) => a.time.localeCompare(b.time));
 
+            // --- 1. 내가 보낸 요청 (우측) ---
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':''}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소됨)':''}</div>`;
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
-                (r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">${r.status==='approved'?'승인취소':'요청취소'}(${r.time})</button>` : ''
+                (r.status !== 'approved' && r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">요청취소(${r.time})</button>` : ''
             ).join(' ');
 
             html += `
@@ -2387,7 +2337,7 @@ function showStudentShuttleView() {
                     <div class="bubble-admin">
                         <div class="talk-body">
                             &lt;${cName}&gt;
-                            - ${dateWithDay}
+                            - ${group.date}(${dayNames[dIdx]})
                             - ${group.prof} 강사님 (${formatPhone(group.phone)})
                             ${timeLines}
                         </div>
@@ -2395,26 +2345,21 @@ function showStudentShuttleView() {
                             <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
-                    <div class="chat-time">나(운영부)</div>
                 </div>`;
 
+            // --- 2. 기사님의 답변 (좌측) ---
             group.requests.forEach(r => {
                 if(r.status === 'approved') {
-                    // [수정 포인트] 날짜(dateWithDay) 정보 추가
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
                             <div class="bubble-driver">
-                                네 확인했습니다.<br>
-                                <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
-                                ${dateWithDay} [${r.time}]<br>
-                                ${r.dir.replace('→',' >> ')}<br>
-                                배차 승인 완료!
+                                네 확인했습니다.<br><b>&lt;${cName}&gt; ${r.prof} 강사님 [${r.time}]</b><br>배차 승인 완료!
                             </div>
-                            <div class="chat-time">운전원</div>
                         </div>`;
                 } else if(r.status === 'cancelled') {
-                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0; font-weight:800; background:rgba(255,255,255,0.5); padding:5px; border-radius:10px;">🚫 [${r.time} ${r.prof} 강사님] 일정이 취소되었습니다.</div>`;
+                   // 운영부가 취소했을 때 뜨는 시스템 메시지 스타일
+                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0;">🚫 [${r.time} ${r.prof} 강사님] 요청이 취소되었습니다.</div>`;
                 }
             });
         });
@@ -2423,10 +2368,6 @@ function showStudentShuttleView() {
         container.scrollTop = container.scrollHeight;
     });
   }
-
-
-
-
 
 
 
