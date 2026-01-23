@@ -639,30 +639,27 @@ body.modal-open {
 
 
 
-/* 강사수송 탭: 방해 요소를 제거한 완벽 틀고정 */
+/* 강사수송 탭: 레이아웃 깨짐 없는 완벽 틀고정 */
     .sticky-transport-bar {
-      position: -webkit-sticky; /* 아이폰(iOS) 대응 */
+      position: -webkit-sticky;
       position: sticky;
-      /* app-content의 padding 12px를 무시하고 상단바(top:0)에 밀착 */
-      top: -12px; 
-      z-index: 999; 
-      background: #f1f5f9; /* 배경색이 있어야 뒤로 지나가는 글자가 안 보임 */
-      
-      /* 중요: 부모의 gap과 padding을 강제로 덮어씌우는 마진 설정 */
-      margin: -12px -12px 0 -12px !important; 
-      padding: 12px 12px 10px 12px;
-      width: calc(100% + 24px);
+      top: -12px; /* 상단바 밀착 */
+      z-index: 1000;
+      background: #f1f5f9; /* 배경색을 채워 아래 글자를 가림 */
+      padding: 12px 0 10px 0;
+      width: 100%;
+      margin: -12px 0 0 0; /* 위쪽만 당기고 좌우는 건드리지 않음 */
     }
 
     .sticky-transport-bar .section-card {
       margin: 0 !important;
       border-radius: 20px;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       background: #ffffff;
     }
     
-    /* 채팅창 컨테이너 */
+    /* 채팅창 컨테이너: 좌우 정렬 보정 */
     #pickupCardContainer {
       background: #abc1d1;
       display: flex;
@@ -670,10 +667,10 @@ body.modal-open {
       gap: 15px;
       padding: 15px;
       border-radius: 16px;
-      margin-top: 15px; /* 고정바와 채팅 시작점 사이 여백 */
+      margin-top: 10px;
       min-height: 80vh;
-      /* flex 방해를 받지 않도록 설정 */
-      align-self: stretch;
+      width: 100%; /* 전체 폭 확보 */
+      box-sizing: border-box; /* 패딩이 폭을 넘지 않게 함 */
     }
 
 
@@ -790,14 +787,14 @@ body.modal-open {
 
 
 
-<!-- [최종 해결] 강사 픽업 통합 현황 (방해 요소 제거 구조) -->
-<div id="pickupStatusView" class="view-card-full" style="display:none;">
+<!-- [최종 해결] 강사 픽업 통합 현황 (정렬 및 틀고정 보정) -->
+<div id="pickupStatusView" class="view-card-full" style="display:none; width:100%;">
     
-    <!-- 1. 고정 영역 (display: flex 환경을 벗어나 독립적으로 작동) -->
+    <!-- 1. 상단 고정 영역 -->
     <div class="sticky-transport-bar">
         <div class="section-card" style="padding: 15px 20px;">
             <div class="section-title" style="justify-content:space-between; margin-bottom:0;">
-                <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
+                <span style="font-size:13px;"><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
                 <button class="navy-btn" style="width:110px; height:32px; font-size:11px;" onclick="openTransportModal()">
                     <i class="fa-solid fa-plus"></i> 수송 추가요청
                 </button>
@@ -805,9 +802,9 @@ body.modal-open {
         </div>
     </div>
 
-    <!-- 2. 채팅 영역 -->
+    <!-- 2. 채팅 메인 영역 -->
     <div id="pickupCardContainer">
-        <!-- 자바스크립트 내용 -->
+        <!-- 자바스크립트가 내용을 채웁니다 -->
     </div>
 </div>
 
