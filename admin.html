@@ -1130,21 +1130,17 @@
 
 
 
-
-
-
-
-<!-- [최종 교정본] 통합 환경 설정 모달 -->
+<!-- [100% 복구 및 수송기능 추가] 통합 환경 설정 모달 -->
 <div id="courseSetupModal" class="modal-overlay" style="z-index: 4000;">
     <div class="modal-box setup-modal-box" style="width: 950px !important; max-width: 95vw; display: flex; flex-direction: column;">
         <div class="modal-header" style="margin-bottom:25px;">
             <h3><i class="fa-solid fa-sliders"></i> 교육과정 통합 환경 설정 및 자료 관리</h3>
         </div>
         
-        <!-- [1] 가로 정렬 구역 시작 (왼쪽+오른쪽) -->
+        <!-- [1] 가로 2단 레이아웃 시작 -->
         <div style="display: flex; gap: 30px; align-items: stretch; flex: 1;">
             
-            <!-- [왼쪽] 기본 정보 설정 -->
+            <!-- [왼쪽 영역] 기존 모든 기능 100% 유지 -->
             <div style="flex: 1.2;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-bottom: 20px;">
                     <div class="setup-group">
@@ -1172,70 +1168,114 @@
                         <div style="display:flex; gap:5px; align-items: center;">
                             <select id="setup-room-select" class="setup-input" style="flex:1;" onchange="setupMgr.checkDirectInput(this.value)">
                                 <option value="">--- 장소 선택 ---</option>
-                                <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
+                                <optgroup label="하늘관">
+                                    <option value="하늘관 1층 대강당">하늘관 1층 대강당</option>
+                                    <option value="하늘관 2층 A강의실">하늘관 2층 A강의실</option>
+                                    <option value="하늘관 2층 B강의실">하늘관 2층 B강의실</option>
+                                    <option value="하늘관 2층 C강의실">하늘관 2층 C강의실</option>
+                                    <option value="하늘관 2층 D강의실">하늘관 2층 D강의실</option>
+                                    <option value="하늘관 2층 E강의실">하늘관 2층 E강의실</option>
+                                    <option value="하늘관 2층 F강의실">하늘관 2층 F강의실</option>
+                                    <option value="하늘관 2층 G강의실">하늘관 2층 G강의실</option>
+                                </optgroup>
+                                <optgroup label="국제동">
+                                    <option value="국제동 1층 세미나홀">국제동 1층 세미나홀</option>
+                                    <option value="국제동 1층 A강의실">국제동 1층 A강의실</option>
+                                    <option value="국제동 1층 B강의실">국제동 1층 B강의실</option>
+                                    <option value="국제동 2층 실습실">국제동 2층 실습실</option>
+                                    <option value="국제동 2층 VOR/DME/TACAN">국제동 2층 VOR/DME/TACAN</option>
+                                </optgroup>
                                 <option value="direct">--- 직접 입력 ---</option>
                             </select>
                             <input type="text" id="setup-room-direct" class="setup-input" style="display:none; flex:1;" placeholder="위치 직접 작성">
                         </div>
                     </div>           
+
                     <div class="setup-group">
                         <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">담임 교수</label>
-                        <select id="setup-prof-select" class="setup-input"></select>
+                        <div style="display:flex; gap:5px; align-items: center;">
+                            <select id="setup-prof-select" class="setup-input" style="flex:1;"></select>
+                            <button class="btn-action btn-small btn-dark" onclick="profMgr.openManageModal()" style="width:40px;"><i class="fa-solid fa-gear"></i></button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="setup-group" style="margin-bottom:20px;">
                     <label style="display:block; font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">과정 운영 담당자 (행정)</label>
-                    <select id="setup-coord-select" class="setup-input"></select>
+                    <div style="display:flex; gap:5px; align-items: center;">
+                        <select id="setup-coord-select" class="setup-input" style="flex:1;"></select>
+                        <button class="btn-action btn-small btn-dark" onclick="coordMgr.openManage()" style="width:40px;"><i class="fa-solid fa-gear"></i></button>
+                    </div>
                 </div>
 
                 <div class="setup-group" style="padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
                     <label style="display:block; font-size:12px; font-weight:900; color:#003366; margin-bottom:10px;">출강 강사 리스트</label>
                     <div id="setup-subject-list" style="max-height: 100px; overflow-y: auto; margin-bottom:10px;"></div>
                     <div style="display: flex; gap: 5px;">
-                        <input type="text" id="setup-new-subject" class="setup-input" style="flex:1;" placeholder="강사명 입력">
+                        <input type="text" id="setup-new-subject" class="setup-input" style="flex:1;" placeholder="강사명 또는 과목명 입력">
                         <button class="btn-action btn-primary btn-small" onclick="subjectMgr.addSubjectInModal()" style="width: 60px;">추가</button>
                     </div>
                 </div>
             </div>
 
-            <!-- [오른쪽] 자료 관리 및 수송 요청 -->
+            <!-- [오른쪽 영역] 자료 및 수송 통합 관리 -->
             <div class="setup-right-side" style="flex: 1; border-left: 1px dashed #e2e8f0; padding-left: 30px; display: flex; flex-direction: column;">
-                <label style="display:block; font-size:13px; font-weight:900; color:#003366; margin-bottom:15px;"><i class="fa-solid fa-folder-open"></i> 가이드 및 수송 관리</label>
+                <label style="display:block; font-size:13px; font-weight:900; color:#003366; margin-bottom:15px;">
+                    <i class="fa-solid fa-folder-open"></i> 가이드 및 수송 관리
+                </label>
                 
-                <button class="btn-action btn-primary" onclick="document.getElementById('modalGuideInput').click()" style="height:35px; font-size:12px; width:100%; margin-bottom:10px;"><i class="fa-solid fa-file-pdf"></i> 가이드 PDF 교체</button>
-
-                <div style="margin-bottom:15px; padding:12px; background:#f5f3ff; border-radius:12px; border:1px solid #ddd6fe;">
-                    <button class="btn-action" onclick="setupMgr.openTransportModal()" style="height:40px; font-size:13px; width:100%; background:#8b5cf6; color:white; border:none; border-radius:8px; font-weight:800;"><i class="fa-solid fa-taxi"></i> 강사 수송 요청 신청</button>
+                <!-- 1. 입교 가이드 -->
+                <div style="margin-bottom:15px; padding:12px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe;">
+                    <span style="display:block; font-size:11px; font-weight:800; color:#3b82f6; margin-bottom:8px;">입교안내 가이드 (PDF)</span>
+                    <div id="modalGuideStatus" style="font-size: 11px; margin-bottom: 10px; color: #64748b; font-weight: 700;">상태 확인 중...</div>
+                    <input type="file" id="modalGuideInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
+                    <button class="btn-action btn-primary" onclick="document.getElementById('modalGuideInput').click()" style="height:35px; font-size:12px; width:100%;">
+                        <i class="fa-solid fa-file-pdf"></i> PDF 업로드/교체
+                    </button>
                 </div>
 
-                <!-- 카카오창 -->
-                <div class="kakao-status-container" style="height: 180px;">
-                    <div class="kakao-header"><i class="fa-solid fa-comment"></i> 수송 신청 현황</div>
-                    <div id="kakao-chat-box" class="kakao-body">
-                        <div class="kakao-empty">내역 없음</div>
+                <!-- 2. 퀴즈 문제 은행 -->
+                <div style="margin-bottom:15px; padding:12px; background:#fffbeb; border-radius:12px; border:1px solid #fef3c7;">
+                    <span style="display:block; font-size:11px; font-weight:800; color:#d97706; margin-bottom:8px;">퀴즈 문제 은행 (.TXT)</span>
+                    <div style="display:flex; gap:5px;">
+                        <input type="file" id="modalQuizInput" accept=".txt" style="display:none;" onchange="quizMgr.loadFile(this)">
+                        <button class="btn-action" onclick="document.getElementById('modalQuizInput').click()" style="flex:2; height:35px; font-size:12px; background:#f59e0b; color:white; border:none; border-radius:8px; font-weight:800;">문제 업로드</button>
+                        <button class="btn-action btn-dark" onclick="quizMgr.downloadSample()" style="flex:1; height:35px; font-size:12px;">샘플</button>
                     </div>
                 </div>
 
-                <div style="margin-top:auto; padding:12px; background:#f1f5f9; border-radius:10px; font-size:11px; color:#64748b;">
-                    <i class="fa-solid fa-circle-info"></i> 설정 저장 후 즉시 적용됩니다.
+                <!-- 3. 강사 수송 요청 (추가된 기능) -->
+                <div style="margin-bottom:15px; padding:12px; background:#f5f3ff; border-radius:12px; border:1px solid #ddd6fe;">
+                    <span style="display:block; font-size:11px; font-weight:800; color:#7c3aed; margin-bottom:8px;">강사 수송(의전) 신청</span>
+                    <button class="btn-action btn-transport" onclick="setupMgr.openTransportModal()" style="height:40px; font-size:13px; width:100%; background:#8b5cf6; color:white; border:none; border-radius:8px; font-weight:800;">
+                        <i class="fa-solid fa-taxi"></i> 강사 수송 요청 신청
+                    </button>
+                </div>
+
+                <!-- 4. 실시간 카카오톡 현황 -->
+                <div class="kakao-status-container" style="height: 180px;">
+                    <div class="kakao-header">
+                        <i class="fa-solid fa-comment"></i> 수송 신청 및 승인 현황
+                    </div>
+                    <div id="kakao-chat-box" class="kakao-body">
+                        <div class="kakao-empty">신청 내역이 없습니다.</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:auto; padding:15px; background:#f1f5f9; border-radius:12px; font-size:11px; color:#64748b; line-height:1.6;">
+                    <i class="fa-solid fa-circle-info"></i> <b>알림:</b> 설정 저장 후 즉시 적용됩니다.
                 </div>
             </div>
-        </div> <!-- [1] 가로 정렬 구역 끝 -->
+        </div> <!-- [1] 가로 구역 끝 -->
 
-        <!-- [2] 하단 버튼 구역 (가로 정렬 밖으로 뺐음) -->
+        <!-- [2] 하단 버튼 구역 (중앙 정렬 보정) -->
         <div class="modal-actions" style="margin-top:25px; padding-top:20px; border-top:1px solid #f1f5f9; justify-content:center; gap:10px; display:flex;">
             <button class="m-btn m-btn-later" onclick="setupMgr.closeSetupModal()" style="background:#64748b; color:white; min-width:100px; justify-content:center;">취소</button>
             <button class="m-btn m-btn-done" onclick="setupMgr.saveAll()" style="min-width:200px; justify-content:center; background:#10b981; color:white;">모든 설정 저장 및 적용</button>
         </div>
 
-    </div> <!-- modal-box 끝 -->
-</div> <!-- courseSetupModal 끝 -->
-
-
-
-
-
+    </div>
+</div>
 
 
 
