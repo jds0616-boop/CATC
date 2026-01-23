@@ -639,22 +639,34 @@ body.modal-open {
 
 
 
-/* 강사수송 탭 전용: 상단 타이틀+버튼 라인 틀고정 */
-    .sticky-transport-header {
+/* 강사수송 탭: 타이틀+버튼 라인 완벽 틀고정 */
+    .sticky-transport-bar {
       position: sticky;
-      top: 55px; /* 메인 상단바(55px) 바로 아래 고정 */
-      z-index: 100;
-      background: var(--bg-cool); /* 뒷배경과 색상 맞춤 */
-      padding-bottom: 5px;
-      margin-top: -12px; /* 상단 여백 조절 */
-      padding-top: 12px;
+      top: 55px; /* 메인 상단바(55px) 바로 아래 딱 붙음 */
+      z-index: 500; /* 말풍선보다 위에 있도록 설정 */
+      background: #f1f5f9; /* 배경색을 채워서 뒤에 올라오는 글자가 안 보이게 함 */
+      padding: 10px 12px 5px 12px;
+      margin: 0;
     }
 
-    /* 고정되는 카드 안의 여백 조절 */
-    .sticky-transport-header .section-card {
-      margin-bottom: 0;
+    /* 틀고정 되는 카드 디자인 */
+    .sticky-transport-bar .section-card {
+      margin-bottom: 0 !important;
       border-radius: 20px;
+      border: 1px solid #e2e8f0 !important;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    /* 채팅창 컨테이너 설정 */
+    #pickupCardContainer {
+      background: #abc1d1;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding: 15px;
+      border-radius: 16px;
+      /* 틀고정 영역과 겹치지 않도록 내부 여백 조절 */
+      margin-top: 5px; 
     }
 
 
@@ -771,10 +783,11 @@ body.modal-open {
 
 
 
-<!-- [수정] 강사 픽업 통합 현황 (헤더 고정형) -->
+<!-- [수정] 강사 픽업 통합 현황 (타이틀 라인 틀고정 구조) -->
 <div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:0;">
-    <!-- 이 영역이 상단에 고정됩니다 -->
-    <div class="sticky-transport-header">
+    
+    <!-- 1. 이 영역이 화면 상단바 바로 밑에 고정됩니다 (틀고정) -->
+    <div class="sticky-transport-bar">
         <div class="section-card" style="padding: 15px 20px;">
             <div class="section-title" style="justify-content:space-between; margin-bottom:0;">
                 <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
@@ -785,11 +798,9 @@ body.modal-open {
         </div>
     </div>
 
-    <!-- 채팅창 컨테이너 (여백 조정) -->
-    <div style="padding-top: 10px;">
-        <div id="pickupCardContainer">
-            <!-- 자바스크립트가 여기에 채팅 내용을 채웁니다 -->
-        </div>
+    <!-- 2. 이 채팅 영역이 고정바 밑으로 들어가며 위로 올라갑니다 -->
+    <div id="pickupCardContainer">
+        <!-- 자바스크립트가 여기에 채팅 내용을 채웁니다 -->
     </div>
 </div>
 
