@@ -558,7 +558,8 @@
 
 
 
-function renderInstructorList() {
+// [탭 1] 실시간 톡 렌더링 (날짜 정보가 포함된 답변 버전)
+  function renderInstructorList() {
     const allZone = document.getElementById('all-request-container');
     const newZone = document.getElementById('new-request-container');
     newZone.innerHTML = '';
@@ -589,6 +590,7 @@ function renderInstructorList() {
         const cName = roomInfo?.settings?.courseName || `과정`;
         const dayNames = ["일","월","화","수","목","금","토"];
         const dIdx = new Date(group.date).getDay();
+        const dateWithDay = `${group.date}(${dayNames[dIdx]})`; // 날짜(요일) 형태
         
         let legsHtml = "";
         let repliesHtml = "";
@@ -619,15 +621,17 @@ function renderInstructorList() {
                 </div>`;
 
             if(isApp) {
-                // [수정 포인트] r.dir (노선 정보) 추가
+                // [수정 포인트] 날짜(dateWithDay) 정보 추가
                 repliesHtml += `
                     <div class="chat-bubble chat-right">
                         <div class="bubble-reply">
                             네 확인했습니다.<br>
                             <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
-                            [${r.time}] ${r.dir.replace('→',' >> ')}<br>
+                            ${dateWithDay} [${r.time}]<br>
+                            ${r.dir.replace('→',' >> ')}<br>
                             배차 승인 완료!
                         </div>
+                        <div class="chat-time" style="align-self: flex-start;">나(기사)</div>
                     </div>`;
             }
         });
@@ -639,13 +643,13 @@ function renderInstructorList() {
                     <div class="talk-body">&lt;${cName}&gt; ${group.prof} 강사님 (${formatPhone(group.phone)})</div>
                     <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px;">${legsHtml}</div>
                 </div>
+                <div class="chat-time">운영부</div>
             </div>` + repliesHtml;
     });
 
     const contentArea = document.getElementById('main-content');
     contentArea.scrollTop = contentArea.scrollHeight;
   }
-
 
 
 

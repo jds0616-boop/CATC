@@ -2286,7 +2286,8 @@ function showStudentShuttleView() {
 
 
  
-function renderPickupTable() {
+// [수정] 강사 수송 통합 현황 (날짜 정보 추가 버전)
+  function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
     
@@ -2301,7 +2302,7 @@ function renderPickupTable() {
         const grouped = {};
         items.forEach(r => {
             const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
-            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, courseRID: r.courseRID, phone: r.phone, requests: [] };
+            if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, requests: [] };
             grouped[groupKey].requests.push(r);
         });
 
@@ -2319,6 +2320,7 @@ function renderPickupTable() {
             const cName = roomInfo?.settings?.courseName || `과정`;
             const dayNames = ["일","월","화","수","목","금","토"];
             const dIdx = new Date(group.date).getDay();
+            const dateWithDay = `${group.date}(${dayNames[dIdx]})`;
 
             group.requests.sort((a,b) => a.time.localeCompare(b.time));
 
@@ -2337,7 +2339,7 @@ function renderPickupTable() {
                     <div class="bubble-admin">
                         <div class="talk-body">
                             &lt;${cName}&gt;
-                            - ${group.date}(${dayNames[dIdx]})
+                            - ${dateWithDay}
                             - ${group.prof} 강사님 (${formatPhone(group.phone)})
                             ${timeLines}
                         </div>
@@ -2345,18 +2347,20 @@ function renderPickupTable() {
                             <div style="display:flex; gap:8px;">${cancelButtons}</div>
                         </div>
                     </div>
+                    <div class="chat-time">나(운영부)</div>
                 </div>`;
 
             group.requests.forEach(r => {
                 if(r.status === 'approved') {
-                    // [수정 포인트] r.dir (노선 정보) 추가
+                    // [수정 포인트] 날짜(dateWithDay) 정보 추가
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
                             <div class="bubble-driver">
                                 네 확인했습니다.<br>
                                 <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
-                                [${r.time}] ${r.dir.replace('→',' >> ')}<br>
+                                ${dateWithDay} [${r.time}]<br>
+                                ${r.dir.replace('→',' >> ')}<br>
                                 배차 승인 완료!
                             </div>
                             <div class="chat-time">운전원</div>
@@ -2371,7 +2375,6 @@ function renderPickupTable() {
         container.scrollTop = container.scrollHeight;
     });
   }
-
 
 
 
