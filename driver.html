@@ -52,33 +52,57 @@
     .dash-val { font-size: 16px; font-weight: 900; }
     .dash-val.total { color: #0ea5e9; font-size: 20px; }
 
-    /* 2. 초간결 리스트 스타일 */
+
+
+
+/* 리스트 상단 헤더 */
+    .list-header {
+      display: flex; align-items: center; padding: 10px 12px;
+      background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+      font-size: 11px; font-weight: 900; color: #64748b; gap: 10px;
+    }
+    .header-name { flex: 1; }
+    .header-count { width: 45px; text-align: center; }
+    .header-time { width: 140px; text-align: center; }
+
+    /* 리스트wrapper 및 행 */
     .list-wrapper { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
     .course-row {
       display: flex; align-items: center; padding: 12px;
-      border-bottom: 1px solid #f1f5f9; gap: 10px; transition: background 0.2s;
+      border-bottom: 1px solid #f1f5f9; gap: 10px; cursor: pointer;
     }
-    .course-row:active { background: #f8fafc; } /* 터치 시 피드백 */
+    .course-row:active { background: #f1f5f9; }
 
     .row-title {
       flex: 1; font-size: 14px; font-weight: 800; color: #1e293b;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .row-total-tag {
-      font-size: 12px; font-weight: 900; color: #0ea5e9;
-      background: #f0f9ff; padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+      font-size: 12px; font-weight: 900; color: #0ea5e9; width: 45px;
+      background: #f0f9ff; padding: 4px 0; border-radius: 6px; text-align: center;
     }
 
-    .row-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .row-actions { display: flex; align-items: center; gap: 5px; width: 140px; justify-content: flex-end; }
     .mini-btn {
-      height: 34px; width: 45px; border-radius: 8px; border: 1px solid #e2e8f0;
-      background: #fff; font-size: 11px; font-weight: 800; color: #64748b; cursor: pointer;
+      height: 34px; width: 44px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; font-size: 11px; font-weight: 800; color: #64748b;
     }
     .mini-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; }
-    .mini-btn.manual { width: 38px; }
     .status-time { font-size: 11px; font-weight: 900; color: #10b981; margin-right: 2px; }
 
-
+    /* 상세 팝업 내부 스타일 */
+    .popup-group { margin-bottom: 20px; text-align: left; }
+    .group-title { 
+      font-size: 14px; font-weight: 900; color: var(--blue-deep); 
+      padding-bottom: 5px; border-bottom: 2px solid #f1f5f9; margin-bottom: 10px;
+      display: flex; justify-content: space-between;
+    }
+    .group-item { 
+      display: flex; justify-content: space-between; padding: 8px 0; 
+      border-bottom: 1px dashed #f1f5f9; font-size: 14px; 
+    }
+    .p-name { font-weight: 800; color: #1e293b; }
+    .p-phone { color: #64748b; font-weight: 600; font-size: 13px; }
 
 
 
@@ -375,11 +399,25 @@
 
 
 
+
+
+
+
+
+
 function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     area.innerHTML = '';
     
-    let listHTML = `<div class="list-wrapper">`;
+    // 리스트 상단에 표 제목(헤더) 추가
+    let listHTML = `
+      <div class="list-wrapper">
+        <div class="list-header">
+          <div class="header-name">과정명</div>
+          <div class="header-count">퇴교총원</div>
+          <div class="header-time">항기원 출발시간</div>
+        </div>`;
+
     let stats = { o:0, t:0, a:0, total:0 };
 
     Object.keys(allCourses).forEach(rid => {
@@ -400,21 +438,15 @@ function renderTraineeManagement() {
       const cName = room.settings?.courseName || '과정명';
 
       listHTML += `
-        <div class="course-row">
-          <!-- 과정명과 총원 터치 시 상세 팝업 -->
-          <div class="row-title" onclick="showDrillDown('course', '${rid}')">
-            ${cName}
-          </div>
-          <div class="row-total-tag" onclick="showDrillDown('course', '${rid}')">
-            ${subTotal}명
-          </div>
+        <div class="course-row" onclick="showDrillDown('course', '${rid}')">
+          <div class="row-title">${cName}</div>
+          <div class="row-total-tag">${subTotal}명</div>
           
-          <!-- 버튼 영역 -->
           <div class="row-actions">
             <span class="status-time">${dep.time ? dep.time : ''}</span>
-            <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '13:00')">13:00</button>
-            <button class="mini-btn ${dep.time==='15:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '15:00')">15:00</button>
-            <button class="mini-btn manual ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="promptManual('${rid}')">수동</button>
+            <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00')">13:00</button>
+            <button class="mini-btn ${dep.time==='15:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '15:00')">15:00</button>
+            <button class="mini-btn ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="event.stopPropagation(); promptManual('${rid}')">수동</button>
           </div>
         </div>`;
     });
@@ -422,7 +454,7 @@ function renderTraineeManagement() {
     listHTML += `</div>`;
     area.innerHTML = listHTML;
 
-    // 상단 슬림 대시보드 데이터 업데이트
+    // 상단 대시보드 숫자 업데이트
     document.getElementById('sum-total').innerText = stats.total + "명";
     document.getElementById('sum-osong').innerText = stats.o;
     document.getElementById('sum-term').innerText = stats.t;
@@ -504,6 +536,85 @@ function renderTraineeManagement() {
     const t = prompt("수송 시간 입력 (예: 14:30)");
     if(t) confirmAction('dep', rid, t);
   }
+
+
+
+
+
+
+// 상세 명단 팝업 함수 (없으시면 이 내용을 통째로 붙여넣으세요)
+  function showDrillDown(type, filterRid = null) {
+    const area = document.getElementById('m-content');
+    const title = document.getElementById('m-title');
+    document.getElementById('m-call-btn').style.display = 'none';
+    area.innerHTML = '';
+    
+    let list = [];
+    Object.keys(allCourses).forEach(rid => {
+        if(filterRid && rid !== filterRid) return;
+        
+        // 과정명을 팝업 제목으로 설정
+        const roomName = allCourses[rid].settings?.courseName || "상세 명단";
+        if(filterRid) title.innerText = roomName; 
+        
+        const reqs = Object.values(allCourses[rid].shuttle?.requests || {});
+        reqs.forEach(req => {
+            // 자차가 아닌 경우(오송, 터미널, 공항)만 명단에 추가
+            if(req.type !== 'car') list.push({...req});
+        });
+    });
+
+    if(list.length === 0) {
+        area.innerHTML = "<div style='text-align:center; padding:20px;'>신청자가 없습니다.</div>";
+    } else {
+        // 사람이 읽기 쉽게 목적지별로 그룹화 (🚅오송, 🚌터미널, ✈️공항)
+        const groups = {
+            osong: { name: "🚅 오송역", items: [] },
+            terminal: { name: "🚌 터미널", items: [] },
+            airport: { name: "✈️ 공항", items: [] }
+        };
+
+        list.forEach(item => { if(groups[item.type]) groups[item.type].items.push(item); });
+
+        let groupHTML = '';
+        ['osong', 'terminal', 'airport'].forEach(key => {
+            const g = groups[key];
+            if(g.items.length > 0) {
+                groupHTML += `
+                    <div class="popup-group">
+                        <div class="group-title">
+                            <span>${g.name}</span> 
+                            <span style="color:#0ea5e9;">${g.items.length}명</span>
+                        </div>`;
+                g.items.forEach(person => {
+                    groupHTML += `
+                        <div class="group-item" onclick="window.location.href='tel:${person.phone}'">
+                            <span class="p-name">${person.name}</span>
+                            <span class="p-phone">${person.phone} <i class="fa-solid fa-phone" style="font-size:10px; color:#10b981;"></i></span>
+                        </div>`;
+                });
+                groupHTML += `</div>`;
+            }
+        });
+        area.innerHTML = groupHTML;
+    }
+    // 팝업창 보이기
+    document.getElementById('detailModal').style.display = 'flex';
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   function updateClock() {
     const now = new Date();
     const days = ['일','월','화','수','목','금','토'];
