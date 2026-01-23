@@ -425,14 +425,18 @@
 
   function renderAll() { renderSchedule(); renderInstructorList(); renderTraineeManagement(); }
 
-// --- [탭 0] 일정표 (종료된 과정 자동 숨김 로직 추가) ---
+
+
+
+
+
+
+// --- [탭 0] 일정표 (과정명 대신 '퇴교수송' 표기 버전) ---
   function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
     const dayNames = ['월','화','수','목','금'];
-    
-    // 오늘 날짜 (YYYY-MM-DD 형식)
     const today = new Date().toISOString().split('T')[0];
 
     document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
@@ -445,35 +449,25 @@
         const curDate = range[d];
         let content = '';
 
-        // 1. 운행 중단 체크
         if(profReqs.some(r => r.date === curDate && r.prof === '운행중단')) {
           content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
-        } 
-        // 2. 월요일 입교 수송 체크
-        else if(d === 0 && (h === 9 || h === 10)) { 
+        } else if(d === 0 && (h === 9 || h === 10)) { 
           content = `<div class="cell-event block-entry">입교수송</div>`; 
-        }
-        // 3. 점심시간 체크
-        else if(h === 12) { 
+        } else if(h === 12) { 
           content = `<div class="cell-event block-lunch">점심</div>`; 
-        }
-        // 4. 강사 수송 및 교육생 퇴교 체크
-        else {
+        } else {
           const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
           
           if(matchedProf.length > 0) {
             const names = matchedProf.length > 1 ? `${matchedProf[0].prof} 외` : matchedProf[0].prof;
             content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProf[0]).replace(/"/g, '&quot;')})">${matchedProf[0].dir.replace('항공기술훈련원','항기원')}<br>${names}</div>`;
           } else {
-            // 교육생 퇴교 일정 체크
             Object.keys(allCourses).forEach(rid => {
               const room = allCourses[rid];
-              
-              // [추가된 로직] 과정 종료일 체크
               const period = room.settings?.period || "";
               if (period.includes(" ~ ")) {
                   const endDate = period.split(" ~ ")[1];
-                  if (endDate < today) return; // 오늘보다 이전 날짜에 끝난 과정이면 무시
+                  if (endDate < today) return; 
               }
 
               const dep = room.shuttle?.departure;
@@ -482,8 +476,8 @@
                 const reqs = Object.values(room.shuttle.requests || {});
                 const duration = new Set(reqs.map(r => r.type)).size >= 2 ? 2 : 1; 
                 if(h >= depH && h < depH + duration) {
-                  const cName = room.settings?.courseName || rid;
-                  content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">${cName}</div>`;
+                  // [수정 포인트] 긴 과정명 대신 '퇴교수송'으로 통일
+                  content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
                 }
               }
             });
