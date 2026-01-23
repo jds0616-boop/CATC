@@ -638,6 +638,27 @@ body.modal-open {
 
 
 
+
+/* 강사수송 탭 전용: 상단 타이틀+버튼 라인 틀고정 */
+    .sticky-transport-header {
+      position: sticky;
+      top: 55px; /* 메인 상단바(55px) 바로 아래 고정 */
+      z-index: 100;
+      background: var(--bg-cool); /* 뒷배경과 색상 맞춤 */
+      padding-bottom: 5px;
+      margin-top: -12px; /* 상단 여백 조절 */
+      padding-top: 12px;
+    }
+
+    /* 고정되는 카드 안의 여백 조절 */
+    .sticky-transport-header .section-card {
+      margin-bottom: 0;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+
+
   </style>
 </head>
 <body>
@@ -750,21 +771,24 @@ body.modal-open {
 
 
 
-<!-- [수정] 강사 픽업 통합 현황 테이블 -->
-<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
-    <div class="section-card">
-        <div class="section-title" style="justify-content:space-between;">
-            <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
-            <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
-                <i class="fa-solid fa-plus"></i> 수송 추가요청
-            </button>
+<!-- [수정] 강사 픽업 통합 현황 (헤더 고정형) -->
+<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:0;">
+    <!-- 이 영역이 상단에 고정됩니다 -->
+    <div class="sticky-transport-header">
+        <div class="section-card" style="padding: 15px 20px;">
+            <div class="section-title" style="justify-content:space-between; margin-bottom:0;">
+                <span><i class="fa-solid fa-car-side"></i> 강사 수송 통합 예약 리스트</span>
+                <button class="navy-btn" style="width:120px; height:32px; font-size:11px;" onclick="openTransportModal()">
+                    <i class="fa-solid fa-plus"></i> 수송 추가요청
+                </button>
+            </div>
         </div>
-        <div style="overflow-x: auto;">
-<!-- 수송 리스트를 담을 모바일 대응 컨테이너 -->
-<div id="pickupCardContainer" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-    <!-- 자바스크립트가 여기에 카드들을 채워넣습니다 -->
-</div>
+    </div>
 
+    <!-- 채팅창 컨테이너 (여백 조정) -->
+    <div style="padding-top: 10px;">
+        <div id="pickupCardContainer">
+            <!-- 자바스크립트가 여기에 채팅 내용을 채웁니다 -->
         </div>
     </div>
 </div>
