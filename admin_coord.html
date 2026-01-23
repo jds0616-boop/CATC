@@ -639,28 +639,30 @@ body.modal-open {
 
 
 
-/* 강사수송 탭: 타이틀+버튼 라인 완벽 틀고정 (최종 보정) */
+/* 강사수송 탭: 방해 요소를 제거한 완벽 틀고정 */
     .sticky-transport-bar {
+      position: -webkit-sticky; /* 아이폰(iOS) 대응 */
       position: sticky;
-      /* app-content의 padding 12px를 강제로 무시하고 상단바(55px) 바로 밑에 붙임 */
+      /* app-content의 padding 12px를 무시하고 상단바(top:0)에 밀착 */
       top: -12px; 
-      z-index: 900; /* 상단바(1000)보다는 낮고, 말풍선보다는 높게 */
-      background: #f1f5f9; /* 뒷배경색과 동일하게 (필수) */
-      padding: 12px 0 8px 0; 
-      margin: 0;
-      width: 100%;
+      z-index: 999; 
+      background: #f1f5f9; /* 배경색이 있어야 뒤로 지나가는 글자가 안 보임 */
+      
+      /* 중요: 부모의 gap과 padding을 강제로 덮어씌우는 마진 설정 */
+      margin: -12px -12px 0 -12px !important; 
+      padding: 12px 12px 10px 12px;
+      width: calc(100% + 24px);
     }
 
-    /* 틀고정 카드 디자인: 여백 및 테두리 정돈 */
     .sticky-transport-bar .section-card {
       margin: 0 !important;
       border-radius: 20px;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       background: #ffffff;
     }
     
-    /* 채팅창 컨테이너: 상단 고정바와 겹치지 않게 여백 부여 */
+    /* 채팅창 컨테이너 */
     #pickupCardContainer {
       background: #abc1d1;
       display: flex;
@@ -668,8 +670,10 @@ body.modal-open {
       gap: 15px;
       padding: 15px;
       border-radius: 16px;
-      margin-top: 10px; /* 고정바와의 간격 */
-      min-height: 70vh; /* 스크롤을 위한 충분한 높이 확보 */
+      margin-top: 15px; /* 고정바와 채팅 시작점 사이 여백 */
+      min-height: 80vh;
+      /* flex 방해를 받지 않도록 설정 */
+      align-self: stretch;
     }
 
 
@@ -786,10 +790,10 @@ body.modal-open {
 
 
 
-<!-- 강사 픽업 통합 현황 (틀고정 구조) -->
-<div id="pickupStatusView" class="view-card-full" style="display:none; flex-direction:column; gap:0;">
+<!-- [최종 해결] 강사 픽업 통합 현황 (방해 요소 제거 구조) -->
+<div id="pickupStatusView" class="view-card-full" style="display:none;">
     
-    <!-- 이 박스가 스크롤을 내려도 상단바 밑에 딱 고정됩니다 -->
+    <!-- 1. 고정 영역 (display: flex 환경을 벗어나 독립적으로 작동) -->
     <div class="sticky-transport-bar">
         <div class="section-card" style="padding: 15px 20px;">
             <div class="section-title" style="justify-content:space-between; margin-bottom:0;">
@@ -801,7 +805,7 @@ body.modal-open {
         </div>
     </div>
 
-    <!-- 채팅창 (이 내용만 위로 올라가며 고정바 뒤로 사라짐) -->
+    <!-- 2. 채팅 영역 -->
     <div id="pickupCardContainer">
         <!-- 자바스크립트 내용 -->
     </div>
