@@ -64,8 +64,7 @@
 
     .list-header, .course-row {
       display: grid;
-      /* 구성: 과정명(자유) | 총원(65px) | 출발시간(160px) | 공지(55px) */
-      grid-template-columns: 1.2fr 65px 160px 55px;
+      grid-template-columns: 1fr 55px 160px 55px; 
       align-items: center;
       text-align: center;
     }
@@ -86,20 +85,26 @@
     }
     .t-cell:last-child { border-right: none; }
 
-    /* 과정명: 왼쪽 정렬 및 강조 */
-/* 과정명 셀: 중앙 정렬로 변경 */
-    .t-cell.name { 
-      justify-content: center; 
-      font-size: 14px; 
-      font-weight: 800; 
-      color: #1e293b; 
-      white-space: nowrap; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
+
+    /* 과정명 셀의 텍스트가 총원 쪽(오른쪽)으로 너무 붙지 않게 여백을 살짝 줍니다. */
+    .t-cell.name {
+      justify-content: center;
+      padding-right: 10px; /* 총원 칸과 너무 붙어 보이면 이 숫자를 조절하세요 */
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* 총원: 파란색 강조 및 배경 */
-    .t-cell.count { font-size: 14px; font-weight: 900; color: #0284c7; background: #f0f9ff; }
+    /* 총원 셀의 너비를 맞춤 */
+    .t-cell.count {
+      font-size: 13px;
+      font-weight: 900;
+      color: #0ea5e9;
+      border-right: 1px solid #e2e8f0; /* 세로선이 명확히 보이게 함 */
+    }
 
     /* 출발시간 버튼 영역 */
     .t-cell.btns { gap: 4px; padding: 8px 4px; }
