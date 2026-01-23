@@ -1217,42 +1217,64 @@
                 </div>
             </div>
 
-            <!-- [오른쪽] 추가된 자료 관리 구역 -->
-            <div style="flex: 1; border-left: 1px dashed #e2e8f0; padding-left: 30px; display: flex; flex-direction: column;">
+<!-- [오른쪽] 자료 관리 및 수송 요청 구역 (교체됨) -->
+            <div class="setup-right-side" style="flex: 1; border-left: 1px dashed #e2e8f0; padding-left: 30px; display: flex; flex-direction: column;">
                 <label style="display:block; font-size:13px; font-weight:900; color:#003366; margin-bottom:15px;">
-                    <i class="fa-solid fa-folder-open"></i> 입교 가이드 및 자료 관리
+                    <i class="fa-solid fa-folder-open"></i> 가이드 및 수송 관리
                 </label>
                 
                 <!-- 가이드 PDF 업로드 -->
-                <div style="margin-bottom:20px; padding:15px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe;">
-                    <span style="display:block; font-size:12px; font-weight:800; color:#3b82f6; margin-bottom:8px;">입교안내 가이드 (PDF)</span>
-                    <div id="modalGuideStatus" style="font-size: 11px; margin-bottom: 10px; color: #64748b; font-weight: 700;">상태 확인 중...</div>
-                    <input type="file" id="modalGuideInput" accept=".pdf" style="display:none;" onchange="guideMgr.uploadGuide(this)">
-                    <button class="btn-action btn-primary" onclick="document.getElementById('modalGuideInput').click()" style="height:40px; font-size:13px; width:100%;">
+                <div style="margin-bottom:15px; padding:12px; background:#f0f7ff; border-radius:12px; border:1px solid #dbeafe;">
+                    <span style="display:block; font-size:11px; font-weight:800; color:#3b82f6; margin-bottom:8px;">입교안내 가이드 (PDF)</span>
+                    <button class="btn-action btn-primary" onclick="document.getElementById('modalGuideInput').click()" style="height:35px; font-size:12px; width:100%;">
                         <i class="fa-solid fa-file-pdf"></i> PDF 업로드/교체
                     </button>
                 </div>
 
                 <!-- 퀴즈 문제 은행 업로드 -->
-                <div style="margin-bottom:20px; padding:15px; background:#fffbeb; border-radius:12px; border:1px solid #fef3c7;">
+                <div style="margin-bottom:15px; padding:12px; background:#fffbeb; border-radius:12px; border:1px solid #fef3c7;">
                     <span style="display:block; font-size:12px; font-weight:800; color:#d97706; margin-bottom:8px;">퀴즈 문제 은행 (.TXT)</span>
-                    <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin-bottom:10px;">새 파일을 업로드하면 퀴즈 보관함에 즉시 추가됩니다.</p>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:5px;">
                         <input type="file" id="modalQuizInput" accept=".txt" style="display:none;" onchange="quizMgr.loadFile(this)">
-                        <button class="btn-action" onclick="document.getElementById('modalQuizInput').click()" style="flex:2; height:40px; font-size:13px; background:#f59e0b; color:white; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
-                            <i class="fa-solid fa-file-import"></i> 문제 업로드
+                        <button class="btn-action" onclick="document.getElementById('modalQuizInput').click()" style="flex:2; height:35px; font-size:12px; background:#f59e0b; color:white; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
+                            문제 업로드
                         </button>
-                        <button class="btn-action btn-dark" onclick="quizMgr.downloadSample()" style="flex:1; height:40px; font-size:13px;">샘플</button>
+                        <button class="btn-action btn-dark" onclick="quizMgr.downloadSample()" style="flex:1; height:35px; font-size:12px;">샘플</button>
                     </div>
                 </div>
 
+                <!-- [신규] 강사 수송 요청 버튼 -->
+                <div style="margin-bottom:10px; padding:12px; background:#f5f3ff; border-radius:12px; border:1px solid #ddd6fe;">
+                    <span style="display:block; font-size:11px; font-weight:800; color:#7c3aed; margin-bottom:8px;">강사 수송(의전) 신청</span>
+                    <button class="btn-action" onclick="setupMgr.openTransportModal()" style="height:40px; font-size:13px; width:100%; background:#8b5cf6; color:white; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
+                        <i class="fa-solid fa-taxi"></i> 강사 수송 요청 신청
+                    </button>
+                </div>
+
+                <!-- [신규] 실시간 카카오톡 스타일 현황창 -->
+                <div class="kakao-status-container">
+                    <div class="kakao-header">
+                        <i class="fa-solid fa-comment"></i> 수송 신청 및 승인 현황
+                    </div>
+                    <div id="kakao-chat-box" class="kakao-body">
+                        <div class="kakao-empty">신청 내역이 없습니다.</div>
+                    </div>
+                </div>
+
+                <!-- 하단 관리 팁 구역 -->
                 <div style="margin-top:auto; padding:15px; background:#f1f5f9; border-radius:12px; font-size:11px; color:#64748b; line-height:1.6;">
                     <i class="fa-solid fa-circle-info"></i> <b>관리 팁:</b><br>
                     - 가이드 PDF는 교육생 앱 메인에 즉시 노출됩니다.<br>
-                    - 퀴즈 파일은 업로드 후 '퀴즈 모드'에서 선택하여 진행할 수 있습니다.
+                    - 수송 신청 내역 및 승인 여부를 실시간으로 확인하세요.
                 </div>
-            </div>
-        </div>
+            </div> <!-- 1번째: 관리 팁 div 닫기 (사실 위 팁 구역 안에 div가 하나 더 있어서 여기까지 포함) -->
+        </div> <!-- 2번째: 오른쪽 칸(setup-right-side) div 닫기 -->
+    </div> <!-- 3번째: 가로 정렬(Flex Layout) div 닫기 -->
+
+
+
+
+
 
         <div class="modal-actions" style="margin-top:25px; justify-content:center; gap:10px;">
             <button class="m-btn m-btn-later" onclick="setupMgr.closeSetupModal()" style="background:#64748b; color:white; min-width:100px; justify-content:center;">취소</button>
@@ -1341,7 +1363,49 @@
 
 
 
-
+<!-- [신규] 강사 수송 요청 신청 모달 -->
+    <div id="instTransportModal" class="modal-overlay" style="z-index: 8500;">
+        <div class="modal-box" style="width: 420px; padding:0; overflow:hidden; border-radius:20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+            <div style="background:#7c3aed; color:white; padding:18px 20px; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; font-size:18px;"><i class="fa-solid fa-taxi"></i> 강사 수송 요청 등록</h3>
+                <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="setupMgr.closeTransportModal()"></i>
+            </div>
+            <div style="padding:25px;" class="setting-container">
+                <div class="setup-group" style="margin-bottom:15px;">
+                    <label class="setting-label">픽업/샌딩 장소</label>
+                    <select id="tr-location" class="setup-input">
+                        <option value="오송역">오송역</option>
+                        <option value="청주터미널">청주터미널</option>
+                        <option value="청주공항">청주공항</option>
+                        <option value="기타(직접입력)">기타(직접입력)</option>
+                    </select>
+                </div>
+                <div class="setup-group" style="margin-bottom:15px;">
+                    <label class="setting-label">수송 날짜</label>
+                    <input type="date" id="tr-date" class="setup-input">
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:15px; padding:15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+                    <div style="flex:1;">
+                        <label class="setting-label" style="font-size:10px; color:#7c3aed;">도착 (역→항기원)</label>
+                        <input type="time" id="tr-time-in" class="setup-input">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="setting-label" style="font-size:10px; color:#7c3aed;">출발 (항기원→역)</label>
+                        <input type="time" id="tr-time-out" class="setup-input">
+                    </div>
+                </div>
+                <div class="setup-group" style="margin-bottom:15px;">
+                    <input type="text" id="tr-name" class="setup-input" placeholder="강사님 성함">
+                </div>
+                <div class="setup-group" style="margin-bottom:20px;">
+                    <input type="text" id="tr-phone" class="setup-input" placeholder="강사님 연락처">
+                </div>
+                <button class="btn-action btn-transport" onclick="setupMgr.saveTransportRequest()" style="width:100%; height:50px; font-size:16px; font-weight:800;">
+                    수송 예약 신청하기
+                </button>
+            </div>
+        </div>
+    </div>
 
 
 

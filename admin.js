@@ -3605,65 +3605,52 @@ const printMgr = {
 
 
 
-// [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
+// [통째로 교체] 통합 설정 및 수송 요청 관리 객체 (최종 통합본)
 const setupMgr = {
-// [최종] 환경 설정 진입 로직: 비어있는 방은 즉시 오픈, 사용 중인 방은 비번 확인
-
-
-
-
-
-// [수정] 와이드 레이아웃 설정 모달 오픈 및 상태 로드
-openSetupModal: async function() {
-    if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
-    
-    const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
-    const st = statusSnap.val() || {};
-
-    if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-        ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
-        dataMgr.switchRoomAttempt(state.room); 
-        return;
-    }
-
-    // 교수 리스트 로드
-    let profOptions = '<option value="">(선택 안함)</option>';
-    profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
-    document.getElementById('setup-prof-select').innerHTML = profOptions;
-
-    // 담당자 리스트 로드
-    firebase.database().ref('system/coordinators').once('value', snap => {
-        const coords = snap.val() || {};
-        let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
-        Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
-        document.getElementById('setup-coord-select').innerHTML = coordOptions;
+    // 1. 설정 모달 열기
+    openSetupModal: async function() {
+        if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
-        // 가이드 등록 상태 체크
-        firebase.database().ref(`system/sharedGuide`).once('value', gSnap => {
-            const el = document.getElementById('modalGuideStatus');
-            if(el) {
-                if(gSnap.exists()) {
-                    el.innerHTML = '<i class="fa-solid fa-circle-check"></i> 가이드 PDF가 등록되어 있습니다.';
-                    el.style.color = "#10b981";
-                } else {
-                    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 등록된 가이드 파일이 없습니다.';
-                    el.style.color = "#ef4444";
+        const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
+        const st = statusSnap.val() || {};
+
+        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+            ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
+            dataMgr.switchRoomAttempt(state.room); 
+            return;
+        }
+
+        // 교수 리스트 로드
+        let profOptions = '<option value="">(선택 안함)</option>';
+        profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
+        document.getElementById('setup-prof-select').innerHTML = profOptions;
+
+        // 담당자 리스트 로드
+        firebase.database().ref('system/coordinators').once('value', snap => {
+            const coords = snap.val() || {};
+            let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
+            Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
+            document.getElementById('setup-coord-select').innerHTML = coordOptions;
+            
+            // 가이드 등록 상태 체크
+            firebase.database().ref(`system/sharedGuide`).once('value', gSnap => {
+                const el = document.getElementById('modalGuideStatus');
+                if(el) {
+                    if(gSnap.exists()) {
+                        el.innerHTML = '<i class="fa-solid fa-circle-check"></i> 가이드 PDF가 등록되어 있습니다.';
+                        el.style.color = "#10b981";
+                    } else {
+                        el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 등록된 가이드 파일이 없습니다.';
+                        el.style.color = "#ef4444";
+                    }
                 }
-            }
-            this.loadCurrentSettings(); // 나머지 정보 로드
+                this.loadCurrentSettings(); // 나머지 정보 로드
+                this.loadTransportChat();   // [추가] 카카오톡 스타일 수송 현황 로드
+            });
         });
-    });
-},
+    },
 
-
-
-
-
-
-
-
-
-    // 설정을 불러오는 내부 함수 분리
+    // 2. 설정을 불러오는 내부 함수
     loadCurrentSettings: function() {
         firebase.database().ref(`courses/${state.room}`).once('value', snap => {
             const data = snap.val() || {};
@@ -3707,7 +3694,7 @@ openSetupModal: async function() {
         });
     },
 
-    // 선택창 값 변경 감지 함수
+    // 3. 직접 입력 창 제어
     checkDirectInput: function(val) {
         const directInput = document.getElementById('setup-room-direct');
         if (val === "direct") {
@@ -3718,12 +3705,15 @@ openSetupModal: async function() {
         }
     },
 
+    // 4. 모달 닫기
     closeSetupModal: function() {
         document.getElementById('courseSetupModal').style.display = 'none';
+        // [추가] 모달 닫을 때 실시간 리스너 해제 (메모리 관리)
+        if(state.room) firebase.database().ref(`courses/${state.room}/transport_requests`).off();
     },
 
-saveAll: function() {
-        // [옵저버 제한]
+    // 5. 모든 설정 저장
+    saveAll: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
 
         const name = document.getElementById('setup-course-name').value.trim();
@@ -3758,15 +3748,112 @@ saveAll: function() {
             localStorage.setItem('last_owned_room', state.room);
             
             ui.showAlert("✅ 설정이 저장되었습니다.");
-            
-            // 1. 팝업창 닫기
             this.closeSetupModal();
-
-            // 2. [핵심 추가] 즉시 방에 다시 입장하여 잠금 화면을 치우고 대시보드를 보여줌
             dataMgr.forceEnterRoom(state.room);
         });
+    },
+
+    // --- [신규 추가] 강사 수송 요청 관련 함수들 ---
+
+    // 6. 수송 요청 모달 열기
+    openTransportModal: function() {
+        // 기본 날짜를 오늘로 설정
+        document.getElementById('tr-date').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('instTransportModal').style.display = 'flex';
+    },
+
+    // 7. 수송 요청 모달 닫기
+    closeTransportModal: function() {
+        document.getElementById('instTransportModal').style.display = 'none';
+    },
+
+    // 8. 수송 요청 저장 (Firebase)
+    saveTransportRequest: function() {
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
+        
+        const data = {
+            location: document.getElementById('tr-location').value,
+            date: document.getElementById('tr-date').value,
+            timeIn: document.getElementById('tr-time-in').value,
+            timeOut: document.getElementById('tr-time-out').value,
+            name: document.getElementById('tr-name').value,
+            phone: document.getElementById('tr-phone').value,
+            status: 'pending', // 초기값: 대기(노란색 메시지 전용)
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        if(!data.name || !data.date) return alert("강사 성함과 날짜를 입력해주세요.");
+
+        // 현재 강의실(state.room) 하위의 transport_requests 경로에 저장
+        firebase.database().ref(`courses/${state.room}/transport_requests`).push(data)
+        .then(() => {
+            alert("🚀 수송 요청이 신청되었습니다.");
+            this.closeTransportModal();
+        });
+    },
+
+    // 9. 실시간 수송 현황 로드 (카카오창)
+    loadTransportChat: function() {
+        const chatBox = document.getElementById('kakao-chat-box');
+        if(!state.room || !chatBox) return;
+
+        // 해당 과정에 대한 신청 내역만 실시간 감시
+        firebase.database().ref(`courses/${state.room}/transport_requests`).on('value', snap => {
+            chatBox.innerHTML = "";
+            const val = snap.val();
+            if(!val) {
+                chatBox.innerHTML = '<div class="kakao-empty">신청 내역이 없습니다.</div>';
+                return;
+            }
+
+            Object.keys(val).forEach(key => {
+                const req = val[key];
+                const time = new Date(req.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                // 1. 수송 신청 내역 (노란색 - 내가 보낸 메시지 스타일)
+                let chatHtml = `
+                    <div class="kakao-msg sent">
+                        <span class="status-tag tag-pending">수송 신청</span><br>
+                        <b>${req.name} 강사님</b><br>
+                        ${req.date} / ${req.location}<br>
+                        시간: ${req.timeIn || '--:--'} | ${req.timeOut || '--:--'}
+                        <span class="kakao-time">${time}</span>
+                    </div>
+                `;
+                
+                // 2. 승인이 완료된 경우 (흰색 - 기사님이 보낸 메시지 스타일)
+                if(req.status === 'approved') {
+                    chatHtml += `
+                        <div class="kakao-msg received">
+                            <span class="status-tag tag-approved">승인 완료</span><br>
+                            배차 및 승인이 완료되었습니다.<br>안전하게 모시겠습니다.
+                            <span class="kakao-time">${time}</span>
+                        </div>
+                    `;
+                }
+                chatBox.innerHTML += chatHtml;
+            });
+            // 새 메시지가 오면 항상 바닥으로 스크롤
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
     }
-}; // <--- setupMgr 객체를 닫아주는 아주 중요한 마침표입니다.
+}; // setupMgr 마침표
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
 subjectMgr.renderListInModal = function() {
