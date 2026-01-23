@@ -33,56 +33,71 @@
 
     .app-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
 
-    /* 대시보드 - 원래 크기 유지 */
-    .total-status-card { background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%); border-radius: 20px; padding: 20px; color: #fff; text-align: center; margin-bottom: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-    .total-status-card span { font-size: 13px; font-weight: 700; opacity: 0.8; display: block; margin-bottom: 5px; }
-    .total-status-card b { font-size: 38px; font-weight: 900; color: var(--blue); }
+/* 상단 대시보드 - 보내주신 사진 디자인 반영 */
+    .total-status-card { 
+      background: #1e293b; 
+      border-radius: 24px; 
+      padding: 30px 20px; 
+      color: #fff; 
+      text-align: center; 
+      margin-bottom: 15px; 
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
+    }
+    .total-status-card span { 
+      font-size: 14px; 
+      font-weight: 800; 
+      display: block; 
+      margin-bottom: 10px; 
+      letter-spacing: -0.5px;
+    }
+    .total-status-card b { 
+      font-size: 52px; 
+      font-weight: 900; 
+      color: #0ea5e9; /* 밝은 하늘색 */
+      line-height: 1;
+    }
     
     .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-    .stat-card { background: #fff; padding: 15px 5px; border-radius: 18px; border: 1.5px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .stat-card { background: #fff; padding: 15px 5px; border-radius: 18px; border: 1.5px solid var(--border); text-align: center; cursor: pointer; }
     .stat-card span { font-size: 11px; font-weight: 800; color: #64748b; display: block; margin-bottom: 4px; }
     .stat-card b { font-size: 24px; font-weight: 900; color: var(--navy); }
 
-/* 과정 리스트 카드 - 이미지 스타일로 전면 개편 */
+    /* 과정 리스트 - 깔끔한 리스트 스타일로 변경 */
     .course-item { 
-      background: linear-gradient(135deg, #004695 0%, #002d62 100%); 
-      border-radius: 20px; padding: 20px; border: none; margin-bottom: 15px; 
-      position: relative; overflow: hidden; color: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      background: #fff; 
+      border-radius: 20px; 
+      padding: 20px; 
+      border: 1px solid var(--border); 
+      margin-bottom: 12px; 
+      position: relative;
     }
-    
     .badge-now {
-      background: #4a90e2; color: #fff; font-size: 10px; font-weight: 900;
-      padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 12px;
+      background: #3b82f6; color: #fff; font-size: 10px; font-weight: 900;
+      padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 8px;
     }
-
-    .course-title { font-size: 19px; font-weight: 900; color: #fff; margin-bottom: 15px; display: block; word-break: keep-all; line-height: 1.3; }
+    .course-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .course-title { font-size: 17px; font-weight: 900; color: var(--navy); word-break: keep-all; flex: 1; }
     
-    .course-info-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-    .info-pill { 
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
-      padding: 5px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; color: #fff;
-      display: flex; align-items: center; gap: 5px;
+    .announce-status-text { font-size: 15px; font-weight: 900; color: #10b981; margin-left: 10px; white-space: nowrap; }
+    .announce-status-text.pending { color: #cbd5e1; }
+
+    /* 인원 수 표시 바 */
+    .course-counts-bar { 
+      background: #f8fafc; 
+      padding: 10px 15px; 
+      border-radius: 10px; 
+      font-size: 13px; 
+      font-weight: 800; 
+      color: var(--blue-deep); 
+      margin-bottom: 15px;
     }
 
-    .prof-card-mini {
-      position: absolute; top: 20px; right: 15px; background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 8px 12px;
-      display: flex; align-items: center; gap: 10px; backdrop-filter: blur(5px);
-    }
-    .prof-img { width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #004695; }
-    .prof-info-text { text-align: left; }
-    .prof-info-text div { font-size: 8px; opacity: 0.8; }
-    .prof-info-text b { font-size: 11px; }
+    .prof-simple-info { font-size: 12px; color: #64748b; font-weight: 700; margin-bottom: 15px; display: block; }
 
-    .announce-status-large { font-size: 15px; font-weight: 900; color: #4ade80; text-align: right; margin-bottom: 10px; }
-    .announce-status-large.pending { color: rgba(255,255,255,0.4); }
-
-    .bottom-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.8; margin-bottom: 15px; }
-
-    /* 버튼 디자인 조정 */
-    .time-grid { display: grid; grid-template-columns: 1fr 1fr 0.7fr; gap: 10px; }
-    .time-btn { height: 46px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); font-weight: 800; color: #fff; cursor: pointer; transition: 0.2s; }
-    .time-btn.active { background: #0f172a !important; color: #fff !important; border-color: #0f172a !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    /* 버튼 그리드 */
+    .time-grid { display: grid; grid-template-columns: 1fr 1fr 0.7fr; gap: 8px; }
+    .time-btn { height: 44px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #fff; font-weight: 800; color: #64748b; cursor: pointer; }
+    .time-btn.active { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; }
 
     /* 일정표 */
     .week-nav { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 10px; background: #fff; padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
@@ -379,54 +394,38 @@ function renderTraineeManagement() {
       const dep = room.shuttle?.departure || { time: "" };
       const reqs = Object.values(room.shuttle?.requests || {});
       
-      // 개별 카운트
       const cO = reqs.filter(r=>r.type==='osong').length;
       const cT = reqs.filter(r=>r.type==='terminal').length;
       const cA = reqs.filter(r=>r.type==='airport').length;
 
-      // 상단 대시보드 합계 계산 (자차 제외: 오송+터미널+공항만 합산)
+      // 자차 제외한 총합 계산
+      const subTotal = cO + cT + cA;
       stats.o += cO; 
       stats.t += cT; 
       stats.a += cA; 
-      stats.total += (cO + cT + cA); 
+      stats.total += subTotal; 
 
-      // 카드 데이터 추출
-      const cName = room.settings?.courseName || '과정명 없음';
-      const cPeriod = room.settings?.period || '기간 정보 없음';
-      const cLocation = room.settings?.location || '장소 정보 없음';
+      const cName = room.settings?.courseName || '과정명';
       const cProf = room.settings?.professor || '미지정';
-      const cManager = room.settings?.manager || '담당자 미지정';
 
       area.innerHTML += `
         <div class="course-item">
           <div class="badge-now">NOW TRAINING</div>
           
-          <div class="prof-card-mini">
-            <div class="prof-img"><i class="fa-solid fa-user"></i></div>
-            <div class="prof-info-text">
-                <div>과정 담임</div>
-                <b>${cProf} 교수님</b>
+          <div class="course-header">
+            <span class="course-title">#${rid} ${cName}</span>
+            <div class="announce-status-text ${dep.time?'':'pending'}">
+              ${dep.time ? dep.time+' 공지됨' : '공지 대기'}
             </div>
           </div>
 
-          <span class="course-title">#${rid} ${cName}</span>
-
-          <div class="announce-status-large ${dep.time?'':'pending'}">
-            ${dep.time ? dep.time+' 공지됨' : '공지 대기중'}
+          <div class="course-counts-bar">
+            오송 ${cO} · 터미널 ${cT} · 공항 ${cA}
           </div>
 
-          <div class="course-info-row">
-            <div class="info-pill"><i class="fa-solid fa-calendar-days"></i> ${cPeriod}</div>
-            <div class="info-pill"><i class="fa-solid fa-location-dot"></i> ${cLocation}</div>
-          </div>
-
-          <div class="course-info-row" style="margin-bottom:5px;">
-             <span style="font-size:12px; font-weight:800; color:#4ade80;">오송 ${cO} · 터미널 ${cT} · 공항 ${cA}</span>
-          </div>
-
-          <div class="bottom-meta">
-            <span><i class="fa-solid fa-user-check"></i> 과정담당: ${cManager}</span>
-          </div>
+          <span class="prof-simple-info">
+            <i class="fa-solid fa-user-tie"></i> 담임: ${cProf} 교수님
+          </span>
 
           <div class="time-grid">
             <button class="time-btn ${dep.time==='13:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '13:00')">13:00</button>
@@ -436,7 +435,7 @@ function renderTraineeManagement() {
         </div>`;
     });
 
-    // 상단 숫자 업데이트
+    // 대시보드 업데이트
     document.getElementById('sum-total').innerText = stats.total + "명";
     document.getElementById('sum-osong').innerText = stats.o;
     document.getElementById('sum-term').innerText = stats.t;
