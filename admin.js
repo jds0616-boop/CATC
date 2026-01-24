@@ -3759,7 +3759,7 @@ const setupMgr = {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-    // [기능 4] 수송 신청 저장 (내 카톡창 + 기사 통합 게시판 동시 전송)
+// [기사님/운영부 어플 연동 완결본]
     saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
         
@@ -3767,20 +3767,20 @@ const setupMgr = {
         const name = document.getElementById('tr-name').value.trim();
         const phone = document.getElementById('tr-phone').value.trim();
         const date = document.getElementById('tr-date').value;
-        const cName = document.getElementById('setup-course-name').value;
+        const cName = document.getElementById('setup-course-name').value; // 현재 과정명
 
         if(!name || !phone || !date) {
             alert("강사 성함, 연락처, 날짜를 모두 입력해주세요.");
             return;
         }
 
-        // 버튼 인지성 강화 (전송 중 상태)
+        // 버튼 상태 변경
         btn.disabled = true;
         btn.innerText = "기사님께 전송 중...";
         btn.style.background = "#adb5bd";
 
         const data = {
-            room: state.room,            // 강의실 코드
+            room: state.room,            // 강의실 (예: A, B, C)
             courseName: cName,           // 과정명
             location: document.getElementById('tr-location').value,
             date: date,
@@ -3788,31 +3788,40 @@ const setupMgr = {
             timeOut: document.getElementById('tr-time-out').value || "",
             name: name,
             phone: phone,
-            status: 'pending',           // 승인 대기 상태
+            status: 'pending',           // 기사님 승인 대기 상태
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // [핵심] 고유 키를 하나 생성해서 두 경로에 똑같이 저장 (중복 제거 통합)
-        const newKey = firebase.database().ref().child('instructor_transport_requests').push().key;
+        // [연동의 핵심] 기사님 어플이 바라보는 'system/transport_requests' 경로에 저장합니다.
+        const newKey = firebase.database().ref().child('system/transport_requests').push().key;
         
         const updates = {};
-        // 1. 내 강의실 카톡창용 경로
+        // 1. 내 강의실 카톡창용 (강사 플랫폼 확인용)
         updates[`courses/${state.room}/transport_requests/${newKey}`] = data;
-        // 2. 운영부/기사 통합 관리용 공용 경로
-        updates[`instructor_transport_requests/${newKey}`] = data;
+        
+        // 2. 운영부/기사님 통합 관리용 (기사님 어플 연동용 주소)
+        // 보냈던 Rules에 맞춰 'system/transport_requests'로 변경함
+        updates[`system/transport_requests/${newKey}`] = data;
 
         firebase.database().ref().update(updates).then(() => {
-            alert(`🚀 [${name}] 강사님, 수송 신청이 정상 접수되었습니다.\n기사님 확인 후 승인 메시지가 표시됩니다.`);
+            alert(`🚀 [${name}] 강사님 신청 완료!\n기사님 어플과 운영부 플랫폼에 실시간 전달되었습니다.`);
             this.closeTransportModal();
         }).catch(e => {
-            alert("연동 실패: " + e.message);
+            console.error("전송 오류:", e);
+            alert("전송 실패: " + e.message);
         }).finally(() => {
-            // 버튼 상태 원상복구
             btn.disabled = false;
             btn.innerText = "수송 예약 등록하기";
             btn.style.background = "#7c3aed";
         });
     },
+
+
+
+
+
+
+
 
     // [기능 5] 카카오톡 현황판 실시간 데이터 로드
     loadTransportChat: function() {
