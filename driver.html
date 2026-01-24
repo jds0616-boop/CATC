@@ -837,13 +837,13 @@ function renderTraineeManagement() {
           <div class="t-cell name" style="font-size:12px; justify-content:flex-start; text-align:left; padding-left:10px;">${cName}</div>
           <div class="t-cell count" style="cursor:pointer;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
           <div class="t-cell btns">
-            <button class="mini-btn ${currentTime === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
-            <button class="mini-btn ${currentTime === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
-            <button class="mini-btn ${(currentTime && currentTime !== '13:00' && currentTime !== '15:00') ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
+            <button class="mini-btn ${String(dep.time) === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
+            <button class="mini-btn ${String(dep.time) === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
+            <button class="mini-btn ${(dep.time && dep.time !== '13:00' && dep.time !== '15:00') ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
           </div>
           <div class="t-cell status">
-            ${currentTime ? 
-              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')" title="공지 취소"></i>` : 
+            ${dep.time ? 
+              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : 
               `<i class="fa-solid fa-minus notice-off" style="opacity:0.3;"></i>`
             }
           </div>
@@ -859,45 +859,69 @@ function renderTraineeManagement() {
 
 
 
-  // --- 유틸리티 ---
-function confirmAction(type, id, val = null, targetDate = null) {
+// [기사님 플랫폼] 모든 확인 및 저장 액션 통합 함수
+  function confirmAction(type, id, val = null, targetDate = null) {
     const modal = document.getElementById('confirmModal');
     const okBtn = document.getElementById('c-ok-btn');
     
+    // 1. 강사 수송 승인
     if(type === 'approve') {
         document.getElementById('c-title').innerText = "배차 승인"; 
         document.getElementById('c-desc').innerText = "해당 수송을 승인하고 일정표에 등록하시겠습니까?";
-        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); closeModal('confirmModal'); };
-    } else if(type === 'cancel') {
+        okBtn.onclick = async () => { 
+            await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
+            closeModal('confirmModal'); 
+        };
+    } 
+    // 2. 강사 수송 승인 취소
+    else if(type === 'cancel') {
         document.getElementById('c-title').innerText = "승인 취소"; 
         document.getElementById('c-desc').innerText = "배차 승인을 취소하시겠습니까?";
-        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); closeModal('confirmModal'); };
-    } else if(type === 'delete') {
+        okBtn.onclick = async () => { 
+            await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); 
+            closeModal('confirmModal'); 
+        };
+    } 
+    // 3. 강사 수송 요청 삭제
+    else if(type === 'delete') {
         document.getElementById('c-title').innerText = "삭제/거절"; 
         document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>이 작업은 상대방에게 거절로 통보되며 즉시 삭제됩니다.</span>";
-        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('confirmModal'); };
-    } else if(type === 'dep') {
-        document.getElementById('c-title').innerText = "퇴교 공지"; 
-        document.getElementById('c-desc').innerHTML = `[${val}] 시간을 공지하시겠습니까?<br><br>퇴교 적용일: <b style="color:#ef4444;">${targetDate}</b>`;
         okBtn.onclick = async () => { 
-            // 서버에 저장
+            await firebase.database().ref(`system/transport_requests/${id}`).remove(); 
+            closeModal('confirmModal'); 
+        };
+    } 
+    // 4. 교육생 퇴교 공지 설정 (시간 클릭 시)
+    else if(type === 'dep') {
+        document.getElementById('c-title').innerText = "퇴교 공지"; 
+        document.getElementById('c-desc').innerHTML = `
+            설정 시간: <b style="color:#0ea5e9; font-size:18px;">${val}</b><br>
+            퇴교 적용일: <b style="color:#ef4444;">${targetDate}</b><br><br>
+            위 내용으로 교육생 및 강사님께 공지하시겠습니까?`;
+        
+        okBtn.onclick = async () => { 
+            closeModal('confirmModal');
+            // 해당 과정(id)의 경로에 정확히 저장 (날짜는 과정 종료일로 고정)
             await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ 
                 time: val, 
                 date: targetDate 
             }); 
-            closeModal('confirmModal');
-            // [추가] 즉시 화면 갱신 유도
-            if(typeof renderAll === 'function') renderAll();
+            // [핵심] 저장 후 즉시 리스트를 다시 그려서 버튼 색상(검정색) 반영
+            if(typeof renderTraineeManagement === 'function') renderTraineeManagement();
         };
-    } else if(type === 'cancelDep') {
-        // [수정] 실수 방지를 위한 확인창 추가
-        if(!confirm("이미 설정된 퇴교 공지 시간을 삭제하시겠습니까? (강사 플랫폼에서도 즉시 삭제됩니다.)")) return;
+    } 
+    // 5. 교육생 퇴교 공지 취소 (우측 체크 아이콘 클릭 시)
+    else if(type === 'cancelDep') {
+        // 알림 팝업으로 의사 재확인
+        if(!confirm("이미 설정된 퇴교 공지 시간을 삭제하시겠습니까?\n(삭제 시 강사 플랫폼에서도 실시간으로 사라집니다.)")) return;
         
         firebase.database().ref(`courses/${id}/shuttle/departure`).set(null).then(() => {
-            if(typeof renderAll === 'function') renderAll();
+            // [핵심] 삭제 후 즉시 리스트를 다시 그려서 버튼 색상 리셋
+            if(typeof renderTraineeManagement === 'function') renderTraineeManagement();
         });
-        return; // cancelDep은 자체 confirm을 사용하므로 여기서 종료
+        return; // cancelDep은 브라우저 confirm을 쓰므로 여기서 함수 종료
     }
+
     modal.style.display = 'flex';
   }
 
@@ -965,9 +989,28 @@ function switchTab(n) {
     const reason = prompt(`${date} 운행중단 사유를 입력하세요`, "차량 정비");
     if(reason) firebase.database().ref('system/transport_requests').push({ date, prof: '운행중단', dir: reason, status: 'approved', time: '00:00' });
   }
+
+
+
+
+
 function promptManual(rid, endDate) {
-    const t = prompt("수송 시간 입력 (예: 14:30)");
-    if(t) confirmAction('dep', rid, t, endDate);
+    // 시계 아이콘(시간 선택기)을 동적으로 생성하여 클릭 유도
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.style.position = 'fixed';
+    timeInput.style.top = '-100px'; // 화면 밖으로 숨김
+    document.body.appendChild(timeInput);
+
+    timeInput.onchange = (e) => {
+        if(e.target.value) {
+            confirmAction('dep', rid, e.target.value, endDate);
+        }
+        document.body.removeChild(timeInput); // 사용 후 제거
+    };
+
+    // 아이폰/안드로이드에서 기본 시간 선택기를 띄움
+    timeInput.showPicker ? timeInput.showPicker() : timeInput.click();
   }
 
 
