@@ -1255,24 +1255,31 @@ loadDashboardStats: function() {
             if(skipEl) skipEl.innerText = count;
         });
 
-        // 9. 출발시간 및 기사 공지 연동
+// 9. 출발시간 및 기사 공지 연동 (경로 간섭 차단 버전)
         const departureRef = firebase.database().ref(`courses/${room}/shuttle/departure`);
-        departureRef.off();
-departureRef.on('value', snap => {
-    if(state.room !== room) return;
-    const dep = snap.val();
-    const bar = document.getElementById('dashShuttleNotice');
-    const txt = document.getElementById('dashShuttleNoticeTxt');
-    if(!bar || !txt) return;
+        departureRef.off(); // [핵심] 이전에 붙어있던 감시자를 먼저 제거함
+        departureRef.on('value', snap => {
+            // 현재 선택된 방(state.room)과 로드하려는 방(room)이 다르면 무시
+            if(state.room !== room) return; 
+            
+            const dep = snap.val();
+            const bar = document.getElementById('dashShuttleNotice');
+            const txt = document.getElementById('dashShuttleNoticeTxt');
+            if(!bar || !txt) return;
 
-    if (dep && dep.time) {
-        bar.style.display = "block";
-        // 기사님이 보낸 dep.date(과정 종료일)를 그대로 사용
-        txt.innerText = `퇴교차량 출발: ${dep.date} [${dep.time}]`; 
-    } else {
-        // ... 기존 리셋 공지 로직
-    }
-});
+            if (dep && dep.time) {
+                bar.style.display = "block";
+                // 기사님이 저장한 해당 과정의 퇴교 예정 날짜와 시간을 표시
+                txt.innerText = `퇴교차량 출발 예정: ${dep.date} [${dep.time}]`;
+            } else {
+                // 설정된 시간이 없을 때만 기본 공지사항 확인
+                firebase.database().ref('system/shuttle_notice').once('value', s => {
+                    const msg = s.val();
+                    if(msg) { bar.style.display = "block"; txt.innerText = msg; }
+                    else { bar.style.display = "none"; }
+                });
+            }
+        });
 
         // 10. 실시간 질문(Q&A) 건수 카운트
         const qaCountRef = firebase.database().ref(`courses/${room}/questions`);
