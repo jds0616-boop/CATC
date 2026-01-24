@@ -465,13 +465,24 @@
   let prevPendingCount = 0;
   const alarmAudio = new Audio('timer.mp3');
 
-  function init() {
-    firebase.database().ref('courses').on('value', snap => { allCourses = snap.val() || {}; renderAll(); });
+function init() {
+    // 1. 모든 강의실 정보(courses) 실시간 감시
+    firebase.database().ref('courses').on('value', snap => {
+      allCourses = snap.val() || {};
+      console.log("강의실 정보 실시간 업데이트 완료");
+      renderAll(); // 데이터 변경 시 즉시 모든 화면 다시 그리기
+    }, error => {
+      console.error("강의실 감시 에러:", error);
+    });
+
+    // 2. 강사 수송 요청 정보 실시간 감시
     firebase.database().ref('system/transport_requests').on('value', snap => {
       const raw = snap.val() || {};
       profReqs = Object.keys(raw).map(k => ({ id: k, ...raw[k] }));
       checkNewRequests();
       renderAll();
+    }, error => {
+      console.error("수송 요청 감시 에러:", error);
     });
   }
 
@@ -821,15 +832,21 @@ function checkAndResetOldData(limitDate) {
 
 function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
+    if (!area) return;
+    area.innerHTML = '';
+    
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // 오늘 (2026-01-24)
+    const todayStr = now.toISOString().split('T')[0];
 
-    // 리셋 기준 (지난 토요일)
-    const lastSat = new Date();
-    lastSat.setDate(now.getDate() - ((now.getDay() + 1) % 7));
-    const lastSatStr = lastSat.toISOString().split('T')[0];
-
-    let listHTML = `<div class="list-wrapper">
+    // 주차 정보 계산
+    const weekNo = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
+    const headerTitle = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${weekNo}째주 설정`;
+    
+    let listHTML = `
+      <div style="text-align:center; font-weight:900; color:#0f172a; margin-bottom:15px; background:#fff; border:1px solid #e2e8f0; padding:12px; border-radius:12px;">
+        📅 ${headerTitle}
+      </div>
+      <div class="list-wrapper">
         <div class="list-header">
           <div class="t-cell name">과정명</div>
           <div class="t-cell">퇴교총원</div>
@@ -837,55 +854,56 @@ function renderTraineeManagement() {
           <div class="t-cell">공지</div>
         </div>`;
 
+    // 강의실 목록을 돌면서 필터링
     Object.keys(allCourses).forEach(rid => {
-      const room = allCourses[rid];
-      if(room.status?.roomStatus !== 'active') return;
+        try {
+            const room = allCourses[rid];
+            
+            // [안전장치] 신규 개설 중이라 상태값이 아직 없다면 무시
+            if (!room || !room.status || room.status.roomStatus !== 'active') return;
 
-      const period = room.settings?.period || "";
-      if (!period.includes(" ~ ")) return;
-      const [startDate, endDate] = period.split(" ~ ");
+            const settings = room.settings || {};
+            const period = settings.period || "";
+            const cName = settings.courseName || `[Room ${rid}] 과정명 미설정`;
 
-      // [핵심 로직] 과정이 진행 중이거나 오늘이 종료일이라면 무조건 표시!
-      // 즉, 2주차 과정이라 종료일이 다음 주 금요일이라면 오늘(토요일)도 당연히 보입니다.
-      if (endDate < todayStr) return; 
+            // 기간 정보가 아직 입력되지 않은 신규 강의도 일단 목록엔 보여줌 (수정 가능하게)
+            let endDate = "9999-12-31";
+            if (period.includes(" ~ ")) {
+                endDate = period.split(" ~ ")[1];
+                if (endDate < todayStr) return; // 이미 끝난 강의만 숨김
+            }
 
-      const dep = room.shuttle?.departure || { time: "", date: "" };
-      
-      // 자동 리셋: 만약 저장된 데이터가 지난 토요일보다 전이면 삭제
-      if (dep.date && dep.date < lastSatStr) {
-          firebase.database().ref(`courses/${rid}/shuttle/departure`).set(null);
-          firebase.database().ref(`courses/${rid}/shuttle/requests`).set(null);
-          return;
-      }
+            const shuttle = room.shuttle || {};
+            const dep = shuttle.departure || { time: "", date: "" };
+            const reqs = Object.values(shuttle.requests || {});
+            const subTotal = reqs.filter(r => r.type !== 'car').length;
 
-      const reqs = Object.values(room.shuttle?.requests || {});
-      const subTotal = reqs.filter(r => r.type !== 'car').length;
-      const cName = room.settings?.courseName || '과정명';
+            const curT = String(dep.time || "").trim();
+            const is13 = (curT === '13:00');
+            const is15 = (curT === '15:00');
+            const isManual = (curT !== "" && !is13 && !is15);
 
-      // 실시간 버튼 활성화 체크
-      const curT = dep.time ? dep.time.trim() : "";
-      const is13 = (curT === '13:00');
-      const is15 = (curT === '15:00');
-      const isManual = (curT && !is13 && !is15);
-
-      listHTML += `
-        <div class="course-row">
-          <div class="t-cell name" style="font-size:12px; font-weight:800; justify-content:flex-start; padding-left:10px;">${cName}</div>
-          <div class="t-cell count" style="cursor:pointer; color:#0ea5e9; font-weight:900;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
-          <div class="t-cell btns">
-            <button class="mini-btn ${is13 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
-            <button class="mini-btn ${is15 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
-            <button class="mini-btn ${isManual ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
-          </div>
-          <div class="t-cell status">
-            ${curT ? `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : `<i class="fa-solid fa-minus notice-off" style="opacity:0.2;"></i>`}
-          </div>
-        </div>`;
+            listHTML += `
+                <div class="course-row">
+                  <div class="t-cell name" style="font-size:12px; font-weight:800; justify-content:flex-start; padding-left:10px;">${cName}</div>
+                  <div class="t-cell count" style="cursor:pointer; color:#0ea5e9; font-weight:900;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
+                  <div class="t-cell btns">
+                    <button class="mini-btn ${is13 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
+                    <button class="mini-btn ${is15 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
+                    <button class="mini-btn ${isManual ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
+                  </div>
+                  <div class="t-cell status">
+                    ${curT ? `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : `<i class="fa-solid fa-minus notice-off" style="opacity:0.2;"></i>`}
+                  </div>
+                </div>`;
+        } catch (e) {
+            console.warn(`Room ${rid} 렌더링 중 오류(데이터 생성 중일 수 있음):`, e);
+        }
     });
 
     listHTML += `</div>`;
     area.innerHTML = listHTML;
-  }
+}
 
 
 
