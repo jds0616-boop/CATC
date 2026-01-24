@@ -804,110 +804,53 @@ body.modal-open .app-content {
 
 
 
-
-
-
-
-
-/* [최종 해결] 통합 명단 와이드 카드 UI */
-#allStudentListView { background: #f8fafc; }
-
-/* 테이블 헤더 제거 (카드형에선 필요 없음) */
-#allStudentListView table { display: none !important; }
-
-#allStudentTableBody {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 10px;
-    padding-bottom: 120px; /* 홈 버튼 여백 */
+/* [복구] 사용자님 방식의 표 형식 + 간격 초압축 */
+#allStudentListView .section-card {
+    padding: 8px 2px !important; /* 카드 내부 여백 제거 */
 }
 
-/* 개별 학생 카드 */
-.student-card {
-    background: #ffffff;
-    border-radius: 18px;
-    padding: 16px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+#allStudentListView .navy-table {
+    table-layout: fixed !important; /* 표 너비 강제 고정 (가로 슬라이드 방지 핵심) */
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 0 !important;
 }
 
-/* 상단: 과정명(태그) + 이름/번호 */
-.card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+#allStudentListView .navy-table th, 
+#allStudentListView .navy-table td {
+    padding: 6px 1px !important; /* 셀 사이 간격을 거의 0으로 축소 */
+    font-size: 10px !important;    /* 폰트 크기 최적화 */
+    letter-spacing: -0.8px;       /* 자간 압축 */
+    text-align: center !important;
+    border-bottom: 1px solid #f1f5f9;
+    word-break: break-all;        /* 내용이 길면 아래로 자동 줄바꿈 */
 }
 
-.course-tag {
-    background: #f0f7ff;
-    color: #0284c7;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 3px 8px;
-    border-radius: 6px;
-    max-width: 180px;
+/* 5개 열 너비 비율 강제 고정 (합계 100%) */
+.col-1 { width: 22%; } /* 과정명 */
+.col-2 { width: 17%; } /* 성함 */
+.col-3 { width: 22%; } /* 생활관 */
+.col-4 { width: 17%; } /* 차량 */
+.col-5 { width: 22%; } /* 외출 */
+
+/* 과정명 2줄까지만 허용하고 자르기 */
+.course-cell {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.student-name {
-    font-size: 18px;
-    font-weight: 900;
-    color: #0f172a;
-    margin-top: 4px;
-    display: block;
-}
-
-.student-phone {
-    font-size: 13px;
-    color: #94a3b8;
-    font-weight: 500;
-    margin-left: 6px;
-}
-
-/* 하단 정보 그리드 (3칸 가로 배치) */
-.card-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 12px 5px;
-    gap: 5px;
-}
-
-.grid-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    border-right: 1px solid #e2e8f0;
-}
-.grid-item:last-child { border-right: none; }
-
-.grid-label {
-    font-size: 10px;
-    font-weight: 700;
     color: #64748b;
-    margin-bottom: 4px;
+    font-size: 9px;
 }
 
-.grid-val {
-    font-size: 12px;
-    font-weight: 800;
-    color: #1e293b;
-    word-break: keep-all; /* 단어 끊김 방지 */
+/* 성함 및 기숙사 강조 */
+.bold-text { font-weight: 800; color: #1e293b; display: block; }
+.blue-text { font-weight: 800; color: #2563eb; display: block; }
+
+/* 하단 홈 버튼 여백 */
+#allStudentTableBody tr:last-child td {
+    padding-bottom: 120px !important;
 }
-
-/* 상태별 색상 */
-.val-dorm { color: #2563eb; }    /* 생활관: 파랑 */
-.val-shuttle { color: #10b981; } /* 차량: 초록 */
-.val-status { color: #ef4444; }  /* 외출: 빨강 */
-
 
 
 
@@ -3387,46 +3330,38 @@ async function loadAllStudentData() {
 
 
 function renderStudentTable(list) {
-    const container = document.getElementById('allStudentTableBody');
-    if(!container) return;
+    const tbody = document.getElementById('allStudentTableBody');
+    if(!tbody) return;
 
     if(list.length === 0) {
-        container.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8;">검색 결과가 없습니다.</div>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터가 없습니다.</td></tr>';
         return;
     }
 
-    // 카드 형식으로 생성
-    container.innerHTML = list.map(s => {
-        const shuttleDisp = s.shuttleText !== "-" ? s.shuttleText : "미신청";
-        const actionDisp = s.actionText !== "-" ? s.actionText : "정상(내무)";
+    tbody.innerHTML = list.map(s => {
+        // 차량/외출 데이터가 없으면 '-' 표시
+        const shuttleHtml = s.shuttleText !== "-" 
+            ? `<span class="badge-shuttle ${s.shuttleClass}" style="font-size:9px; padding:2px 3px;">${s.shuttleText}</span>` 
+            : `<span style="color:#eee">-</span>`;
+
+        const actionHtml = s.actionText !== "-" 
+            ? `<span class="status-action ${s.actionClass}" style="font-size:9px; font-weight:800;">${s.actionText}</span>` 
+            : `<span style="color:#eee">-</span>`;
 
         return `
-        <div class="student-card">
-            <div class="card-top">
-                <div>
-                    <div class="course-tag">${s.courseName}</div>
-                    <div class="student-name">
-                        ${s.name}<span class="student-phone">${s.phone}</span>
-                    </div>
-                </div>
-                <i class="fa-solid fa-circle-user" style="font-size:32px; color:#e2e8f0;"></i>
-            </div>
-
-            <div class="card-grid">
-                <div class="grid-item">
-                    <span class="grid-label"><i class="fa-solid fa-bed"></i> 생활관</span>
-                    <span class="grid-val val-dorm">${s.dormBuilding}<br>${s.dormRoom}</span>
-                </div>
-                <div class="grid-item">
-                    <span class="grid-label"><i class="fa-solid fa-bus"></i> 퇴교차량</span>
-                    <span class="grid-val val-shuttle">${shuttleDisp}</span>
-                </div>
-                <div class="grid-item">
-                    <span class="grid-label"><i class="fa-solid fa-person-walking"></i> 현재상태</span>
-                    <span class="grid-val val-status">${actionDisp}</span>
-                </div>
-            </div>
-        </div>
+        <tr>
+            <td><div class="course-cell">${s.courseName}</div></td>
+            <td>
+                <span class="bold-text" style="font-size:11px;">${s.name}</span>
+                <span style="color:#cbd5e1; font-size:8.5px;">${s.phone}</span>
+            </td>
+            <td>
+                <span class="blue-text" style="font-size:10px;">${s.dormBuilding}</span>
+                <span style="color:#64748b; font-size:9px;">${s.dormRoom}</span>
+            </td>
+            <td>${shuttleHtml}</td>
+            <td>${actionHtml}</td>
+        </tr>
         `;
     }).join('');
 }
