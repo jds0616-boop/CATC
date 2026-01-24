@@ -541,8 +541,8 @@
     gap: 15px;
     padding: 15px; 
     min-height: 0;
-    /* [추가] 자동 스크롤 시 부드럽게 이동 */
-    scroll-behavior: smooth; 
+    /* 스크롤이 즉각적으로 맨 아래로 꽂히도록 behavior를 auto로 설정 */
+    scroll-behavior: auto !important; 
 }
 
     /* 날짜 구분선 */
@@ -1279,6 +1279,25 @@ body.modal-open .app-content {
   <script src="config.js"></script>
   <script>
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
+
+
+
+
+// 1. 먼저 스크롤 함수를 정의합니다 (오류 방지를 위해 함수 위에 배치)
+function scrollToBottomPickup() {
+    const container = document.getElementById('pickupCardContainer');
+    if (!container) return;
+
+    // 즉시 스크롤
+    container.scrollTop = container.scrollHeight;
+
+    // 말풍선이 많을 경우 렌더링 시간을 고려하여 0.1초, 0.3초 뒤에 한 번 더 실행
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 300);
+}
+
+
+
 
 
 // [추가] 노선 분석 및 배차 효율화 계산기
@@ -2626,26 +2645,20 @@ function showActionDetail(dataJson) {
 
 
 
-// [수정] 강사 픽업 뷰 진입 시 플로팅 버튼 표시 및 하단 스크롤
+// [수정] 강사 픽업 뷰 진입 함수
 function showPickupView() {
     currentRID = ""; 
     handleRoomSelection(); 
     document.getElementById('totalStatusView').style.display = "none";
-    document.getElementById('pickupStatusView').style.display = "flex";
+    document.getElementById('pickupStatusView').style.display = "flex"; // 여기서 화면이 나타남
     
     const homeBtn = document.getElementById('floatingHomeBtn');
     if(homeBtn) homeBtn.style.display = "flex";
     
-    // 테이블 렌더링 실행
     renderPickupTable();
-
-    // [추가] 화면이 완전히 표시된 후 하단으로 스크롤 (약간의 지연시간 필요)
-    const container = document.getElementById('pickupCardContainer');
-    if(container) {
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 300); // 0.3초 후 하단으로 이동
-    }
+    
+    // [중요] 화면이 표시된 직후 스크롤 호출
+    scrollToBottomPickup();
 }
 
 
@@ -2673,6 +2686,7 @@ function showStudentShuttleView() {
 
 
 
+// 2. 통합된 renderPickupTable 함수
 function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -2687,7 +2701,6 @@ function renderPickupTable() {
         const items = Object.keys(data).map(k => {
             const item = { id: k, ...data[k] };
             
-            // 승인 상태이면서 예약 시간으로부터 2시간이 지나면 자동으로 'finished' 처리 (기사앱과 연동)
             if (item.status === 'approved' && item.date && item.time) {
                 const scheduledTime = new Date(item.date + ' ' + item.time);
                 const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); 
@@ -2701,7 +2714,6 @@ function renderPickupTable() {
             return item;
         });
 
-        // 실제 DB 상태 업데이트 (변경사항이 있을 때만 실행하여 무한루프 방지)
         if (hasUpdates) firebase.database().ref().update(updates);
 
         if (items.length === 0) {
@@ -2709,13 +2721,11 @@ function renderPickupTable() {
             return;
         }
 
-        // [방어코드] 필수 데이터가 없는 쓰레기 데이터는 필터링
         const validItems = items.filter(r => r.prof && r.date && r.courseRID);
 
-        // 2. 그룹핑 기준: '수송일'이 아니라 '신청일(Created Date)' 기준
+        // 2. 그룹핑 기준: '신청일(Created Date)' 기준
         const grouped = {};
         validItems.forEach(r => {
-            // timestamp가 있으면 신청일로, 없으면 수송일(r.date)을 대신 사용
             const requestDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
             const groupKey = `${requestDate}_${r.prof}_${r.courseRID}`;
             
@@ -2732,11 +2742,10 @@ function renderPickupTable() {
         });
 
         const sortedGroups = Object.values(grouped).sort((a, b) => a.requestDate.localeCompare(b.requestDate));
-        let htmlContent = ""; // 성능을 위해 문자열 변수에 담아 한 번에 주입
+        let htmlContent = ""; 
         let lastDividerDate = "";
 
         sortedGroups.forEach(group => {
-            // 날짜 구분선: 카톡처럼 신청한 날짜 표시
             if(group.requestDate !== lastDividerDate) {
                 htmlContent += `<div class="chat-date-line"><span>${group.requestDate} 요청건</span></div>`;
                 lastDividerDate = group.requestDate;
@@ -2744,18 +2753,13 @@ function renderPickupTable() {
 
             const roomInfo = globalAllData[group.courseRID];
             const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
-            
-            // 그룹 내 모든 요청이 완료/취소되었는지 확인 (말풍선 배경색 결정)
             const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed' || r.status === 'cancelled');
 
-            // 말풍선 내부 일정(편도들) 시간순 정렬
             group.requests.sort((a,b) => (a.time || "").localeCompare(b.time || ""));
 
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 const isFin = r.status === 'finished' || r.status === 'completed';
-                
-                // 실제 수송 날짜와 요일 계산
                 const d = new Date(r.date);
                 const dayNames = ["일","월","화","수","목","금","토"];
                 const dateWithDay = `[${r.date}(${dayNames[d.getDay()]})]`;
@@ -2765,7 +2769,6 @@ function renderPickupTable() {
                         </div>`;
             }).join('');
             
-            // 취소 버튼 (완료되지 않은 건만 노출)
             const cancelButtons = group.requests.map(r => 
                 (r.status !== 'cancelled' && r.status !== 'finished' && r.status !== 'completed') 
                 ? `<button class="btn-cancel-talk" style="margin-left:8px;" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` : ''
@@ -2773,7 +2776,6 @@ function renderPickupTable() {
 
             const bubbleBg = isAllFinished ? "background: #e2e8f0; color: #64748b;" : "background: #fee500; color: #1e293b;";
 
-            // 운영부 말풍선 생성
             htmlContent += `
                 <div class="chat-bubble chat-right" style="opacity: ${isAllFinished ? '0.8' : '1'};">
                     <div class="talk-header" style="text-align:right;">수송요청 ${isAllFinished ? '(완료)' : ''}</div>
@@ -2788,7 +2790,6 @@ function renderPickupTable() {
                     <div class="chat-time">운영부</div>
                 </div>`;
 
-            // 기사님 회신 영역 (승인/마감 시 노출)
             group.requests.forEach(r => {
                 if(r.status === 'approved' || r.status === 'finished' || r.status === 'completed') {
                     const isFin = r.status === 'finished' || r.status === 'completed';
@@ -2810,13 +2811,10 @@ function renderPickupTable() {
         // 화면 갱신
         container.innerHTML = htmlContent;
 
-        // [운영부 최적화] 방금 신청한 건 확인을 위해 항상 맨 아래로 스크롤
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 150);
+        // [핵심] HTML 주입이 끝나면 가장 아래로 스크롤 호출
+        scrollToBottomPickup();
     });
 }
-
 
 
 
