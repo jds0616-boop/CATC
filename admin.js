@@ -3605,38 +3605,65 @@ const printMgr = {
 
 
 
-// [통째로 교체] 통합 설정 및 수송 요청 관리 객체 (최종 통합본)
+// [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
-    // 1. 설정 모달 열기 (기존 기능 100% 유지 + 수송 리스너 추가)
-    openSetupModal: async function() {
-        if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+// [최종] 환경 설정 진입 로직: 비어있는 방은 즉시 오픈, 사용 중인 방은 비번 확인
+
+
+
+
+
+// [수정] 와이드 레이아웃 설정 모달 오픈 및 상태 로드
+openSetupModal: async function() {
+    if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
+    
+    const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
+    const st = statusSnap.val() || {};
+
+    if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+        ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
+        dataMgr.switchRoomAttempt(state.room); 
+        return;
+    }
+
+    // 교수 리스트 로드
+    let profOptions = '<option value="">(선택 안함)</option>';
+    profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
+    document.getElementById('setup-prof-select').innerHTML = profOptions;
+
+    // 담당자 리스트 로드
+    firebase.database().ref('system/coordinators').once('value', snap => {
+        const coords = snap.val() || {};
+        let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
+        Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
+        document.getElementById('setup-coord-select').innerHTML = coordOptions;
         
-        const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
-        const st = statusSnap.val() || {};
-
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            ui.showAlert("⚠️ 제어권 인증이 필요합니다.");
-            dataMgr.switchRoomAttempt(state.room); 
-            return;
-        }
-
-        let profOptions = '<option value="">(선택 안함)</option>';
-        profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
-        document.getElementById('setup-prof-select').innerHTML = profOptions;
-
-        firebase.database().ref('system/coordinators').once('value', snap => {
-            const coords = snap.val() || {};
-            let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
-            Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
-            document.getElementById('setup-coord-select').innerHTML = coordOptions;
-            
-            this.loadCurrentSettings();
-            
-            // [추가] 모달 열릴 때 해당 과정의 수송 대화 내역 로드
-            this.loadTransportChat(); 
+        // 가이드 등록 상태 체크
+        firebase.database().ref(`system/sharedGuide`).once('value', gSnap => {
+            const el = document.getElementById('modalGuideStatus');
+            if(el) {
+                if(gSnap.exists()) {
+                    el.innerHTML = '<i class="fa-solid fa-circle-check"></i> 가이드 PDF가 등록되어 있습니다.';
+                    el.style.color = "#10b981";
+                } else {
+                    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 등록된 가이드 파일이 없습니다.';
+                    el.style.color = "#ef4444";
+                }
+            }
+            this.loadCurrentSettings(); // 나머지 정보 로드
         });
-    },
+    });
+},
 
+
+
+
+
+
+
+
+
+    // 설정을 불러오는 내부 함수 분리
     loadCurrentSettings: function() {
         firebase.database().ref(`courses/${state.room}`).once('value', snap => {
             const data = snap.val() || {};
@@ -3660,6 +3687,7 @@ const setupMgr = {
                     break;
                 }
             }
+
             if (!found && currentRoomValue) {
                 roomSelect.value = "direct";
                 roomDirect.value = currentRoomValue;
@@ -3679,31 +3707,38 @@ const setupMgr = {
         });
     },
 
+    // 선택창 값 변경 감지 함수
     checkDirectInput: function(val) {
         const directInput = document.getElementById('setup-room-direct');
-        if (val === "direct") { directInput.style.display = "block"; directInput.focus(); }
-        else { directInput.style.display = "none"; }
+        if (val === "direct") {
+            directInput.style.display = "block";
+            directInput.focus();
+        } else {
+            directInput.style.display = "none";
+        }
     },
 
     closeSetupModal: function() {
         document.getElementById('courseSetupModal').style.display = 'none';
-        // 창 닫을 때 실시간 감시 종료 (데이터 유실 방지 및 최적화)
-        if(state.room) firebase.database().ref(`courses/${state.room}/transport_requests`).off();
     },
 
-    saveAll: function() {
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 변경할 수 없습니다.");
+saveAll: function() {
+        // [옵저버 제한]
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
+
         const name = document.getElementById('setup-course-name').value.trim();
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const profName = document.getElementById('setup-prof-select').value;
         const coordName = document.getElementById('setup-coord-select').value;
+
         const roomSelectVal = document.getElementById('setup-room-select').value;
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
         if(!name || !sDate || !eDate || !rawPw || !roomName) {
-            alert("필수 항목을 모두 입력해주세요."); return;
+            alert("모든 필수 항목(과정명, 암호, 기간, 장소)을 입력해주세요.");
+            return;
         }
 
         const updates = {};
@@ -3717,172 +3752,21 @@ const setupMgr = {
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
         firebase.database().ref().update(updates).then(() => {
+            document.getElementById('courseNameInput').value = name;
+            document.getElementById('roomPw').value = rawPw;
+            document.getElementById('displayCourseTitle').innerText = name;
+            localStorage.setItem('last_owned_room', state.room);
+            
             ui.showAlert("✅ 설정이 저장되었습니다.");
+            
+            // 1. 팝업창 닫기
             this.closeSetupModal();
+
+            // 2. [핵심 추가] 즉시 방에 다시 입장하여 잠금 화면을 치우고 대시보드를 보여줌
             dataMgr.forceEnterRoom(state.room);
         });
-    },
-
-
-
-
-
-
-// --- 강사 수송 관리 핵심 로직 (중복 제거 및 연동 보완) ---
-
-    // [기능 1] 장소 선택 시 라벨 텍스트 변경 (오송역 -> 항기원 등)
-    updateTransportLabels: function(loc) {
-        const lblIn = document.getElementById('lbl-tr-in');
-        const lblOut = document.getElementById('lbl-tr-out');
-        if(!lblIn || !lblOut) return;
-
-        if(loc === "오송역") {
-            lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역";
-        } else if(loc === "청주터미널") {
-            lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널";
-        } else if(loc === "청주공항") {
-            lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항";
-        } else {
-            lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 목적지";
-        }
-    },
-
-    // [기능 2] 수송 신청 모달 열기
-    openTransportModal: function() {
-        document.getElementById('tr-date').value = new Date().toISOString().substring(0, 10);
-        this.updateTransportLabels("오송역"); // 기본값 오송역으로 라벨 초기화
-        document.getElementById('instTransportModal').style.display = 'flex';
-    },
-
-    // [기능 3] 수송 신청 모달 닫기
-    closeTransportModal: function() {
-        document.getElementById('instTransportModal').style.display = 'none';
-    },
-
-
-
-
-
-
-
-// [최종 연동본] 기존 운영부/기사용 폴더를 건드리지 않고 데이터를 추가하는 로직
-    saveTransportRequest: function() {
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
-        
-        const btn = document.getElementById('btn-tr-submit');
-        const name = document.getElementById('tr-name').value.trim();
-        const phone = document.getElementById('tr-phone').value.trim();
-        const date = document.getElementById('tr-date').value;
-        const cName = document.getElementById('setup-course-name').value;
-
-        if(!name || !phone || !date) {
-            alert("강사 성함, 연락처, 날짜를 모두 입력해주세요.");
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = "전송 중...";
-
-        // [운영부/기사용 표준 데이터 양식] - 기존 시스템과 동일하게 맞춤
-        const data = {
-            room: state.room,            // 강의실
-            courseName: cName,           // 과정명
-            location: document.getElementById('tr-location').value,
-            date: date,
-            timeIn: document.getElementById('tr-time-in').value || "",
-            timeOut: document.getElementById('tr-time-out').value || "",
-            name: name,
-            phone: phone,
-            status: 'pending',           // 대기 상태
-            type: 'instructor',          // 강사가 직접 신청했다는 표시 (운영부와 구분용)
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        };
-
-        // 1. 기사님/운영부가 이미 사용 중인 폴더 주소로 키 생성
-        const newKey = firebase.database().ref().child('instructor_transport_requests').push().key;
-        
-        const updates = {};
-        // 2. 내 강의실 카톡창에도 기록 (강사 확인용)
-        updates[`courses/${state.room}/transport_requests/${newKey}`] = data;
-        
-        // 3. 기사님/운영부 통합 리스트 폴더에 기록 (기존 시스템 연동용)
-        // 이 주소를 써야 기사님 어플 리스트에 나타납니다.
-        updates[`instructor_transport_requests/${newKey}`] = data;
-
-        firebase.database().ref().update(updates).then(() => {
-            alert(`🚀 신청 완료! 기사님 어플 통합 리스트에 반영되었습니다.`);
-            this.closeTransportModal();
-        }).catch(e => {
-            alert("전송 오류: " + e.message);
-        }).finally(() => {
-            btn.disabled = false;
-            btn.innerText = state.editingTransportId ? "수송 정보 수정하기" : "수송 예약 등록하기";
-        });
-    },
-
-
-
-
-
-
-
-
-    // [기능 5] 카카오톡 현황판 실시간 데이터 로드
-    loadTransportChat: function() {
-        const chatBox = document.getElementById('kakao-chat-box');
-        if(!state.room || !chatBox) return;
-
-        const chatRef = firebase.database().ref(`courses/${state.room}/transport_requests`);
-        chatRef.off(); // 중복 방지
-        chatRef.on('value', snap => {
-            chatBox.innerHTML = "";
-            const val = snap.val();
-            if(!val) {
-                chatBox.innerHTML = '<div class="kakao-empty">신청 내역이 없습니다.</div>';
-                return;
-            }
-
-            Object.keys(val).forEach(key => {
-                const req = val[key];
-                const time = new Date(req.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                // 보낸 신청 내역 (노란색 말풍선)
-                let html = `
-                    <div class="kakao-msg sent">
-                        <span class="status-tag tag-pending">신청완료</span><br>
-                        <b>${req.name} 강사님</b><br>
-                        📍 ${req.location} (${req.date})<br>
-                        ⏰ 입: ${req.timeIn || '--'} / 출: ${req.timeOut || '--'}
-                        <span class="kakao-time">${time}</span>
-                    </div>
-                `;
-                
-                // 승인 완료 시 메시지 (흰색 말풍선)
-                if(req.status === 'approved') {
-                    html += `
-                        <div class="kakao-msg received">
-                            <span class="status-tag tag-approved">승인완료</span><br>
-                            기사님이 배정되었습니다.<br>안전하게 모시겠습니다.
-                            <span class="kakao-time">${time}</span>
-                        </div>
-                    `;
-                }
-                chatBox.innerHTML += html;
-            });
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
     }
-}; // setupMgr 마침표
-
-
-
-
-
-
-
-
-
-
+}; // <--- setupMgr 객체를 닫아주는 아주 중요한 마침표입니다.
 
 // [신규] 팝업 내부 전용 과목 관리 기능 (이 함수들이 점선 아래로 들어가야 합니다)
 subjectMgr.renderListInModal = function() {
