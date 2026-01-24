@@ -3608,13 +3608,30 @@ const printMgr = {
 // [최종] 통합 설정 관리 매니저 (직접 입력 대응 버전)
 const setupMgr = {
 // [최종] 환경 설정 진입 로직: 비어있는 방은 즉시 오픈, 사용 중인 방은 비번 확인
-
+occupiedLocations: [], // 이 줄을 추가하세요
 
 
 
 
 // [수정] 와이드 레이아웃 설정 모달 오픈 및 상태 로드
 openSetupModal: async function() {
+
+
+        const allCoursesSnap = await firebase.database().ref('courses').get();
+        const allCourses = allCoursesSnap.val() || {};
+        this.occupiedLocations = [];
+        Object.keys(allCourses).forEach(r => {
+            if (r !== state.room && allCourses[r].status?.roomStatus === 'active') {
+                const loc = allCourses[r].settings?.roomDetailName;
+                if (loc) this.occupiedLocations.push(loc);
+            }
+        });
+
+
+
+
+
+
     if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
     
     const statusSnap = await firebase.database().ref(`courses/${state.room}/status`).get();
@@ -3676,6 +3693,13 @@ openSetupModal: async function() {
             document.getElementById('setup-coord-select').value = s.coordinatorName || "";
 
             const roomSelect = document.getElementById('setup-room-select');
+            Array.from(roomSelect.options).forEach(opt => {
+                if (this.occupiedLocations.includes(opt.value)) {
+                    opt.text = opt.value + " (이미 사용 중)";
+                    opt.disabled = true;
+                    opt.style.color = "#cbd5e1";
+                }
+            });
             const roomDirect = document.getElementById('setup-room-direct');
             const currentRoomValue = s.roomDetailName || "";
 
@@ -3737,6 +3761,10 @@ saveAll: function() {
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
         if(!name || !sDate || !eDate || !rawPw || !roomName) {
+        if (this.occupiedLocations.includes(roomName)) {
+            ui.showAlert(`🚫 '${roomName}'은(는) 이미 사용 중인 장소입니다.`);
+            return;
+        }
             alert("모든 필수 항목(과정명, 암호, 기간, 장소)을 입력해주세요.");
             return;
         }
