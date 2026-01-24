@@ -3759,7 +3759,13 @@ const setupMgr = {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-// [기사님/운영부 어플 연동 완결본]
+
+
+
+
+
+
+// [최종 연동본] 기존 운영부/기사용 폴더를 건드리지 않고 데이터를 추가하는 로직
     saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
         
@@ -3767,20 +3773,19 @@ const setupMgr = {
         const name = document.getElementById('tr-name').value.trim();
         const phone = document.getElementById('tr-phone').value.trim();
         const date = document.getElementById('tr-date').value;
-        const cName = document.getElementById('setup-course-name').value; // 현재 과정명
+        const cName = document.getElementById('setup-course-name').value;
 
         if(!name || !phone || !date) {
             alert("강사 성함, 연락처, 날짜를 모두 입력해주세요.");
             return;
         }
 
-        // 버튼 상태 변경
         btn.disabled = true;
-        btn.innerText = "기사님께 전송 중...";
-        btn.style.background = "#adb5bd";
+        btn.innerText = "전송 중...";
 
+        // [운영부/기사용 표준 데이터 양식] - 기존 시스템과 동일하게 맞춤
         const data = {
-            room: state.room,            // 강의실 (예: A, B, C)
+            room: state.room,            // 강의실
             courseName: cName,           // 과정명
             location: document.getElementById('tr-location').value,
             date: date,
@@ -3788,31 +3793,30 @@ const setupMgr = {
             timeOut: document.getElementById('tr-time-out').value || "",
             name: name,
             phone: phone,
-            status: 'pending',           // 기사님 승인 대기 상태
+            status: 'pending',           // 대기 상태
+            type: 'instructor',          // 강사가 직접 신청했다는 표시 (운영부와 구분용)
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // [연동의 핵심] 기사님 어플이 바라보는 'system/transport_requests' 경로에 저장합니다.
-        const newKey = firebase.database().ref().child('system/transport_requests').push().key;
+        // 1. 기사님/운영부가 이미 사용 중인 폴더 주소로 키 생성
+        const newKey = firebase.database().ref().child('instructor_transport_requests').push().key;
         
         const updates = {};
-        // 1. 내 강의실 카톡창용 (강사 플랫폼 확인용)
+        // 2. 내 강의실 카톡창에도 기록 (강사 확인용)
         updates[`courses/${state.room}/transport_requests/${newKey}`] = data;
         
-        // 2. 운영부/기사님 통합 관리용 (기사님 어플 연동용 주소)
-        // 보냈던 Rules에 맞춰 'system/transport_requests'로 변경함
-        updates[`system/transport_requests/${newKey}`] = data;
+        // 3. 기사님/운영부 통합 리스트 폴더에 기록 (기존 시스템 연동용)
+        // 이 주소를 써야 기사님 어플 리스트에 나타납니다.
+        updates[`instructor_transport_requests/${newKey}`] = data;
 
         firebase.database().ref().update(updates).then(() => {
-            alert(`🚀 [${name}] 강사님 신청 완료!\n기사님 어플과 운영부 플랫폼에 실시간 전달되었습니다.`);
+            alert(`🚀 신청 완료! 기사님 어플 통합 리스트에 반영되었습니다.`);
             this.closeTransportModal();
         }).catch(e => {
-            console.error("전송 오류:", e);
-            alert("전송 실패: " + e.message);
+            alert("전송 오류: " + e.message);
         }).finally(() => {
             btn.disabled = false;
-            btn.innerText = "수송 예약 등록하기";
-            btn.style.background = "#7c3aed";
+            btn.innerText = state.editingTransportId ? "수송 정보 수정하기" : "수송 예약 등록하기";
         });
     },
 
