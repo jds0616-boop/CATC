@@ -461,9 +461,7 @@
 <script>
   let allCourses = {};
   let profReqs = [];
-  const todayForOffset = new Date();
-  const dayOfWeek = todayForOffset.getDay();
-  let weekOffset = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) ? 1 : 0;
+  let weekOffset = 0;
   let prevPendingCount = 0;
   const alarmAudio = new Audio('timer.mp3');
 
@@ -1113,23 +1111,37 @@ function switchTab(n) {
 // [본질적 수리] 토요일~금요일을 한 주 단위로 계산하는 로직
   function getWeekDates(offset) {
     const now = new Date();
-    const day = now.getDay(); // 0(일)~6(토)
+    const day = now.getDay(); // 0(일) ~ 6(토)
 
-    // 1. 오늘 기준 가장 가까운 "지난 토요일"을 찾습니다.
-    // (오늘이 토요일이면 오늘, 일요일이면 어제, 금요일이면 6일 전)
-    const diffToSat = (day + 1) % 7;
-    const baseSat = new Date(now);
-    baseSat.setDate(now.getDate() - diffToSat + (offset * 7));
+    // 1. 이번 주 월요일을 찾습니다.
+    // (오늘이 일요일(0)이면 +1일, 그 외에는 1-오늘요일 만큼 더함)
+    const diffToMon = (day === 0 ? 1 : 1 - day);
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() + diffToMon);
 
-    // 2. 일정표는 월~금 5일치만 보여주므로, 토요일 기준 +2일(월)부터 +6일(금)까지 가져옵니다.
+    // 2. [핵심] 금요일(5)이나 토요일(6)이면 기본 화면을 다음 주 월요일로 타겟팅
+    let baseMonday = new Date(thisMonday);
+    if (day === 5 || day === 6) {
+        baseMonday.setDate(thisMonday.getDate() + 7);
+    }
+
+    // 3. 화살표 버튼(offset) 클릭 시 주 단위 이동 적용
+    baseMonday.setDate(baseMonday.getDate() + (offset * 7));
+
+    // 4. 월요일부터 금요일까지 5일치 날짜 생성
     const dates = [];
     for (let i = 0; i < 5; i++) {
-        const d = new Date(baseSat);
-        d.setDate(baseSat.getDate() + i + 2); // 월, 화, 수, 목, 금
+        const d = new Date(baseMonday);
+        d.setDate(baseMonday.getDate() + i);
         dates.push(d.toISOString().split('T')[0]);
     }
     return dates;
   }
+
+
+
+
+
   function changeWeek(n) { weekOffset += n; renderAll(); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   function askDayOff(date) {
