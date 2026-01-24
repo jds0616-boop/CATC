@@ -499,18 +499,16 @@
 
 
 
-// --- [탭 0] 종합 일정표 (리셋 로직 분리 및 출력 보강 버전) ---
+// --- [탭 0] 종합 일정표 (오류 수정 및 출력 보강 버전) ---
 function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
     const dayNames = ['월','화','수','목','금'];
-    const today = new Date().toISOString().split('T')[0];
-
-    // [1] 리셋 기준일 계산 (일정표 렌더링 밖에서 딱 한 번만 수행)
+    
+    // 리셋 기준일 계산 (지난 토요일)
     const now = new Date();
     const lastSaturday = new Date();
-    // 지난 토요일 00:00 계산
     const diff = (lastSaturday.getDay() + 1) % 7; 
     lastSaturday.setDate(now.getDate() - diff);
     lastSaturday.setHours(0,0,0,0);
@@ -532,34 +530,31 @@ function renderSchedule() {
             const curDate = range[d];
             let content = '';
 
-            // 1. 운행 중단(정비 등) 체크
+            // 1. 운행 중단 체크
             if(profReqs.some(r => r.date === curDate && r.prof === '운행중단')) {
                 content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
             } 
-            // 2. 고정 일정: 입교수송 (월요일 9-10시)
+            // 2. 입교수송
             else if(d === 0 && (h === 9 || h === 10)) { 
                 content = `<div class="cell-event block-entry">입교수송</div>`; 
             } 
-            // 3. 점심 시간 (12시)
+            // 3. 점심 시간
             else if(h === 12) { 
                 content = `<div class="cell-event block-lunch">점심</div>`; 
             } 
             else {
-                // 4. 강사 수송 일정 체크 (승인된 건만)
+                // 4. 강사 수송 일정 체크
                 const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
                 if(matchedProf.length > 0) {
                     const names = matchedProf.length > 1 ? `${matchedProf[0].prof} 외` : matchedProf[0].prof;
-                    content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProf[0]).replace(/"/g, '&quot;')})">${matchedProf[0].dir.replace('항공기술훈련원','항기원')}<br>${names}</div>`;
+                    content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProf[0]).replace(/"/g, '&quot;')})">${matchedProf[0].dir.replace('→','>>')}<br>${names}</div>`;
                 } 
                 else {
                     // 5. 교육생 퇴교수송 일정 체크
                     Object.keys(allCourses).forEach(rid => {
                         const room = allCourses[rid];
                         const dep = room.shuttle?.departure;
-
-                        // 날짜와 시간이 일치하는지 확인
                         if(dep && dep.date === curDate && parseInt(dep.time.split(':')[0]) === h) {
-                            // 신청 인원 확인 (0명이어도 기사님이 공지했으면 표시)
                             content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
                         }
                     });
@@ -570,15 +565,13 @@ function renderSchedule() {
         body.innerHTML += row + '</tr>';
     }
 
-    // [중요] 자동 리셋 로직은 화면을 다 그린 후, 혹은 별도 함수에서 비동기로 처리
-    // (일정표 렌더링 도중에 DB를 삭제하면 데이터가 꼬임)
-    if (h === 18 && d === 4) { // 루프 마지막에 체크
-       checkAndResetOldData(lastSaturdayStr);
-    }
+    // [수정] 오류가 났던 리셋 함수 호출 방식을 안전하게 변경
+    checkAndResetOldData(lastSaturdayStr);
 }
 
-// 별도로 분리된 데이터 정리 함수
+// 데이터 정리 함수 (안전하게 분리)
 function checkAndResetOldData(limitDate) {
+    if (!allCourses) return;
     Object.keys(allCourses).forEach(rid => {
         const dep = allCourses[rid].shuttle?.departure;
         if (dep && dep.date && dep.date < limitDate) {
