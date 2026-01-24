@@ -458,6 +458,9 @@
 </div>
 
 <script src="config.js"></script>
+
+
+
 <script>
   let allCourses = {};
   let profReqs = [];
@@ -465,15 +468,12 @@
   let prevPendingCount = 0;
   const alarmAudio = new Audio('timer.mp3');
 
-function init() {
-    // 1. 강의실 정보 실시간 감시 (삭제/수정 즉시 반영)
+  function init() {
+    // 1. 모든 강의실 정보 실시간 감시 (삭제/수정 즉시 반영)
     firebase.database().ref('courses').on('value', snap => {
-      // 강사플랫폼에서 리셋하면 snap.val()에서 해당 데이터가 사라짐
       allCourses = snap.val() || {}; 
       console.log("데이터 동기화 발생");
       renderAll(); 
-    }, error => {
-      console.error("데이터 연결 끊김:", error);
     });
 
     // 2. 강사 수송 요청 감시
@@ -485,156 +485,88 @@ function init() {
     });
   }
 
-  // --- 알람 시스템 (2회 재생) ---
   function checkNewRequests() {
     const currentPending = profReqs.filter(r => r.status === 'pending').length;
-    if (currentPending > prevPendingCount) {
-        playAlarm(2);
-    }
+    if (currentPending > prevPendingCount) playAlarm(2);
     prevPendingCount = currentPending;
   }
 
   function playAlarm(times) {
     let played = 0;
     const play = () => {
-        alarmAudio.play().catch(e => console.log("Audio Play Blocked"));
+        alarmAudio.play().catch(e => {});
         played++;
         if (played < times) { alarmAudio.onended = play; } else { alarmAudio.onended = null; }
     };
     play();
   }
 
-// [수리] 각 섹션의 렌더링을 독립시켜 에러 전이를 방지함
   function renderAll() { 
-    try { renderSchedule(); } catch(e) { console.error("일정표 업데이트 실패:", e); }
-    try { renderInstructorList(); } catch(e) { console.error("강사리스트 업데이트 실패:", e); }
-    try { renderTraineeManagement(); } catch(e) { console.error("퇴교관리 업데이트 실패:", e); }
+    try { renderSchedule(); } catch(e) { console.error("일정표 에러:", e); }
+    try { renderInstructorList(); } catch(e) { console.error("강사리스트 에러:", e); }
+    try { renderTraineeManagement(); } catch(e) { console.error("퇴교관리 에러:", e); }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-// --- [탭 0] 종합 일정표 (강사 다수 표기 및 아이콘 수정 버전) ---
-function renderSchedule() {
+  // --- [탭 0] 종합 일정표 (주말 다음주 자동 전환 로직 포함) ---
+  function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
     const dayNames = ['월','화','수','목','금'];
     
-    if (!head || !body) return;
-
-    const now = new Date();
-    const lastSaturday = new Date();
-    const diff = (lastSaturday.getDay() + 1) % 7; 
-    lastSaturday.setDate(now.getDate() - diff);
-    lastSaturday.setHours(0,0,0,0);
-    const lastSaturdayStr = lastSaturday.toISOString().split('T')[0];
-
     document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
     head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
     
     let bodyHTML = '';
-
     for(let h=8; h<=18; h++) {
         bodyHTML += `<tr><td class="time-col">${h}:00</td>`;
         for(let d=0; d<5; d++) {
             const curDate = range[d];
-            let content = '';
+            let cellContent = '';
 
-            try {
-                const offItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단');
-                if(offItem) {
-                    content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
-                } 
-                else if(h === 12) { 
-                    content = `<div class="cell-event block-lunch">점심</div>`; 
-                } 
-                else if(d === 0 && (h === 9 || h === 10)) { 
-                    content = `<div class="cell-event block-entry">입교수송</div>`; 
-                } 
-                else {
-                    // [핵심 수정] 해당 시간대에 승인된 모든 강사를 필터링
-                    const matchedProfs = profReqs.filter(r => r.date === curDate && parseInt(String(r.time || "").split(':')[0]) === h && r.status === 'approved');
-                    
-                    if(matchedProfs.length > 0) {
-                        const item = matchedProfs[0];
-                        // 1. 강사가 여러명이면 "강사 N명", 한명이면 "성함"
-                        const profLabel = matchedProfs.length > 1 ? `강사 ${matchedProfs.length}명` : item.prof;
-                        // 2. 화살표를 한 개(>)로 변경하여 공간 절약
-                        const route = (item.dir || "").replace(/→|>>/g, '>');
-                        
-                        // 3. matchedProfs 전체 데이터를 팝업으로 넘김
-                        content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProfs).replace(/"/g, '&quot;')})">${route}<br>${profLabel}</div>`;
-                    } 
-                    else {
-                        Object.keys(allCourses).forEach(rid => {
-                            const room = allCourses[rid];
-                            const dep = room.shuttle?.departure;
-                            if(dep && dep.date === curDate && parseInt(String(dep.time).split(':')[0]) === h) {
-                                content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
-                            }
-                        });
+            const isDayOff = profReqs.some(r => r.date === curDate && r.prof === '운행중단');
+            if(isDayOff) {
+                cellContent = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
+            } else if(h === 12) {
+                cellContent = `<div class="cell-event block-lunch">점심</div>`;
+            } else if(d === 0 && (h === 9 || h === 10)) {
+                cellContent = `<div class="cell-event block-entry">입교수송</div>`;
+            } else {
+                const matchedProfs = profReqs.filter(r => r.status === 'approved' && r.date === curDate && parseInt(String(r.time || "").split(':')[0]) === h);
+                if(matchedProfs.length > 0) {
+                    const item = matchedProfs[0];
+                    const profLabel = matchedProfs.length > 1 ? `강사 ${matchedProfs.length}명` : item.prof;
+                    const route = (item.dir || "").replace(/→|>>/g, '>');
+                    cellContent = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProfs).replace(/"/g, '&quot;')})">${route}<br>${profLabel}</div>`;
+                } else {
+                    for (const rid in allCourses) {
+                        const dep = allCourses[rid]?.shuttle?.departure;
+                        if(dep && dep.date === curDate && parseInt(String(dep.time || "").split(':')[0]) === h) {
+                            cellContent = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
+                            break; 
+                        }
                     }
                 }
-            } catch (e) {
-                content = '';
             }
-            bodyHTML += `<td>${content}</td>`;
+            bodyHTML += `<td>${cellContent}</td>`;
         }
         bodyHTML += `</tr>`;
     }
     body.innerHTML = bodyHTML;
+  }
 
-    if (typeof checkAndResetOldData === 'function') {
-        checkAndResetOldData(lastSaturdayStr);
-    }
-}
-
-
-
-
-
-// 데이터 정리 함수 (안전하게 분리)
-function checkAndResetOldData(limitDate) {
-    if (!allCourses) return;
-    Object.keys(allCourses).forEach(rid => {
-        const dep = allCourses[rid].shuttle?.departure;
-        if (dep && dep.date && dep.date < limitDate) {
-            firebase.database().ref(`courses/${rid}/shuttle/departure`).set(null);
-            firebase.database().ref(`courses/${rid}/shuttle/requests`).set(null);
-        }
-    });
-}
-
-
-
-
-
-
-// [탭 1] 실시간 톡 렌더링 (날짜 정보가 포함된 답변 버전)
+  // [탭 1] 강사 수송 리스트 (지난 일정 음영 처리)
   function renderInstructorList() {
     const allZone = document.getElementById('all-request-container');
-    const newZone = document.getElementById('new-request-container');
-    newZone.innerHTML = '';
+    if (!allZone) return;
     allZone.innerHTML = '<div class="chat-container" id="chat-box"></div>';
     const chatBox = document.getElementById('chat-box');
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const currentTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    const todayStr = new Date().toISOString().split('T')[0];
 
     const grouped = {};
     profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
         const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
-        if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, legs: [] };
+        if (!grouped[groupKey]) grouped[groupKey] = { ...r, legs: [] };
         grouped[groupKey].legs.push(r);
     });
 
@@ -646,649 +578,243 @@ function checkAndResetOldData(limitDate) {
             chatBox.innerHTML += `<div class="chat-date-line"><span>${group.date}</span></div>`;
             lastDate = group.date;
         }
-
         const roomInfo = allCourses[group.courseRID];
         const cName = roomInfo?.settings?.courseName || `과정`;
-        const dayNames = ["일","월","화","수","목","금","토"];
-        const dIdx = new Date(group.date).getDay();
-        const dateWithDay = `${group.date}(${dayNames[dIdx]})`; // 날짜(요일) 형태
-        
+        const isPastGroup = group.date < todayStr;
+        const shading = isPastGroup ? 'opacity: 0.55; filter: grayscale(1);' : '';
+
         let legsHtml = "";
         let repliesHtml = "";
-
-        group.legs.sort((a,b) => a.time.localeCompare(b.time));
-
-        group.legs.forEach(r => {
+        group.legs.sort((a,b) => a.time.localeCompare(b.time)).forEach(r => {
             const isApp = r.status === 'approved';
             const isCan = r.status === 'cancelled';
-            const isPast = (r.date < todayStr) || (r.date === todayStr && r.time < currentTimeStr);
-            
             if(isCan) {
-                legsHtml += `<div style="padding:8px; opacity:0.5; text-decoration:line-through;">🚫 취소됨: ${r.time} ${r.dir}</div>`;
+                legsHtml += `<div style="padding:5px; opacity:0.5; text-decoration:line-through; font-size:12px;">🚫 취소: ${r.time} ${r.dir}</div>`;
                 return;
             }
-
-            legsHtml += `
-                <div class="talk-leg-item ${isPast ? 'leg-is-past' : ''}">
-                    <div style="font-weight:800; color:#0369a1;">
-                        ${r.time} ${r.dir.replace('→',' >> ')} ${isPast ? '(만료)' : ''}
-                    </div>
-                    ${(!isApp && !isPast) ? `
-                        <div class="leg-actions">
-                            <button class="mini-talk-btn ok" onclick="handleSmartApprove('${r.id}')">승인</button>
-                            <button class="mini-talk-btn no" onclick="confirmAction('delete', '${r.id}')">불가</button>
-                        </div>
-                    ` : (isApp ? `<div class="leg-status-done"><i class="fa-solid fa-check"></i> 배차 승인됨</div>` : '')}
-                </div>`;
-
+            legsHtml += `<div class="talk-leg-item" style="padding:5px; border-bottom:1px dashed #eee;">
+                <div style="font-weight:800; color:#0369a1; font-size:13px;">${r.time} ${r.dir.replace('→',' > ')}</div>
+                ${(!isApp && !isPastGroup) ? `
+                    <div style="margin-top:5px; display:flex; gap:5px;">
+                        <button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none; padding:4px 8px; border-radius:4px;" onclick="handleSmartApprove('${r.id}')">승인</button>
+                        <button class="mini-talk-btn" style="background:#f1f5f9; color:#ef4444; border:1px solid #ddd; padding:4px 8px; border-radius:4px;" onclick="confirmAction('delete', '${r.id}')">거절</button>
+                    </div>` : (isApp ? `<div style="color:#10b981; font-size:11px; font-weight:900;">✓ 배차 승인됨</div>` : '')}
+            </div>`;
             if(isApp) {
-                // [수정 포인트] 날짜(dateWithDay) 정보 추가
-                repliesHtml += `
-                    <div class="chat-bubble chat-right">
-                        <div class="bubble-reply">
-                            네 확인했습니다.<br>
-                            <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
-                            ${dateWithDay} [${r.time}]<br>
-                            ${r.dir.replace('→',' >> ')}<br>
-                            배차 승인 완료!
-                        </div>
-                        <div class="chat-time" style="align-self: flex-start;">나(기사)</div>
-                    </div>`;
+                repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply">네 확인했습니다. [${cName}] ${r.prof}님 ${r.date} ${r.time} 배차 승인!</div></div>`;
             }
         });
 
-        chatBox.innerHTML += `
-            <div class="chat-bubble chat-left">
-                <div class="talk-header">운영부 수송요청</div>
-                <div class="bubble-content">
-                    <div class="talk-body">&lt;${cName}&gt; ${group.prof} 강사님 (${formatPhone(group.phone)})</div>
-                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px;">${legsHtml}</div>
-                </div>
-                <div class="chat-time">운영부</div>
-            </div>` + repliesHtml;
+        chatBox.innerHTML += `<div class="chat-bubble chat-left" style="${shading}">
+            <div class="talk-header">운영부 수송요청</div>
+            <div class="bubble-content">
+                <div class="talk-body" style="font-size:13px;"><b>[${cName}] ${group.prof} 강사님</b> (${formatPhone(group.phone)})</div>
+                <div style="margin-top:8px; border-top:1px solid #f1f5f9; padding-top:8px;">${legsHtml}</div>
+            </div>
+        </div>` + repliesHtml;
     });
-
-    const contentArea = document.getElementById('main-content');
-    contentArea.scrollTop = contentArea.scrollHeight;
   }
 
-
-
-
-
-
-
-
-
-
-
-  // 표의 한 줄을 만드는 함수 (기존 createCard 대체)
-  function createTransRow(r) {
-    const isApp = r.status === 'approved';
-    const d = new Date(r.date);
-    const dayNames = ["일","월","화","수","목","금","토"];
-    const dIdx = d.getDay();
-    const dateStr = `${r.date.substring(5)}`;
-
-    return `
-        <div class="trans-row">
-            <div class="tr-cell">
-                <b>${dateStr}</b><span class="day-label d-${dIdx}">${dayNames[dIdx]}</span>
-            </div>
-            <div class="tr-cell" style="font-weight:800;">${r.time}</div>
-            <div class="tr-cell info">
-                <span class="info-route">${r.dir}</span>
-                <span class="info-prof">${r.prof} 강사님</span>
-            </div>
-            <div class="tr-cell btns">
-                ${isApp ? 
-                    `<div class="tr-btn ok active" onclick="confirmAction('cancel', '${r.id}')"><i class="fa-solid fa-rotate-left"></i></div>` : 
-                    `<div class="tr-btn ok" onclick="handleSmartApprove('${r.id}')"><i class="fa-solid fa-check"></i></div>`
-                }
-                <div class="tr-btn del" onclick="confirmAction('delete', '${r.id}')"><i class="fa-solid fa-trash-can"></i></div>
-                <div class="tr-btn call" onclick="window.location.href='tel:${r.phone}'"><i class="fa-solid fa-phone"></i></div>
-            </div>
-        </div>`;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// [탭 1] 스마트 승인 함수 (충돌 내역 상세 표시 버전)
-  async function handleSmartApprove(id) {
-    const target = profReqs.find(r => r.id === id);
-    const targetH = parseInt(target.time.split(':')[0]);
-    let conflictList = []; // 충돌되는 내역들을 담을 리스트
-
-    // 1. 다른 강사 수송 일정과 충돌하는지 확인 (이미 승인된 것들 중)
-    profReqs.forEach(r => {
-        if(r.id !== id && r.status === 'approved' && r.date === target.date) {
-            const otherH = parseInt(r.time.split(':')[0]);
-            if(otherH === targetH) {
-                conflictList.push(`[강사수송] ${r.prof} 강사님 (${r.dir})`);
-            }
-        }
-    });
-
-    // 2. 교육생 퇴교 차량 일정과 충돌하는지 확인
-    Object.values(allCourses).forEach(room => {
-        const dep = room.shuttle?.departure;
-        if(dep && dep.date === target.date) {
-            const depH = parseInt(dep.time.split(':')[0]);
-            if(depH === targetH) {
-                const courseName = room.settings?.courseName || "알 수 없는 과정";
-                conflictList.push(`[교육생퇴교] ${courseName} (#${dep.time})`);
-            }
-        }
-    });
-
-    // 3. 충돌 내역이 있다면 상세히 보여줌
-    if(conflictList.length > 0) {
-        // 충돌 내역을 예쁘게 나열
-        const conflictHtml = conflictList.map(item => 
-            `<div style="color:#ef4444; font-weight:800; margin-top:5px; padding-left:10px;">• ${item}</div>`
-        ).join('');
-
-        showConfirm(
-            "⚠️ 배차 충돌 경고", 
-            `해당 시간대에 이미 다음 일정이 존재합니다:<br>${conflictHtml}<br><br>그래도 승인하시겠습니까?`, 
-            async () => {
-                await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' });
-                closeModal('confirmModal');
-            }
-        );
-    } else {
-        // 충돌이 없으면 바로 승인 확인창
-        confirmAction('approve', id);
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-function renderTraineeManagement() {
+  // [탭 2] 교육생 퇴교 관리 (실시간 버튼 및 주말 노출 보정)
+  function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     if (!area) return;
-    area.innerHTML = '';
-    
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
-    // 주차 정보 계산
+    // 종료된 지 3일이 지나지 않은 과정은 목록에 유지 (금요일 끝난 과정 주말에 보이게)
+    const graceDate = new Date();
+    graceDate.setDate(graceDate.getDate() - 3);
+    const limitStr = graceDate.toISOString().split('T')[0];
+
     const weekNo = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
     const headerTitle = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${weekNo}째주 설정`;
     
-    let listHTML = `
-      <div style="text-align:center; font-weight:900; color:#0f172a; margin-bottom:15px; background:#fff; border:1px solid #e2e8f0; padding:12px; border-radius:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-        📅 ${headerTitle}
-      </div>
+    let listHTML = `<div style="text-align:center; font-weight:900; color:#0f172a; margin-bottom:15px; background:#fff; border:1px solid #e2e8f0; padding:12px; border-radius:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">📅 ${headerTitle}</div>
       <div class="list-wrapper">
         <div class="list-header">
-          <div class="t-cell name">과정명</div>
-          <div class="t-cell">퇴교총원</div>
-          <div class="t-cell">항기원 출발시간</div>
-          <div class="t-cell">공지</div>
+          <div class="t-cell name">과정명</div><div class="t-cell">퇴교총원</div><div class="t-cell">항기원 출발시간</div><div class="t-cell">공지</div>
         </div>`;
 
-    let activeCourseCount = 0;
-
-    // 강의실 목록(A~Z)을 돌면서 실시간 필터링
+    let activeCount = 0;
     Object.keys(allCourses).forEach(rid => {
-        try {
-            const room = allCourses[rid];
-            
-            // [본질적 수정] 강사플랫폼에서 리셋하면 roomStatus가 idle이 되거나 데이터가 사라짐
-            // 상태가 active가 아니면 즉시 리스트 생성에서 제외 (실시간 삭제 효과)
-            if (!room || !room.status || room.status.roomStatus !== 'active') return;
+        const room = allCourses[rid];
+        if (!room || room.status?.roomStatus !== 'active') return;
 
-            const settings = room.settings || {};
-            const period = settings.period || "";
-            const cName = settings.courseName || `[Room ${rid}] 과정명 설정 대기중`;
+        const period = room.settings?.period || "";
+        const endDate = period.includes(" ~ ") ? period.split(" ~ ")[1] : "9999-12-31";
 
-            // 종료일 체크 (종료된 강의 숨김)
-            if (period.includes(" ~ ")) {
-                const endDate = period.split(" ~ ")[1];
-                if (endDate < todayStr) return; 
-            }
+        // 2주차 과정 등 진행 중인 과정 대응: 종료일 3일 전까지 노출
+        if (endDate < limitStr) return; 
 
-            activeCourseCount++; // 활성화된 강의 카운트 증가
+        activeCount++;
+        const dep = room.shuttle?.departure || { time: "", date: "" };
+        const reqs = Object.values(room.shuttle?.requests || {});
+        const subTotal = reqs.filter(r => r.type !== 'car').length;
+        const curT = String(dep.time || "").trim();
 
-            const shuttle = room.shuttle || {};
-            const dep = shuttle.departure || { time: "", date: "" };
-            const reqs = Object.values(shuttle.requests || {});
-            const subTotal = reqs.filter(r => r.type !== 'car').length;
-
-            const curT = String(dep.time || "").trim();
-            const is13 = (curT === '13:00');
-            const is15 = (curT === '15:00');
-            const isManual = (curT !== "" && !is13 && !is15);
-
-            // 해당 과정의 실제 종료일(퇴교일)이 없을 경우 오늘로 가정한 안전장치
-            const targetEndDate = period.includes(" ~ ") ? period.split(" ~ ")[1] : todayStr;
-
-            listHTML += `
-                <div class="course-row">
-                  <div class="t-cell name" style="font-size:12px; font-weight:800; justify-content:flex-start; padding-left:10px; text-align:left; line-height:1.3;">${cName}</div>
-                  <div class="t-cell count" style="cursor:pointer; color:#0ea5e9; font-weight:900;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
-                  <div class="t-cell btns">
-                    <button class="mini-btn ${is13 ? 'active' : ''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00', '${targetEndDate}')">13:00</button>
-                    <button class="mini-btn ${is15 ? 'active' : ''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '15:00', '${targetEndDate}')">15:00</button>
-                    <button class="mini-btn ${isManual ? 'active' : ''}" onclick="event.stopPropagation(); promptManual('${rid}', '${targetEndDate}')">수동</button>
-                  </div>
-                  <div class="t-cell status">
-                    ${curT ? 
-                      `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : 
-                      `<i class="fa-solid fa-minus notice-off" style="opacity:0.2;"></i>`
-                    }
-                  </div>
-                </div>`;
-        } catch (e) {
-            console.error(`Room ${rid} 실시간 렌더링 중 건너뜀:`, e);
-        }
-    });
-
-    // 만약 현재 활성화된 강의가 하나도 없다면 안내 문구 표시
-    if (activeCourseCount === 0) {
-        listHTML += `
-            <div style="padding: 50px 0; text-align:center; color:#94a3b8; font-size:14px; font-weight:600;">
-                <i class="fa-solid fa-info-circle" style="margin-bottom:10px; font-size:24px; display:block;"></i>
-                현재 진행 중인 교육 과정이 없습니다.
+        listHTML += `<div class="course-row">
+              <div class="t-cell name" style="font-size:12px; font-weight:800; justify-content:flex-start; padding-left:10px;">${room.settings.courseName || '과정명 미설정'}</div>
+              <div class="t-cell count" style="cursor:pointer; color:#0ea5e9; font-weight:900;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
+              <div class="t-cell btns">
+                <button class="mini-btn ${curT === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
+                <button class="mini-btn ${curT === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
+                <button class="mini-btn ${curT !== '' && curT !== '13:00' && curT !== '15:00' ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
+              </div>
+              <div class="t-cell status">
+                ${curT ? `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : `<i class="fa-solid fa-minus notice-off" style="opacity:0.2;"></i>`}
+              </div>
             </div>`;
-    }
+    });
+    area.innerHTML = listHTML + (activeCount === 0 ? '<div style="padding:40px; text-align:center; color:#94a3b8;">진행 중인 과정이 없습니다.</div>' : '') + '</div>';
+  }
 
-    listHTML += `</div>`;
-    area.innerHTML = listHTML;
-}
-
-
-
-
-
-
-// [기사님 플랫폼] 모든 확인/저장/충돌체크 통합 함수
-  function confirmAction(type, id, val = null, targetDate = null) {
+  // [공통] 데이터 액션 처리 함수 (충돌 체크 복구)
+  async function confirmAction(type, id, val = null, targetDate = null) {
     const modal = document.getElementById('confirmModal');
     const okBtn = document.getElementById('c-ok-btn');
     
-    // --- 1. 강사 수송 승인 (충돌 체크 로직 복구) ---
-    if(type === 'approve') {
-        const target = profReqs.find(r => r.id === id);
-        const targetH = parseInt(target.time.split(':')[0]);
-        let conflictList = [];
-
-        // 다른 강사 수송 일정과 겹치는지 체크
-        profReqs.forEach(r => {
-            if(r.id !== id && r.status === 'approved' && r.date === target.date) {
-                if(parseInt(r.time.split(':')[0]) === targetH) conflictList.push(`[강사] ${r.prof} (${r.dir})`);
-            }
-        });
-
-        // 교육생 퇴교 일정과 겹치는지 체크
-        Object.values(allCourses).forEach(room => {
-            const dep = room.shuttle?.departure;
-            if(dep && dep.date === target.date && parseInt(dep.time.split(':')[0]) === targetH) {
-                conflictList.push(`[퇴교] ${room.settings?.courseName || '과정'}`);
-            }
-        });
-
-        if(conflictList.length > 0) {
-            document.getElementById('c-title').innerText = "⚠️ 배차 충돌 경고";
-            document.getElementById('c-desc').innerHTML = `해당 시간대에 이미 일정이 있습니다:<br><br>${conflictList.map(v => `<span style="color:#ef4444; font-weight:800;">• ${v}</span>`).join('<br>')}<br><br>그래도 승인하시겠습니까?`;
-        } else {
-            document.getElementById('c-title').innerText = "배차 승인";
-            document.getElementById('c-desc').innerText = "해당 수송을 승인하고 일정표에 등록하시겠습니까?";
-        }
-
-        okBtn.onclick = async () => { 
-            await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
-            closeModal('confirmModal'); 
-        };
-    } 
-    // --- 2. 교육생 퇴교 공지 설정 (날짜/시간 저장 및 실시간 반영) ---
-    else if(type === 'dep') {
+    if(type === 'dep') {
         document.getElementById('c-title').innerText = "퇴교 공지"; 
-        document.getElementById('c-desc').innerHTML = `공지시간: <b style="color:#0ea5e9;">${val}</b><br>퇴교예정: <b style="color:#ef4444;">${targetDate}</b><br><br>해당 과정 종료일에 맞춰 공지하시겠습니까?`;
-        
+        document.getElementById('c-desc').innerHTML = `시간: <b>${val}</b><br>퇴교예정: <b>${targetDate}</b><br><br>공지하시겠습니까?`;
         okBtn.onclick = async () => { 
+            await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ time: val, date: targetDate }); 
             closeModal('confirmModal');
-            // 정확한 Room ID 경로에 저장 (targetDate는 강사가 설정한 전체 과정 종료일)
-            await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ 
-                time: val, 
-                date: targetDate 
-            }); 
-            // [중요] 저장 즉시 리스트를 다시 그려서 버튼 검정색(active) 반영
-            renderTraineeManagement(); 
+            renderAll(); 
         };
-    } 
-    // --- 3. 교육생 퇴교 공지 취소 ---
-    else if(type === 'cancelDep') {
-        if(!confirm("설정된 퇴교 공지 시간을 삭제하시겠습니까?")) return;
-        firebase.database().ref(`courses/${id}/shuttle/departure`).set(null).then(() => {
-            renderTraineeManagement(); 
-        });
+    } else if(type === 'cancelDep') {
+        if(!confirm("이미 설정된 공지 시간을 삭제하시겠습니까?")) return;
+        firebase.database().ref(`courses/${id}/shuttle/departure`).set(null).then(() => renderAll());
         return;
-    }
-    // --- 4. 기타 액션 (승인취소, 삭제) ---
-    else if(type === 'cancel') {
+    } else if(type === 'delete') {
+        document.getElementById('c-title').innerText = "삭제/거절"; 
+        document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>요청을 즉시 삭제합니다.</span>";
+        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('confirmModal'); };
+    } else if(type === 'cancel') {
         document.getElementById('c-title').innerText = "승인 취소"; 
         document.getElementById('c-desc').innerText = "배차 승인을 취소하시겠습니까?";
         okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); closeModal('confirmModal'); };
-    } else if(type === 'delete') {
-        document.getElementById('c-title').innerText = "삭제/거절"; 
-        document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>이 작업은 즉시 삭제됩니다.</span>";
-        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('confirmModal'); };
-    }
-
-    modal.style.display = 'flex';
-  }
-
-
-
-
-
-
-
-
-
-
-
-  function showConfirm(title, desc, callback) {
-    document.getElementById('c-title').innerText = title;
-    document.getElementById('c-desc').innerHTML = desc;
-    document.getElementById('c-ok-btn').onclick = callback;
-    document.getElementById('confirmModal').style.display = 'flex';
-  }
-
-
-
-
-
-
-
-
-function showDetail(type, data) {
-    const modal = document.getElementById('detailModal');
-    const content = document.getElementById('m-content');
-    const title = document.getElementById('m-title');
-    const callBtn = document.getElementById('m-call-btn'); // 기존 하단 공통 버튼은 숨김처리
-    
-    if(callBtn) callBtn.style.display = 'none';
-
-    if(type === 'prof') {
-        title.innerText = "수송 상세 정보";
-        // data는 이제 강사 객체들이 담긴 배열입니다.
-        const info = data[0]; 
-        const route = (info.dir || "").replace(/→|>>/g, '>');
-        
-        let html = `
-            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <span style="color:#64748b; font-size:13px;">일시:</span> <b>${info.date} (${info.time})</b><br>
-                <span style="color:#64748b; font-size:13px;">구간:</span> <b style="color:#0369a1;">${route}</b>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-        `;
-
-        data.forEach(p => {
-            html += `
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                    <div style="text-align:left;">
-                        <div style="font-weight:900; font-size:15px; color:#1e293b;">${p.prof} 강사님</div>
-                        <div style="font-size:13px; color:#64748b; margin-top:2px;">${formatPhone(p.phone)}</div>
-                    </div>
-                    <a href="tel:${p.phone}" style="background:#0ea5e9; color:white; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 4px 6px rgba(14,165,233,0.3);">
-                        <i class="fa-solid fa-phone"></i>
-                    </a>
-                </div>
-            `;
-        });
-        html += `</div>`;
-        content.innerHTML = html;
     }
     modal.style.display = 'flex';
-}
-
-// 휴대폰 번호 포맷팅 함수 (없다면 추가)
-function formatPhone(num) {
-    if(!num) return "번호없음";
-    const s = num.replace(/[^0-9]/g, "");
-    if(s.length === 11) return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
-    return num;
-}
-
-
-
-
-
-
-
-// 현재 탭 번호를 기억할 변수 (맨 위에 선언하거나 함수 밖에 둡니다)
-  let currentTab = 0;
-
-function switchTab(n) {
-    currentTab = n; 
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
-    document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
-    
-    // 홈 버튼 표시 제어
-    const homeBtn = document.getElementById('floating-home');
-    if(homeBtn) homeBtn.style.display = (n === 0) ? 'none' : 'flex';
-
-    // 상단 버튼 글자 변경 (종합일정표일 때만 << 표시)
-    const btnText = document.getElementById('back-btn-text');
-    if (btnText) {
-        btnText.innerText = (n === 0) ? "<<" : "Back";
-    }
   }
 
-// [본질적 수리] 토요일~금요일을 한 주 단위로 계산하는 로직
+  // 수동 시간 선택기 (Time Picker)
+  function promptManual(rid, endDate) {
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.onchange = (e) => {
+        if(e.target.value) confirmAction('dep', rid, e.target.value, endDate);
+    };
+    timeInput.click();
+  }
+
+  // 날짜 계산 (금요일/주말엔 자동으로 다음 주 표시)
   function getWeekDates(offset) {
     const now = new Date();
-    const day = now.getDay(); // 0(일) ~ 6(토)
-
-    // 1. 이번 주 월요일을 찾습니다.
-    // (오늘이 일요일(0)이면 +1일, 그 외에는 1-오늘요일 만큼 더함)
+    const day = now.getDay(); 
     const diffToMon = (day === 0 ? 1 : 1 - day);
-    const thisMonday = new Date(now);
-    thisMonday.setDate(now.getDate() + diffToMon);
-
-    // 2. [핵심] 금요일(5)이나 토요일(6)이면 기본 화면을 다음 주 월요일로 타겟팅
-    let baseMonday = new Date(thisMonday);
-    if (day === 5 || day === 6) {
-        baseMonday.setDate(thisMonday.getDate() + 7);
-    }
-
-    // 3. 화살표 버튼(offset) 클릭 시 주 단위 이동 적용
-    baseMonday.setDate(baseMonday.getDate() + (offset * 7));
-
-    // 4. 월요일부터 금요일까지 5일치 날짜 생성
+    const thisMon = new Date(now);
+    thisMon.setDate(now.getDate() + diffToMon);
+    let baseMon = new Date(thisMon);
+    if (day === 5 || day === 6 || day === 0) baseMon.setDate(thisMon.getDate() + 7);
+    baseMon.setDate(baseMon.getDate() + (offset * 7));
     const dates = [];
     for (let i = 0; i < 5; i++) {
-        const d = new Date(baseMonday);
-        d.setDate(baseMonday.getDate() + i);
+        const d = new Date(baseMon);
+        d.setDate(baseMon.getDate() + i);
         dates.push(d.toISOString().split('T')[0]);
     }
     return dates;
   }
 
-
-
-
-
   function changeWeek(n) { weekOffset += n; renderAll(); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-  function askDayOff(date) {
-    const reason = prompt(`${date} 운행중단 사유를 입력하세요`, "차량 정비");
-    if(reason) firebase.database().ref('system/transport_requests').push({ date, prof: '운행중단', dir: reason, status: 'approved', time: '00:00' });
+  function handleBack() { currentTab === 0 ? location.href = 'potal.html' : switchTab(0); }
+  function switchTab(n) {
+    currentTab = n;
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
+    document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
+    const homeBtn = document.getElementById('floating-home');
+    if(homeBtn) homeBtn.style.display = (n === 0) ? 'none' : 'flex';
+    document.getElementById('back-btn-text').innerText = (n === 0) ? "<<" : "Back";
   }
 
-
-
-
-
-function promptManual(rid, endDate) {
-    // 시계 아이콘(시간 선택기)을 동적으로 생성하여 클릭 유도
-    const timeInput = document.createElement('input');
-    timeInput.type = 'time';
-    timeInput.style.position = 'fixed';
-    timeInput.style.top = '-100px'; // 화면 밖으로 숨김
-    document.body.appendChild(timeInput);
-
-    timeInput.onchange = (e) => {
-        if(e.target.value) {
-            confirmAction('dep', rid, e.target.value, endDate);
-        }
-        document.body.removeChild(timeInput); // 사용 후 제거
-    };
-
-    // 아이폰/안드로이드에서 기본 시간 선택기를 띄움
-    timeInput.showPicker ? timeInput.showPicker() : timeInput.click();
+  function showDetail(type, data) {
+    const modal = document.getElementById('detailModal');
+    const content = document.getElementById('m-content');
+    if (type === 'prof') {
+        const info = data[0];
+        document.getElementById('m-title').innerText = "수송 상세 정보";
+        let html = `<div style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px;"><b>${info.date}</b> [${info.time}]<br><span style="color:#0ea5e9;">${info.dir.replace(/→|>>/g, '>')}</span></div><div style="display:flex; flex-direction:column; gap:8px;">`;
+        data.forEach(p => {
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #eee;">
+                        <div style="text-align:left;"><b>${p.prof}</b><br><small>${formatPhone(p.phone)}</small></div>
+                        <a href="tel:${p.phone}" style="background:#0ea5e9; color:white; width:35px; height:35px; border-radius:8px; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-phone"></i></a>
+                     </div>`;
+        });
+        content.innerHTML = html + "</div>";
+    }
+    modal.style.display = 'flex';
   }
 
-
-
-
-
-
-function showDrillDown(type, filterRid = null) {
+  function showDrillDown(type, filterRid = null) {
     const area = document.getElementById('m-content');
     const title = document.getElementById('m-title');
-    document.getElementById('m-call-btn').style.display = 'none';
-    area.innerHTML = '';
-    
-    let list = [];
-    Object.keys(allCourses).forEach(rid => {
-        if(filterRid && rid !== filterRid) return;
-        const roomName = allCourses[rid].settings?.courseName || "상세 명단";
-        if(filterRid) title.innerText = roomName; 
-        
-        const reqs = Object.values(allCourses[rid].shuttle?.requests || {});
-        reqs.forEach(req => {
-            if(req.type !== 'car') list.push({...req});
-        });
-    });
-
-    if(list.length === 0) {
-        area.innerHTML = "<div style='text-align:center; padding:20px;'>신청자가 없습니다.</div>";
-    } else {
-        const groups = {
-            osong: { name: "🚅 오송역", items: [] },
-            terminal: { name: "🚌 터미널", items: [] },
-            airport: { name: "✈️ 공항", items: [] }
-        };
-
-        list.forEach(item => { if(groups[item.type]) groups[item.type].items.push(item); });
-
-        let groupHTML = '';
-        ['osong', 'terminal', 'airport'].forEach(key => {
-            const g = groups[key];
-            if(g.items.length > 0) {
-                groupHTML += `
-                    <div class="popup-group">
-                        <div class="group-title">
-                            <span>${g.name}</span> 
-                            <span style="color:#0ea5e9;">${g.items.length}명</span>
-                        </div>
-                        <div class="group-grid">`; // 그리드 시작
-                
-                g.items.forEach(person => {
-                    groupHTML += `
-                        <div class="grid-name-item" onclick="window.location.href='tel:${person.phone}'">
-                            ${person.name}
-                        </div>`;
-                });
-
-                groupHTML += `</div></div>`; // 그리드 및 그룹 종료
+    const room = allCourses[filterRid];
+    title.innerText = room?.settings?.courseName || "퇴교 명단";
+    const reqs = Object.values(room?.shuttle?.requests || {}).filter(r => r.type !== 'car');
+    if(reqs.length === 0) { area.innerHTML = "<div style='padding:20px;'>신청자가 없습니다.</div>"; }
+    else {
+        const groups = { osong: "🚅 오송역", terminal: "🚌 터미널", airport: "✈️ 공항" };
+        let html = '';
+        Object.keys(groups).forEach(key => {
+            const list = reqs.filter(r => r.type === key);
+            if(list.length > 0) {
+                html += `<div style="margin-bottom:15px; text-align:left;"><div style="font-weight:900; color:#0ea5e9; border-bottom:1px solid #f1f5f9;">${groups[key]} (${list.length}명)</div><div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-top:8px;">`;
+                list.forEach(p => { html += `<div style="background:#f1f5f9; padding:8px 2px; font-size:12px; font-weight:800; text-align:center;" onclick="window.location.href='tel:${p.phone}'">${p.name}</div>`; });
+                html += `</div></div>`;
             }
         });
-        area.innerHTML = groupHTML;
+        area.innerHTML = html;
     }
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-
-
-
-
-// 뒤로가기 클릭 시 동작
-  function handleBack() {
-    if (currentTab === 0) {
-        // 종합 일정표라면 사용자가 제공한 potal.html로 이동
-        location.href = 'potal.html';
-    } else {
-        // 다른 탭이라면 종합 일정표(홈)로 이동
-        switchTab(0);
-    }
+  async function handleSmartApprove(id) {
+    const target = profReqs.find(r => r.id === id);
+    const targetH = parseInt(target.time.split(':')[0]);
+    let conflict = [];
+    profReqs.forEach(r => { if(r.id !== id && r.status === 'approved' && r.date === target.date && parseInt(r.time.split(':')[0]) === targetH) conflict.push(`${r.prof}(강사)`); });
+    Object.values(allCourses).forEach(room => { const dep = room.shuttle?.departure; if(dep?.date === target.date && parseInt(dep.time.split(':')[0]) === targetH) conflict.push(`${room.settings.courseName}(퇴교)`); });
+    if(conflict.length > 0) { if(!confirm(`⚠️ 다음 일정과 겹칩니다:\n${conflict.join('\n')}\n그래도 승인하시겠습니까?`)) return; }
+    await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' });
   }
 
-// 종합 일정표 화면 캡쳐 및 이미지 저장 함수
-  async function captureSchedule() {
-    const area = document.getElementById('capture-area');
-    const weekText = document.getElementById('week-range').innerText;
-    
-    // 버튼을 잠시 숨기거나 표시를 조절할 필요 없이 지정된 영역만 찍습니다.
-    try {
-      const canvas = await html2canvas(area, {
-        backgroundColor: "#f1f5f9", // 배경색 유지
-        scale: 2, // 2배 선명하게 캡쳐
-        logging: false
-      });
-      
-      const link = document.createElement('a');
-      link.download = `KAC_차량지원_일정표(${weekText}).png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (e) {
-      alert("캡쳐 기능을 실행할 수 없습니다. 브라우저 보안 설정을 확인하세요.");
-      console.error(e);
-    }
-  }
-
-
-// 숫자를 휴대폰 번호 형식(하이픈)으로 바꿔주는 함수
   function formatPhone(num) {
     if (!num) return "";
-    // 숫자만 남기기
     const s = num.replace(/[^0-9]/g, "");
-    if (s.length === 11) {
-      return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
-    } else if (s.length === 10) {
-      return s.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
-    }
-    return num; // 형식이 안 맞으면 그냥 원본 출력
+    return s.length === 11 ? s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3") : num;
   }
 
+  async function captureSchedule() {
+    const area = document.getElementById('capture-area');
+    try {
+      const canvas = await html2canvas(area, { backgroundColor: "#f1f5f9", scale: 2 });
+      const link = document.createElement('a');
+      link.download = `일정표.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) { alert("캡쳐 실패"); }
+  }
 
-
+  function askDayOff(date) {
+    const reason = prompt(`${date} 운행중단 사유`, "차량 정비");
+    if(reason) firebase.database().ref('system/transport_requests').push({ date, prof: '운행중단', dir: reason, status: 'approved', time: '00:00' });
+  }
 
   init();
 </script>
+
+
 </body>
 </html>
