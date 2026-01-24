@@ -2284,7 +2284,7 @@ function showStudentShuttleView() {
 
 
 
- 
+
 function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -2295,15 +2295,11 @@ function renderPickupTable() {
         const updates = {};
         let hasUpdates = false;
 
-        // 1. 데이터 배열화 및 자동 종료(마감) 로직 연동
         const items = Object.keys(data).map(k => {
             const item = { id: k, ...data[k] };
-            
-            // [연동] 기사 플랫폼과 동일하게 승인 후 2시간 지나면 자동으로 'finished' 처리
             if (item.status === 'approved' && item.date && item.time) {
                 const scheduledTime = new Date(item.date + ' ' + item.time);
-                const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); // 2시간 후
-                
+                const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000);
                 if (now > limitTime && !isNaN(scheduledTime.getTime())) {
                     updates[`system/transport_requests/${k}/status`] = 'finished';
                     item.status = 'finished';
@@ -2313,34 +2309,19 @@ function renderPickupTable() {
             return item;
         });
 
-        // 실제 DB 상태 업데이트 (무한루프 방지를 위해 변경사항 있을 때만 실행)
-        if (hasUpdates) {
-            firebase.database().ref().update(updates);
-        }
-
+        if (hasUpdates) firebase.database().ref().update(updates);
         if (items.length === 0) {
             container.innerHTML = '<div style="padding:50px; color:#fff; text-align:center; font-size:14px; font-weight:800;">수송 내역이 없습니다.</div>';
             return;
         }
 
-        // [방어코드] 필수 데이터가 없는 데이터 필터링
         const validItems = items.filter(r => r.prof && r.date && r.courseRID);
-
-        // 2. 그룹핑 기준 변경: '수송일'이 아니라 '신청일(Created Date)' 기준
         const grouped = {};
         validItems.forEach(r => {
-            // timestamp가 있으면 해당 날짜를, 없으면 수송일(r.date)을 신청일로 간주
             const requestDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
             const groupKey = `${requestDate}_${r.prof}_${r.courseRID}`;
-            
             if (!grouped[groupKey]) {
-                grouped[groupKey] = { 
-                    requestDate: requestDate, 
-                    prof: r.prof, 
-                    phone: r.phone, 
-                    courseRID: r.courseRID, 
-                    requests: [] 
-                };
+                grouped[groupKey] = { requestDate, prof: r.prof, phone: r.phone, courseRID: r.courseRID, requests: [] };
             }
             grouped[groupKey].requests.push(r);
         });
@@ -2350,16 +2331,13 @@ function renderPickupTable() {
         let lastDividerDate = "";
 
         sortedGroups.forEach(group => {
-            // 구분선: 카톡처럼 신청한 당일 날짜 표시
             if(group.requestDate !== lastDividerDate) {
-                html += `<div class="chat-date-line"><span>${group.requestDate} (요청일)</span></div>`;
+                html += `<div class="chat-date-line"><span>${group.requestDate} 요청건</span></div>`;
                 lastDividerDate = group.requestDate;
             }
 
             const roomInfo = globalAllData[group.courseRID];
             const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
-            
-            // 해당 그룹 내 모든 요청이 완료/취소 되었는지 확인 (배경색 결정용)
             const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed' || r.status === 'cancelled');
 
             group.requests.sort((a,b) => (a.time || "").localeCompare(b.time || ""));
@@ -2367,60 +2345,46 @@ function renderPickupTable() {
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 const isFin = r.status === 'finished' || r.status === 'completed';
-                let statusTxt = isCan ? '(취소)' : (isFin ? '(완료)' : '');
-                let lineStyle = isCan ? "text-decoration:line-through; opacity:0.5;" : (isFin ? "color:#94a3b8;" : "");
-                
-                // 말풍선 내부에 실제 수송 날짜와 요일 표시
                 const d = new Date(r.date);
                 const dayNames = ["일","월","화","수","목","금","토"];
                 const dateWithDay = `${r.date}(${dayNames[d.getDay()]})`;
-
-                return `<div style="${lineStyle} margin-bottom:2px;">
-                            <span style="font-size:11px; font-weight:800;">[${dateWithDay}]</span> ${r.time} ${r.dir.replace('→',' >> ')} ${statusTxt}
+                
+                return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':isFin?'color:#94a3b8;':''} font-size:13px; margin-bottom:3px;">
+                            <b>[${dateWithDay}] ${r.time}</b> ${r.dir.replace('→',' > ')} ${isCan?'(취소)':isFin?'(완료)':''}
                         </div>`;
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
                 (r.status !== 'cancelled' && r.status !== 'finished' && r.status !== 'completed') 
-                ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` 
-                : ''
-            ).join(' ');
+                ? `<button class="btn-cancel-talk" style="margin-left:8px;" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` : ''
+            ).join('');
 
-            // 완료된 건 배경을 회색으로
             const bubbleBg = isAllFinished ? "background: #e2e8f0; color: #64748b;" : "background: #fee500; color: #1e293b;";
-            const headerTxt = isAllFinished ? "수송요청 (완료됨)" : "수송요청";
 
             html += `
                 <div class="chat-bubble chat-right" style="opacity: ${isAllFinished ? '0.8' : '1'};">
-                    <div class="talk-header" style="text-align:right;">${headerTxt}</div>
-                    <div class="bubble-admin" style="${bubbleBg}">
-                        <div class="talk-body">
-                            <b style="font-size:13px; color:inherit;">&lt;${cName}&gt;</b>
-                            <div style="font-size:12px; margin:5px 0;">- ${group.prof} 강사님 (${formatPhone(group.phone)})</div>
-                            <div style="border-top:1px dashed rgba(0,0,0,0.1); padding-top:5px; margin-top:5px;">
-                                ${timeLines}
-                            </div>
+                    <div class="talk-header" style="text-align:right;">수송요청 ${isAllFinished ? '(완료)' : ''}</div>
+                    <div class="bubble-admin" style="${bubbleBg} padding:12px; border-radius:12px 0 12px 12px;">
+                        <div style="font-size:11px; opacity:0.7; font-weight:800; margin-bottom:3px;">${cName}</div>
+                        <div style="font-size:14px; font-weight:900; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.05); padding-bottom:5px;">
+                            ${group.prof} 강사님 <small style="font-weight:700; opacity:0.8;">(${formatPhone(group.phone)})</small>
                         </div>
-                        <div class="talk-footer" style="justify-content: flex-end;">
-                            <div style="display:flex; gap:8px;">${cancelButtons}</div>
-                        </div>
+                        <div class="talk-body">${timeLines}</div>
+                        ${cancelButtons ? `<div class="talk-footer" style="justify-content: flex-end; margin-top:5px;">${cancelButtons}</div>` : ''}
                     </div>
                     <div class="chat-time">나(운영부)</div>
                 </div>`;
 
-            // 기사님 회신 영역 (승인/완료 시 노출)
             group.requests.forEach(r => {
                 if(r.status === 'approved' || r.status === 'finished' || r.status === 'completed') {
                     const isFin = r.status === 'finished' || r.status === 'completed';
-                    const driverMsg = isFin ? '✅ 운행이 종료(마감)되었습니다.' : '네, 확인했습니다. 배차 승인 완료!';
-                    
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
-                            <div class="bubble-driver" style="${isFin ? 'background:#f1f5f9; color:#94a3b8;' : ''}">
-                                ${driverMsg}
-                                <div style="font-size:11px; margin-top:5px; border-top:1px solid rgba(0,0,0,0.05); padding-top:5px;">
-                                    <b>${r.prof} 강사님</b> [${r.date} ${r.time}]<br>${r.dir}
+                            <div class="bubble-driver" style="${isFin ? 'background:#f1f5f9; color:#94a3b8;' : ''} padding:10px; border-radius:0 12px 12px 12px;">
+                                <div style="font-weight:800; font-size:13px;">${isFin ? '✅ 운행 마감' : '확인했습니다. 배차 승인!'}</div>
+                                <div style="font-size:11px; margin-top:4px; opacity:0.8;">
+                                    ${r.prof} [${r.date} ${r.time}] ${r.dir}
                                 </div>
                             </div>
                             <div class="chat-time">운전원</div>
@@ -2428,11 +2392,19 @@ function renderPickupTable() {
                 }
             });
         });
-
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
     });
 }
+
+
+
+
+
+
+
+ 
+
 
 
 // [수정] 교육생 퇴교차량 통합 테이블 그리기
