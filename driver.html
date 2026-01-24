@@ -164,7 +164,15 @@
 
 
 
-    
+    /* 기존 .cell-event 스타일을 아래와 같이 수정하거나 추가하세요 */
+.cell-event { 
+    border-radius: 4px; padding: 4px 2px; height: 100%; 
+    display: flex; flex-direction: column; justify-content: center; 
+    font-weight: 800; line-height: 1.2; 
+    cursor: pointer; /* 마우스 손가락 모양 추가 */
+    transition: background 0.2s;
+}
+.cell-event:hover { filter: brightness(0.95); }
     .cell-event { border-radius: 4px; padding: 4px 2px; height: 100%; display: flex; flex-direction: column; justify-content: center; font-weight: 800; line-height: 1.2; }
     .block-entry { background: #eff6ff; color: #1e40af; border: 1px solid #1e40af; }
     .block-prof { background: #fae8ff; color: #a21caf; border: 1px solid #a21caf; }
@@ -499,7 +507,7 @@
 
 
 
-// --- [탭 0] 종합 일정표 (데이터 누락/에러 방지 강화 버전) ---
+// --- [탭 0] 종합 일정표 (강사 다수 표기 및 아이콘 수정 버전) ---
 function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
@@ -508,7 +516,6 @@ function renderSchedule() {
     
     if (!head || !body) return;
 
-    // 1. 리셋 기준일 계산 (지난 토요일)
     const now = new Date();
     const lastSaturday = new Date();
     const diff = (lastSaturday.getDay() + 1) % 7; 
@@ -516,49 +523,43 @@ function renderSchedule() {
     lastSaturday.setHours(0,0,0,0);
     const lastSaturdayStr = lastSaturday.toISOString().split('T')[0];
 
-    // 주간 범위 표시
     document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
-    
-    // 헤더 출력
     head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
     
     let bodyHTML = '';
 
-    // 시간대별(8시~18시) 루프
     for(let h=8; h<=18; h++) {
         bodyHTML += `<tr><td class="time-col">${h}:00</td>`;
-        
-        // 요일별(월~금) 루프
         for(let d=0; d<5; d++) {
             const curDate = range[d];
             let content = '';
 
             try {
-                // [A] 운행 중단 체크
                 const offItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단');
                 if(offItem) {
                     content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
                 } 
-                // [B] 고정 일정: 점심 시간 (12시)
                 else if(h === 12) { 
                     content = `<div class="cell-event block-lunch">점심</div>`; 
                 } 
-                // [C] 고정 일정: 입교수송 (월요일 9-10시)
                 else if(d === 0 && (h === 9 || h === 10)) { 
                     content = `<div class="cell-event block-entry">입교수송</div>`; 
                 } 
                 else {
-                    // [D] 강사 수송 일정 체크
-                    const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
-                    if(matchedProf.length > 0) {
-                        const item = matchedProf[0];
-                        const names = matchedProf.length > 1 ? `${item.prof} 외` : item.prof;
-                        // 안전장치: dir이 없을 경우를 대비
-                        const route = (item.dir || "").replace('→','>>').replace('항공기술훈련원','항기원');
-                        content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(item).replace(/"/g, '&quot;')})">${route}<br>${names}</div>`;
+                    // [핵심 수정] 해당 시간대에 승인된 모든 강사를 필터링
+                    const matchedProfs = profReqs.filter(r => r.date === curDate && parseInt(String(r.time || "").split(':')[0]) === h && r.status === 'approved');
+                    
+                    if(matchedProfs.length > 0) {
+                        const item = matchedProfs[0];
+                        // 1. 강사가 여러명이면 "강사 N명", 한명이면 "성함"
+                        const profLabel = matchedProfs.length > 1 ? `강사 ${matchedProfs.length}명` : item.prof;
+                        // 2. 화살표를 한 개(>)로 변경하여 공간 절약
+                        const route = (item.dir || "").replace(/→|>>/g, '>');
+                        
+                        // 3. matchedProfs 전체 데이터를 팝업으로 넘김
+                        content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProfs).replace(/"/g, '&quot;')})">${route}<br>${profLabel}</div>`;
                     } 
                     else {
-                        // [E] 교육생 퇴교수송 일정 체크
                         Object.keys(allCourses).forEach(rid => {
                             const room = allCourses[rid];
                             const dep = room.shuttle?.departure;
@@ -569,21 +570,22 @@ function renderSchedule() {
                     }
                 }
             } catch (e) {
-                console.error("일정 렌더링 에러:", e);
-                content = ''; // 에러 발생 시 해당 칸만 비움
+                content = '';
             }
             bodyHTML += `<td>${content}</td>`;
         }
         bodyHTML += `</tr>`;
     }
-
     body.innerHTML = bodyHTML;
 
-    // 데이터 정리 함수 호출
     if (typeof checkAndResetOldData === 'function') {
         checkAndResetOldData(lastSaturdayStr);
     }
 }
+
+
+
+
 
 // 데이터 정리 함수 (안전하게 분리)
 function checkAndResetOldData(limitDate) {
@@ -984,17 +986,67 @@ function renderTraineeManagement() {
     document.getElementById('confirmModal').style.display = 'flex';
   }
 
-  function showDetail(type, data) {
+
+
+
+
+
+
+
+function showDetail(type, data) {
     const modal = document.getElementById('detailModal');
     const content = document.getElementById('m-content');
+    const title = document.getElementById('m-title');
+    const callBtn = document.getElementById('m-call-btn'); // 기존 하단 공통 버튼은 숨김처리
+    
+    if(callBtn) callBtn.style.display = 'none';
+
     if(type === 'prof') {
-        document.getElementById('m-title').innerText = "수송 상세 정보";
-        content.innerHTML = `<b>강사명:</b> ${data.prof} 강사님<br><b>구간:</b> ${data.dir}<br><b>시간:</b> ${data.time}<br><b>날짜:</b> ${data.date}`;
-        document.getElementById('m-call-btn').style.display = 'block'; 
-        document.getElementById('m-call-btn').onclick = () => window.location.href = "tel:" + data.phone;
+        title.innerText = "수송 상세 정보";
+        // data는 이제 강사 객체들이 담긴 배열입니다.
+        const info = data[0]; 
+        const route = (info.dir || "").replace(/→|>>/g, '>');
+        
+        let html = `
+            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <span style="color:#64748b; font-size:13px;">일시:</span> <b>${info.date} (${info.time})</b><br>
+                <span style="color:#64748b; font-size:13px;">구간:</span> <b style="color:#0369a1;">${route}</b>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+        `;
+
+        data.forEach(p => {
+            html += `
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <div style="text-align:left;">
+                        <div style="font-weight:900; font-size:15px; color:#1e293b;">${p.prof} 강사님</div>
+                        <div style="font-size:13px; color:#64748b; margin-top:2px;">${formatPhone(p.phone)}</div>
+                    </div>
+                    <a href="tel:${p.phone}" style="background:#0ea5e9; color:white; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; text-decoration:none; box-shadow:0 4px 6px rgba(14,165,233,0.3);">
+                        <i class="fa-solid fa-phone"></i>
+                    </a>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        content.innerHTML = html;
     }
     modal.style.display = 'flex';
-  }
+}
+
+// 휴대폰 번호 포맷팅 함수 (없다면 추가)
+function formatPhone(num) {
+    if(!num) return "번호없음";
+    const s = num.replace(/[^0-9]/g, "");
+    if(s.length === 11) return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    return num;
+}
+
+
+
+
+
+
 
 // 현재 탭 번호를 기억할 변수 (맨 위에 선언하거나 함수 밖에 둡니다)
   let currentTab = 0;
