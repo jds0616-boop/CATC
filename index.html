@@ -695,77 +695,54 @@ function sendAns(idx) {
 
 
         
+// [수정] index.html의 최하단 (async function init() { ... })
 (async function init() {
-            // 1. URL 파라미터에서 방 번호를 최우선으로 가져오기
-            const params = new URLSearchParams(window.location.search);
-            const directRoom = params.get('room'); // ?room=J 등
-            const code = params.get('code');       // 단축코드
+    const params = new URLSearchParams(window.location.search);
+    const directRoom = params.get('room'); // 여기서 'C'를 가져옴
+    const code = params.get('code');
 
-            // 강력하게 현재 방 번호 결정 (기존 변수 오염 방지)
-            if (directRoom) {
-                currentRoom = directRoom;
-            } else if (code) {
-                currentRoom = await resolveRoomFromCode(code);
-            }
+    // 1. 방 번호를 그 무엇보다 먼저 확정짓습니다.
+    if (directRoom) {
+        currentRoom = directRoom;
+    } else if (code) {
+        currentRoom = await resolveRoomFromCode(code);
+    }
 
-            // 2. 방 정보가 아예 없는 경우 (직접 접속 등) 처리
-            if (!currentRoom) { 
-                document.getElementById('roomBadge').innerText = "Select Room";
-                document.getElementById('landingBadge').innerText = "강의실을 선택해주세요";
-                document.getElementById('landingTitle').innerText = "KAC Student Platform";
-                
-                const btn = document.querySelector('.btn-enter');
-                if (btn) {
-                    btn.innerHTML = '강의실 목록 보기 <i class="fa-solid fa-list"></i>';
-                    btn.onclick = function() {
-                        document.getElementById('landingPage').style.display = 'none';
-                        if (typeof openMenu === 'function') openMenu();
-                    };
-                }
-                return;
-            }
+    // 2. 방 정보가 없으면 중단
+    if (!currentRoom) {
+        alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
+        return;
+    }
 
-            // 3. 결정된 방 번호(currentRoom)에 맞춰 UI 및 로컬 저장소 데이터 매칭
-            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`; 
-            document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-            
-            // 방마다 독립적인 데이터를 가져오도록 키값 설정
-            myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
-            myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
-            // 마지막 질문 시간도 방별로 관리
-            lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
+    // 3. UI 및 로컬 데이터를 현재 방(C)에 맞게 즉시 리셋
+    document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+    document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+    
+    // 방마다 독립적인 데이터 로드 (A 데이터가 C로 섞이지 않게 함)
+    myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
+    myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
 
-            // 4. Firebase 경로 설정 (결정된 방 번호 기반)
-            const db = firebase.database(); 
-            const rPath = `courses/${currentRoom}`;
-            dbRef = { 
-                qa: db.ref(`${rPath}/questions`), 
-                quiz: db.ref(`${rPath}/activeQuiz`), 
-                ans: db.ref(`${rPath}/quizAnswers`), 
-                settings: db.ref(`${rPath}/settings`), 
-                status: db.ref(`${rPath}/status`), 
-                connections: db.ref(`${rPath}/connections`) 
-            };
+    // 4. DB 경로 설정 (현시점 방 번호 C 기준)
+    const db = firebase.database();
+    const rPath = `courses/${currentRoom}`;
+    dbRef = { 
+        qa: db.ref(`${rPath}/questions`), 
+        quiz: db.ref(`${rPath}/activeQuiz`), 
+        ans: db.ref(`${rPath}/quizAnswers`), 
+        settings: db.ref(`${rPath}/settings`), 
+        status: db.ref(`${rPath}/status`), 
+        connections: db.ref(`${rPath}/connections`) 
+    };
 
-            // 5. [핵심] 방 정보와 DB 경로가 완전히 설정된 직후 출석체크 로직 실행
-            // 이 시점에 room은 무조건 J(혹은 현재 찍은 QR의 방)여야 함
-            handleInternalAttendance(currentRoom); 
+    // ★ 5. 방 번호(currentRoom)가 'C'로 확실히 고정된 "다음에" 출석 체크 실행
+    // 이렇게 해야 handleInternalAttendance 안의 room 인자가 'C'가 됩니다.
+    handleInternalAttendance(currentRoom); 
 
-            // 6. 기타 리스너 및 UI 초기화
-            if (typeof setupListeners === 'function') setupListeners(); 
-            if (typeof checkCooldown === 'function') checkCooldown(); 
-            if (typeof initKeyboardFix === 'function') initKeyboardFix();
-
-            // 7. 퀴즈 상태 동기화 (최종 결과창 노출 여부 결정)
-            dbRef.status.once('value', s => {
-                const st = s.val() || {};
-                // 요약창 모드가 아니면 퀴즈 레이어를 숨김
-                if(st.quizStep !== 'summary') {
-                    document.getElementById('quizOverlay').style.display = 'none';
-                    document.getElementById('quizResultBox').style.display = 'none';
-                }
-            });
-        })();
+    // 6. 나머지 리스너 실행
+    setupListeners(); 
+    checkCooldown(); 
+    initKeyboardFix();
+})();
 
 
 
@@ -2319,42 +2296,35 @@ function watchNotices() {
 
 
 
-// [최종 수정] 강의실별 독립 출석체크 로직 (강의실 간 간섭 방지 강화)
 function handleInternalAttendance(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
-    // 0. QR 스캔 모드가 아니거나 방 번호가 없으면 실행 중단
     if (!isCheckIn || !room) return;
 
-    // 1. 날짜 및 해당 강의실 전용 고유 키 생성
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // [중요] 키 이름에 room을 넣어 Room A와 Room J의 기록을 브라우저에서 완전히 분리합니다.
+    // storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
     const storageKey = `kac_attended_${room}_${today}`; 
 
-    // 2. 브라우저 기록 확인 (중복 출석 방지)
     if (localStorage.getItem(storageKey)) {
-        // 어떤 강의실인지 알림창에 명시하여 혼동을 방지합니다.
-        alert(`이미 오늘 [Room ${room}] 강의실의 출석 처리가 완료된 상태입니다.`);
-        cleanUrlAndGo(room); // 주소창 정리 후 대시보드로 이동
+        // [수정] 알림창에 room 번호를 포함시켜서 출력
+        alert(`알림: 오늘 [Room ${room}] 강의실의 출석 처리가 이미 완료되었습니다.`);
+        cleanUrlAndGo(room);
         return;
     }
 
-    // 3. 본인 정보(이름/번호) 존재 여부 확인
+    // (성함/번호 체크 및 저장 로직 동일...)
     const myName = (localStorage.getItem('kac_user_name') || "").trim();
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
-    // 4. 정보가 없거나 올바르지 않으면 프로필 입력창 강제 노출
     if (!myName || myPhone.length !== 4) {
-        alert(`[Room ${room}] 출석을 위해 성함과 전화번호 뒷 4자리 입력이 필요합니다.`);
+        alert(`[Room ${room}] 출석을 위해 본인 확인이 필요합니다.`);
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
-    // 5. 모든 검증 통과 시 파이어베이스에 최종 기록 (방 번호를 정확히 전달)
-    console.log(`[출석 시도] 대상 강의실: Room ${room}`); // 디버깅용
     executeAttendanceRecord(room, myName, myPhone, today, storageKey);
 }
 
