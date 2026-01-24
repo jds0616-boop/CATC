@@ -722,7 +722,7 @@ function sendAns(idx) {
             dbRef = { qa: db.ref(`${rPath}/questions`), quiz: db.ref(`${rPath}/activeQuiz`), ans: db.ref(`${rPath}/quizAnswers`), settings: db.ref(`${rPath}/settings`), status: db.ref(`${rPath}/status`), connections: db.ref(`${rPath}/connections`) };
 
 // 방 정보 설정 직후 출석체크 로직 실행
-            handleInternalCheckIn(currentRoom);
+            handleInternalAttendance(currentRoom); 
             setupListeners(); checkCooldown(); nitKeyboardFix();
 
             dbRef.status.once('value', s => {
@@ -1973,11 +1973,12 @@ async function saveProfileWithCheck() {
 
 
 
-// [교체] 프로필 저장 시 고유 식별값(이름_번호) 사용 로직
+// [최종 수정] 프로필 저장 및 자동 출석 연결 로직
 async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
     
+    // 1. 입력값 유효성 검사
     if (!name || phone.length !== 4) {
         alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
         return;
@@ -1985,20 +1986,21 @@ async function saveProfile() {
     
     const newUToken = `${name}_${phone}`;
     const oldUToken = localStorage.getItem('kac_old_uToken');
-    const isEditMode = oldUToken ? true : false;
+    const isEditMode = !!oldUToken;
 
     try {
-        // [중요] 이름이나 번호가 바뀌었다면 옛날 데이터 노드를 삭제합니다.
+        // 2. [수정 모드] 이름이나 번호가 바뀌었다면 기존 서버 데이터 삭제
         if (isEditMode && oldUToken !== newUToken) {
             await firebase.database().ref(`courses/${currentRoom}/students/${oldUToken}`).remove();
         }
 
-        // 새 ID로 데이터 저장
+        // 3. 로컬 스토리지 정보 갱신
         localStorage.setItem('kac_user_name', name);
         localStorage.setItem('kac_user_phone', phone);
         localStorage.setItem('uToken', newUToken);
-        localStorage.removeItem('kac_old_uToken'); // 백업 삭제
+        localStorage.removeItem('kac_old_uToken'); // 백업 데이터 삭제
 
+        // 4. 서버(Firebase) 수강생 명단 업데이트
         await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
             name: name,
             phone: phone,
@@ -2006,6 +2008,7 @@ async function saveProfile() {
             isOnline: true
         });
 
+        // 5. 접속 상태 감시 시작 및 UI 정리
         startPresence(); 
         document.getElementById('profileOverlay').style.display = 'none';
         
@@ -2015,14 +2018,19 @@ async function saveProfile() {
             alert(`${name}님, 환영합니다!`);
         }
         
-        showMainDashboard();
-
+        // 6. [핵심] 출석 체크 파라미터(&checkin=true)가 있는 경우 자동 출석 실행
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('checkin') === 'true') {
-            handleInternalCheckIn(currentRoom); 
+            // 새로 수정된 함수 이름을 호출합니다.
+            handleInternalAttendance(currentRoom); 
+        } else {
+            // 일반 입장의 경우 대시보드 표시
+            showMainDashboard();
         }
+        
     } catch (e) {
-        alert("등록 중 오류가 발생했습니다.");
+        console.error("Profile Save Error:", e);
+        alert("등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 }
 
@@ -2278,61 +2286,70 @@ function watchNotices() {
 
 
 
-// [최종 보강] 중복 출석을 완벽하게 차단하는 함수
-function handleInternalCheckIn(room) {
+// [최종 최적화] 강의실별 독립 출석체크 로직
+function handleInternalAttendance(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
-    if (isCheckIn && room) {
-        // 1. 저장된 정보 가져오기 (양끝 공백 제거)
-        const myName = (localStorage.getItem('kac_user_name') || "").trim();
-        const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
+    if (!isCheckIn || !room) return;
 
-        if (myName && myPhone) {
-            // 2. 오늘 날짜 및 고유 키 생성
-            const d = new Date();
-            const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            const attendanceKey = `${myName}_${myPhone}`;
-            
-            const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${today}/${attendanceKey}`);
+    // 1. 현재 강의실에 오늘 이미 출석했는지 브라우저 기록 확인 (중복 방지)
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const storageKey = `kac_attended_${room}_${today}`; // 예: kac_attended_A_2024-05-20
 
-            // 3. [핵심] 서버에 이미 데이터가 있는지 매우 엄격하게 확인
-            attendRef.once('value').then(snap => {
-                if (snap.exists() && snap.val() !== null) {
-                    // 이미 데이터가 있다면!
-                    alert("알림: 이미 오늘의 출석 처리가 완료된 상태입니다.");
-                    cleanUrlAndGo(room);
-                } else {
-                    // 데이터가 없다면 처음 찍는 것!
-                    const currentTime = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
-                    const authId = "KAC-" + Math.random().toString(36).substr(2, 5).toUpperCase();
-
-                    attendRef.set({
-                        name: myName,
-                        time: currentTime,
-                        authId: authId,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    }).then(() => {
-                        alert("✅ [" + myName + "]님, 출석 완료!\n인증번호: " + authId);
-                        cleanUrlAndGo(room);
-                    });
-                }
-            });
-        } else {
-            // 정보가 없는 경우 입력창 유도
-            alert("입교 등록이 필요합니다. 성함과 번호 입력 후 자동으로 출석 처리됩니다.");
-            document.getElementById('profileOverlay').style.display = 'flex';
-        }
+    if (localStorage.getItem(storageKey)) {
+        alert(`이미 오늘 이 강의실(Room ${room})의 출석 처리가 완료되었습니다.`);
+        cleanUrlAndGo(room);
+        return;
     }
 
-    // 주소창을 깨끗하게 정리하고 메인으로 보내는 내부 함수
-    function cleanUrlAndGo(r) {
-        const newUrl = window.location.pathname + `?room=${r}`;
-        window.history.replaceState({}, '', newUrl);
-        if(document.getElementById('landingPage')) document.getElementById('landingPage').style.display = 'none';
-        if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'flex';
-        startPresence();
+    // 2. 현재 저장된 내 정보(이름/번호)가 있는지 확인
+    const myName = (localStorage.getItem('kac_user_name') || "").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
+
+    // 3. 정보가 없다면 -> 프로필 입력창 띄우고 종료 (입력 완료 후 다시 이 로직이 실행됨)
+    if (!myName || myPhone.length !== 4) {
+        alert("출석 기록을 위해 본인 확인(이름/번호)이 필요합니다.");
+        document.getElementById('profileOverlay').style.display = 'flex';
+        return;
     }
+
+    // 4. 정보가 있다면 -> 파이어베이스에 실제 출석 기록
+    executeAttendanceRecord(room, myName, myPhone, today, storageKey);
+}
+
+// [실제 저장] 파이어베이스에 데이터를 쓰고 브라우저에 완료 마킹을 함
+function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
+    const attendanceKey = `${name}_${phone}`;
+    const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${dateStr}/${attendanceKey}`);
+
+    const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const authId = "KAC-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+    attendRef.set({
+        name: name,
+        phone: phone,
+        time: currentTime,
+        authId: authId,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        // 해당 강의실+오늘날짜 전용 출석 완료 마킹 (중요!)
+        localStorage.setItem(storageKey, "true");
+        alert(`✅ [Room ${room}] 출석 완료!\n${name}님, 확인되었습니다.`);
+        cleanUrlAndGo(room);
+    }).catch(e => {
+        alert("출석 처리 중 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
+    });
+}
+
+// 주소창 정리 함수
+function cleanUrlAndGo(r) {
+    const newUrl = window.location.pathname + `?room=${r}`;
+    window.history.replaceState({}, '', newUrl);
+    if(document.getElementById('landingPage')) document.getElementById('landingPage').style.display = 'none';
+    if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'flex';
+    startPresence();
 }
 
 
