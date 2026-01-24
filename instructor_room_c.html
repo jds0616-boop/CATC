@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Room C 강사 전용 Q&A 센터</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gray: #f8fafc;
+            --card-white: #ffffff;
+            --kac-blue: #003366;
+            --accent-blue: #3b82f6;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; 
+            background: var(--bg-gray); color: var(--text-main);
+            display: flex; flex-direction: column; height: 100dvh;
+        }
+
+        /* 로그인 오버레이 */
+        #authOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--kac-blue); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px;
+        }
+        .login-box {
+            background: white; width: 100%; max-width: 320px;
+            padding: 30px; border-radius: 20px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .login-box h2 { font-size: 18px; margin-bottom: 20px; color: var(--kac-blue); }
+        .login-input {
+            width: 100%; padding: 12px; border: 2px solid #e2e8f0;
+            border-radius: 10px; font-size: 16px; text-align: center;
+            margin-bottom: 15px; outline: none;
+        }
+        .login-btn {
+            width: 100%; padding: 12px; background: var(--accent-blue);
+            color: white; border: none; border-radius: 10px;
+            font-weight: 800; font-size: 15px; cursor: pointer;
+        }
+
+        /* 상단 헤더 */
+        header {
+            background: var(--kac-blue); color: white;
+            padding: 15px 20px; text-align: center; position: sticky; top: 0; z-index: 100;
+        }
+        header h1 { margin: 0; font-size: 17px; font-weight: 800; }
+        header p { margin: 5px 0 0; font-size: 11px; opacity: 0.7; }
+
+        /* 강사 선택 필터 */
+        .filter-container {
+            background: white; padding: 15px; border-bottom: 1px solid #e2e8f0;
+            position: sticky; top: 52px; z-index: 90;
+        }
+        .filter-label { font-size: 12px; font-weight: 800; color: var(--text-sub); margin-bottom: 10px; display: block; }
+        .chip-wrapper {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;
+            scrollbar-width: none; /* Firefox */
+        }
+        .chip-wrapper::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0; padding: 8px 16px; background: #f1f5f9;
+            border-radius: 50px; font-size: 13px; font-weight: 700;
+            color: var(--text-sub); cursor: pointer; border: 1px solid transparent;
+        }
+        .chip.active {
+            background: var(--accent-blue); color: white;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        /* 리스트 영역 */
+        .content { flex: 1; overflow-y: auto; padding: 15px; }
+        .q-card {
+            background: var(--card-white); border-radius: 15px;
+            padding: 18px; margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-left: 5px solid var(--kac-blue);
+            animation: fadeIn 0.3s ease-out;
+        }
+        .q-text { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--text-main); margin-bottom: 10px; }
+        .q-meta { display: flex; justify-content: space-between; align-items: center; }
+        .q-badge { background: #eff6ff; color: var(--accent-blue); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; }
+        .q-time { color: #94a3b8; font-size: 11px; }
+
+        /* 상태 안내 */
+        .empty-state { text-align: center; padding: 50px 20px; color: #cbd5e1; }
+        .empty-state i { font-size: 40px; margin-bottom: 10px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- 비밀번호 인증 화면 -->
+    <div id="authOverlay">
+        <div class="login-box">
+            <img src="logo.png" alt="KAC" style="height:30px; margin-bottom:15px; filter: grayscale(1);">
+            <h2>Room C 강사 인증</h2>
+            <input type="password" id="pwInput" class="login-input" placeholder="비밀번호 입력">
+            <button class="login-btn" onclick="checkAuth()">접속하기</button>
+            <p id="errorMsg" style="color:#ef4444; font-size:12px; margin-top:10px; display:none;">비밀번호가 일치하지 않습니다.</p>
+        </div>
+    </div>
+
+    <!-- 메인 화면 -->
+    <header>
+        <h1>ROOM C 질문 센터</h1>
+        <p id="courseTitle">과정 로딩 중...</p>
+    </header>
+
+    <div class="filter-container">
+        <span class="filter-label"><i class="fa-solid fa-user-tie"></i> 담당 강사 선택</span>
+        <div class="chip-wrapper" id="instructorChips">
+            <div class="chip active" onclick="setInstructor('all')">전체</div>
+        </div>
+    </div>
+
+    <main class="content" id="qaList">
+        <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>질문을 불러오는 중입니다...</p>
+        </div>
+    </main>
+
+    <script>
+        // --- [설정] Firebase 설정 (admin.js의 설정을 그대로 넣으세요) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSy...",
+            authDomain: "your-app.firebaseapp.com",
+            databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+            projectId: "your-app",
+            storageBucket: "your-app.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- [상태 관리] ---
+        const ROOM_ID = 'C';
+        let qaData = {};
+        let currentInstructor = 'all';
+
+        // --- [인증 로직] ---
+        function checkAuth() {
+            const pw = document.getElementById('pwInput').value;
+            // catc1234 -> Y2F0YzEyMzQ=
+            if (btoa(pw) === 'Y2F0YzEyMzQ=') {
+                document.getElementById('authOverlay').style.display = 'none';
+                sessionStorage.setItem('kac_room_c_auth', 'true');
+                startApp();
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('pwInput').value = '';
+            }
+        }
+
+        // 세션 체크
+        if(sessionStorage.getItem('kac_room_c_auth') === 'true') {
+            document.getElementById('authOverlay').style.display = 'none';
+            startApp();
+        }
+
+        // --- [앱 시작] ---
+        function startApp() {
+            // 1. 과정명 가져오기
+            db.ref(`courses/${ROOM_ID}/settings/courseName`).on('value', snap => {
+                document.getElementById('courseTitle').innerText = snap.val() || "진행 중인 과정 없음";
+            });
+
+            // 2. 강사 리스트(Subjects) 가져오기
+            db.ref(`courses/${ROOM_ID}/settings/subjects`).on('value', snap => {
+                const subjects = snap.val() || {};
+                const wrapper = document.getElementById('instructorChips');
+                wrapper.innerHTML = `<div class="chip ${currentInstructor === 'all' ? 'active' : ''}" onclick="setInstructor('all')">전체</div>`;
+                
+                Object.values(subjects).forEach(name => {
+                    const chip = document.createElement('div');
+                    chip.className = `chip ${currentInstructor === name ? 'active' : ''}`;
+                    chip.innerText = name;
+                    chip.onclick = () => setInstructor(name);
+                    wrapper.appendChild(chip);
+                });
+            });
+
+            // 3. 질문 데이터 실시간 감시
+            db.ref(`courses/${ROOM_ID}/questions`).on('value', snap => {
+                qaData = snap.val() || {};
+                renderList();
+            });
+        }
+
+        // --- [기능] 필터 변경 ---
+        function setInstructor(name) {
+            currentInstructor = name;
+            // 칩 스타일 변경
+            document.querySelectorAll('.chip').forEach(c => {
+                c.classList.toggle('active', c.innerText === (name === 'all' ? '전체' : name));
+            });
+            renderList();
+        }
+
+        // --- [기능] 리스트 렌더링 ---
+        function renderList() {
+            const container = document.getElementById('qaList');
+            container.innerHTML = "";
+
+            let items = Object.keys(qaData).map(k => ({ id: k, ...qaData[k] }));
+
+            // 1. 삭제된 질문 제외
+            items = items.filter(q => q.status !== 'delete');
+
+            // 2. 강사 필터링 (포함 방식)
+            if (currentInstructor !== 'all') {
+                items = items.filter(q => {
+                    const target = q.subject || "공통질문";
+                    return target.includes(currentInstructor);
+                });
+            }
+
+            // 3. 정렬 (좋아요순 -> 최신순)
+            items.sort((a, b) => (b.likes || 0) - (a.likes || 0) || b.timestamp - a.timestamp);
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-comment-slash"></i>
+                        <p>${currentInstructor === 'all' ? '아직 등록된 질문이 없습니다.' : '해당 강사님께 도착한 질문이 없습니다.'}</p>
+                    </div>`;
+                return;
+            }
+
+            items.forEach(q => {
+                const time = new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const card = document.createElement('div');
+                card.className = 'q-card';
+                card.innerHTML = `
+                    <div class="q-text">${q.text}</div>
+                    <div class="q-meta">
+                        <div class="q-badge"><i class="fa-solid fa-thumbs-up"></i> ${q.likes || 0}</div>
+                        <div class="q-time">${time}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
