@@ -3,127 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Room C 강사 전용 Q&A</title>
+    <title>Room C 강사 Q&A (검증용)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- config.js가 같은 폴더에 있어야 합니다 -->
+    
+    <!-- 1. 만약 config.js가 안 읽히면 아래 스크립트에서 에러가 날 수 있으므로 주의 -->
     <script src="config.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-gray: #f8fafc;
-            --card-white: #ffffff;
-            --kac-blue: #003366;
-            --accent-blue: #3b82f6;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; background: var(--bg-gray); color: var(--text-main); display: flex; flex-direction: column; height: 100dvh; }
-
-        #authOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--kac-blue); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
-        .login-box { background: white; width: 100%; max-width: 320px; padding: 35px 30px; border-radius: 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        .login-box h2 { font-size: 18px; margin-bottom: 25px; color: var(--kac-blue); font-weight: 800; }
+        :root { --bg-gray: #f8fafc; --kac-blue: #003366; --accent-blue: #3b82f6; }
+        body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg-gray); display: flex; flex-direction: column; height: 100dvh; }
+        #authOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--kac-blue); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; width: 90%; max-width: 320px; padding: 30px; border-radius: 20px; text-align: center; }
         .login-input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; text-align: center; margin-bottom: 15px; outline: none; }
-        .login-btn { width: 100%; padding: 14px; background: var(--accent-blue); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer; }
-
-        header { background: var(--kac-blue); color: white; padding: 15px 20px; text-align: center; position: sticky; top: 0; z-index: 100; }
-        header h1 { margin: 0; font-size: 17px; font-weight: 800; }
-        header p { margin: 5px 0 0; font-size: 11px; opacity: 0.8; }
-
-        .filter-container { background: white; padding: 15px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 52px; z-index: 90; }
-        .filter-label { font-size: 11px; font-weight: 800; color: var(--text-sub); margin-bottom: 12px; display: block; }
-        .chip-wrapper { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .chip { flex-shrink: 0; padding: 10px 20px; background: #f1f5f9; border-radius: 50px; font-size: 14px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: 0.2s; }
-        .chip.active { background: var(--accent-blue); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
-
+        .login-btn { width: 100%; padding: 14px; background: var(--accent-blue); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        header { background: var(--kac-blue); color: white; padding: 15px; text-align: center; }
+        .filter-container { background: white; padding: 10px; border-bottom: 1px solid #e2e8f0; overflow-x: auto; white-space: nowrap; }
+        .chip { display: inline-block; padding: 8px 15px; background: #f1f5f9; border-radius: 20px; margin-right: 5px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .chip.active { background: var(--accent-blue); color: white; }
         .content { flex: 1; overflow-y: auto; padding: 15px; }
-        .q-card { background: var(--card-white); border-radius: 15px; padding: 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 6px solid var(--kac-blue); }
-        .q-text { font-size: 17px; font-weight: 700; line-height: 1.6; }
-        .q-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .q-badge { background: #eff6ff; color: var(--accent-blue); padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: 800; }
-        .q-time { color: #94a3b8; font-size: 11px; }
-
-        .empty-state { text-align: center; padding: 80px 20px; color: #cbd5e1; }
-        .empty-state i { font-size: 50px; margin-bottom: 20px; opacity: 0.5; }
+        .q-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--kac-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
     <div id="authOverlay">
         <div class="login-box">
-            <h2>Room C 강사 인증</h2>
-            <!-- 엔터키 지원을 위해 onkeyup 추가 -->
+            <h2 style="color:var(--kac-blue); margin-top:0;">강사 인증</h2>
             <input type="password" id="pwInput" class="login-input" placeholder="비밀번호 입력" onkeyup="if(window.event.keyCode==13){checkAuth()}">
             <button class="login-btn" onclick="checkAuth()">입장하기</button>
-            <p id="errorMsg" style="color:#ef4444; font-size:12px; margin-top:10px; display:none;">비밀번호가 일치하지 않습니다.</p>
+            <p id="errorMsg" style="color:red; font-size:12px; display:none;">비밀번호가 틀렸습니다.</p>
+            <p id="debugMsg" style="color:gray; font-size:10px; margin-top:10px;"></p>
         </div>
     </div>
 
     <header>
-        <h1>ROOM C 질문 실시간 현황</h1>
-        <p id="courseTitle">불러오는 중...</p>
+        <h1 id="courseTitle" style="font-size:16px; margin:0;">질문 센터</h1>
     </header>
 
-    <div class="filter-container">
-        <span class="filter-label"><i class="fa-solid fa-user-check"></i> 질문을 확인할 본인 성함을 선택하세요</span>
-        <div class="chip-wrapper" id="instructorChips"></div>
-    </div>
+    <div class="filter-container" id="instructorChips"></div>
 
     <main class="content" id="qaList">
-        <div class="empty-state" id="initialState">
-            <i class="fa-solid fa-hand-pointer"></i>
-            <p>상단에서 강사님 성함을 선택하세요.</p>
-        </div>
+        <p style="text-align:center; color:gray; margin-top:50px;">강사를 선택해 주세요.</p>
     </main>
 
     <script>
-        // 1. 설정값 로드 확인
-        if (typeof firebaseConfig === 'undefined') {
-            alert("에러: config.js 파일을 찾을 수 없거나 설정값이 없습니다.");
-        } else {
-            firebase.initializeApp(firebaseConfig);
-        }
-        
+        // [검증 1] config.js 파일이 정상적으로 로드되었는지 확인
+        window.addEventListener('load', function() {
+            const debug = document.getElementById('debugMsg');
+            if (typeof firebaseConfig === 'undefined') {
+                debug.innerText = "⚠️ 설정(config.js)을 찾을 수 없습니다. 파일 위치를 확인하세요.";
+                // 만약 계속 안된다면 여기에 직접 파이어베이스 설정을 복사해 넣으세요.
+                /*
+                window.firebaseConfig = {
+  apiKey: "AIzaSyDo3BPMV8qayQ3MdKBglYNtsvii0ZtCHHs",
+  authDomain: "catcqna.firebaseapp.com",
+  databaseURL: "https://catcqna-default-rtdb.firebaseio.com",
+  projectId: "catcqna",
+  storageBucket: "catcqna.firebasestorage.app",
+  messagingSenderId: "327047828064",
+  appId: "1:327047828064:web:a2e26fea9f276764412905",
+  measurementId: "G-TBGD8F1V2M"
+                };
+                */
+            } else {
+                debug.innerText = "✅ 연결 준비 완료 (config.js 로드됨)";
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                } catch(e) {
+                    alert("초기화 에러: " + e.message);
+                }
+            }
+        });
+
         const db = firebase.database();
         const ROOM_ID = 'C';
         let currentInstructor = null;
-        let qaListener = null;
 
-        const AUTH_KEY = 'kac_room_c_auth_v3';
-        const EXPIRE_TIME = 5 * 60 * 60 * 1000;
-
-        // 2. 인증 로직 보완
+        // [검증 2] 로그인 버튼 클릭 시 로그 확인
         function checkAuth() {
-            const inputVal = document.getElementById('pwInput').value;
-            const cleanPw = inputVal.trim(); // 앞뒤 공백 제거
+            const pw = document.getElementById('pwInput').value.trim();
+            console.log("입력된 비번:", pw); // 브라우저 콘솔용
 
-            // catc1234 체크 (직접 비교로 변경하여 오류 방지)
-            if (cleanPw === 'catc1234') {
-                localStorage.setItem(AUTH_KEY, new Date().getTime());
+            if (pw === 'catc1234') {
                 document.getElementById('authOverlay').style.display = 'none';
                 startApp();
             } else {
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('pwInput').value = '';
-                document.getElementById('pwInput').focus();
             }
         }
 
-        // 자동 로그인 체크
-        const lastAuth = localStorage.getItem(AUTH_KEY);
-        if (lastAuth && (new Date().getTime() - lastAuth < EXPIRE_TIME)) {
-            document.getElementById('authOverlay').style.display = 'none';
-            window.onload = startApp;
-        }
-
         function startApp() {
-            // 과정명
-            db.ref(`courses/${ROOM_ID}/settings/courseName`).on('value', snap => {
-                document.getElementById('courseTitle').innerText = snap.val() || "진행 중인 과정 없음";
+            // 과정명 불러오기 테스트
+            db.ref(`courses/${ROOM_ID}/settings/courseName`).once('value')
+            .then(snap => {
+                document.getElementById('courseTitle').innerText = snap.val() || "Room C 질문 센터";
+            })
+            .catch(err => {
+                alert("데이터 읽기 권한 에러: " + err.message + "\nFirebase Rules를 확인하세요.");
             });
 
             // 강사 리스트
@@ -131,7 +112,6 @@
                 const subjects = snap.val() || {};
                 const wrapper = document.getElementById('instructorChips');
                 wrapper.innerHTML = "";
-                
                 Object.values(subjects).forEach(name => {
                     const chip = document.createElement('div');
                     chip.className = "chip";
@@ -146,41 +126,31 @@
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
             currentInstructor = name;
-            
-            if(qaListener) db.ref(`courses/${ROOM_ID}/questions`).off('value', qaListener);
 
-            const container = document.getElementById('qaList');
-            container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>질문을 불러오는 중...</p></div>`;
-
-            qaListener = db.ref(`courses/${ROOM_ID}/questions`).on('value', snap => {
+            db.ref(`courses/${ROOM_ID}/questions`).on('value', snap => {
                 const data = snap.val() || {};
-                renderList(data);
-            });
-        }
+                const container = document.getElementById('qaList');
+                container.innerHTML = "";
 
-        function renderList(qaData) {
-            const container = document.getElementById('qaList');
-            container.innerHTML = "";
+                let items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+                items = items.filter(q => q.status !== 'delete' && (q.subject || "").includes(currentInstructor));
+                items.sort((a, b) => (b.likes || 0) - (a.likes || 0) || b.timestamp - a.timestamp);
 
-            let items = Object.keys(qaData).map(k => ({ id: k, ...qaData[k] }));
-            items = items.filter(q => q.status !== 'delete' && (q.subject || "").includes(currentInstructor));
-            items.sort((a, b) => (b.likes || 0) - (a.likes || 0) || b.timestamp - a.timestamp);
+                if(items.length === 0) {
+                    container.innerHTML = `<p style="text-align:center; padding:50px; color:gray;">질문이 없습니다.</p>`;
+                    return;
+                }
 
-            if (items.length === 0) {
-                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-comment-slash"></i><p>${currentInstructor} 강사님께 도착한 질문이 없습니다.</p></div>`;
-                return;
-            }
-
-            items.forEach(q => {
-                const time = new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                container.innerHTML += `
-                    <div class="q-card">
-                        <div class="q-text">${q.text}</div>
-                        <div class="q-meta">
-                            <div class="q-badge"><i class="fa-solid fa-thumbs-up"></i> ${q.likes || 0}</div>
-                            <div class="q-time">${time}</div>
-                        </div>
-                    </div>`;
+                items.forEach(q => {
+                    container.innerHTML += `
+                        <div class="q-card">
+                            <div style="font-weight:800; font-size:16px;">${q.text}</div>
+                            <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:12px; color:gray;">
+                                <span>👍 ${q.likes || 0}</span>
+                                <span>${new Date(q.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>`;
+                });
             });
         }
     </script>
