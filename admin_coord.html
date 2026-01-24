@@ -38,7 +38,38 @@
 
 
 
+/* 통합 명단 모바일 최적화 CSS */
+#allStudentListView .navy-table {
+    table-layout: fixed; /* 테이블 크기 고정 */
+    width: 100%;
+}
 
+#allStudentListView .navy-table th, 
+#allStudentListView .navy-table td {
+    padding: 8px 2px; /* 패딩 최소화 */
+    font-size: 11px; /* 폰트 크기 축소 */
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 과정명 열 전용 말줄임 스타일 */
+.course-name-cell {
+    max-width: 75px; /* 최대 너비 제한 */
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    font-weight: 800;
+}
+
+/* 상태 배지 크기 축소 */
+.badge-shuttle {
+    padding: 2px 4px;
+    font-size: 9px;
+}
 
 
 
@@ -2157,23 +2188,29 @@ function handleRoomSelection() {
     const isInd = (currentRID !== ""); 
     const homeBtn = document.getElementById('floatingHomeBtn');
 
-    // 모든 뷰를 일단 숨김
+    // 뷰 숨김 처리
     document.getElementById('totalStatusView').style.display = "none"; 
     document.getElementById('individualStatusView').style.display = "none"; 
     document.getElementById('pickupStatusView').style.display = "none";
     document.getElementById('studentShuttleView').style.display = "none";
-    
-    document.getElementById('side-global-menu').style.display = isInd ? "none" : "flex"; 
-    document.getElementById('side-individual-menu').style.display = isInd ? "flex" : "none"; 
+    if(document.getElementById('allStudentListView')) document.getElementById('allStudentListView').style.display = "none";
 
-    if(isInd) { 
-        // 상세 페이지 모드 (버튼 보임)
+    // [개선] 메뉴 섹션 표시 로직 강화
+    const globalMenu = document.getElementById('side-global-menu');
+    const individualMenu = document.getElementById('side-individual-menu');
+    
+    if(isInd) {
+        globalMenu.style.setProperty('display', 'none', 'important');
+        individualMenu.style.setProperty('display', 'flex', 'important');
+        
         document.getElementById('individualStatusView').style.display = "flex";
         if(homeBtn) homeBtn.style.display = "flex";
         updateIndividualView(); 
         updateQRPreview(); 
     } else {
-        // 전체 현황판 모드 (버튼 숨김)
+        globalMenu.style.setProperty('display', 'flex', 'important');
+        individualMenu.style.setProperty('display', 'none', 'important');
+        
         document.getElementById('totalStatusView').style.display = "flex";
         if(homeBtn) homeBtn.style.display = "none";
     }
@@ -3246,21 +3283,29 @@ function renderStudentTable(list) {
         return;
     }
 
-    tbody.innerHTML = list.map(s => `
+    tbody.innerHTML = list.map(s => {
+        // [추가] 과정명 7자 제한 로직
+        const shortCourseName = s.courseName.length > 7 
+            ? s.courseName.substring(0, 7) + ".." 
+            : s.courseName;
+
+        return `
         <tr>
-            <td style="text-align:left; padding-left:15px; font-size:11px; font-weight:700; color:var(--blue-deep); line-height:1.2;">${s.courseName}</td>
-            <td style="font-weight:800; line-height:1.4;">
-                <div style="font-size:14px;">${s.name}</div>
-                <div style="color:#94a3b8; font-weight:400; font-size:11px;">(${s.phone})</div>
+            <td style="text-align:left; padding-left:5px;">
+                <span class="course-name-cell" title="${s.courseName}">${shortCourseName}</span>
             </td>
-            <td style="font-weight:700; color:#475569; line-height:1.4;">
-                <div style="font-size:13px;">${s.dormBuilding}</div>
-                <div style="font-size:11px; color:#64748b;">${s.dormRoom}</div>
+            <td style="font-weight:800;">
+                <div style="font-size:12px;">${s.name}</div>
+                <div style="color:#94a3b8; font-weight:400; font-size:9px;">${s.phone}</div>
             </td>
-            <td><span class="${s.shuttleClass}">${s.shuttleText}</span></td>
-            <td><span class="status-action ${s.actionClass}">${s.actionText}</span></td>
+            <td style="font-weight:700; color:#475569;">
+                <div style="font-size:11px;">${s.dormBuilding}</div>
+                <div style="font-size:10px; color:#64748b;">${s.dormRoom}</div>
+            </td>
+            <td><span class="badge-shuttle ${s.shuttleClass}">${s.shuttleText}</span></td>
+            <td><span class="status-action ${s.actionClass}" style="font-size:10px;">${s.actionText}</span></td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 // [신규] 실시간 검색 필터링
@@ -3273,10 +3318,19 @@ function filterAllStudents() {
 // [기존 함수 수정] handleBackNav에 신규 뷰 숨김 추가
 const originalHandleBackNav = handleBackNav;
 handleBackNav = function() {
-    originalHandleBackNav();
-    const allView = document.getElementById('allStudentListView');
-    if(allView) allView.style.display = "none";
-    document.getElementById('studentSearchInput').value = ""; // 검색어 초기화
+    originalHandleBackNav(); // 기존 뒤로가기 로직 실행
+    
+    // 통합 명단 뷰 전용 정리
+    const allStudentView = document.getElementById('allStudentListView');
+    if(allStudentView) {
+        allStudentView.style.display = "none";
+        const searchInput = document.getElementById('studentSearchInput');
+        if(searchInput) searchInput.value = ""; // 검색어 초기화
+    }
+    
+    // 다시 메인 화면을 그리도록 강제 호출
+    currentRID = "";
+    handleRoomSelection();
 }
 
 
