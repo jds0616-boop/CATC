@@ -192,6 +192,74 @@ function init() {
 
 
 
+// [핵심 로직] 항기원 노선 및 구간 시간(30분) 계산기
+const RouteManager = {
+    INTERVAL: 30, // 구간별 이동 시간 (분)
+    // 노선 순서 (인덱스 0: 센터, 3: 가장 먼 곳)
+    points: ['항기원', '오송역', '청주터미널', '청주공항'],
+
+    // 해당 방향 노선에서 특정 장소가 몇 번째 정류장인지 계산
+    getOffset: function(dirStr) {
+        const isOutbound = dirStr.includes('항기원→'); // 나가는 길 여부
+        const path = isOutbound ? [...this.points] : [...this.points].reverse();
+        
+        // 장소명 추출 (화살표 앞뒤에서 장소 키워드 찾기)
+        const targetLoc = isOutbound ? dirStr.split('→')[1] : dirStr.split('→')[0];
+        
+        const idx = path.findIndex(p => targetLoc.includes(p));
+        return { idx, isOutbound };
+    },
+
+    // 두 예약 건이 같은 차량에 '합승' 가능한지 분석
+    analyzeConflict: function(existingReq, newTime, newDir) {
+        const existInfo = this.getOffset(existingReq.dir);
+        const newInfo = this.getOffset(newDir);
+
+        // 1. 방향이 다르면(하나는 입교, 하나는 퇴교) 합승 불가
+        if (existInfo.isOutbound !== newInfo.isOutbound) return null;
+
+        // 2. 시간차 계산
+        const [exH, exM] = existingReq.time.split(':').map(Number);
+        const [newH, newM] = newTime.split(':').map(Number);
+        const existMin = exH * 60 + exM;
+        const newMin = newH * 60 + newM;
+
+        // 3. 노선 순서에 따른 권장 시간 계산 (정류장 차이 * 30분)
+        // 기존 예약자가 기준이 됨
+        const stopDiff = newInfo.idx - existInfo.idx;
+        const recommendedMin = existMin + (stopDiff * this.INTERVAL);
+        
+        const recH = Math.floor(recommendedMin / 60).toString().padStart(2, '0');
+        const recM = (recommendedMin % 60).toString().padStart(2, '0');
+        const recTime = `${recH}:${recM}`;
+
+        // 4. 권장 시간과 신청 시간의 오차가 15분 이내면 "합승 가능"으로 판단
+        const timeDiff = Math.abs(newMin - recommendedMin);
+
+        const newLoc = newDir.includes('→') ? (newInfo.isOutbound ? newDir.split('→')[1] : newDir.split('→')[0]) : "해당장소";
+
+        if (timeDiff <= 15) {
+            return {
+                type: 'EFFICIENT',
+                msg: `💡 [배차 효율화 제안]\n이미 ${existingReq.prof}강사님의 예약이 노선상에 있습니다.\n이 차량을 함께 이용할 경우, [${newLoc}] 권장 탑승시간은 [${recTime}]입니다.\n\n기사님과 협의하여 시간을 조정하시겠습니까?`
+            };
+        }
+        return null; // 너무 멀면 그냥 충돌로 처리
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   function renderAll() { 
@@ -491,21 +559,42 @@ function renderInstructorList() {
   function changeWeek(n) { weekOffset += n; renderAll(); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   
-  function showDetail(type, dataStr) {
+// [수정] 수송 상세 정보 팝업 함수
+function showDetail(type, dataStr) {
     const data = JSON.parse(decodeURIComponent(dataStr));
     const modal = document.getElementById('detailModal');
     const content = document.getElementById('m-content');
-    document.getElementById('m-title').innerText = "수송 상세";
-    let html = `<div style="margin-bottom:10px; font-weight:800">${data[0].date} [${data[0].time}]</div>`;
+    
+    document.getElementById('m-title').innerText = "수송 상세 정보";
+    
+    // 시간순 정렬
+    data.sort((a,b) => a.time.localeCompare(b.time));
+
+    let html = `<div style="margin-bottom:15px; padding-bottom:10px; border-bottom:2px solid #f1f5f9;">
+                    <b style="font-size:16px; color:var(--navy);">${data[0].date}</b>
+                </div>`;
+
     data.forEach(p => {
-        html += `<div style="background:#f8fafc; padding:10px; border-radius:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-            <div><b>${p.prof}</b><br><small>${p.phone || ''}</small></div>
-            <a href="tel:${p.phone}" style="color:#0ea5e9; font-size:20px;"><i class="fa-solid fa-phone"></i></a>
-        </div>`;
+        const isFin = (p.status === 'finished' || p.status === 'completed');
+        html += `
+            <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1.5px solid #e2e8f0; margin-bottom:10px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div>
+                        <span style="background:var(--blue-deep); color:white; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:800; margin-right:5px;">${p.time}</span>
+                        <b style="font-size:15px;">${p.prof} 강사님</b>
+                    </div>
+                    <a href="tel:${p.phone}" style="color:var(--blue); font-size:20px;"><i class="fa-solid fa-phone"></i></a>
+                </div>
+                <div style="font-size:13px; font-weight:700; color:#475569;">
+                    <i class="fa-solid fa-route"></i> ${p.dir.replace('→',' > ')}
+                </div>
+                ${isFin ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.6); border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:900; color:#94a3b8;">운행 마감</div>` : ''}
+            </div>`;
     });
+    
     content.innerHTML = html;
     modal.style.display = 'flex';
-  }
+}
 
   function showDrillDown(type, rid) {
     const room = allCourses[rid];
@@ -529,7 +618,21 @@ function renderInstructorList() {
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-// [기사용] 지능형 배차 승인 (강사 수송 + 교육생 퇴교셔틀 통합 체크)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [기사용] 지능형 배차 승인 (노선 분석 및 효율적 배차 제안 포함)
 async function handleSmartApprove(id) {
     // 1. 승인하려는 대상 정보 찾기
     const target = profReqs.find(r => r.id === id);
@@ -544,22 +647,33 @@ async function handleSmartApprove(id) {
 
     const targetMin = toMin(target.time);
     let conflicts = [];
+    let advice = ""; // RouteManager의 제안 메시지를 담을 변수
 
-    // 2. 다른 강사 수송 일정과 비교 (이미 승인/종료된 건 기준)
+    // 2. 다른 강사 수송 일정과 비교 및 노선 분석
     profReqs.forEach(r => {
         if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date) {
             const diff = Math.abs(toMin(r.time) - targetMin);
+            
+            // 60분 이내 일정이 있다면 충돌 리스트에 추가
             if(diff < 60) {
-                conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time})`);
+                conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time} / ${r.dir})`);
+
+                // ⭐ RouteManager 두뇌 가동: 합승(Efficient Dispatch) 가능성 체크
+                // targetLoc 추출 (예: '오송역→항기원' -> '오송역' 추출)
+                const targetLoc = target.dir.includes('→항기원') ? target.dir.split('→')[0] : target.dir.split('→')[1];
+                
+                const result = RouteManager.analyzeConflict(r, target.time, targetLoc, target.dir);
+                if (result) {
+                    advice = result.msg; // 효율적인 탑승 제안 메시지 세팅
+                }
             }
         }
     });
 
-    // 3. 교육생 퇴교 셔틀 일정과 비교
+    // 3. 교육생 퇴교 셔틀 일정과 비교 (물리적 충돌 체크)
     Object.keys(allCourses).forEach(rid => {
         const room = allCourses[rid];
         const dep = room.shuttle?.departure;
-        // 퇴교 날짜와 시간이 있고, 승인하려는 날짜와 같을 때
         if(dep && dep.date === target.date && dep.time) {
             const diff = Math.abs(toMin(dep.time) - targetMin);
             if(diff < 60) {
@@ -568,10 +682,13 @@ async function handleSmartApprove(id) {
         }
     });
 
-    // 4. 충돌 경고창 띄우기
+    // 4. 지능형 알림창 띄우기
     if(conflicts.length > 0) {
-        const msg = `⚠️ 배차 충돌 가능성이 매우 높습니다!\n\n현재 시간(±60분) 내에 이미 잡혀있는 일정입니다:\n\n${conflicts.join('\n')}\n\n몸은 하나입니다! 그래도 승인하시겠습니까?`;
-        if(!confirm(msg)) return;
+        // RouteManager가 추천 시간을 계산해냈다면 제안 메시지를 보여주고, 아니면 일반 경고를 보여줍니다.
+        const header = advice ? "💡 배차 효율화 제안" : "⚠️ 배차 충돌 경고";
+        const mainMsg = advice ? advice : `현재 시간(±60분) 내에 이미 다음 일정이 잡혀 있습니다:\n\n${conflicts.join('\n')}\n\n몸은 하나입니다! 그래도 승인하시겠습니까?`;
+
+        if(!confirm(`${header}\n\n${mainMsg}`)) return;
     }
 
     // 5. 최종 승인 처리
@@ -579,11 +696,20 @@ async function handleSmartApprove(id) {
         await firebase.database().ref(`system/transport_requests/${id}`).update({ 
             status: 'approved' 
         });
-        // renderAll()은 Firebase 리스너가 자동으로 호출함
+        // Firebase on('value') 리스너가 리스트를 자동으로 다시 그리게 됩니다.
     } catch(e) {
-        alert("승인 처리 중 오류: " + e.message);
+        alert("승인 처리 중 오류가 발생했습니다: " + e.message);
     }
 }
+
+
+
+
+
+
+
+
+
 
   async function confirmAction(type, id, val = null, date = null) {
     const ok = document.getElementById('c-ok-btn');

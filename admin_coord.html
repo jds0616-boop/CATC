@@ -1245,6 +1245,54 @@ body.modal-open {
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
 
 
+// [추가] 노선 분석 및 배차 효율화 계산기
+const RouteManager = {
+    INTERVAL: 30, // 구간별 이동 시간 (분)
+    points: ['항기원', '오송역', '청주터미널', '청주공항'],
+    getOffset: function(dirStr) {
+        const isOutbound = dirStr.includes('항기원→'); 
+        const path = isOutbound ? [...this.points] : [...this.points].reverse();
+        const targetLoc = isOutbound ? dirStr.split('→')[1] : dirStr.split('→')[0];
+        const idx = path.findIndex(p => targetLoc.includes(p));
+        return { idx, isOutbound };
+    },
+    analyzeConflict: function(existingReq, newTime, newDir) {
+        const existInfo = this.getOffset(existingReq.dir);
+        const newInfo = this.getOffset(newDir);
+        if (existInfo.isOutbound !== newInfo.isOutbound) return null;
+
+        const [exH, exM] = existingReq.time.split(':').map(Number);
+        const [newH, newM] = newTime.split(':').map(Number);
+        const existMin = exH * 60 + exM;
+        const newMin = newH * 60 + newM;
+
+        const stopDiff = newInfo.idx - existInfo.idx;
+        const recommendedMin = existMin + (stopDiff * this.INTERVAL);
+        const recH = Math.floor(recommendedMin / 60).toString().padStart(2, '0');
+        const recM = (recommendedMin % 60).toString().padStart(2, '0');
+        const recTime = `${recH}:${recM}`;
+
+        if (Math.abs(newMin - recommendedMin) <= 15) {
+            const newLoc = newDir.includes('→') ? (newInfo.isOutbound ? newDir.split('→')[1] : newDir.split('→')[0]) : "해당장소";
+            return {
+                msg: `💡 [배차 효율화 제안]\n이미 ${existingReq.prof}강사님의 예약이 노선상에 있습니다.\n이 차량을 함께 이용할 경우, [${newLoc}] 권장 탑승시간은 [${recTime}]입니다.\n\n기사님과 협의하여 시간을 조정하시겠습니까?`
+            };
+        }
+        return null;
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
 // [최종 보강] 과정 운영 담당자(행정) 및 서명 관리 객체 (수정 기능 추가 버전)
 const coordMgr = {
     list: [],
@@ -1753,81 +1801,56 @@ function openTransportModal() {
 
 
 
-// [운영부용] 수송 요청 등록 (중복 배차 체크 포함)
 async function submitTransReq() {
     const rid = document.getElementById('reqCourseRID').value;
     const loc = document.getElementById('reqLoc').value;
     const date = document.getElementById('reqDate').value;
-    const timeTo = document.getElementById('reqTimeTo').value;     // 입교(장소->원)
-    const timeFrom = document.getElementById('reqTimeFrom').value; // 퇴교(원->장소)
+    const timeTo = document.getElementById('reqTimeTo').value;
+    const timeFrom = document.getElementById('reqTimeFrom').value;
     const prof = document.getElementById('reqProf').value.trim();
     const phone = document.getElementById('reqPhone').value.trim();
 
-    if(!rid) return alert("대상 교육과정을 선택해주세요.");
-    if(!date || !prof) return alert("날짜와 강사명을 입력해주세요.");
-    if(!timeTo && !timeFrom) return alert("최소 한 개의 수송 시간을 입력해주세요.");
-
-    // 시간차 계산 함수 (분 단위)
-    const getDiffMin = (t1, t2) => {
-        const [h1, m1] = t1.split(':').map(Number);
-        const [h2, m2] = t2.split(':').map(Number);
-        return Math.abs((h1 * 60 + m1) - (h2 * 60 + m2));
-    };
+    if(!rid || !date || !prof || (!timeTo && !timeFrom)) return alert("필수 항목을 모두 입력하세요.");
 
     try {
-        // 1. 현재 DB에 등록된 모든 수송 요청 가져오기 (충돌 체크용)
         const snap = await firebase.database().ref('system/transport_requests').once('value');
         const allReqs = snap.val() || {};
-        let conflicts = [];
+        let warningMsg = "";
 
         Object.values(allReqs).forEach(req => {
-            // 같은 날짜이고 취소되지 않은 건만 비교
             if(req.date === date && req.status !== 'cancelled') {
-                if(timeTo && getDiffMin(timeTo, req.time) < 60) {
-                    conflicts.push(`[입교충돌] ${req.time} ${req.prof}강사님 (${req.dir})`);
+                // 1. 단순 시간 충돌 체크 (±60분)
+                const checkTime = (newT) => {
+                    if(!newT) return false;
+                    const m1 = parseInt(newT.split(':')[0])*60 + parseInt(newT.split(':')[1]);
+                    const m2 = parseInt(req.time.split(':')[0])*60 + parseInt(req.time.split(':')[1]);
+                    return Math.abs(m1 - m2) < 60;
                 }
-                if(timeFrom && getDiffMin(timeFrom, req.time) < 60) {
-                    conflicts.push(`[퇴교충돌] ${req.time} ${req.prof}강사님 (${req.dir})`);
+
+                if(checkTime(timeTo)) {
+                    const advice = RouteManager.analyzeConflict(req, timeTo, `${loc}→항기원`);
+                    warningMsg += advice ? advice.msg : `⚠️ [입교] ${req.time} ${req.prof}님 일정과 겹칩니다.\n`;
+                }
+                if(checkTime(timeFrom)) {
+                    const advice = RouteManager.analyzeConflict(req, timeFrom, `항기원→${loc}`);
+                    warningMsg += advice ? advice.msg : `⚠️ [퇴교] ${req.time} ${req.prof}님 일정과 겹칩니다.\n`;
                 }
             }
         });
 
-        // 2. 충돌 발생 시 경고
-        if(conflicts.length > 0) {
-            const msg = `🚨 배차 중복 주의!\n\n선택하신 시간대(±60분)에 이미 신청된 내역이 있습니다:\n\n${conflicts.join('\n')}\n\n그래도 신청하시겠습니까?`;
-            if(!confirm(msg)) return;
+        if(warningMsg) {
+            if(!confirm(warningMsg + "\n그래도 신청하시겠습니까?")) return;
         }
 
-        // 3. 데이터 저장 실행
+        // 저장 로직
         const requests = [];
-        if(timeTo) {
-            requests.push({
-                courseRID: rid, dir: `${loc}→항기원`, date, time: timeTo,
-                prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
-        if(timeFrom) {
-            requests.push({
-                courseRID: rid, dir: `항기원→${loc}`, date, time: timeFrom,
-                prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
+        if(timeTo) requests.push({ courseRID: rid, dir: `${loc}→항기원`, date, time: timeTo, prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP });
+        if(timeFrom) requests.push({ courseRID: rid, dir: `항기원→${loc}`, date, time: timeFrom, prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP });
 
-        for(let req of requests) {
-            await firebase.database().ref('system/transport_requests').push(req);
-        }
-
-        alert(`✅ ${requests.length}건의 수송 예약이 등록되었습니다.`);
-        
-        // 필드 초기화
-        document.getElementById('reqTimeTo').value = "";
-        document.getElementById('reqTimeFrom').value = "";
-        document.getElementById('reqProf').value = "";
-        document.getElementById('reqPhone').value = "";
-        
-    } catch(e) {
-        alert("저장 오류: " + e.message);
-    }
+        for(let r of requests) await firebase.database().ref('system/transport_requests').push(r);
+        alert("✅ 수송 예약이 등록되었습니다.");
+        closeTransportModal();
+    } catch(e) { alert("오류: " + e.message); }
 }
 
 
