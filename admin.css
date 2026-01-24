@@ -2800,3 +2800,169 @@ body.night-mode .header-room-badge { background-color: #003366 !important; borde
 .card-terminal { border-top: 4px solid #f59e0b; }
 .card-airport { border-top: 4px solid #10b981; }
 .card-car { border-top: 4px solid #6366f1; }
+
+
+
+
+/* --- 강사 수송 요청 및 카카오톡 스타일 상태창 추가 --- */
+
+/* 카카오톡 배경 스타일의 현황창 */
+.kakao-status-container {
+    margin-top: 20px;
+    background: #BACEE0; /* 카카오톡 배경색 */
+    border-radius: 15px;
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #a1b5c9;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.kakao-header {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+    padding: 10px 15px;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.kakao-body {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 말풍선 공통 스타일 */
+.kakao-msg {
+    max-width: 85%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* 내가 보낸 메시지 (신청 현황 - 노란색) */
+.kakao-msg.sent {
+    align-self: flex-end;
+    background: #FEE500;
+    color: #000;
+    border-top-right-radius: 2px;
+}
+
+/* 기사님/시스템 응답 (승인 현황 - 흰색) */
+.kakao-msg.received {
+    align-self: flex-start;
+    background: #ffffff;
+    color: #000;
+    border-top-left-radius: 2px;
+}
+
+.kakao-time {
+    font-size: 10px;
+    color: #666;
+    margin-top: 5px;
+    display: block;
+    text-align: right;
+}
+
+.status-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.tag-pending { background: #adb5bd; color: #fff; }
+.tag-approved { background: #3b82f6; color: #fff; }
+
+.kakao-empty {
+    text-align: center;
+    color: #748ba3;
+    font-size: 13px;
+    margin-top: 100px;
+    font-weight: 600;
+}
+
+/* 수송 요청 모달 전용 보라색 테마 */
+.btn-transport {
+    background: #7c3aed !important;
+    color: white !important;
+    transition: 0.2s;
+}
+.btn-transport:hover {
+    background: #6d28d9 !important;
+}
+
+
+/* --- 강사 수송 요청 및 카카오톡 스타일 현황창 디자인 --- */
+.kakao-status-container {
+    margin-top: 15px;
+    background: #BACEE0 !important; /* 카카오 배경색 강제 적용 */
+    border-radius: 12px;
+    height: 250px; /* 높이 고정 */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #a1b5c9;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+}
+.kakao-header {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.kakao-body {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.kakao-msg {
+    max-width: 85%;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.kakao-msg.sent {
+    align-self: flex-end;
+    background: #FEE500;
+    color: #000;
+}
+.kakao-msg.received {
+    align-self: flex-start;
+    background: #ffffff;
+    color: #000;
+}
+.status-tag {
+    display: inline-block;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 10px;
+    margin-bottom: 5px;
+}
+.tag-pending { background: #adb5bd; color: #fff; }
+.tag-approved { background: #3b82f6; color: #fff; }
+.kakao-empty { text-align: center; color: #748ba3; font-size: 12px; margin-top: 80px; }

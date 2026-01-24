@@ -3607,7 +3607,7 @@ const printMgr = {
 
 // [통째로 교체] 통합 설정 및 수송 요청 관리 객체 (최종 통합본)
 const setupMgr = {
-    // 1. 설정 모달 열기
+    // 1. 설정 모달 열기 (카톡창 리스너 포함)
     openSetupModal: async function() {
         if(!state.room) return ui.showAlert("강의실을 먼저 선택하세요.");
         
@@ -3615,43 +3615,30 @@ const setupMgr = {
         const st = statusSnap.val() || {};
 
         if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            ui.showAlert("⚠️ 현재 다른 강사님이 운영 중인 과정입니다. 제어권 인증(비번)을 먼저 완료해주세요.");
+            ui.showAlert("⚠️ 제어권 인증이 필요합니다.");
             dataMgr.switchRoomAttempt(state.room); 
             return;
         }
 
-        // 교수 리스트 로드
+        // 교수/담당자 리스트 로드
         let profOptions = '<option value="">(선택 안함)</option>';
         profMgr.list.forEach(p => { profOptions += `<option value="${p.name}">${p.name} 교수</option>`; });
         document.getElementById('setup-prof-select').innerHTML = profOptions;
 
-        // 담당자 리스트 로드
         firebase.database().ref('system/coordinators').once('value', snap => {
             const coords = snap.val() || {};
             let coordOptions = '<option value="">--- 담당자 선택 ---</option>';
             Object.values(coords).forEach(c => { coordOptions += `<option value="${c.name}">${c.name}</option>`; });
             document.getElementById('setup-coord-select').innerHTML = coordOptions;
             
-            // 가이드 등록 상태 체크
-            firebase.database().ref(`system/sharedGuide`).once('value', gSnap => {
-                const el = document.getElementById('modalGuideStatus');
-                if(el) {
-                    if(gSnap.exists()) {
-                        el.innerHTML = '<i class="fa-solid fa-circle-check"></i> 가이드 PDF가 등록되어 있습니다.';
-                        el.style.color = "#10b981";
-                    } else {
-                        el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 등록된 가이드 파일이 없습니다.';
-                        el.style.color = "#ef4444";
-                    }
-                }
-                this.loadCurrentSettings(); // 나머지 정보 로드
-                this.loadTransportChat();   // 이 줄을 추가 (카카오창 로드)
-                this.loadTransportChat();   // [추가] 카카오톡 스타일 수송 현황 로드
-            });
+            // 모든 설정값 로드
+            this.loadCurrentSettings();
+            
+            // ★ 핵심: 카톡창 현황판을 실시간으로 연결함 ★
+            this.loadTransportChat(); 
         });
     },
 
-    // 2. 설정을 불러오는 내부 함수
     loadCurrentSettings: function() {
         firebase.database().ref(`courses/${state.room}`).once('value', snap => {
             const data = snap.val() || {};
@@ -3675,7 +3662,6 @@ const setupMgr = {
                     break;
                 }
             }
-
             if (!found && currentRoomValue) {
                 roomSelect.value = "direct";
                 roomDirect.value = currentRoomValue;
@@ -3695,41 +3681,31 @@ const setupMgr = {
         });
     },
 
-    // 3. 직접 입력 창 제어
     checkDirectInput: function(val) {
         const directInput = document.getElementById('setup-room-direct');
-        if (val === "direct") {
-            directInput.style.display = "block";
-            directInput.focus();
-        } else {
-            directInput.style.display = "none";
-        }
+        if (val === "direct") { directInput.style.display = "block"; directInput.focus(); }
+        else { directInput.style.display = "none"; }
     },
 
-    // 4. 모달 닫기
-closeSetupModal: function() {
+    closeSetupModal: function() {
         document.getElementById('courseSetupModal').style.display = 'none';
-        // 창을 닫을 때 실시간 감시 종료 (추가된 로직)
+        // 모달 닫을 때 실시간 감시 종료
         if(state.room) firebase.database().ref(`courses/${state.room}/transport_requests`).off();
     },
 
-// 5. 모든 설정 저장 (기존 기능 유지)
     saveAll: function() {
-        if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
-
+        if(state.isObserver) return ui.showAlert("👁️ 옵저버는 변경할 수 없습니다.");
         const name = document.getElementById('setup-course-name').value.trim();
         const rawPw = document.getElementById('setup-room-pw').value.trim();
         const sDate = document.getElementById('setup-start-date').value;
         const eDate = document.getElementById('setup-end-date').value;
         const profName = document.getElementById('setup-prof-select').value;
         const coordName = document.getElementById('setup-coord-select').value;
-
         const roomSelectVal = document.getElementById('setup-room-select').value;
         const roomName = (roomSelectVal === "direct") ? document.getElementById('setup-room-direct').value.trim() : roomSelectVal;
 
         if(!name || !sDate || !eDate || !rawPw || !roomName) {
-            alert("모든 필수 항목(과정명, 암호, 기간, 장소)을 입력해주세요.");
-            return;
+            alert("필수 항목을 모두 입력해주세요."); return;
         }
 
         const updates = {};
@@ -3743,49 +3719,37 @@ closeSetupModal: function() {
         updates[`courses/${state.room}/status/ownerSessionId`] = state.sessionId;
 
         firebase.database().ref().update(updates).then(() => {
-            document.getElementById('courseNameInput').value = name;
-            document.getElementById('roomPw').value = rawPw;
-            document.getElementById('displayCourseTitle').innerText = name;
-            localStorage.setItem('last_owned_room', state.room);
-            
             ui.showAlert("✅ 설정이 저장되었습니다.");
             this.closeSetupModal();
             dataMgr.forceEnterRoom(state.room);
         });
     },
 
-    // --- [신규 추가] 강사 수송 관리 로직 (교육운영부 표준 방식) ---
+    // --- 강사 수송 관리 신규 로직 (교육운영부 연동) ---
 
-    // 1. 장소 선택 시 라벨을 즉시 변경 (오송역 -> 항기원 등)
+    // [기능] 장소 선택 시 라벨 텍스트 변경
     updateTransportLabels: function(loc) {
         const lblIn = document.getElementById('lbl-tr-in');
         const lblOut = document.getElementById('lbl-tr-out');
         if(!lblIn || !lblOut) return;
 
-        if(loc === "오송역") {
-            lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역";
-        } else if(loc === "청주터미널") {
-            lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널";
-        } else if(loc === "청주공항") {
-            lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항";
-        } else {
-            lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 도착지";
-        }
+        if(loc === "오송역") { lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역"; }
+        else if(loc === "청주터미널") { lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널"; }
+        else if(loc === "청주공항") { lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항"; }
+        else { lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 목적지"; }
     },
 
-    // 2. 수송 신청 모달 열기
     openTransportModal: function() {
         document.getElementById('tr-date').value = new Date().toISOString().substring(0, 10);
-        this.updateTransportLabels("오송역"); // 초기 라벨 설정
+        this.updateTransportLabels("오송역"); // 초기화
         document.getElementById('instTransportModal').style.display = 'flex';
     },
 
-    // 3. 수송 신청 모달 닫기
     closeTransportModal: function() {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-    // 4. 수송 신청 저장 (전송 중 상태 표시 및 데이터 저장)
+    // [기능] 기사님과 연동되는 수송 데이터 저장
     saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
         
@@ -3794,14 +3758,11 @@ closeSetupModal: function() {
         const phone = document.getElementById('tr-phone').value.trim();
         const date = document.getElementById('tr-date').value;
 
-        if(!name || !phone) {
-            alert("강사 성함과 연락처를 입력해주세요.");
-            return;
-        }
+        if(!name || !phone) return alert("강사 성함과 연락처를 입력해주세요.");
 
-        // 버튼 비활성화 (인지 기능)
+        // 버튼 상태 변경 (인지성 강화)
         btn.disabled = true;
-        btn.innerText = "데이터 전송 중...";
+        btn.innerText = "신청서 전송 중...";
         btn.style.background = "#adb5bd";
 
         const data = {
@@ -3811,13 +3772,15 @@ closeSetupModal: function() {
             timeOut: document.getElementById('tr-time-out').value || "",
             name: name,
             phone: phone,
-            status: 'pending', // 대기 상태
+            status: 'pending', // 기사님 승인 대기 상태
+            courseName: document.getElementById('setup-course-name').value, // 과정명 포함
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
+        // 내 과정 데이터베이스에 저장
         firebase.database().ref(`courses/${state.room}/transport_requests`).push(data)
         .then(() => {
-            alert(`✅ ${name} 강사님, 수송 신청이 정상적으로 등록되었습니다.`);
+            alert(`🚀 [${name}] 강사님 수송 신청이 정상 등록되었습니다.`);
             this.closeTransportModal();
         }).finally(() => {
             btn.disabled = false;
@@ -3826,7 +3789,7 @@ closeSetupModal: function() {
         });
     },
 
-    // 5. 카카오톡 스타일 현황창 실시간 로드 (내 과정 내용만 필터링)
+    // [기능] 카카오톡 현황판 실시간 데이터 조회
     loadTransportChat: function() {
         const chatBox = document.getElementById('kakao-chat-box');
         if(!state.room || !chatBox) return;
@@ -3843,23 +3806,23 @@ closeSetupModal: function() {
                 const req = val[key];
                 const time = new Date(req.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // 보낸 메시지 (노란색: 신청 정보)
+                // 1. 내가 보낸 노란색 신청 메시지
                 let html = `
                     <div class="kakao-msg sent">
-                        <span class="status-tag tag-pending">신청됨</span><br>
+                        <span class="status-tag tag-pending">수송 신청됨</span><br>
                         <b>${req.name} 강사님</b><br>
-                        📍 ${req.location} / ${req.date}<br>
-                        ⏰ ${req.timeIn || '--:--'} / ${req.timeOut || '--:--'}
+                        📍 ${req.location} (${req.date})<br>
+                        ⏰ 입실: ${req.timeIn || '--'} / 퇴실: ${req.timeOut || '--'}
                         <span class="kakao-time">${time}</span>
                     </div>
                 `;
                 
-                // 받은 메시지 (흰색: 승인 완료 시 자동 생성)
+                // 2. 기사님이 승인하면 나타나는 흰색 승인 메시지
                 if(req.status === 'approved') {
                     html += `
                         <div class="kakao-msg received">
-                            <span class="status-tag tag-approved">승인완료</span><br>
-                            기사님 배차가 완료되었습니다.<br>안전하게 모시겠습니다.
+                            <span class="status-tag tag-approved">배차 완료</span><br>
+                            운영부 승인 및 기사님 배차가 완료되었습니다.<br>안전하게 모시겠습니다.
                             <span class="kakao-time">${time}</span>
                         </div>
                     `;
@@ -3869,8 +3832,7 @@ closeSetupModal: function() {
             chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
-}; // setupMgr 마침표
-
+};
 
 
 
