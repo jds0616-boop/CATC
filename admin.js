@@ -2484,7 +2484,7 @@ loadStudentList: function() {
                 const leaderBtnText = isLeader ? "해제" : "학생장";
 
                 tbody.innerHTML += `
-                    <tr style="${isLeader ? 'background-color:#eff6ff;' : ''}">
+                    <tr class="${isLeader ? 'is-leader-row' : ''}">
                         <td>${idx + 1}</td>
                         <!-- 중앙 정렬 및 아이콘 배치를 위해 td 스타일 수정 -->
                         <td style="text-align:center;">

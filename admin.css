@@ -2906,3 +2906,33 @@ body.night-mode ::-webkit-scrollbar-track {
 body.night-mode ::-webkit-scrollbar-thumb {
     background: #475569;
 }
+
+
+/* --- 학생장(리더) 행 하이라이트 보정 --- */
+
+/* 주간 모드: 부드러운 파스텔톤 파란색 배경 + 짙은 글자색 */
+.is-leader-row {
+    background-color: #eff6ff !important;
+}
+.is-leader-row td {
+    color: #1e293b !important; /* 글자색을 짙게 강제 */
+}
+
+/* 야간 모드: 깊은 네이비/블루 배경 + 흰색 글자색 */
+body.night-mode .is-leader-row {
+    background-color: rgba(59, 130, 246, 0.15) !important; /* 야간용 투명 블루 */
+    border-left: 4px solid #3b82f6; /* 왼쪽에 포인트를 주어 강조 */
+}
+body.night-mode .is-leader-row td {
+    color: #ffffff !important; /* 글자색 흰색 유지 */
+}
+
+/* 상태 배지(입교완료 등)가 하이라이트 안에서도 잘 보이게 */
+.status-badge.status-arrived {
+    background-color: #ecfdf5;
+    color: #10b981;
+}
+body.night-mode .status-badge.status-arrived {
+    background-color: #065f46;
+    color: #34d399;
+}
