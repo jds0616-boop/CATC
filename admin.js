@@ -3723,29 +3723,44 @@ const setupMgr = {
         });
     },
 
-    // --- 수송 관리 핵심 로직 (운영부/기사 연동용) ---
 
+
+
+
+
+// --- 강사 수송 관리 핵심 로직 (중복 제거 및 연동 보완) ---
+
+    // [기능 1] 장소 선택 시 라벨 텍스트 변경 (오송역 -> 항기원 등)
     updateTransportLabels: function(loc) {
         const lblIn = document.getElementById('lbl-tr-in');
         const lblOut = document.getElementById('lbl-tr-out');
         if(!lblIn || !lblOut) return;
-        if(loc === "오송역") { lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역"; }
-        else if(loc === "청주터미널") { lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널"; }
-        else if(loc === "청주공항") { lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항"; }
-        else { lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 도착지"; }
+
+        if(loc === "오송역") {
+            lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역";
+        } else if(loc === "청주터미널") {
+            lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널";
+        } else if(loc === "청주공항") {
+            lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항";
+        } else {
+            lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 목적지";
+        }
     },
 
+    // [기능 2] 수송 신청 모달 열기
     openTransportModal: function() {
         document.getElementById('tr-date').value = new Date().toISOString().substring(0, 10);
-        this.updateTransportLabels("오송역"); 
+        this.updateTransportLabels("오송역"); // 기본값 오송역으로 라벨 초기화
         document.getElementById('instTransportModal').style.display = 'flex';
     },
 
+    // [기능 3] 수송 신청 모달 닫기
     closeTransportModal: function() {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-saveTransportRequest: function() {
+    // [기능 4] 수송 신청 저장 (내 카톡창 + 기사 통합 게시판 동시 전송)
+    saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
         
         const btn = document.getElementById('btn-tr-submit');
@@ -3759,80 +3774,67 @@ saveTransportRequest: function() {
             return;
         }
 
+        // 버튼 인지성 강화 (전송 중 상태)
         btn.disabled = true;
         btn.innerText = "기사님께 전송 중...";
+        btn.style.background = "#adb5bd";
 
         const data = {
-            room: state.room,
-            courseName: cName,
+            room: state.room,            // 강의실 코드
+            courseName: cName,           // 과정명
             location: document.getElementById('tr-location').value,
             date: date,
             timeIn: document.getElementById('tr-time-in').value || "",
             timeOut: document.getElementById('tr-time-out').value || "",
             name: name,
             phone: phone,
-            status: 'pending',
+            status: 'pending',           // 승인 대기 상태
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // 고유 키 생성
+        // [핵심] 고유 키를 하나 생성해서 두 경로에 똑같이 저장 (중복 제거 통합)
         const newKey = firebase.database().ref().child('instructor_transport_requests').push().key;
         
         const updates = {};
         // 1. 내 강의실 카톡창용 경로
         updates[`courses/${state.room}/transport_requests/${newKey}`] = data;
-        // 2. 운영부/기사 통합 관리용 경로
+        // 2. 운영부/기사 통합 관리용 공용 경로
         updates[`instructor_transport_requests/${newKey}`] = data;
 
         firebase.database().ref().update(updates).then(() => {
-            alert(`🚀 [${name}] 강사님 수송 신청이 운영부와 기사님께 실시간 전달되었습니다.`);
+            alert(`🚀 [${name}] 강사님, 수송 신청이 정상 접수되었습니다.\n기사님 확인 후 승인 메시지가 표시됩니다.`);
             this.closeTransportModal();
         }).catch(e => {
             alert("연동 실패: " + e.message);
         }).finally(() => {
+            // 버튼 상태 원상복구
             btn.disabled = false;
             btn.innerText = "수송 예약 등록하기";
             btn.style.background = "#7c3aed";
         });
     },
 
-        // 1. 내 강의실 대화창용 저장
-        const newRef = firebase.database().ref(`courses/${state.room}/transport_requests`).push();
-        const requestKey = newRef.key;
-        
-        // 2. 운영부/기사용 전체 목록에도 동시 저장 (연동의 핵심)
-        const updates = {};
-        updates[`courses/${state.room}/transport_requests/${requestKey}`] = data;
-        updates[`instructor_transport_requests/${requestKey}`] = data;
-
-        firebase.database().ref().update(updates).then(() => {
-            alert("🚀 수송 신청이 정상적으로 접수되었습니다.\n기사님 확인 후 승인 메시지가 표시됩니다.");
-            this.closeTransportModal();
-        }).catch(e => {
-            alert("오류 발생: " + e.message);
-        }).finally(() => {
-            btn.disabled = false; btn.innerText = "수송 예약 신청하기";
-        });
-    },
-
+    // [기능 5] 카카오톡 현황판 실시간 데이터 로드
     loadTransportChat: function() {
         const chatBox = document.getElementById('kakao-chat-box');
         if(!state.room || !chatBox) return;
 
-        // 리스너가 중복되지 않도록 기존 리스너 해제 후 새로 연결
         const chatRef = firebase.database().ref(`courses/${state.room}/transport_requests`);
-        chatRef.off();
+        chatRef.off(); // 중복 방지
         chatRef.on('value', snap => {
             chatBox.innerHTML = "";
             const val = snap.val();
-            if(!val) { chatBox.innerHTML = '<div class="kakao-empty">신청 내역이 없습니다.</div>'; return; }
+            if(!val) {
+                chatBox.innerHTML = '<div class="kakao-empty">신청 내역이 없습니다.</div>';
+                return;
+            }
 
             Object.keys(val).forEach(key => {
                 const req = val[key];
                 const time = new Date(req.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // 내 신청 (노란색)
-                let msgHtml = `
+                // 보낸 신청 내역 (노란색 말풍선)
+                let html = `
                     <div class="kakao-msg sent">
                         <span class="status-tag tag-pending">신청완료</span><br>
                         <b>${req.name} 강사님</b><br>
@@ -3842,9 +3844,9 @@ saveTransportRequest: function() {
                     </div>
                 `;
                 
-                // 운영부/기사님 승인 시 (흰색)
+                // 승인 완료 시 메시지 (흰색 말풍선)
                 if(req.status === 'approved') {
-                    msgHtml += `
+                    html += `
                         <div class="kakao-msg received">
                             <span class="status-tag tag-approved">승인완료</span><br>
                             기사님이 배정되었습니다.<br>안전하게 모시겠습니다.
@@ -3852,16 +3854,12 @@ saveTransportRequest: function() {
                         </div>
                     `;
                 }
-                chatBox.innerHTML += msgHtml;
+                chatBox.innerHTML += html;
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
-};
-
-
-
-
+}; // setupMgr 마침표
 
 
 
