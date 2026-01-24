@@ -798,63 +798,61 @@ body.modal-open .app-content {
 /* [가로 스크롤 절대 금지] 통합 명단 초압축 레이아웃 */
 #allStudentListView .section-card {
     padding: 10px 0px !important; /* 카드 좌우 여백 삭제 */
-    margin: 0 !important;
 }
 
 #allStudentListView .navy-table {
-    table-layout: fixed !important; /* 너비 비중 강제 고정 */
+    table-layout: fixed !important; /* 브라우저가 표를 옆으로 못 늘리게 고정 */
     width: 100% !important;
-    border-collapse: collapse !important; /* 셀 사이 간격 제거 */
+    border-collapse: collapse !important;
     border-spacing: 0 !important;
+    margin: 0 !important;
 }
 
 #allStudentListView .navy-table th, 
 #allStudentListView .navy-table td {
-    padding: 5px 0px !important; /* 셀 안쪽 여백 0 (핵심) */
+    padding: 4px 0px !important; /* 셀 사이 여백을 0으로 제거 (핵심) */
     font-size: 10px !important;
-    letter-spacing: -1px;       /* 자간을 최대한 붙여 가로폭 확보 */
+    letter-spacing: -0.8px;      /* 자간을 최대한 붙임 */
     text-align: center !important;
     border-bottom: 1px solid #f1f5f9;
-    overflow: hidden;           /* 내용이 넘쳐도 표를 키우지 않음 */
 }
 
 /* 5개 열의 너비를 딱 맞춰서 배분 (합계 100%) */
-.col-course  { width: 19%; } /* 과정명 */
+.col-course  { width: 20%; } /* 과정명 */
 .col-name    { width: 16%; } /* 성함 */
-.col-dorm    { width: 25%; } /* 기숙사(긴 단어 대비 여유) */
-.col-shuttle { width: 17%; } /* 차량 */
-.col-outing  { width: 23%; } /* 외출 */
+.col-dorm    { width: 24%; } /* 생활관(국제동 등 긴 이름 대비) */
+.col-shuttle { width: 18%; } /* 차량 */
+.col-outing  { width: 22%; } /* 외출 */
 
-/* 텍스트 수직 정렬 */
-.cell-box {
+/* 데이터 위아래 2단 배치용 박스 */
+.cell-stack {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
     line-height: 1.1;
+    width: 100%;
 }
 
-/* 기숙사 명칭 (청렴관, 상생관, 국제동) 강조 */
-.dorm-bold { font-weight: 800; color: #1d4ed8; font-size: 10px; }
-.room-small { font-size: 9px; color: #64748b; margin-top: 1px; }
-.name-bold { font-weight: 900; color: #1e293b; font-size: 11px; }
+.t-main { font-weight: 800; color: #1e293b; font-size: 10.5px; } /* 이름, 건물명 */
+.t-sub  { font-weight: 400; color: #94a3b8; font-size: 8.5px; }  /* 뒷자리, 호실 */
+.t-dorm { font-weight: 800; color: #2563eb; font-size: 10px; }   /* 기숙사 강조색 */
 
-/* 과정명 5자 초과 시 생략 (가로폭 침범 방지) */
-.course-cut {
-    width: 95%;
+/* 과정명 5자 초과 시 생략 */
+.course-ellipsis {
+    display: block;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #94a3b8;
     font-size: 9px;
+    color: #64748b;
 }
 
-/* 홈 버튼 여백 */
+/* 홈 버튼 가림 방지 */
 #allStudentTableBody tr:last-child td {
-    padding-bottom: 110px !important;
+    padding-bottom: 120px !important;
 }
-
 
 
 
@@ -3338,33 +3336,33 @@ async function loadAllStudentData() {
 function renderStudentTable(list) {
     const tbody = document.getElementById('allStudentTableBody');
     if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터 없음</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터가 없습니다.</td></tr>';
         return;
     }
 
     tbody.innerHTML = list.map(s => {
-        // 1. 과정명: 랜덤한 이름이 표를 찌그러뜨리지 않게 5자에서 자름
+        // 과정명 5자 제한 (가로폭 보호)
         const shortCourse = s.courseName.length > 5 ? s.courseName.substring(0, 5) + ".." : s.courseName;
 
-        // 2. 성함 + 뒷자리 (세로 배치)
-        const nameHtml = `<div class="cell-box"><span class="name-bold">${s.name}</span><span style="font-size:8.5px; color:#cbd5e1;">${s.phone}</span></div>`;
+        // 성함/뒷자리 (위아래)
+        const nameHtml = `<div class="cell-stack"><span class="t-main">${s.name}</span><span class="t-sub">${s.phone}</span></div>`;
 
-        // 3. 기숙사(상생관, 청렴관, 국제동) + 호실 (세로 배치)
-        const dormHtml = `<div class="cell-box"><span class="dorm-bold">${s.dormBuilding}</span><span class="room-small">${s.dormRoom}</span></div>`;
+        // 기숙사/호실 (위아래)
+        const dormHtml = `<div class="cell-stack"><span class="t-dorm">${s.dormBuilding}</span><span class="t-sub">${s.dormRoom}</span></div>`;
 
-        // 4. 차량 (배지 형태)
+        // 차량
         const shuttleHtml = s.shuttleText !== "-" 
-            ? `<span class="badge-shuttle ${s.shuttleClass}" style="padding:2px 4px; font-size:9px;">${s.shuttleText}</span>` 
+            ? `<span class="badge-shuttle ${s.shuttleClass}" style="padding:2px 3px; font-size:9px;">${s.shuttleText}</span>` 
             : `<span style="color:#eee">-</span>`;
 
-        // 5. 외출/외박
+        // 외출
         const actionHtml = s.actionText !== "-" 
-            ? `<span class="status-action ${s.actionClass}" style="font-size:10px; font-weight:800;">${s.actionText}</span>` 
+            ? `<span class="status-action ${s.actionClass}" style="font-size:9.5px; font-weight:800;">${s.actionText}</span>` 
             : `<span style="color:#eee">-</span>`;
 
         return `
         <tr>
-            <td><div class="course-cut" title="${s.courseName}">${shortCourse}</div></td>
+            <td><span class="course-ellipsis">${shortCourse}</span></td>
             <td>${nameHtml}</td>
             <td>${dormHtml}</td>
             <td>${shuttleHtml}</td>
@@ -3372,7 +3370,6 @@ function renderStudentTable(list) {
         </tr>
     `}).join('');
 }
-
 
 
 
