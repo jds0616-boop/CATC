@@ -545,6 +545,13 @@ updateQa: function(action) {
 
 // [최종 수정] 리셋 시 교육생 퇴출용 resetKey를 포함한 초기화 로직
 resetCourse: function() {
+
+    // [보안 추가] 옵저버는 함수 실행 자체를 차단
+    if (state.isObserver) {
+        ui.showAlert("👁️ 옵저버 모드에서는 과정을 초기화할 수 없습니다.");
+        return;
+    }
+
         if (!state.room) {
             ui.showAlert("⚠️ 강의실을 먼저 선택해야 초기화가 가능합니다.");
             return;
@@ -1888,17 +1895,21 @@ setMode: function(mode) {
         });
 
         // [핵심 추가] 강사 모드일 때 옵저버에 의해 숨겨진 버튼들을 다시 보이게 초기화
-        if (!state.isObserver) {
-            const allAdminBtns = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn, #btnReset, button.btn-danger');
-            allAdminBtns.forEach(btn => {
-                // 원래 숨겨져야 하는 특수 버튼(File관련)이 아니라면 디스플레이 복구
-                if (btn.id !== 'quizFile' && btn.id !== 'studentFile') {
-                    btn.style.display = ''; 
-                }
-            });
-            const quizCtrl = document.getElementById('quizControls');
-            if(quizCtrl) quizCtrl.style.display = 'flex';
+if (!state.isObserver) {
+    const allAdminBtns = document.querySelectorAll('.btn-action, .m-btn-done, .navy-btn, #btnReset, button.btn-danger');
+    allAdminBtns.forEach(btn => {
+        if (btn.id !== 'quizFile' && btn.id !== 'studentFile') {
+            btn.style.display = ''; 
+            
+            // --- 아래 3줄을 추가하여 비활성화 상태를 해제합니다 ---
+            btn.disabled = false;            // 잠금 해제
+            btn.style.opacity = '1';         // 투명도 복구
+            btn.style.cursor = 'pointer';    // 마우스 커서 복구
         }
+    });
+    const quizCtrl = document.getElementById('quizControls');
+    if(quizCtrl) quizCtrl.style.display = 'flex';
+}
         
         // 2. 현재 선택한 모드에 맞는 구역 ID 결정
         const targetView = (mode === 'admin-action') ? 'view-admin-action' : (mode === 'dinner-skip') ? 'view-dinner-skip' : `view-${mode}`;
