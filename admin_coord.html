@@ -33,6 +33,12 @@
 
 
 
+
+
+
+
+
+
 /* [변경] 리스트 카드 - 부드러운 화이트 카드 스타일 */
 .course-item-card {
     background: #ffffff; 
@@ -741,7 +747,17 @@ body.modal-open .app-content {
 }
 
 
+/* 퇴교 차량 배지 */
+.badge-shuttle { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+.badge-osong { background: #fee2e2; color: #ef4444; }
+.badge-terminal { background: #dbeafe; color: #3b82f6; }
+.badge-airport { background: #dcfce7; color: #10b981; }
+.badge-car { background: #f1f5f9; color: #64748b; }
 
+/* 외출외박 상태 표시 */
+.status-action { font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.text-outing { color: #ea580c; }
+.text-overnight { color: #dc2626; }
 
 
 
@@ -886,6 +902,80 @@ body.modal-open .app-content {
               </div>
           </div>
       </div>
+
+
+
+
+
+
+
+
+
+<!-- [신규 뷰 5] 항기원 전체 교육생 통합 관리 페이지 -->
+<div id="allStudentListView" class="view-card-full" style="display:none; flex-direction:column; gap:12px;">
+    <div class="section-card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="section-title" style="justify-content: space-between; align-items: center;">
+            <span><i class="fa-solid fa-users-viewfinder"></i> 항기원 교육생 통합 명단</span>
+            <div class="live-badge"><i class="fa-solid fa-sync fa-spin"></i> 실시간</div>
+        </div>
+
+        <!-- 상단 검색바 구역 -->
+        <div style="margin-bottom: 15px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 13px; color: #94a3b8;"></i>
+            <input type="text" id="studentSearchInput" class="navy-input" 
+                   style="padding-left: 40px; height: 45px; border-radius: 12px; font-size: 15px;" 
+                   placeholder="교육생 성함 또는 과정명을 입력하세요..." oninput="filterAllStudents()">
+        </div>
+
+        <!-- 명단 테이블 구역 -->
+        <div style="flex: 1; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+            <table class="navy-table" style="min-width: 500px;">
+                <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
+                    <tr>
+                        <th style="width: 25%;">과정명</th>
+                        <th style="width: 15%;">성함</th>
+                        <th style="width: 20%;">생활관</th>
+                        <th style="width: 20%;">퇴교차량</th>
+                        <th style="width: 20%;">외출/외박</th>
+                    </tr>
+                </thead>
+                <tbody id="allStudentTableBody">
+                    <!-- JS에서 내용 채움 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
       <!-- [뷰 2] 개별 과정 상세 -->
@@ -1279,6 +1369,139 @@ body.modal-open .app-content {
   <script src="config.js"></script>
   <script>
     let globalAllData = {}; let currentRID = ""; let selectedDate = getTodayString(); let transDir = "";
+
+
+
+
+
+
+let masterStudentList = []; // 검색을 위한 마스터 데이터 저장용
+
+// [수정] 메인 상황판에서 '전체 교육생' 버튼 클릭 시 실행
+async function showTotalStudentList() {
+    currentRID = ""; 
+    handleRoomSelection(); // 모든 뷰 숨기기
+    document.getElementById('totalStatusView').style.display = "none";
+    document.getElementById('allStudentListView').style.display = "flex";
+    
+    const homeBtn = document.getElementById('floatingHomeBtn');
+    if(homeBtn) homeBtn.style.display = "flex";
+    
+    // 데이터 불러오기
+    await loadAllStudentData();
+}
+
+// [신규] 모든 과정의 교육생 정보를 긁어모아 테이블 생성
+async function loadAllStudentData() {
+    const tbody = document.getElementById('allStudentTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:50px;">데이터를 통합 중입니다...</td></tr>';
+    
+    const today = getTodayString();
+    masterStudentList = []; // 초기화
+
+    // 1. 생활관 데이터 미리 가져오기
+    const dormSnap = await firebase.database().ref('system/dormitory_assignments').once('value');
+    const dormData = dormSnap.val() || {};
+
+    // 2. 모든 과정 순회
+    Object.keys(globalAllData).forEach(rid => {
+        const room = globalAllData[rid];
+        const courseName = room.settings?.courseName || `Room ${rid}`;
+        if (!room.students) return;
+
+        Object.keys(room.students).forEach(stoken => {
+            const s = room.students[stoken];
+            if (!s.name || s.name === "undefined") return;
+
+            const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
+            const sKey = `${s.name.trim()}_${phoneSuffix}`;
+
+            // A. 생활관 정보 찾기
+            const dorm = dormData[sKey] || { building: "-", room: "미배정" };
+            
+            // B. 퇴교 차량 정보 찾기
+            const shuttleReq = room.shuttle?.requests?.[stoken];
+            let shuttleText = "-";
+            let shuttleClass = "";
+            if(shuttleReq) {
+                const types = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
+                shuttleText = types[shuttleReq.type] || "신청";
+                shuttleClass = `badge-shuttle badge-${shuttleReq.type}`;
+            }
+
+            // C. 외출/외박 정보 찾기
+            const action = room.admin_actions?.[today]?.[stoken];
+            let actionText = "-";
+            let actionClass = "";
+            if(action) {
+                actionText = action.type === 'outing' ? '외출' : '외박';
+                actionClass = action.type === 'outing' ? 'text-outing' : 'text-overnight';
+                if(action.returned) actionText += " (복귀)";
+            }
+
+            masterStudentList.push({
+                courseName,
+                name: s.name,
+                phone: phoneSuffix,
+                dormInfo: `${dorm.building} ${dorm.room}${dorm.room !== '미배정'?'호':''}`,
+                shuttleText,
+                shuttleClass,
+                actionText,
+                actionClass,
+                searchKey: (courseName + s.name).toLowerCase()
+            });
+        });
+    });
+
+    renderStudentTable(masterStudentList);
+}
+
+// [신규] 화면 렌더링 함수
+function renderStudentTable(list) {
+    const tbody = document.getElementById('allStudentTableBody');
+    if(list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:50px; color:#94a3b8;">검색 결과가 없습니다.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(s => `
+        <tr>
+            <td style="text-align:left; padding-left:15px; font-size:11px; font-weight:700; color:var(--blue-deep);">${s.courseName}</td>
+            <td style="font-weight:800;">${s.name} <small style="color:#94a3b8; font-weight:400;">(${s.phone})</small></td>
+            <td style="font-weight:700; color:#475569;">${s.dormInfo}</td>
+            <td><span class="${s.shuttleClass}">${s.shuttleText}</span></td>
+            <td><span class="status-action ${s.actionClass}">${s.actionText}</span></td>
+        </tr>
+    `).join('');
+}
+
+// [신규] 실시간 검색 필터링
+function filterAllStudents() {
+    const query = document.getElementById('studentSearchInput').value.toLowerCase();
+    const filtered = masterStudentList.filter(s => s.searchKey.includes(query));
+    renderStudentTable(filtered);
+}
+
+// [기존 함수 수정] handleBackNav에 신규 뷰 숨김 추가
+const originalHandleBackNav = handleBackNav;
+handleBackNav = function() {
+    originalHandleBackNav();
+    const allView = document.getElementById('allStudentListView');
+    if(allView) allView.style.display = "none";
+    document.getElementById('studentSearchInput').value = ""; // 검색어 초기화
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
