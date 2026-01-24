@@ -794,98 +794,119 @@ body.modal-open .app-content {
 .text-outing { color: #ea580c; }
 .text-overnight { color: #dc2626; }
 
-/* [전면 개편] 통합 명단 모바일 프리미엄 리스트 UI */
-#allStudentListView {
-    background: #f1f5f9;
-}
 
-#allStudentListView .section-card {
-    padding: 12px 10px !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
 
-/* 검색바 디자인 강화 */
-#studentSearchInput {
-    border: 2px solid #3b82f6 !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-    margin-bottom: 20px;
-}
 
-/* 학생 카드 리스트 */
-.student-data-row {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 15px;
-    margin-bottom: 12px;
+
+
+
+
+
+
+
+
+
+
+
+
+/* [최종 해결] 통합 명단 와이드 카드 UI */
+#allStudentListView { background: #f8fafc; }
+
+/* 테이블 헤더 제거 (카드형에선 필요 없음) */
+#allStudentListView table { display: none !important; }
+
+#allStudentTableBody {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    position: relative;
-    overflow: hidden;
+    gap: 12px;
+    padding: 10px;
+    padding-bottom: 120px; /* 홈 버튼 여백 */
 }
 
-/* 상단: 이름 및 과정명 */
-.row-header {
+/* 개별 학생 카드 */
+.student-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 상단: 과정명(태그) + 이름/번호 */
+.card-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    border-bottom: 1px dashed #f1f5f9;
-    padding-bottom: 8px;
 }
 
-.c-name-tag {
+.course-tag {
+    background: #f0f7ff;
+    color: #0284c7;
     font-size: 11px;
-    color: #3b82f6;
     font-weight: 800;
-    background: #eff6ff;
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 6px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.s-name-text {
-    font-size: 17px;
+.student-name {
+    font-size: 18px;
     font-weight: 900;
-    color: #1e293b;
+    color: #0f172a;
+    margin-top: 4px;
+    display: block;
 }
 
-/* 중단: 정보 그리드 (생활관, 차량, 외출) */
-.info-grid {
+.student-phone {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-left: 6px;
+}
+
+/* 하단 정보 그리드 (3칸 가로 배치) */
+.card-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr; /* 3분할 */
-    gap: 8px;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px 5px;
+    gap: 5px;
 }
 
-.info-item {
+.grid-item {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    align-items: center;
+    text-align: center;
+    border-right: 1px solid #e2e8f0;
 }
+.grid-item:last-child { border-right: none; }
 
-.info-label {
+.grid-label {
     font-size: 10px;
-    color: #94a3b8;
     font-weight: 700;
+    color: #64748b;
+    margin-bottom: 4px;
 }
 
-.info-val {
-    font-size: 13px;
+.grid-val {
+    font-size: 12px;
     font-weight: 800;
-    color: #334155;
+    color: #1e293b;
+    word-break: keep-all; /* 단어 끊김 방지 */
 }
 
-/* 강조 색상 */
-.val-dorm { color: #2563eb; }
-.val-shuttle { color: #16a34a; }
-.val-action { color: #ef4444; }
-
-/* 하단 홈버튼 여백 */
-#allStudentTableBody {
-    padding-bottom: 100px;
-}
+/* 상태별 색상 */
+.val-dorm { color: #2563eb; }    /* 생활관: 파랑 */
+.val-shuttle { color: #10b981; } /* 차량: 초록 */
+.val-status { color: #ef4444; }  /* 외출: 빨강 */
 
 
 
@@ -3374,44 +3395,35 @@ function renderStudentTable(list) {
         return;
     }
 
-    // [중요] 기존 테이블 구조를 무시하고 카드 리스트로 렌더링합니다.
-    // HTML 구조상 tbody 안에 넣어도 되지만, 더 깔끔하게 보이기 위해 div처럼 쌓습니다.
+    // 카드 형식으로 생성
     container.innerHTML = list.map(s => {
-        
-        // 텍스트 강조 처리
         const shuttleDisp = s.shuttleText !== "-" ? s.shuttleText : "미신청";
         const actionDisp = s.actionText !== "-" ? s.actionText : "정상(내무)";
 
         return `
-        <div class="student-data-row">
-            <!-- 과정명 및 이름 -->
-            <div class="row-header">
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <span class="c-name-tag">${s.courseName}</span>
-                    <span class="s-name-text">${s.name} <small style="font-size:12px; color:#94a3b8; font-weight:500;">(${s.phone})</small></span>
+        <div class="student-card">
+            <div class="card-top">
+                <div>
+                    <div class="course-tag">${s.courseName}</div>
+                    <div class="student-name">
+                        ${s.name}<span class="student-phone">${s.phone}</span>
+                    </div>
                 </div>
-                <!-- 아이콘 포인트 (상태에 따라 변화 가능) -->
-                <i class="fa-solid fa-circle-user" style="font-size:24px; color:#e2e8f0;"></i>
+                <i class="fa-solid fa-circle-user" style="font-size:32px; color:#e2e8f0;"></i>
             </div>
 
-            <!-- 핵심 정보 3구역 -->
-            <div class="info-grid">
-                <!-- 1. 생활관 구역 -->
-                <div class="info-item">
-                    <span class="info-label"><i class="fa-solid fa-bed"></i> 생활관 정보</span>
-                    <span class="info-val val-dorm">${s.dormBuilding} ${s.dormRoom}</span>
+            <div class="card-grid">
+                <div class="grid-item">
+                    <span class="grid-label"><i class="fa-solid fa-bed"></i> 생활관</span>
+                    <span class="grid-val val-dorm">${s.dormBuilding}<br>${s.dormRoom}</span>
                 </div>
-                
-                <!-- 2. 퇴교차량 구역 -->
-                <div class="info-item">
-                    <span class="info-label"><i class="fa-solid fa-bus"></i> 퇴교차량</span>
-                    <span class="info-val val-shuttle">${shuttleDisp}</span>
+                <div class="grid-item">
+                    <span class="grid-label"><i class="fa-solid fa-bus"></i> 퇴교차량</span>
+                    <span class="grid-val val-shuttle">${shuttleDisp}</span>
                 </div>
-
-                <!-- 3. 외출/외박 구역 -->
-                <div class="info-item">
-                    <span class="info-label"><i class="fa-solid fa-clock-rotate-left"></i> 현재상태</span>
-                    <span class="info-val val-action">${actionDisp}</span>
+                <div class="grid-item">
+                    <span class="grid-label"><i class="fa-solid fa-person-walking"></i> 현재상태</span>
+                    <span class="grid-val val-status">${actionDisp}</span>
                 </div>
             </div>
         </div>
