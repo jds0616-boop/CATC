@@ -795,44 +795,72 @@ body.modal-open .app-content {
 .text-overnight { color: #dc2626; }
 
 
-/* [초압축 고정 레이아웃] 통합 명단 모바일 최적화 */
+/* [가로 스크롤 절대 금지] 통합 명단 초압축 레이아웃 */
 #allStudentListView .section-card {
-    padding: 8px 2px !important; /* 카드 좌우 여백 거의 제거 */
+    padding: 10px 0px !important; /* 카드 좌우 여백 삭제 */
+    margin: 0 !important;
 }
 
 #allStudentListView .navy-table {
-    table-layout: fixed !important; /* 컬럼 너비를 아래 % 비율로 강제 고정 */
+    table-layout: fixed !important; /* 너비 비중 강제 고정 */
     width: 100% !important;
-    border-collapse: collapse;
+    border-collapse: collapse !important; /* 셀 사이 간격 제거 */
+    border-spacing: 0 !important;
 }
 
 #allStudentListView .navy-table th, 
 #allStudentListView .navy-table td {
-    padding: 6px 0 !important; /* 좌우 패딩 0 */
-    font-size: 9px !important;
-    letter-spacing: -0.7px;     /* 글자 간격 압축 */
+    padding: 5px 0px !important; /* 셀 안쪽 여백 0 (핵심) */
+    font-size: 10px !important;
+    letter-spacing: -1px;       /* 자간을 최대한 붙여 가로폭 확보 */
     text-align: center !important;
-    vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
+    overflow: hidden;           /* 내용이 넘쳐도 표를 키우지 않음 */
 }
 
-/* 컬럼 너비 비율 (총 100%) */
-.col-course  { width: 22%; } /* 과정명 */
-.col-name    { width: 17%; } /* 성함+번호 */
-.col-dorm    { width: 21%; } /* 기숙사+호실 */
-.col-shuttle { width: 18%; } /* 퇴교차량 */
-.col-outing  { width: 22%; } /* 외출/외박 */
+/* 5개 열의 너비를 딱 맞춰서 배분 (합계 100%) */
+.col-course  { width: 19%; } /* 과정명 */
+.col-name    { width: 16%; } /* 성함 */
+.col-dorm    { width: 25%; } /* 기숙사(긴 단어 대비 여유) */
+.col-shuttle { width: 17%; } /* 차량 */
+.col-outing  { width: 23%; } /* 외출 */
 
-/* 텍스트 스타일 */
-.name-text { font-size: 10.5px !important; font-weight: 800; color: #1e293b; display: block; line-height: 1.1; }
-.dorm-text { font-size: 9.5px !important; font-weight: 800; color: #2563eb; display: block; line-height: 1.1; }
-.room-text { font-size: 8.5px; color: #64748b; display: block; margin-top: 1px; }
-.course-text { font-size: 8.5px; color: #94a3b8; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 텍스트 수직 정렬 */
+.cell-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    line-height: 1.1;
+}
 
-/* 마지막 데이터가 홈 버튼에 가려지지 않게 처리 */
+/* 기숙사 명칭 (청렴관, 상생관, 국제동) 강조 */
+.dorm-bold { font-weight: 800; color: #1d4ed8; font-size: 10px; }
+.room-small { font-size: 9px; color: #64748b; margin-top: 1px; }
+.name-bold { font-weight: 900; color: #1e293b; font-size: 11px; }
+
+/* 과정명 5자 초과 시 생략 (가로폭 침범 방지) */
+.course-cut {
+    width: 95%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+/* 홈 버튼 여백 */
 #allStudentTableBody tr:last-child td {
-    padding-bottom: 120px !important;
+    padding-bottom: 110px !important;
 }
+
+
+
+
+
+
+
 
   </style>
 </head>
@@ -3310,42 +3338,33 @@ async function loadAllStudentData() {
 function renderStudentTable(list) {
     const tbody = document.getElementById('allStudentTableBody');
     if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터 없음</td></tr>';
         return;
     }
 
     tbody.innerHTML = list.map(s => {
-        // 1. 과정명 처리: 7자 초과시 자르고 .. 표시 (랜덤한 모든 과정명 대응)
-        const displayCourse = s.courseName.length > 7 
-            ? s.courseName.substring(0, 7) + ".." 
-            : s.courseName;
+        // 1. 과정명: 랜덤한 이름이 표를 찌그러뜨리지 않게 5자에서 자름
+        const shortCourse = s.courseName.length > 5 ? s.courseName.substring(0, 5) + ".." : s.courseName;
 
-        // 2. 성함 + 뒷자리 2단 배치
-        const nameHtml = `
-            <span class="name-text">${s.name}</span>
-            <span style="font-size:8px; color:#cbd5e1;">${s.phone}</span>
-        `;
+        // 2. 성함 + 뒷자리 (세로 배치)
+        const nameHtml = `<div class="cell-box"><span class="name-bold">${s.name}</span><span style="font-size:8.5px; color:#cbd5e1;">${s.phone}</span></div>`;
 
-        // 3. 기숙사(상생관, 청렴관, 국제동) + 호수 2단 배치
-        // (글자가 가로로 길어지지 않게 건물명과 호수를 강제 줄바꿈)
-        const dormHtml = `
-            <span class="dorm-text">${s.dormBuilding}</span>
-            <span class="room-text">${s.dormRoom}</span>
-        `;
+        // 3. 기숙사(상생관, 청렴관, 국제동) + 호실 (세로 배치)
+        const dormHtml = `<div class="cell-box"><span class="dorm-bold">${s.dormBuilding}</span><span class="room-small">${s.dormRoom}</span></div>`;
 
-        // 4. 차량 정보 (Badge)
+        // 4. 차량 (배지 형태)
         const shuttleHtml = s.shuttleText !== "-" 
-            ? `<span class="badge-shuttle ${s.shuttleClass}">${s.shuttleText}</span>` 
+            ? `<span class="badge-shuttle ${s.shuttleClass}" style="padding:2px 4px; font-size:9px;">${s.shuttleText}</span>` 
             : `<span style="color:#eee">-</span>`;
 
-        // 5. 외출/외박 정보
+        // 5. 외출/외박
         const actionHtml = s.actionText !== "-" 
-            ? `<span class="status-action ${s.actionClass}" style="font-size:9px; font-weight:800;">${s.actionText}</span>` 
+            ? `<span class="status-action ${s.actionClass}" style="font-size:10px; font-weight:800;">${s.actionText}</span>` 
             : `<span style="color:#eee">-</span>`;
 
         return `
         <tr>
-            <td><span class="course-text" title="${s.courseName}">${displayCourse}</span></td>
+            <td><div class="course-cut" title="${s.courseName}">${shortCourse}</div></td>
             <td>${nameHtml}</td>
             <td>${dormHtml}</td>
             <td>${shuttleHtml}</td>
