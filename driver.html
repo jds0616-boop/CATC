@@ -811,18 +811,14 @@ function checkAndResetOldData(limitDate) {
 function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0]; // 오늘 (2026-01-24)
 
-    // 상단 주차 제목 계산
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const weekNo = Math.ceil((now.getDate() + firstDayOfMonth.getDay()) / 7);
-    const headerTitle = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${weekNo}째주 교육생 퇴교 설정`;
-    
-    let listHTML = `
-      <div style="text-align:center; font-weight:900; color:#0f172a; margin-bottom:15px; font-size:16px; background:#e2e8f0; padding:10px; border-radius:10px;">
-        <i class="fa-solid fa-calendar-check"></i> ${headerTitle}
-      </div>
-      <div class="list-wrapper">
+    // 리셋 기준 (지난 토요일)
+    const lastSat = new Date();
+    lastSat.setDate(now.getDate() - ((now.getDay() + 1) % 7));
+    const lastSatStr = lastSat.toISOString().split('T')[0];
+
+    let listHTML = `<div class="list-wrapper">
         <div class="list-header">
           <div class="t-cell name">과정명</div>
           <div class="t-cell">퇴교총원</div>
@@ -836,107 +832,127 @@ function renderTraineeManagement() {
 
       const period = room.settings?.period || "";
       if (!period.includes(" ~ ")) return;
-      const endDate = period.split(" ~ ")[1]; 
+      const [startDate, endDate] = period.split(" ~ ");
 
-      if (endDate < todayStr) return;
+      // [핵심 로직] 과정이 진행 중이거나 오늘이 종료일이라면 무조건 표시!
+      // 즉, 2주차 과정이라 종료일이 다음 주 금요일이라면 오늘(토요일)도 당연히 보입니다.
+      if (endDate < todayStr) return; 
 
       const dep = room.shuttle?.departure || { time: "", date: "" };
-
-      // [중요] 버튼 활성화 비교를 위해 현재 저장된 시간을 가져옴 (공백 제거)
-      const currentTime = dep.time ? dep.time.trim() : "";
+      
+      // 자동 리셋: 만약 저장된 데이터가 지난 토요일보다 전이면 삭제
+      if (dep.date && dep.date < lastSatStr) {
+          firebase.database().ref(`courses/${rid}/shuttle/departure`).set(null);
+          firebase.database().ref(`courses/${rid}/shuttle/requests`).set(null);
+          return;
+      }
 
       const reqs = Object.values(room.shuttle?.requests || {});
       const subTotal = reqs.filter(r => r.type !== 'car').length;
       const cName = room.settings?.courseName || '과정명';
 
+      // 실시간 버튼 활성화 체크
+      const curT = dep.time ? dep.time.trim() : "";
+      const is13 = (curT === '13:00');
+      const is15 = (curT === '15:00');
+      const isManual = (curT && !is13 && !is15);
+
       listHTML += `
         <div class="course-row">
-          <div class="t-cell name" style="font-size:12px; justify-content:flex-start; text-align:left; padding-left:10px;">${cName}</div>
-          <div class="t-cell count" style="cursor:pointer;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
+          <div class="t-cell name" style="font-size:12px; font-weight:800; justify-content:flex-start; padding-left:10px;">${cName}</div>
+          <div class="t-cell count" style="cursor:pointer; color:#0ea5e9; font-weight:900;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
           <div class="t-cell btns">
-            <button class="mini-btn ${String(dep.time) === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
-            <button class="mini-btn ${String(dep.time) === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
-            <button class="mini-btn ${(dep.time && dep.time !== '13:00' && dep.time !== '15:00') ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
+            <button class="mini-btn ${is13 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
+            <button class="mini-btn ${is15 ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
+            <button class="mini-btn ${isManual ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
           </div>
           <div class="t-cell status">
-            ${dep.time ? 
-              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : 
-              `<i class="fa-solid fa-minus notice-off" style="opacity:0.3;"></i>`
-            }
+            ${curT ? `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : `<i class="fa-solid fa-minus notice-off" style="opacity:0.2;"></i>`}
           </div>
         </div>`;
     });
 
     listHTML += `</div>`;
     area.innerHTML = listHTML;
-}
+  }
 
 
 
 
 
 
-// [기사님 플랫폼] 모든 확인 및 저장 액션 통합 함수
+// [기사님 플랫폼] 모든 확인/저장/충돌체크 통합 함수
   function confirmAction(type, id, val = null, targetDate = null) {
     const modal = document.getElementById('confirmModal');
     const okBtn = document.getElementById('c-ok-btn');
     
-    // 1. 강사 수송 승인
+    // --- 1. 강사 수송 승인 (충돌 체크 로직 복구) ---
     if(type === 'approve') {
-        document.getElementById('c-title').innerText = "배차 승인"; 
-        document.getElementById('c-desc').innerText = "해당 수송을 승인하고 일정표에 등록하시겠습니까?";
+        const target = profReqs.find(r => r.id === id);
+        const targetH = parseInt(target.time.split(':')[0]);
+        let conflictList = [];
+
+        // 다른 강사 수송 일정과 겹치는지 체크
+        profReqs.forEach(r => {
+            if(r.id !== id && r.status === 'approved' && r.date === target.date) {
+                if(parseInt(r.time.split(':')[0]) === targetH) conflictList.push(`[강사] ${r.prof} (${r.dir})`);
+            }
+        });
+
+        // 교육생 퇴교 일정과 겹치는지 체크
+        Object.values(allCourses).forEach(room => {
+            const dep = room.shuttle?.departure;
+            if(dep && dep.date === target.date && parseInt(dep.time.split(':')[0]) === targetH) {
+                conflictList.push(`[퇴교] ${room.settings?.courseName || '과정'}`);
+            }
+        });
+
+        if(conflictList.length > 0) {
+            document.getElementById('c-title').innerText = "⚠️ 배차 충돌 경고";
+            document.getElementById('c-desc').innerHTML = `해당 시간대에 이미 일정이 있습니다:<br><br>${conflictList.map(v => `<span style="color:#ef4444; font-weight:800;">• ${v}</span>`).join('<br>')}<br><br>그래도 승인하시겠습니까?`;
+        } else {
+            document.getElementById('c-title').innerText = "배차 승인";
+            document.getElementById('c-desc').innerText = "해당 수송을 승인하고 일정표에 등록하시겠습니까?";
+        }
+
         okBtn.onclick = async () => { 
             await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
             closeModal('confirmModal'); 
         };
     } 
-    // 2. 강사 수송 승인 취소
-    else if(type === 'cancel') {
-        document.getElementById('c-title').innerText = "승인 취소"; 
-        document.getElementById('c-desc').innerText = "배차 승인을 취소하시겠습니까?";
-        okBtn.onclick = async () => { 
-            await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); 
-            closeModal('confirmModal'); 
-        };
-    } 
-    // 3. 강사 수송 요청 삭제
-    else if(type === 'delete') {
-        document.getElementById('c-title').innerText = "삭제/거절"; 
-        document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>이 작업은 상대방에게 거절로 통보되며 즉시 삭제됩니다.</span>";
-        okBtn.onclick = async () => { 
-            await firebase.database().ref(`system/transport_requests/${id}`).remove(); 
-            closeModal('confirmModal'); 
-        };
-    } 
-    // 4. 교육생 퇴교 공지 설정 (시간 클릭 시)
+    // --- 2. 교육생 퇴교 공지 설정 (날짜/시간 저장 및 실시간 반영) ---
     else if(type === 'dep') {
         document.getElementById('c-title').innerText = "퇴교 공지"; 
-        document.getElementById('c-desc').innerHTML = `
-            설정 시간: <b style="color:#0ea5e9; font-size:18px;">${val}</b><br>
-            퇴교 적용일: <b style="color:#ef4444;">${targetDate}</b><br><br>
-            위 내용으로 교육생 및 강사님께 공지하시겠습니까?`;
+        document.getElementById('c-desc').innerHTML = `공지시간: <b style="color:#0ea5e9;">${val}</b><br>퇴교예정: <b style="color:#ef4444;">${targetDate}</b><br><br>해당 과정 종료일에 맞춰 공지하시겠습니까?`;
         
         okBtn.onclick = async () => { 
             closeModal('confirmModal');
-            // 해당 과정(id)의 경로에 정확히 저장 (날짜는 과정 종료일로 고정)
+            // 정확한 Room ID 경로에 저장 (targetDate는 강사가 설정한 전체 과정 종료일)
             await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ 
                 time: val, 
                 date: targetDate 
             }); 
-            // [핵심] 저장 후 즉시 리스트를 다시 그려서 버튼 색상(검정색) 반영
-            if(typeof renderTraineeManagement === 'function') renderTraineeManagement();
+            // [중요] 저장 즉시 리스트를 다시 그려서 버튼 검정색(active) 반영
+            renderTraineeManagement(); 
         };
     } 
-    // 5. 교육생 퇴교 공지 취소 (우측 체크 아이콘 클릭 시)
+    // --- 3. 교육생 퇴교 공지 취소 ---
     else if(type === 'cancelDep') {
-        // 알림 팝업으로 의사 재확인
-        if(!confirm("이미 설정된 퇴교 공지 시간을 삭제하시겠습니까?\n(삭제 시 강사 플랫폼에서도 실시간으로 사라집니다.)")) return;
-        
+        if(!confirm("설정된 퇴교 공지 시간을 삭제하시겠습니까?")) return;
         firebase.database().ref(`courses/${id}/shuttle/departure`).set(null).then(() => {
-            // [핵심] 삭제 후 즉시 리스트를 다시 그려서 버튼 색상 리셋
-            if(typeof renderTraineeManagement === 'function') renderTraineeManagement();
+            renderTraineeManagement(); 
         });
-        return; // cancelDep은 브라우저 confirm을 쓰므로 여기서 함수 종료
+        return;
+    }
+    // --- 4. 기타 액션 (승인취소, 삭제) ---
+    else if(type === 'cancel') {
+        document.getElementById('c-title').innerText = "승인 취소"; 
+        document.getElementById('c-desc').innerText = "배차 승인을 취소하시겠습니까?";
+        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); closeModal('confirmModal'); };
+    } else if(type === 'delete') {
+        document.getElementById('c-title').innerText = "삭제/거절"; 
+        document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>이 작업은 즉시 삭제됩니다.</span>";
+        okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('confirmModal'); };
     }
 
     modal.style.display = 'flex';
