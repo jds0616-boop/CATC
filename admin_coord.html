@@ -765,39 +765,49 @@ body.modal-open {
     </header>
 
     <main class="app-content">
-<!-- [뷰 1] 전체 과정 현황 -->
+<!-- [뷰 1] 전체 과정 현황 (메인) -->
 <div id="totalStatusView" style="display:flex; flex-direction:column; gap:12px;">
     
-<div class="global-status-grid">
-    <!-- 1번 카드: 전체 교육생 -->
-    <div class="dashboard-card-btn stat-dark" onclick="/*함수넣기*/">
-        <div class="label">항기원 전체 교육생</div>
-        <div class="val"><span id="g-total-students">0</span><small>명</small></div>
-        <i class="fa-solid fa-users"></i>
+    <!-- 4개 상단 상황판 카드 -->
+    <div class="global-status-grid">
+        <!-- 1번 카드: 전체 교육생 -->
+        <div class="dashboard-card-btn stat-dark" onclick="showTotalStudentList()">
+            <div class="label">항기원 전체 교육생</div>
+            <div class="val"><span id="g-total-students">0</span><small>명</small></div>
+            <i class="fa-solid fa-users"></i>
+        </div>
+
+        <!-- 2번 카드: 금일 외출/외박 (클릭 시 상세페이지 이동) -->
+        <div class="dashboard-card-btn stat-blue" onclick="openOutingManager()">
+            <div class="label">금일 외출·외박 신청</div>
+            <div class="val"><span id="g-today-actions">0</span><small>건</small></div>
+            <i class="fa-solid fa-file-signature"></i>
+        </div>
+
+        <!-- 3번 카드: 강사 픽업 현황 -->
+        <div class="dashboard-card-btn action-white" onclick="showPickupView()">
+            <div class="label">강사 픽업요청 현황</div>
+            <div class="val"><span id="g-pickup-count">0</span><small>건</small></div>
+            <i class="fa-solid fa-car-side icon-pickup"></i>
+        </div>
+
+        <!-- 4번 카드: 교육생 퇴교 현황 -->
+        <div class="dashboard-card-btn action-white" onclick="showStudentShuttleView()">
+            <div class="label">교육생 퇴교 신청 현황</div>
+            <div class="val"><span id="g-shuttle-count">0</span><small>명</small></div>
+            <i class="fa-solid fa-bus icon-shuttle"></i>
+        </div>
     </div>
 
-    <!-- 2번 카드: 관리대장 -->
-    <div class="dashboard-card-btn stat-blue" onclick="openOutingManager()">
-        <div class="label">금일 외출·외박 신청</div>
-        <div class="val"><span id="g-today-actions">0</span><small>건</small></div>
-        <i class="fa-solid fa-file-signature"></i>
+    <!-- ✅ [복구 완료] 현재 운영 중인 과정 리스트 섹션 -->
+    <div class="section-card">
+        <div class="section-title"><i class="fa-solid fa-list-ul"></i> 현재 운영 중인 과정 리스트</div>
+        <div id="activeCourseList" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 자바스크립트가 여기에 ROOM A, ROOM C 등의 카드를 채워넣습니다 -->
+        </div>
     </div>
 
-    <!-- 3번 카드: 강사 픽업 (신규 숫자 추가) -->
-    <div class="dashboard-card-btn action-white" onclick="showPickupView()">
-        <div class="label">강사 픽업요청 현황</div>
-        <div class="val"><span id="g-pickup-count">0</span><small>건</small></div>
-        <i class="fa-solid fa-car-side icon-pickup"></i>
-    </div>
-
-    <!-- 4번 카드: 교육생 퇴교 (신규 숫자 추가) -->
-    <div class="dashboard-card-btn action-white" onclick="showStudentShuttleView()">
-        <div class="label">교육생 퇴교 신청 현황</div>
-        <div class="val"><span id="g-shuttle-count">0</span><small>명</small></div>
-        <i class="fa-solid fa-bus icon-shuttle"></i>
-    </div>
-</div>
-      </div>
+</div> <!-- totalStatusView 닫기 -->
 
 
 
