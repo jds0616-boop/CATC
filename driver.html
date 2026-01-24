@@ -178,6 +178,8 @@
 <script src="config.js"></script>
 
 <script>
+
+
   let allCourses = {};
   let profReqs = [];
   let weekOffset = 0;
@@ -192,16 +194,31 @@
 
     firebase.database().ref('system/transport_requests').on('value', snap => {
       const raw = snap.val() || {};
-      // [수정] 깨진 데이터(필수값 누락) 필터링 추가
-      profReqs = Object.keys(raw)
-        .map(k => ({ id: k, ...raw[k] }))
-        .filter(r => r.date && r.prof && r.courseRID && r.time);
+      const now = new Date();
+
+      profReqs = Object.keys(raw).map(k => {
+        const item = { id: k, ...raw[k] };
+        
+        // [자동 종료 로직 추가]
+        // 픽업 시간(예: 14:00)으로부터 2시간(120분)이 지나면 자동으로 finished 처리
+        if (item.status === 'approved' && item.date && item.time) {
+          const scheduledTime = new Date(item.date + ' ' + item.time);
+          const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); // 2시간 후
+          
+          if (now > limitTime) {
+            firebase.database().ref('system/transport_requests/' + k).update({ status: 'finished' });
+            item.status = 'finished'; // 로컬 데이터도 즉시 반영
+          }
+        }
+        return item;
+      }).filter(r => r.date && r.prof && r.courseRID && r.time);
       
       checkNewRequests();
       renderAll();
     });
   }
 
+  // ... (checkNewRequests, playAlarm 함수는 기존과 동일) ...
   function checkNewRequests() {
     const currentPending = profReqs.filter(r => r.status === 'pending').length;
     if (currentPending > prevPendingCount) playAlarm(2);
@@ -224,54 +241,7 @@
     try { renderTraineeManagement(); } catch(e) {}
   }
 
-  function renderSchedule() {
-    const head = document.getElementById('sched-head');
-    const body = document.getElementById('sched-body');
-    const range = getWeekDates(weekOffset);
-    const dayNames = ['월','화','수','목','금'];
-    
-    document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
-    head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
-    
-    let bodyHTML = '';
-    for(let h=8; h<=18; h++) {
-        bodyHTML += `<tr><td class="time-col">${h}:00</td>`;
-        for(let d=0; d<5; d++) {
-            const curDate = range[d];
-            let cellContent = '';
-            const isDayOff = profReqs.some(r => r.date === curDate && r.prof === '운행중단');
-            if(isDayOff) {
-                cellContent = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
-            } else if(h === 12) {
-                cellContent = `<div class="cell-event block-lunch" style="font-size:10px; opacity:0.3; display:flex; align-items:center; justify-content:center;">점심</div>`;
-            } else if(d === 0 && (h === 9 || h === 10)) {
-                cellContent = `<div class="cell-event block-entry">입교수송</div>`;
-            } else {
-                const matchedProfs = profReqs.filter(r => (r.status === 'approved' || r.status === 'finished' || r.status === 'completed') && r.date === curDate && parseInt(String(r.time || "").split(':')[0]) === h);
-                if(matchedProfs.length > 0) {
-                    const item = matchedProfs[0];
-                    const profLabel = matchedProfs.length > 1 ? `강사 ${matchedProfs.length}명` : item.prof;
-                    const route = (item.dir || "").replace(/→|>>/g, '>');
-                    const isFin = matchedProfs.every(r => r.status === 'finished' || r.status === 'completed');
-                    cellContent = `<div class="cell-event block-prof" style="${isFin?'background:#e2e8f0; border-color:#cbd5e1; color:#94a3b8;':''}" onclick="showDetail('prof', ${JSON.stringify(matchedProfs).replace(/"/g, '&quot;')})">${route}<br>${profLabel}</div>`;
-                } else {
-                    for (const rid in allCourses) {
-                        const dep = allCourses[rid]?.shuttle?.departure;
-                        if(dep && dep.date === curDate && parseInt(String(dep.time || "").split(':')[0]) === h) {
-                            cellContent = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
-                            break; 
-                        }
-                    }
-                }
-            }
-            bodyHTML += `<td>${cellContent}</td>`;
-        }
-        bodyHTML += `</tr>`;
-    }
-    body.innerHTML = bodyHTML;
-  }
-
-  // [수정] 강사 수송 리스트 (미션 2 완료 처리 및 버그 수정 반영)
+  // [탭 1] 강사 수송 리스트 (기사님 부담을 줄인 심플한 버튼 구성)
   function renderInstructorList() {
     const allZone = document.getElementById('all-request-container');
     if (!allZone) return;
@@ -297,7 +267,6 @@
         const roomInfo = allCourses[group.courseRID];
         const cName = roomInfo?.settings?.courseName || `과정`;
         
-        // [미션 2] 그룹 내 모든 일정이 완료되었는지 확인
         const isAllFinished = group.legs.every(r => r.status === 'finished' || r.status === 'completed');
         const isPastGroup = group.date < todayStr;
         const shading = (isPastGroup || isAllFinished) ? 'opacity: 0.65; filter: grayscale(1);' : '';
@@ -311,7 +280,7 @@
             const isCan = r.status === 'cancelled';
             
             if(isCan) {
-                legsHtml += `<div style="padding:5px; opacity:0.5; text-decoration:line-through; font-size:12px;">🚫 취소: ${r.time} ${r.dir}</div>`;
+                legsHtml += `<div style="padding:5px; opacity:0.5; text-decoration:line-through; font-size:12px;">🚫 취소됨: ${r.time} ${r.dir}</div>`;
                 return;
             }
 
@@ -319,31 +288,36 @@
                 <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px; ${isFin?'text-decoration:line-through;':''}">${r.time} ${r.dir.replace('→',' > ')}</div>
                 <div style="margin-top:5px; display:flex; gap:5px;">
                     ${(!isApp && !isFin && !isPastGroup) ? 
-                        `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
-                         <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">거절</button>` 
+                        // [승인 대기 시] 승인과 거절(취소) 버튼
+                        `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">배차 승인</button>
+                         <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">운행불가</button>` 
                         : (isApp ? 
-                        `<button class="mini-talk-btn" style="background:#10b981; color:white; border:none;" onclick="handleStatusUpdate('${r.id}', 'finished')">운행종료</button>
-                         <button class="mini-talk-btn" style="color:#94a3b8;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
-                        : (isFin ? `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 운행완료</div>` : ''))}
+                        // [승인 후] 운행종료 버튼 삭제, 오직 '운행 취소' 요청 버튼만 배치
+                        `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1; display:flex; align-items:center;">✓ 승인됨 (시간 경과 시 자동마감)</div>
+                         <button class="mini-talk-btn" style="color:#94a3b8; max-width:80px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
+                        : (isFin ? `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 운행완료 (자동마감)</div>` : ''))}
                 </div>
             </div>`;
 
             if(isApp || isFin) {
-                const replyText = isFin ? `운행이 종료되었습니다. (${r.time})` : `네 확인했습니다. [${cName}] ${r.prof}님 ${r.date} ${r.time} 배차 승인!`;
+                const replyText = isFin ? `운행이 마감되었습니다. (${r.time})` : `배차 승인 완료! [${cName}] ${r.prof}님 일정 확인했습니다.`;
                 const replyBg = isFin ? 'background:#f1f5f9; color:#94a3b8;' : 'background:#fee500; color:#1e293b;';
                 repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${replyBg}">${replyText}</div></div>`;
             }
         });
 
         chatBox.innerHTML += `<div class="chat-bubble chat-left" style="${shading}">
-            <div class="talk-header">운영부 수송요청 ${isAllFinished?'(마감)':''}</div>
+            <div class="talk-header">수송요청 내역</div>
             <div class="bubble-content" style="${bubbleBg}">
-                <div class="talk-body" style="font-size:13px;"><b>[${cName}] ${group.prof} 강사님</b> (${formatPhone(group.phone)})</div>
+                <div class="talk-body" style="font-size:13px;"><b>[${cName}] ${group.prof} 강사님</b></div>
                 <div style="margin-top:8px; border-top:1px solid #f1f5f9; padding-top:8px;">${legsHtml}</div>
             </div>
         </div>` + repliesHtml;
     });
   }
+
+
+
 
   // [수정] 상태 업데이트 함수 (.update() 사용으로 안전하게 처리)
   async function handleStatusUpdate(id, nextStatus) {
