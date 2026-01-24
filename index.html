@@ -698,31 +698,31 @@ function sendAns(idx) {
 // [수정] index.html의 최하단 (async function init() { ... })
 (async function init() {
     const params = new URLSearchParams(window.location.search);
-    const directRoom = params.get('room'); // 여기서 'C'를 가져옴
+    const directRoom = params.get('room'); // 새로 찍은 QR의 방 (예: C)
     const code = params.get('code');
 
-    // 1. 방 번호를 그 무엇보다 먼저 확정짓습니다.
+    // [강력 로직 1] URL에 방 번호가 있으면 무조건 그 방을 현재 방으로 확정
     if (directRoom) {
         currentRoom = directRoom;
     } else if (code) {
         currentRoom = await resolveRoomFromCode(code);
     }
 
-    // 2. 방 정보가 없으면 중단
+    // [강력 로직 2] 방 번호가 바뀌었는지 확인하고, 데이터 경로 리셋
     if (!currentRoom) {
         alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
         return;
     }
 
-    // 3. UI 및 로컬 데이터를 현재 방(C)에 맞게 즉시 리셋
+    // UI 즉시 업데이트 (이전 방 이름이 보이지 않게)
     document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
     document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-    
-    // 방마다 독립적인 데이터 로드 (A 데이터가 C로 섞이지 않게 함)
+
+    // 해당 방(currentRoom) 전용 데이터 저장소 연결
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
+    lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
 
-    // 4. DB 경로 설정 (현시점 방 번호 C 기준)
     const db = firebase.database();
     const rPath = `courses/${currentRoom}`;
     dbRef = { 
@@ -734,11 +734,10 @@ function sendAns(idx) {
         connections: db.ref(`${rPath}/connections`) 
     };
 
-    // ★ 5. 방 번호(currentRoom)가 'C'로 확실히 고정된 "다음에" 출석 체크 실행
-    // 이렇게 해야 handleInternalAttendance 안의 room 인자가 'C'가 됩니다.
+    // [중요] 출석 체크 함수 호출 (이때 room은 새로 찍은 'C'여야 함)
     handleInternalAttendance(currentRoom); 
 
-    // 6. 나머지 리스너 실행
+    // 리스너 및 키보드 보정 실행
     setupListeners(); 
     checkCooldown(); 
     initKeyboardFix();
@@ -2052,32 +2051,35 @@ async function saveProfile() {
 // [최종 수정] 서버 명단 대조 방식의 엄격한 프로필 체크
 async function checkProfile() {
     const savedName = localStorage.getItem('kac_user_name');
+    const savedPhone = localStorage.getItem('kac_user_phone');
     const uToken = localStorage.getItem('uToken');
 
-    // 1. 핸드폰에 입장권(uToken) 자체가 없으면 무조건 이름 입력창 표시
+    // 1. 기본 정보조차 없으면 입력창행
     if (!uToken || !savedName) {
         document.getElementById('profileOverlay').style.display = 'flex';
-        document.getElementById('mainApp').style.display = 'none';
         return;
     }
 
     try {
-        // 2. 서버 명단에 내가 실제로 있는지 확인
+        // 2. [핵심] 현재 접속하려는 방(Room C)의 수강생 명단에 내가 있는지 확인
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
         
         if (!snap.exists()) {
-            // 서버 명단에 없다면 (삭제되었거나 유령인 경우) 입장권 파기 후 이름 입력창 표시
-            localStorage.removeItem('uToken');
-            document.getElementById('profileOverlay').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
-        } else {
-            // 3. 서버에 명단이 있을 때만 정상 입장
-            showMainDashboard();
+            // 이름은 저장되어 있지만, '이 방(C)'에는 처음 들어온 경우
+            // 자동으로 방 명단에 나를 등록하고 입장 (사용자에게 다시 입력 안 시킴)
+            await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({
+                name: savedName,
+                phone: savedPhone,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                isOnline: true
+            });
         }
+        
+        // 3. 정상 입장 처리
+        showMainDashboard();
+        
     } catch (e) {
-        // 오류 발생 시 안전을 위해 이름 입력창 표시
         document.getElementById('profileOverlay').style.display = 'flex';
-        document.getElementById('mainApp').style.display = 'none';
     }
 }
 
@@ -2305,26 +2307,28 @@ function handleInternalAttendance(room) {
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
+    // [확인] storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
     const storageKey = `kac_attended_${room}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        // [수정] 알림창에 room 번호를 포함시켜서 출력
-        alert(`알림: 오늘 [Room ${room}] 강의실의 출석 처리가 이미 완료되었습니다.`);
+        // 이미 해당 방에 출석한 기록이 브라우저에 있다면
+        alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
         cleanUrlAndGo(room);
         return;
     }
 
-    // (성함/번호 체크 및 저장 로직 동일...)
+    // 이름/번호가 브라우저에 저장되어 있는지 확인
     const myName = (localStorage.getItem('kac_user_name') || "").trim();
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
     if (!myName || myPhone.length !== 4) {
-        alert(`[Room ${room}] 출석을 위해 본인 확인이 필요합니다.`);
+        // 정보가 없으면 입교 등록창부터 띄움
+        alert(`[Room ${room}] 출석을 위해 성함과 번호 확인이 필요합니다.`);
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
+    // 실제 데이터베이스 기록 실행
     executeAttendanceRecord(room, myName, myPhone, today, storageKey);
 }
 
