@@ -795,11 +795,16 @@ body.modal-open .app-content {
         <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="toggleMenu(false)"></i>
       </div>
 
-      <div id="side-global-menu" style="display:none; flex-direction:column; gap:12px;">
-          <button class="navy-btn" style="background:#3b82f6; height:45px;" onclick="openSetupModal()">
-              <i class="fa-solid fa-gear"></i> 교육과정 추가/설정
-          </button>
-      </div>
+<div id="side-global-menu" style="display:none; flex-direction:column; gap:12px;">
+    <!-- [복구] 과정 추가 및 개설 버튼 -->
+    <button class="navy-btn" style="background:#3b82f6; height:45px;" onclick="openSetupModal()">
+        <i class="fa-solid fa-plus-circle"></i> 교육과정 추가/설정
+    </button>
+    <!-- 여기에 QR 보기 버튼을 추가로 배치하면 편리합니다 -->
+    <button class="navy-btn" style="background:#1e293b; height:45px;" onclick="openCenterQrModal()">
+        <i class="fa-solid fa-qrcode"></i> 행정관리 접속용 QR
+    </button>
+</div>
 
 <div id="side-individual-menu" style="display:none; flex-direction:column; gap:12px;">
           <button class="navy-btn" style="background:var(--blue-deep); height:45px;" onclick="openSetupModalFromIndividual()">
@@ -827,11 +832,16 @@ body.modal-open .app-content {
       </div>
     </div>
 
-    <header class="app-header">
-      <button class="header-btn" onclick="handleBackNav()"><i class="fa-solid fa-chevron-left"></i></button>
-      <div class="header-title">항공기술훈련원 교육운영부</div>
+<header class="app-header">
+  <button class="header-btn" onclick="handleBackNav()"><i class="fa-solid fa-chevron-left"></i></button>
+  <div class="header-title">항공기술훈련원 교육운영부</div>
+  <div style="display:flex; gap:15px; align-items:center;">
+      <!-- [신규] QR 팝업 버튼 -->
+      <button class="header-btn" onclick="openCenterQrModal()"><i class="fa-solid fa-qrcode"></i></button>
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
-    </header>
+  </div>
+</header>
+
 
     <main class="app-content">
 <!-- [뷰 1] 전체 과정 현황 (메인) -->
@@ -2647,7 +2657,27 @@ function autoGrow(el) {
 
 
 
+// [신규] 행정 페이지 접속 QR 열기 함수
+function openCenterQrModal() {
+    toggleMenu(false); // 사이드바가 열려있다면 닫기
+    const modal = document.getElementById('centerQrModal');
+    const target = document.getElementById('centerQrTarget');
+    
+    modal.style.display = 'flex';
+    target.innerHTML = ""; // 기존 QR 초기화
 
+    // 현재 페이지의 주소를 QR로 생성
+    const currentUrl = window.location.href;
+
+    new QRCode(target, {
+        text: currentUrl,
+        width: 200,
+        height: 200,
+        colorDark : "#0f172a",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+}
 
 
 
@@ -3270,6 +3300,26 @@ handleBackNav = function() {
         <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('shuttleDetailModal').style.display='none'">닫기</button>
     </div>
 </div>
+
+
+
+
+<!-- [신규] 센터 접속 QR 팝업 모달 -->
+<div id="centerQrModal" class="setup-modal">
+    <div class="setup-box" style="max-width: 350px; text-align: center;">
+        <h3 style="margin-top:0; color:var(--navy-dark);"><i class="fa-solid fa-link"></i> 행정 시스템 접속 QR</h3>
+        <p style="font-size:12px; color:#64748b;">항공기술훈련원 교육운영부 통합 행정 관리</p>
+        
+        <!-- QR이 생성될 영역 -->
+        <div id="centerQrTarget" style="display:flex; justify-content:center; margin: 20px 0; padding:15px; background:#fff; border:1px solid #eee; border-radius:12px;"></div>
+        
+        <p style="font-size:11px; color:var(--danger); font-weight:800;">※ 관리자 외 유출 금지 (보안주의)</p>
+        <button class="navy-btn" style="margin-top:20px; background:#1e293b;" onclick="document.getElementById('centerQrModal').style.display='none'">닫기</button>
+    </div>
+</div>
+
+<!-- QR 생성 라이브러리 추가 (헤더에 없다면 여기에 추가) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 
 
