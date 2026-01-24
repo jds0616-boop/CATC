@@ -2285,21 +2285,25 @@ function showStudentShuttleView() {
 
 
  
-// [수정] 강사 수송 통합 현황 (날짜 정보 추가 버전)
-  function renderPickupTable() {
+function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
     
     firebase.database().ref('system/transport_requests').on('value', snap => {
         const data = snap.val() || {};
         const items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+        
         if (items.length === 0) {
             container.innerHTML = '<div style="padding:50px; color:#fff; text-align:center; font-size:14px; font-weight:800;">수송 내역이 없습니다.</div>';
             return;
         }
 
+        // [방어코드] 필수 데이터가 없는 쓰레기 데이터는 필터링
+        const validItems = items.filter(r => r.prof && r.date && r.courseRID);
+
         const grouped = {};
-        items.forEach(r => {
+        validItems.forEach(r => {
+            // 그룹핑 기준: 강사명 + 날짜 + 과정ID
             const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
             if (!grouped[groupKey]) grouped[groupKey] = { prof: r.prof, date: r.date, phone: r.phone, courseRID: r.courseRID, requests: [] };
             grouped[groupKey].requests.push(r);
@@ -2316,30 +2320,43 @@ function showStudentShuttleView() {
             }
 
             const roomInfo = globalAllData[group.courseRID];
-            const cName = roomInfo?.settings?.courseName || `과정`;
+            const cName = roomInfo?.settings?.courseName || `[종료/삭제된 과정]`;
             const dayNames = ["일","월","화","수","목","금","토"];
-            const dIdx = new Date(group.date).getDay();
-            const dateWithDay = `${group.date}(${dayNames[dIdx]})`;
+            const d = new Date(group.date);
+            const dateWithDay = `${group.date}(${isNaN(d.getDay()) ? '?' : dayNames[d.getDay()]})`;
 
-            group.requests.sort((a,b) => a.time.localeCompare(b.time));
+            group.requests.sort((a,b) => (a.time || "").localeCompare(b.time || ""));
+
+            // [미션 2 반영] 모든 요청이 완료되었는지 체크
+            const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed');
 
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
-                return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':''}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소됨)':''}</div>`;
+                const isFin = r.status === 'finished' || r.status === 'completed';
+                let style = "";
+                if(isCan) style = "text-decoration:line-through; opacity:0.5;";
+                if(isFin) style = "color:#94a3b8; font-weight:400;"; // 완료된 건 연하게
+                
+                return `<div style="${style}">- ${r.time} ${r.dir.replace('→',' >> ')} ${isCan?'(취소)':isFin?'(완료)':''}</div>`;
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
-                (r.status !== 'cancelled') ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">${r.status==='approved'?'승인취소':'요청취소'}(${r.time})</button>` : ''
+                (r.status !== 'cancelled' && r.status !== 'finished' && r.status !== 'completed') 
+                ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` 
+                : ''
             ).join(' ');
 
+            // [미션 2] 전체 완료된 건 배경을 회색으로 변경
+            const bubbleBg = isAllFinished ? "background: #e2e8f0; color: #64748b;" : "background: #fee500; color: #1e293b;";
+
             html += `
-                <div class="chat-bubble chat-right">
-                    <div class="talk-header" style="text-align:right;">보낸 수송요청</div>
-                    <div class="bubble-admin">
+                <div class="chat-bubble chat-right" style="opacity: ${isAllFinished ? '0.7' : '1'};">
+                    <div class="talk-header" style="text-align:right;">수송요청 ${isAllFinished ? '(완료됨)' : ''}</div>
+                    <div class="bubble-admin" style="${bubbleBg}">
                         <div class="talk-body">
-                            &lt;${cName}&gt;
+                            <b>&lt;${cName}&gt;</b>
                             - ${dateWithDay}
-                            - ${group.prof} 강사님 (${formatPhone(group.phone)})
+                            - ${group.prof} 강사님
                             ${timeLines}
                         </div>
                         <div class="talk-footer" style="justify-content: flex-end;">
@@ -2350,22 +2367,19 @@ function showStudentShuttleView() {
                 </div>`;
 
             group.requests.forEach(r => {
-                if(r.status === 'approved') {
-                    // [수정 포인트] 날짜(dateWithDay) 정보 추가
+                if(r.status === 'approved' || r.status === 'finished' || r.status === 'completed') {
+                    const isFin = r.status === 'finished' || r.status === 'completed';
                     html += `
                         <div class="chat-bubble chat-left">
                             <div class="talk-header">기사님 회신</div>
-                            <div class="bubble-driver">
-                                네 확인했습니다.<br>
-                                <b>&lt;${cName}&gt; ${r.prof} 강사님</b><br>
-                                ${dateWithDay} [${r.time}]<br>
-                                ${r.dir.replace('→',' >> ')}<br>
-                                배차 승인 완료!
+                            <div class="bubble-driver" style="${isFin ? 'background:#f1f5f9; color:#94a3b8;' : ''}">
+                                ${isFin ? '✅ 운행이 종료되었습니다.' : '네, 확인했습니다. 배차 승인 완료!'}
+                                <div style="font-size:11px; margin-top:5px; border-top:1px solid rgba(0,0,0,0.05); padding-top:5px;">
+                                    ${r.prof} 강사님 [${r.time}]<br>${r.dir}
+                                </div>
                             </div>
                             <div class="chat-time">운전원</div>
                         </div>`;
-                } else if(r.status === 'cancelled') {
-                   html += `<div style="text-align:center; font-size:11px; color:#ef4444; margin:5px 0; font-weight:800; background:rgba(255,255,255,0.5); padding:5px; border-radius:10px;">🚫 [${r.time} ${r.prof} 강사님] 일정이 취소되었습니다.</div>`;
                 }
             });
         });
@@ -2373,7 +2387,7 @@ function showStudentShuttleView() {
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
     });
-  }
+}
 
 
 // [수정] 교육생 퇴교차량 통합 테이블 그리기
