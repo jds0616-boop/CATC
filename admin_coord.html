@@ -638,6 +638,60 @@ body.modal-open {
 
 
 
+/* [수정] 강사 수송 통합 현황 뷰 - 전체 높이 고정 및 레이아웃 구조 */
+#pickupStatusView.view-card-full {
+    /* 화면 전체 높이에서 상단바(55px), 하단바(50px), 컨텐츠 여백(24px)을 뺀 높이 점유 */
+    height: calc(100dvh - 55px - 50px - 24px); 
+    display: flex;
+    flex-direction: column;
+}
+
+/* [수정] 수송 리스트 카드 - 내부 스크롤을 위해 패딩 제거 및 flex 적용 */
+#pickupStatusView .section-card { 
+    background: var(--card-white); 
+    border-radius: 20px; 
+    padding: 0 !important; /* 내부 패딩 제거 (제목과 리스트가 밀착되도록) */
+    border: 1px solid #e2e8f0 !important; 
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); 
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 카드 밖으로 스크롤이 나가지 않게 차단 */
+    flex: 1;
+}
+
+/* [틀고정 대상] 제목 줄 - Sticky 속성 부여 */
+#pickupStatusView .section-title { 
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: white;
+    padding: 18px 20px; /* 고정된 상태에서도 여백 유지 */
+    margin-bottom: 0; 
+    border-bottom: 1.5px solid #f1f5f9; /* 제목과 리스트 구분선 */
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    gap: 8px; 
+}
+
+/* [스크롤 영역] 실시간 수송 톡 배경 컨테이너 */
+#pickupCardContainer {
+    background: #abc1d1; /* 카톡 배경색 */
+    flex: 1; /* 남은 공간 모두 차지 */
+    overflow-y: auto !important; /* 내부 스크롤 활성화 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px;
+    padding: 15px; 
+    min-height: 0; /* flex 자식의 스크롤 작동 필수 속성 */
+}
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -2295,11 +2349,15 @@ function renderPickupTable() {
         const updates = {};
         let hasUpdates = false;
 
+        // 1. 데이터 배열화 및 자동 종료(마감) 로직 연동
         const items = Object.keys(data).map(k => {
             const item = { id: k, ...data[k] };
+            
+            // 승인 상태이면서 픽업 시간으로부터 2시간이 지나면 자동으로 'finished' 처리
             if (item.status === 'approved' && item.date && item.time) {
                 const scheduledTime = new Date(item.date + ' ' + item.time);
-                const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000);
+                const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); 
+                
                 if (now > limitTime && !isNaN(scheduledTime.getTime())) {
                     updates[`system/transport_requests/${k}/status`] = 'finished';
                     item.status = 'finished';
@@ -2309,19 +2367,32 @@ function renderPickupTable() {
             return item;
         });
 
+        // 실제 DB 상태 업데이트 (변경사항이 있을 때만 딱 한 번 실행)
         if (hasUpdates) firebase.database().ref().update(updates);
+
         if (items.length === 0) {
             container.innerHTML = '<div style="padding:50px; color:#fff; text-align:center; font-size:14px; font-weight:800;">수송 내역이 없습니다.</div>';
             return;
         }
 
+        // [방어코드] 필수 데이터가 없는 쓰레기 데이터는 필터링
         const validItems = items.filter(r => r.prof && r.date && r.courseRID);
+
+        // 2. 그룹핑 기준 변경: '수송일'이 아니라 '신청일(Created Date)' 기준
         const grouped = {};
         validItems.forEach(r => {
+            // timestamp가 있으면 해당 날짜를, 없으면 수송일(r.date)을 신청일로 간주
             const requestDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
             const groupKey = `${requestDate}_${r.prof}_${r.courseRID}`;
+            
             if (!grouped[groupKey]) {
-                grouped[groupKey] = { requestDate, prof: r.prof, phone: r.phone, courseRID: r.courseRID, requests: [] };
+                grouped[groupKey] = { 
+                    requestDate: requestDate, 
+                    prof: r.prof, 
+                    phone: r.phone || "", 
+                    courseRID: r.courseRID, 
+                    requests: [] 
+                };
             }
             grouped[groupKey].requests.push(r);
         });
@@ -2331,6 +2402,7 @@ function renderPickupTable() {
         let lastDividerDate = "";
 
         sortedGroups.forEach(group => {
+            // 구분선: 카톡처럼 신청한 날짜 표시
             if(group.requestDate !== lastDividerDate) {
                 html += `<div class="chat-date-line"><span>${group.requestDate} 요청건</span></div>`;
                 lastDividerDate = group.requestDate;
@@ -2338,6 +2410,8 @@ function renderPickupTable() {
 
             const roomInfo = globalAllData[group.courseRID];
             const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
+            
+            // 해당 그룹 내 모든 요청이 완료/취소 되었는지 확인 (말풍선 색상용)
             const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed' || r.status === 'cancelled');
 
             group.requests.sort((a,b) => (a.time || "").localeCompare(b.time || ""));
@@ -2345,10 +2419,12 @@ function renderPickupTable() {
             let timeLines = group.requests.map(r => {
                 const isCan = r.status === 'cancelled';
                 const isFin = r.status === 'finished' || r.status === 'completed';
+                
+                // 말풍선 내부에 실제 수송 날짜와 요일 표시
                 const d = new Date(r.date);
                 const dayNames = ["일","월","화","수","목","금","토"];
                 const dateWithDay = `${r.date}(${dayNames[d.getDay()]})`;
-                
+
                 return `<div style="${isCan?'text-decoration:line-through; opacity:0.5;':isFin?'color:#94a3b8;':''} font-size:13px; margin-bottom:3px;">
                             <b>[${dateWithDay}] ${r.time}</b> ${r.dir.replace('→',' > ')} ${isCan?'(취소)':isFin?'(완료)':''}
                         </div>`;
@@ -2392,8 +2468,12 @@ function renderPickupTable() {
                 }
             });
         });
+
         container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
+        // 리스트 갱신 시 최신 메시지가 있는 하단으로 자동 스크롤
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 100);
     });
 }
 
