@@ -839,11 +839,11 @@ function renderTraineeManagement() {
           <div class="t-cell btns">
             <button class="mini-btn ${currentTime === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
             <button class="mini-btn ${currentTime === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
-            <button class="mini-btn ${currentTime !== '' && currentTime !== '13:00' && currentTime !== '15:00' ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
+            <button class="mini-btn ${(currentTime && currentTime !== '13:00' && currentTime !== '15:00') ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
           </div>
           <div class="t-cell status">
             ${currentTime ? 
-              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')"></i>` : 
+              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" onclick="confirmAction('cancelDep', '${rid}')" title="공지 취소"></i>` : 
               `<i class="fa-solid fa-minus notice-off" style="opacity:0.3;"></i>`
             }
           </div>
@@ -880,23 +880,26 @@ function confirmAction(type, id, val = null, targetDate = null) {
         document.getElementById('c-title').innerText = "퇴교 공지"; 
         document.getElementById('c-desc').innerHTML = `[${val}] 시간을 공지하시겠습니까?<br><br>퇴교 적용일: <b style="color:#ef4444;">${targetDate}</b>`;
         okBtn.onclick = async () => { 
+            // 서버에 저장
             await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ 
                 time: val, 
                 date: targetDate 
             }); 
-            closeModal('confirmModal'); 
+            closeModal('confirmModal');
+            // [추가] 즉시 화면 갱신 유도
+            if(typeof renderAll === 'function') renderAll();
         };
     } else if(type === 'cancelDep') {
-        // [신규] 공지 취소 기능
-        document.getElementById('c-title').innerText = "공지 취소"; 
-        document.getElementById('c-desc').innerHTML = "이미 설정된 퇴교 시간을 취소하시겠습니까?<br>(강사 플랫폼에서도 사라집니다.)";
-        okBtn.onclick = async () => { 
-            await firebase.database().ref(`courses/${id}/shuttle/departure`).set(null); 
-            closeModal('confirmModal'); 
-        };
+        // [수정] 실수 방지를 위한 확인창 추가
+        if(!confirm("이미 설정된 퇴교 공지 시간을 삭제하시겠습니까? (강사 플랫폼에서도 즉시 삭제됩니다.)")) return;
+        
+        firebase.database().ref(`courses/${id}/shuttle/departure`).set(null).then(() => {
+            if(typeof renderAll === 'function') renderAll();
+        });
+        return; // cancelDep은 자체 confirm을 사용하므로 여기서 종료
     }
     modal.style.display = 'flex';
-}
+  }
 
 
 
