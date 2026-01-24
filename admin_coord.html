@@ -645,7 +645,20 @@
 body.modal-open {
     overflow: hidden !important;
     touch-action: none; /* 모바일 터치 스크롤 방지 */
+    position: fixed; /* 배경을 화면에 고정시켜 버림 (슬라이딩 원천 차단) */
+    width: 100%;
+    height: 100%;
 }
+
+
+/* 실제 스크롤이 일어나는 내부 영역도 차단 */
+body.modal-open .app-content {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
+
+
 
 /* 팝업 내용물 영역 스크롤 최적화 */
 .setup-box {
@@ -2862,38 +2875,48 @@ async function showShuttleApplicationDetails(rid) {
 
 
 
-// [신규] 어떤 팝업이든 열리면 홈 버튼을 강제로 보여주는 감시 로직
-function showHomeBtnOnPopup() {
+// [수정] 어떤 팝업이든 열리면 홈 버튼 노출 + 배경 스크롤 차단 자동화
+function handleModalScrollLock() {
     const homeBtn = document.getElementById('floatingHomeBtn');
     if(!homeBtn) return;
 
-    // 페이지 내의 모든 'setup-modal' 클래스를 가진 요소를 감시
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'style') {
-                const isAnyModalVisible = Array.from(document.querySelectorAll('.setup-modal, .modal-overlay, #outingManagerView'))
-                    .some(el => el.style.display === 'flex' || el.style.display === 'block');
-                
-                if (isAnyModalVisible || currentRID !== "") {
-                    homeBtn.style.display = 'flex';
-                } else {
-                    homeBtn.style.display = 'none';
-                }
+    // 감시할 대상들 (팝업, 관리대장 등)
+    const observer = new MutationObserver(() => {
+        // 현재 화면에 'display: flex' 또는 'block'으로 보이는 모달이 하나라도 있는지 확인
+        const isAnyModalVisible = Array.from(document.querySelectorAll('.setup-modal, .modal-overlay, #outingManagerView'))
+            .some(el => {
+                const style = window.getComputedStyle(el);
+                return style.display !== 'none';
+            });
+        
+        if (isAnyModalVisible) {
+            // 팝업이 하나라도 열려있을 때
+            document.body.classList.add('modal-open');
+            homeBtn.style.display = 'flex';
+        } else {
+            // 모든 팝업이 닫혔을 때 (단, 개별과정 상세 뷰가 아닐 때만 스크롤 해제)
+            if (currentRID === "") {
+                document.body.classList.remove('modal-open');
+                homeBtn.style.display = 'none';
+            } else {
+                // 개별 상세 뷰에서는 홈 버튼은 유지하되 스크롤은 허용
+                document.body.classList.remove('modal-open');
+                homeBtn.style.display = 'flex';
             }
-        });
+        }
     });
 
-    // 감시 대상 설정
+    // 모든 모달 요소의 'style' 속성 변화를 감시
     document.querySelectorAll('.setup-modal, .modal-overlay, #outingManagerView').forEach(modal => {
-        observer.observe(modal, { attributes: true });
+        observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
     });
 }
 
-// 기존 init 함수에 감시 로직 추가
+// 기존 init 함수 내 호출 부분 수정
 const originalInitSupport = init;
 init = function() {
     originalInitSupport();
-    showHomeBtnOnPopup();
+    handleModalScrollLock(); // 감시 시작
 };
 
 
