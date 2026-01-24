@@ -499,14 +499,16 @@
 
 
 
-// --- [탭 0] 종합 일정표 (오류 수정 및 출력 보강 버전) ---
+// --- [탭 0] 종합 일정표 (데이터 누락/에러 방지 강화 버전) ---
 function renderSchedule() {
     const head = document.getElementById('sched-head');
     const body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
     const dayNames = ['월','화','수','목','금'];
     
-    // 리셋 기준일 계산 (지난 토요일)
+    if (!head || !body) return;
+
+    // 1. 리셋 기준일 계산 (지난 토요일)
     const now = new Date();
     const lastSaturday = new Date();
     const diff = (lastSaturday.getDay() + 1) % 7; 
@@ -514,59 +516,73 @@ function renderSchedule() {
     lastSaturday.setHours(0,0,0,0);
     const lastSaturdayStr = lastSaturday.toISOString().split('T')[0];
 
-    // 주간 범위 표시 업데이트
+    // 주간 범위 표시
     document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
     
     // 헤더 출력
     head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
-    body.innerHTML = '';
+    
+    let bodyHTML = '';
 
     // 시간대별(8시~18시) 루프
     for(let h=8; h<=18; h++) {
-        let row = `<tr><td class="time-col">${h}:00</td>`;
+        bodyHTML += `<tr><td class="time-col">${h}:00</td>`;
         
         // 요일별(월~금) 루프
         for(let d=0; d<5; d++) {
             const curDate = range[d];
             let content = '';
 
-            // 1. 운행 중단 체크
-            if(profReqs.some(r => r.date === curDate && r.prof === '운행중단')) {
-                content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
-            } 
-            // 2. 입교수송
-            else if(d === 0 && (h === 9 || h === 10)) { 
-                content = `<div class="cell-event block-entry">입교수송</div>`; 
-            } 
-            // 3. 점심 시간
-            else if(h === 12) { 
-                content = `<div class="cell-event block-lunch">점심</div>`; 
-            } 
-            else {
-                // 4. 강사 수송 일정 체크
-                const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
-                if(matchedProf.length > 0) {
-                    const names = matchedProf.length > 1 ? `${matchedProf[0].prof} 외` : matchedProf[0].prof;
-                    content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(matchedProf[0]).replace(/"/g, '&quot;')})">${matchedProf[0].dir.replace('→','>>')}<br>${names}</div>`;
+            try {
+                // [A] 운행 중단 체크
+                const offItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단');
+                if(offItem) {
+                    content = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
+                } 
+                // [B] 고정 일정: 점심 시간 (12시)
+                else if(h === 12) { 
+                    content = `<div class="cell-event block-lunch">점심</div>`; 
+                } 
+                // [C] 고정 일정: 입교수송 (월요일 9-10시)
+                else if(d === 0 && (h === 9 || h === 10)) { 
+                    content = `<div class="cell-event block-entry">입교수송</div>`; 
                 } 
                 else {
-                    // 5. 교육생 퇴교수송 일정 체크
-                    Object.keys(allCourses).forEach(rid => {
-                        const room = allCourses[rid];
-                        const dep = room.shuttle?.departure;
-                        if(dep && dep.date === curDate && parseInt(dep.time.split(':')[0]) === h) {
-                            content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
-                        }
-                    });
+                    // [D] 강사 수송 일정 체크
+                    const matchedProf = profReqs.filter(r => r.date === curDate && parseInt(r.time.split(':')[0]) === h && r.status === 'approved');
+                    if(matchedProf.length > 0) {
+                        const item = matchedProf[0];
+                        const names = matchedProf.length > 1 ? `${item.prof} 외` : item.prof;
+                        // 안전장치: dir이 없을 경우를 대비
+                        const route = (item.dir || "").replace('→','>>').replace('항공기술훈련원','항기원');
+                        content = `<div class="cell-event block-prof" onclick="showDetail('prof', ${JSON.stringify(item).replace(/"/g, '&quot;')})">${route}<br>${names}</div>`;
+                    } 
+                    else {
+                        // [E] 교육생 퇴교수송 일정 체크
+                        Object.keys(allCourses).forEach(rid => {
+                            const room = allCourses[rid];
+                            const dep = room.shuttle?.departure;
+                            if(dep && dep.date === curDate && parseInt(String(dep.time).split(':')[0]) === h) {
+                                content = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
+                            }
+                        });
+                    }
                 }
+            } catch (e) {
+                console.error("일정 렌더링 에러:", e);
+                content = ''; // 에러 발생 시 해당 칸만 비움
             }
-            row += `<td>${content}</td>`;
+            bodyHTML += `<td>${content}</td>`;
         }
-        body.innerHTML += row + '</tr>';
+        bodyHTML += `</tr>`;
     }
 
-    // [수정] 오류가 났던 리셋 함수 호출 방식을 안전하게 변경
-    checkAndResetOldData(lastSaturdayStr);
+    body.innerHTML = bodyHTML;
+
+    // 데이터 정리 함수 호출
+    if (typeof checkAndResetOldData === 'function') {
+        checkAndResetOldData(lastSaturdayStr);
+    }
 }
 
 // 데이터 정리 함수 (안전하게 분리)
