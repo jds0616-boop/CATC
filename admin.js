@@ -3694,10 +3694,19 @@ openSetupModal: async function() {
 
             const roomSelect = document.getElementById('setup-room-select');
             Array.from(roomSelect.options).forEach(opt => {
+                // 1. 처음 이름(예: 관제동 1층)을 임시로 저장해둡니다.
+                if (!opt.dataset.originalText) opt.dataset.originalText = opt.text;
+                
+                // 2. 만약 다른 방에서 사용 중이라면
                 if (this.occupiedLocations.includes(opt.value)) {
-                    opt.text = opt.value + " (이미 사용 중)";
+                    opt.text = opt.dataset.originalText + " (이미 사용 중)";
                     opt.disabled = true;
-                    opt.style.color = "#cbd5e1";
+                    opt.style.color = "#cbd5e1"; // 흐릿하게
+                } else {
+                    // 3. 사용 중이 아니면 원래 이름으로 돌려놓습니다.
+                    opt.text = opt.dataset.originalText;
+                    opt.disabled = false;
+                    opt.style.color = ""; // 원래 색으로
                 }
             });
             const roomDirect = document.getElementById('setup-room-direct');
