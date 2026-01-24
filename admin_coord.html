@@ -30,7 +30,11 @@
 
 
 
-
+/* 야간 모드나 주간 모드에서 생활관 정보 강조 */
+#allStudentTableBody td:nth-child(3) {
+    color: var(--blue-deep) !important;
+    font-weight: 800;
+}
 
 
 
@@ -3138,8 +3142,17 @@ async function loadAllStudentData() {
             const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
             const sKey = `${s.name.trim()}_${phoneSuffix}`;
 
-            // A. 생활관 정보 찾기
-            const dorm = dormData[sKey] || { building: "-", room: "미배정" };
+            // A. 생활관 정보 찾기 (성함_뒷자리 매칭 시도 후 실패 시 성함으로만 재시도)
+            let assigned = dormData[sKey] || dormData[s.name.trim()]; 
+            
+            // 만약 그래도 없으면 (전화번호가 없는 경우 등) 데이터베이스 전체를 돌며 성함이 포함된 키를 찾음
+            if (!assigned) {
+                const foundKey = Object.keys(dormData).find(k => k.startsWith(s.name.trim()));
+                if (foundKey) assigned = dormData[foundKey];
+            }
+
+            const dorm = assigned || { building: "-", room: "미배정" };
+            const dormInfo = assigned ? `${dorm.building} ${dorm.room}${dorm.room !== '미배정'?'호':''}` : "미배정";
             
             // B. 퇴교 차량 정보 찾기
             const shuttleReq = room.shuttle?.requests?.[stoken];
