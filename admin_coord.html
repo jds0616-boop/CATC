@@ -1753,13 +1753,13 @@ function openTransportModal() {
 
 
 
-// [수정] 수송 요청 등록 함수 (왕복/편도 자동 처리)
+// [운영부용] 수송 요청 등록 (중복 배차 체크 포함)
 async function submitTransReq() {
     const rid = document.getElementById('reqCourseRID').value;
     const loc = document.getElementById('reqLoc').value;
     const date = document.getElementById('reqDate').value;
-    const timeTo = document.getElementById('reqTimeTo').value;   // 입교 시간
-    const timeFrom = document.getElementById('reqTimeFrom').value; // 퇴교 시간
+    const timeTo = document.getElementById('reqTimeTo').value;     // 입교(장소->원)
+    const timeFrom = document.getElementById('reqTimeFrom').value; // 퇴교(원->장소)
     const prof = document.getElementById('reqProf').value.trim();
     const phone = document.getElementById('reqPhone').value.trim();
 
@@ -1767,56 +1767,68 @@ async function submitTransReq() {
     if(!date || !prof) return alert("날짜와 강사명을 입력해주세요.");
     if(!timeTo && !timeFrom) return alert("최소 한 개의 수송 시간을 입력해주세요.");
 
-    try {
-        const requests = [];
+    // 시간차 계산 함수 (분 단위)
+    const getDiffMin = (t1, t2) => {
+        const [h1, m1] = t1.split(':').map(Number);
+        const [h2, m2] = t2.split(':').map(Number);
+        return Math.abs((h1 * 60 + m1) - (h2 * 60 + m2));
+    };
 
-        // 1. 입교(장소->원) 데이터 생성
+    try {
+        // 1. 현재 DB에 등록된 모든 수송 요청 가져오기 (충돌 체크용)
+        const snap = await firebase.database().ref('system/transport_requests').once('value');
+        const allReqs = snap.val() || {};
+        let conflicts = [];
+
+        Object.values(allReqs).forEach(req => {
+            // 같은 날짜이고 취소되지 않은 건만 비교
+            if(req.date === date && req.status !== 'cancelled') {
+                if(timeTo && getDiffMin(timeTo, req.time) < 60) {
+                    conflicts.push(`[입교충돌] ${req.time} ${req.prof}강사님 (${req.dir})`);
+                }
+                if(timeFrom && getDiffMin(timeFrom, req.time) < 60) {
+                    conflicts.push(`[퇴교충돌] ${req.time} ${req.prof}강사님 (${req.dir})`);
+                }
+            }
+        });
+
+        // 2. 충돌 발생 시 경고
+        if(conflicts.length > 0) {
+            const msg = `🚨 배차 중복 주의!\n\n선택하신 시간대(±60분)에 이미 신청된 내역이 있습니다:\n\n${conflicts.join('\n')}\n\n그래도 신청하시겠습니까?`;
+            if(!confirm(msg)) return;
+        }
+
+        // 3. 데이터 저장 실행
+        const requests = [];
         if(timeTo) {
             requests.push({
-                courseRID: rid,
-                dir: `${loc}→항기원`,
-                date,
-                time: timeTo,
-                prof,
-                phone,
-                status: 'pending',
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+                courseRID: rid, dir: `${loc}→항기원`, date, time: timeTo,
+                prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
-
-        // 2. 퇴교(원->장소) 데이터 생성
         if(timeFrom) {
             requests.push({
-                courseRID: rid,
-                dir: `항기원→${loc}`,
-                date,
-                time: timeFrom,
-                prof,
-                phone,
-                status: 'pending',
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+                courseRID: rid, dir: `항기원→${loc}`, date, time: timeFrom,
+                prof, phone, status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
 
-        // Firebase에 순차적으로 저장
         for(let req of requests) {
             await firebase.database().ref('system/transport_requests').push(req);
         }
 
         alert(`✅ ${requests.length}건의 수송 예약이 등록되었습니다.`);
         
-        // 입력 필드 초기화
+        // 필드 초기화
         document.getElementById('reqTimeTo').value = "";
         document.getElementById('reqTimeFrom').value = "";
         document.getElementById('reqProf').value = "";
         document.getElementById('reqPhone').value = "";
         
-        loadCourseTransList(); 
     } catch(e) {
         alert("저장 오류: " + e.message);
     }
 }
-
 
 
 
@@ -2574,6 +2586,9 @@ function showStudentShuttleView() {
 
 
 
+
+
+
 function renderPickupTable() {
     const container = document.getElementById('pickupCardContainer');
     if(!container) return;
@@ -2717,6 +2732,11 @@ function renderPickupTable() {
         }, 100);
     });
 }
+
+
+
+
+
 
 
 

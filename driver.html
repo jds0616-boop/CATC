@@ -529,9 +529,61 @@ function renderInstructorList() {
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  async function handleSmartApprove(id) {
-    await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' });
-  }
+// [기사용] 지능형 배차 승인 (강사 수송 + 교육생 퇴교셔틀 통합 체크)
+async function handleSmartApprove(id) {
+    // 1. 승인하려는 대상 정보 찾기
+    const target = profReqs.find(r => r.id === id);
+    if(!target) return;
+
+    // 시간 분 환산 보조 함수
+    const toMin = (tStr) => {
+        if(!tStr) return -1000;
+        const [h, m] = tStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const targetMin = toMin(target.time);
+    let conflicts = [];
+
+    // 2. 다른 강사 수송 일정과 비교 (이미 승인/종료된 건 기준)
+    profReqs.forEach(r => {
+        if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date) {
+            const diff = Math.abs(toMin(r.time) - targetMin);
+            if(diff < 60) {
+                conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time})`);
+            }
+        }
+    });
+
+    // 3. 교육생 퇴교 셔틀 일정과 비교
+    Object.keys(allCourses).forEach(rid => {
+        const room = allCourses[rid];
+        const dep = room.shuttle?.departure;
+        // 퇴교 날짜와 시간이 있고, 승인하려는 날짜와 같을 때
+        if(dep && dep.date === target.date && dep.time) {
+            const diff = Math.abs(toMin(dep.time) - targetMin);
+            if(diff < 60) {
+                conflicts.push(`🚌 [학생퇴교] ${room.settings?.courseName || rid} (${dep.time})`);
+            }
+        }
+    });
+
+    // 4. 충돌 경고창 띄우기
+    if(conflicts.length > 0) {
+        const msg = `⚠️ 배차 충돌 가능성이 매우 높습니다!\n\n현재 시간(±60분) 내에 이미 잡혀있는 일정입니다:\n\n${conflicts.join('\n')}\n\n몸은 하나입니다! 그래도 승인하시겠습니까?`;
+        if(!confirm(msg)) return;
+    }
+
+    // 5. 최종 승인 처리
+    try {
+        await firebase.database().ref(`system/transport_requests/${id}`).update({ 
+            status: 'approved' 
+        });
+        // renderAll()은 Firebase 리스너가 자동으로 호출함
+    } catch(e) {
+        alert("승인 처리 중 오류: " + e.message);
+    }
+}
 
   async function confirmAction(type, id, val = null, date = null) {
     const ok = document.getElementById('c-ok-btn');
