@@ -291,26 +291,29 @@ function formatPhone(num) {
 
 
 
-
-// 강사 수송 리스트 렌더링 함수
+// 강사 수송 리스트 렌더링 함수 (기사님 플랫폼 최적화 버전)
 function renderInstructorList() {
     const chatBox = document.getElementById('all-request-container');
     if (!chatBox) return;
     
-    chatBox.innerHTML = '<div class="chat-container" id="chat-list-inner" style="overflow-y:auto; flex:1;"></div>';
+    // 1. 기본 컨테이너 구조 설정 (내부 스크롤 영역 확보)
+    chatBox.innerHTML = '<div class="chat-container" id="chat-list-inner" style="overflow-y:auto; height: 100%; display: flex; flex-direction: column; gap: 15px; padding: 15px;"></div>';
     const inner = document.getElementById('chat-list-inner');
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // 1. 데이터 그룹화 (신청일 기준)
+    let htmlContent = ""; // 성능 최적화를 위해 문자열 변수에 담아 한번에 주입합니다.
+
+    // 2. 데이터 그룹화 (구분선 = 신청일 기준)
     const grouped = {};
     profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
+        // 신청일(timestamp)이 없으면 예약일(r.date)을 사용
         const createdDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
         const groupKey = `${createdDate}_${r.prof}_${r.courseRID}`;
         if (!grouped[groupKey]) {
             grouped[groupKey] = { 
                 createdDate: createdDate, 
                 prof: r.prof, 
-                phone: r.phone || "", // 연락처가 없어도 빈값 처리
+                phone: r.phone || "", 
                 courseRID: r.courseRID, 
                 legs: [] 
             };
@@ -318,13 +321,14 @@ function renderInstructorList() {
         grouped[groupKey].legs.push(r);
     });
 
+    // 3. 신청일 순으로 정렬하여 렌더링
     const sortedGroups = Object.values(grouped).sort((a, b) => a.createdDate.localeCompare(b.createdDate));
     let lastDividerDate = "";
 
     sortedGroups.forEach(group => {
-        // 날짜 구분선 표시
+        // 날짜 구분선 (카톡 스타일: 신청한 날짜 표시)
         if(group.createdDate !== lastDividerDate) {
-            inner.innerHTML += `<div class="chat-date-line"><span>${group.createdDate} 요청</span></div>`;
+            htmlContent += `<div class="chat-date-line"><span>${group.createdDate} 요청</span></div>`;
             lastDividerDate = group.createdDate;
         }
 
@@ -332,50 +336,55 @@ function renderInstructorList() {
         const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
         const isAllFin = group.legs.every(r => r.status === 'finished' || r.status === 'completed');
         
+        // 마감된 건 흐리게 처리
         const shading = isAllFin ? 'opacity: 0.6; filter: grayscale(1);' : '';
         const bubbleBg = isAllFin ? 'background: #e2e8f0; color: #64748b;' : 'background: #fff;';
 
         let legsHtml = "";
         let repliesHtml = "";
         
-        // 말풍선 내부 일정 렌더링
+        // 말풍선 내부의 개별 수송 일정(편도들) 정렬 및 생성
         group.legs.sort((a,b) => (a.time || "").localeCompare(b.time || "")).forEach(r => {
             const isApp = r.status === 'approved';
             const isFin = (r.status === 'finished' || r.status === 'completed');
             const isCan = r.status === 'cancelled';
-            const scheduledDateText = `<b>${r.date}</b>`;
+            const scheduledDateText = `<b>${r.date}</b>`; // 실제 수송일
 
             if(isCan) {
                 legsHtml += `<div class="talk-leg-item" style="opacity:0.5; text-decoration:line-through;">
                     <div style="font-size:12px;">🚫 취소: ${scheduledDateText} [${r.time}] ${r.dir}</div>
                 </div>`;
-                return;
+            } else {
+                legsHtml += `
+                <div class="talk-leg-item">
+                    <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px;">
+                      ${scheduledDateText} [${r.time}] 
+                    </div>
+                    <div style="font-weight:700; font-size:13px; margin:2px 0;">${r.dir.replace('→',' > ')}</div>
+                    
+                    <div style="margin-top:5px; display:flex; gap:5px;">
+                        ${(!isApp && !isFin) ? 
+                            `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
+                             <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">불가</button>` 
+                            : (isApp ? 
+                            `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1; display:flex; align-items:center;">✓ 승인됨 (자동마감 예정)</div>
+                             <button class="mini-talk-btn" style="color:#94a3b8; max-width:60px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
+                            : `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 자동 마감됨</div>`)}
+                    </div>
+                </div>`;
             }
 
-            legsHtml += `<div class="talk-leg-item">
-                <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px;">
-                  ${scheduledDateText} [${r.time}] 
-                </div>
-                <div style="font-weight:700; font-size:13px; margin:2px 0;">${r.dir.replace('→',' > ')}</div>
-                <div style="margin-top:5px; display:flex; gap:5px;">
-                    ${(!isApp && !isFin) ? 
-                        `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
-                         <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">불가</button>` 
-                        : (isApp ? 
-                        `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1; display:flex; align-items:center;">✓ 승인됨 (자동마감 예정)</div>
-                         <button class="mini-talk-btn" style="color:#94a3b8; max-width:60px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
-                        : (isFin ? `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 자동 마감됨</div>` : ''))}
-                </div>
-            </div>`;
-
+            // 기사님 답변 말풍선 생성 (승인/마감 시)
             if(isApp || isFin) {
-                const replyText = isFin ? `운행 마감 (${r.time})` : `승인 완료! 일정 확인했습니다.`;
+                const replyText = isFin ? `운행 마감 (${r.time})` : `승인 완료! ${r.date} [${r.time}] 확인했습니다.`;
                 const replyBg = isFin ? 'background:#f1f5f9; color:#94a3b8;' : 'background:#fee500; color:#1e293b;';
                 repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${replyBg}">${replyText}</div></div>`;
             }
         });
 
-        inner.innerHTML += `<div class="chat-bubble chat-left" style="${shading}">
+        // 전체 말풍선 조합
+        htmlContent += `
+        <div class="chat-bubble chat-left" style="${shading}">
             <div class="talk-header">수송요청</div>
             <div class="bubble-content" style="${bubbleBg}">
                 <div style="font-size:11px; opacity:0.7; font-weight:800; margin-bottom:2px;">${cName}</div>
@@ -387,10 +396,15 @@ function renderInstructorList() {
         </div>` + repliesHtml;
     });
 
-    // 자동 스크롤 하단 이동
-    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 100);
-}
+    // 4. 완성된 HTML을 한 번에 주입 (화면 깜빡임 방지 및 성능 최적화)
+    inner.innerHTML = htmlContent;
 
+    // 5. [기사님 플랫폼 전용] 안 읽은 최신 메시지(맨 아래)로 즉시 이동
+    // 브라우저가 HTML을 렌더링할 시간을 준 뒤(50ms), 스크롤을 최하단으로 내립니다.
+    setTimeout(() => {
+        inner.scrollTop = inner.scrollHeight;
+    }, 50);
+}
 
 
 
