@@ -2800,3 +2800,109 @@ body.night-mode .header-room-badge { background-color: #003366 !important; borde
 .card-terminal { border-top: 4px solid #f59e0b; }
 .card-airport { border-top: 4px solid #10b981; }
 .card-car { border-top: 4px solid #6366f1; }
+
+
+
+
+/* ==========================================
+   야간 모드(Night Mode) 가독성 정밀 보정
+   ========================================== */
+
+/* 1. 기본 배경 및 글자색 보정 */
+body.night-mode {
+    background-color: #0f172a !important; /* 더 깊은 네이비 */
+    color: #f8fafc !important;
+}
+
+/* 2. 흰색 카드형 요소 보정 (가장 중요한 부분) */
+body.night-mode .modern-white-card,
+body.night-mode .stat-premium-card,
+body.night-mode .quiz-card,
+body.night-mode .notice-card-half .modern-white-card {
+    background-color: #1e293b !important; /* 어두운 카드 배경 */
+    border: 1px solid #334155 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3. 테이블 및 명단 글자색 보정 (이름 안보임 해결) */
+body.night-mode table td,
+body.night-mode table th {
+    color: #e2e8f0 !important; /* 밝은 회색으로 변경 */
+    border-bottom: 1px solid #334155 !important;
+}
+
+body.night-mode table td span, 
+body.night-mode table td b {
+    color: #ffffff !important; /* 강조 텍스트는 완전 흰색 */
+}
+
+/* 4. 공지사항 입력창 (검은바탕에 검은글씨 방지) */
+body.night-mode textarea,
+body.night-mode .setting-input,
+body.night-mode .setup-input {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #475569 !important;
+}
+
+body.night-mode textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* 5. 대시보드 및 셔틀 통계 숫자 보정 */
+body.night-mode .card-label,
+body.night-mode .card-label-shuttle,
+body.night-mode .prof-label {
+    color: #94a3b8 !important; /* 라벨은 약간 흐리게 */
+}
+
+body.night-mode .card-value b,
+body.night-mode .sb-val,
+body.night-mode #cnt-total,
+body.night-mode #dashArrivedCount {
+    color: #3b82f6 !important; /* 숫자는 밝은 파란색으로 강조 */
+}
+
+/* 6. Q&A 질문 카드 보정 */
+body.night-mode .q-card {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+}
+
+body.night-mode .q-content {
+    color: #f1f5f9 !important;
+}
+
+/* 7. 하단 "홈으로" 플로팅 버튼 가독성 */
+body.night-mode #floatingHomeBtn {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 8. 기타 주간모드 색상 강제 지정 요소 해제 */
+body.night-mode .hero-left h2,
+body.night-mode .dash-title-main h1 {
+    color: #ffffff !important;
+}
+
+body.night-mode .info-pill b {
+    color: #cbd5e1 !important;
+}
+
+/* 9. 야간모드에서 너무 밝은 배경색을 가진 태그들 조절 */
+body.night-mode .notice-item.instructor,
+body.night-mode .notice-item.admin,
+body.night-mode .notice-item.global {
+    background-color: #334155 !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #475569 !important;
+}
+
+/* 10. 야간 모드에서의 스크롤바 디자인 */
+body.night-mode ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+body.night-mode ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
