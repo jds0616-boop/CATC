@@ -1283,19 +1283,28 @@ body.modal-open .app-content {
 
 
 
-// 1. 먼저 스크롤 함수를 정의합니다 (오류 방지를 위해 함수 위에 배치)
 function scrollToBottomPickup() {
     const container = document.getElementById('pickupCardContainer');
     if (!container) return;
 
-    // 즉시 스크롤
-    container.scrollTop = container.scrollHeight;
+    // 즉시 실행
+    container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
 
-    // 말풍선이 많을 경우 렌더링 시간을 고려하여 0.1초, 0.3초 뒤에 한 번 더 실행
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 300);
+    // 0.1초 뒤 (데이터 렌더링 직후)
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+
+    // 0.3초 뒤 (레이아웃 안정화 후)
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 300);
+
+    // 0.5초 뒤 (최종 확인)
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 500);
 }
-
 
 
 
@@ -2645,20 +2654,24 @@ function showActionDetail(dataJson) {
 
 
 
-// [수정] 강사 픽업 뷰 진입 함수
 function showPickupView() {
     currentRID = ""; 
     handleRoomSelection(); 
+    
+    // 1. 전체 화면을 먼저 다 가리고 픽업 뷰만 띄움
     document.getElementById('totalStatusView').style.display = "none";
-    document.getElementById('pickupStatusView').style.display = "flex"; // 여기서 화면이 나타남
+    document.getElementById('pickupStatusView').style.display = "flex";
     
     const homeBtn = document.getElementById('floatingHomeBtn');
     if(homeBtn) homeBtn.style.display = "flex";
     
+    // 2. 데이터를 먼저 부름
     renderPickupTable();
     
-    // [중요] 화면이 표시된 직후 스크롤 호출
-    scrollToBottomPickup();
+    // 3. 화면이 완전히 렌더링될 수 있도록 약간의 여유를 주고 바닥으로 이동
+    setTimeout(() => {
+        scrollToBottomPickup();
+    }, 100);
 }
 
 
