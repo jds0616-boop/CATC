@@ -389,7 +389,23 @@
     .navy-btn.red { background: var(--danger); }
 
     /* 사이드 메뉴 */
-    .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: white; z-index: 5000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.side-menu { 
+    position: fixed; 
+    top: 0; 
+    right: -280px; 
+    width: 280px; 
+    height: 100%; 
+    background: white; 
+    z-index: 5000; 
+    transition: 0.3s; 
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px;
+    /* [추가] 메뉴 내부 내용이 길면 메뉴 안에서만 스크롤 가능하게 함 */
+    overflow-y: auto; 
+}
     .side-menu.open { right: 0; }
     .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 4500; display: none; }
 
@@ -641,13 +657,13 @@
 }
 
 
-/* 팝업 열렸을 때 뒷배경 스크롤 방지 클래스 */
+/* 팝업 또는 메뉴 열렸을 때 뒷배경 스크롤 방지 */
 body.modal-open {
     overflow: hidden !important;
-    touch-action: none; /* 모바일 터치 스크롤 방지 */
-    position: fixed; /* 배경을 화면에 고정시켜 버림 (슬라이딩 원천 차단) */
+    position: fixed; /* 화면을 현재 위치에 고정 */
     width: 100%;
     height: 100%;
+    touch-action: none; /* 터치 스크롤 방지 */
 }
 
 
@@ -2436,8 +2452,24 @@ function executePrintProcess(mode) {
 // ==========================================
 
 function toggleMenu(open) { 
-    document.getElementById('sideMenu').classList.toggle('open', open); 
-    document.getElementById('menuOverlay').style.display = open ? "block" : "none"; 
+    const sideMenu = document.getElementById('sideMenu');
+    const menuOverlay = document.getElementById('menuOverlay');
+    
+    sideMenu.classList.toggle('open', open); 
+    menuOverlay.style.display = open ? "block" : "none"; 
+
+    // [추가] 메뉴가 열릴 때 body 스크롤 방지 클래스 토글
+    if (open) {
+        document.body.classList.add('modal-open');
+    } else {
+        // 단, 다른 모달이 열려있지 않을 때만 스크롤 방지 해제
+        const isAnyModalVisible = Array.from(document.querySelectorAll('.setup-modal'))
+            .some(el => window.getComputedStyle(el).display !== 'none');
+            
+        if (!isAnyModalVisible) {
+            document.body.classList.remove('modal-open');
+        }
+    }
 }
 
 function closeSetupModal() { document.getElementById('setupModal').style.display = "none"; }
