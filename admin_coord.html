@@ -596,32 +596,49 @@
 
 
 
-/* 하단 중앙 플로팅 홈 버튼 (팝업 위로 최상단 배치) */
+/* [수정] 하단 푸터 제거 */
+.app-footer { 
+    display: none !important; 
+}
+
+/* [수정] 홈 버튼 - 기사 플랫폼과 동일한 원형 플로팅 디자인 */
 #floatingHomeBtn {
-    position: fixed;
-    bottom: 75px; 
-    left: 50%;
-    transform: translateX(-50%); 
-    background: #0f172a; 
-    color: white;
-    padding: 10px 25px;
-    border-radius: 50px;
-    display: none; 
+    width: 56px; 
+    height: 56px;
+    background: var(--blue-main); 
+    color: #fff;
+    border-radius: 50%;
+    display: none; /* 기본 숨김 (모달이나 서브페이지에서만 노출) */
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 800;
+    position: fixed;
+    bottom: 30px; /* 바닥에서 30px 띄움 */
+    left: 50%; 
+    transform: translateX(-50%); 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
     cursor: pointer;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
-    /* 팝업(8000)보다 높은 숫자를 주어 무조건 위에 뜨게 함 */
-    z-index: 10000 !important; 
-    transition: all 0.2s ease;
-    border: 1.5px solid rgba(255,255,255,0.1); 
-    white-space: nowrap;
+    border: 4px solid #fff; /* 흰색 테두리 */
+    z-index: 10000 !important;
+    transition: 0.2s;
 }
-#floatingHomeBtn:active { transform: translateX(-50%) scale(0.95); }
-#floatingHomeBtn i { font-size: 16px; color: #3b82f6; }
+
+/* 홈 버튼 내부 아이콘 크기 조정 및 글자 숨김 */
+#floatingHomeBtn i { 
+    font-size: 22px; 
+    color: #fff !important; 
+}
+#floatingHomeBtn span { 
+    display: none; /* "홈으로" 글자 제거 */
+}
+
+#floatingHomeBtn:active { 
+    transform: translateX(-50%) scale(0.9); 
+}
+
+/* 앱 컨테이너 높이 보정 (하단바가 없으므로 여백 조정) */
+.app-container {
+    min-height: 100dvh;
+}
 
 
 /* 팝업 열렸을 때 뒷배경 스크롤 방지 클래스 */
@@ -1211,7 +1228,9 @@ body.modal-open {
 
 
 
-
+    <div id="floatingHomeBtn" onclick="handleBackNav()">
+        <i class="fa-solid fa-house"></i>
+    </div>
 
 
 
@@ -1846,53 +1865,40 @@ function updateTransDirButtons() {
 
 // [최종] 홈/뒤로가기 클릭 시 모든 상태 해제 및 스크롤 잠금 해제
 function handleBackNav() { 
-    // 모든 팝업 닫기
+    // 1. 열려있는 모든 팝업(모달) 닫기
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
         'actionDetailModal', 'printSelectModal'
     ];
     
-    let isModalClosed = false;
     allModals.forEach(id => {
         const modal = document.getElementById(id);
-        if(modal && modal.style.display === 'flex') {
-            modal.style.display = 'none';
-            isModalClosed = true;
-        }
+        if(modal) modal.style.display = 'none';
     });
 
-    // 팝업을 닫을 때 배경 스크롤 차단 해제
     document.body.classList.remove('modal-open');
 
-    if(isModalClosed) return;
-
+    // 2. 관리대장 뷰가 열려있다면 닫기
     const outingManager = document.getElementById('outingManagerView');
-    if(outingManager && outingManager.style.display === 'flex') {
-        outingManager.style.display = 'none';
-        return;
-    }
+    if(outingManager) outingManager.style.display = 'none';
 
-    const pickupView = document.getElementById('pickupStatusView');
-    const shuttleView = document.getElementById('studentShuttleView');
-    const individualView = document.getElementById('individualStatusView');
+    // 3. 서브 뷰(개별과정, 강사픽업, 퇴교현황) 상태 해제 및 메인으로 복귀
+    currentRID = ""; // 선택된 과정 초기화
+    
+    // 모든 서브 뷰 숨기기
+    const views = ['individualStatusView', 'pickupStatusView', 'studentShuttleView'];
+    views.forEach(v => {
+        const el = document.getElementById(v);
+        if(el) el.style.display = "none";
+    });
 
-    if ( (pickupView && pickupView.style.display === "flex") || 
-         (shuttleView && shuttleView.style.display === "flex") || 
-         (currentRID !== "") ) {
-        
-        currentRID = ""; 
-        if(pickupView) pickupView.style.display = "none";
-        if(shuttleView) shuttleView.style.display = "none";
-        if(individualView) individualView.style.display = "none";
-        
-        const totalView = document.getElementById('totalStatusView');
-        if(totalView) totalView.style.display = "flex";
-        
-        handleRoomSelection();
-    } else {
-        location.href = 'potal.html';
-    }
+    // 전체 현황(메인) 페이지 보이기
+    const totalView = document.getElementById('totalStatusView');
+    if(totalView) totalView.style.display = "flex";
+
+    // 사이드 메뉴 버튼 상태 등 정리
+    handleRoomSelection();
 }
 
 
