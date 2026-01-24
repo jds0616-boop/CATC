@@ -3745,18 +3745,22 @@ const setupMgr = {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-    // 신청 내용을 운영부/기사 플랫폼으로 전송
-    saveTransportRequest: function() {
+saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
+        
         const btn = document.getElementById('btn-tr-submit');
         const name = document.getElementById('tr-name').value.trim();
         const phone = document.getElementById('tr-phone').value.trim();
         const date = document.getElementById('tr-date').value;
         const cName = document.getElementById('setup-course-name').value;
 
-        if(!name || !phone || !date) return alert("강사 성함, 연락처, 날짜를 입력해주세요.");
+        if(!name || !phone || !date) {
+            alert("강사 성함, 연락처, 날짜를 모두 입력해주세요.");
+            return;
+        }
 
-        btn.disabled = true; btn.innerText = "신청서 전송 중...";
+        btn.disabled = true;
+        btn.innerText = "기사님께 전송 중...";
 
         const data = {
             room: state.room,
@@ -3770,6 +3774,27 @@ const setupMgr = {
             status: 'pending',
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
+
+        // 고유 키 생성
+        const newKey = firebase.database().ref().child('instructor_transport_requests').push().key;
+        
+        const updates = {};
+        // 1. 내 강의실 카톡창용 경로
+        updates[`courses/${state.room}/transport_requests/${newKey}`] = data;
+        // 2. 운영부/기사 통합 관리용 경로
+        updates[`instructor_transport_requests/${newKey}`] = data;
+
+        firebase.database().ref().update(updates).then(() => {
+            alert(`🚀 [${name}] 강사님 수송 신청이 운영부와 기사님께 실시간 전달되었습니다.`);
+            this.closeTransportModal();
+        }).catch(e => {
+            alert("연동 실패: " + e.message);
+        }).finally(() => {
+            btn.disabled = false;
+            btn.innerText = "수송 예약 등록하기";
+            btn.style.background = "#7c3aed";
+        });
+    },
 
         // 1. 내 강의실 대화창용 저장
         const newRef = firebase.database().ref(`courses/${state.room}/transport_requests`).push();
