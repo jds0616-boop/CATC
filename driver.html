@@ -796,7 +796,7 @@ function renderTraineeManagement() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
-    // --- [추가] 상단 주차 헤더 계산 ---
+    // --- 상단 주차 헤더 계산 ---
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekNo = Math.ceil((now.getDate() + firstDayOfMonth.getDay()) / 7);
     const headerTitle = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${weekNo}째주 교육생 퇴교 설정`;
@@ -819,14 +819,13 @@ function renderTraineeManagement() {
 
       const period = room.settings?.period || "";
       if (!period.includes(" ~ ")) return;
-      const endDate = period.split(" ~ ")[1]; // 설정된 과정 종료일
+      const endDate = period.split(" ~ ")[1]; 
 
-      // [1] 이미 퇴교일이 지난 과정은 리스트에서 안 보이게 함
       if (endDate < todayStr) return;
 
       const dep = room.shuttle?.departure || { time: "", date: "" };
 
-      // [2] 리셋 로직: 설정된 공지 날짜가 종료일과 다르면(과거 주차 데이터면) 리셋
+      // [자동 리셋] 설정된 날짜가 퇴교일과 다르고 오늘보다 과거면 삭제
       if (dep.date && dep.date !== endDate && dep.date < todayStr) {
           firebase.database().ref(`courses/${rid}/shuttle/departure`).set(null);
           firebase.database().ref(`courses/${rid}/shuttle/requests`).set(null);
@@ -837,18 +836,21 @@ function renderTraineeManagement() {
       const subTotal = reqs.filter(r => r.type !== 'car').length;
       const cName = room.settings?.courseName || '과정명';
 
-      // [3] 버튼 색상 유지: dep.time과 버튼 값이 같으면 'active' 클래스 추가
+      // [버튼 활성화 & 공지 취소 기능 반영]
       listHTML += `
-        <div class="course-row" onclick="showDrillDown('course', '${rid}')">
+        <div class="course-row">
           <div class="t-cell name" style="font-size:12px; justify-content:flex-start; text-align:left; padding-left:10px;">${cName}</div>
-          <div class="t-cell count">${subTotal}명</div>
+          <div class="t-cell count" style="cursor:pointer;" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
           <div class="t-cell btns">
-            <button class="mini-btn ${dep.time==='13:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
-            <button class="mini-btn ${dep.time==='15:00'?'active':''}" onclick="event.stopPropagation(); confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
-            <button class="mini-btn ${dep.time && !['13:00','15:00'].includes(dep.time)?'active':''}" onclick="event.stopPropagation(); promptManual('${rid}', '${endDate}')">수동</button>
+            <button class="mini-btn ${dep.time === '13:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '13:00', '${endDate}')">13:00</button>
+            <button class="mini-btn ${dep.time === '15:00' ? 'active' : ''}" onclick="confirmAction('dep', '${rid}', '15:00', '${endDate}')">15:00</button>
+            <button class="mini-btn ${dep.time && dep.time !== '13:00' && dep.time !== '15:00' ? 'active' : ''}" onclick="promptManual('${rid}', '${endDate}')">수동</button>
           </div>
           <div class="t-cell status">
-            ${dep.time ? `<i class="fa-solid fa-circle-check notice-on"></i>` : `<i class="fa-solid fa-minus notice-off"></i>`}
+            ${dep.time ? 
+              `<i class="fa-solid fa-circle-check notice-on" style="cursor:pointer; color:#10b981;" title="공지 취소하기" onclick="confirmAction('cancelDep', '${rid}')"></i>` : 
+              `<i class="fa-solid fa-minus notice-off"></i>`
+            }
           </div>
         </div>`;
     });
@@ -880,7 +882,6 @@ function confirmAction(type, id, val = null, targetDate = null) {
         document.getElementById('c-desc').innerHTML = "<span style='color:red; font-weight:900;'>이 작업은 상대방에게 거절로 통보되며 즉시 삭제됩니다.</span>";
         okBtn.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('confirmModal'); };
     } else if(type === 'dep') {
-        // [수정] 퇴교 공지 시 오늘 날짜가 아닌 과정 종료일(targetDate)을 저장
         document.getElementById('c-title').innerText = "퇴교 공지"; 
         document.getElementById('c-desc').innerHTML = `[${val}] 시간을 공지하시겠습니까?<br><br>퇴교 적용일: <b style="color:#ef4444;">${targetDate}</b>`;
         okBtn.onclick = async () => { 
@@ -890,9 +891,27 @@ function confirmAction(type, id, val = null, targetDate = null) {
             }); 
             closeModal('confirmModal'); 
         };
+    } else if(type === 'cancelDep') {
+        // [신규] 공지 취소 기능
+        document.getElementById('c-title').innerText = "공지 취소"; 
+        document.getElementById('c-desc').innerHTML = "이미 설정된 퇴교 시간을 취소하시겠습니까?<br>(강사 플랫폼에서도 사라집니다.)";
+        okBtn.onclick = async () => { 
+            await firebase.database().ref(`courses/${id}/shuttle/departure`).set(null); 
+            closeModal('confirmModal'); 
+        };
     }
     modal.style.display = 'flex';
 }
+
+
+
+
+
+
+
+
+
+
 
   function showConfirm(title, desc, callback) {
     document.getElementById('c-title').innerText = title;
