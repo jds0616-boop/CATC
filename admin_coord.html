@@ -1377,119 +1377,6 @@ body.modal-open .app-content {
 
 let masterStudentList = []; // 검색을 위한 마스터 데이터 저장용
 
-// [수정] 메인 상황판에서 '전체 교육생' 버튼 클릭 시 실행
-async function showTotalStudentList() {
-    currentRID = ""; 
-    handleRoomSelection(); // 모든 뷰 숨기기
-    document.getElementById('totalStatusView').style.display = "none";
-    document.getElementById('allStudentListView').style.display = "flex";
-    
-    const homeBtn = document.getElementById('floatingHomeBtn');
-    if(homeBtn) homeBtn.style.display = "flex";
-    
-    // 데이터 불러오기
-    await loadAllStudentData();
-}
-
-// [신규] 모든 과정의 교육생 정보를 긁어모아 테이블 생성
-async function loadAllStudentData() {
-    const tbody = document.getElementById('allStudentTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:50px;">데이터를 통합 중입니다...</td></tr>';
-    
-    const today = getTodayString();
-    masterStudentList = []; // 초기화
-
-    // 1. 생활관 데이터 미리 가져오기
-    const dormSnap = await firebase.database().ref('system/dormitory_assignments').once('value');
-    const dormData = dormSnap.val() || {};
-
-    // 2. 모든 과정 순회
-    Object.keys(globalAllData).forEach(rid => {
-        const room = globalAllData[rid];
-        const courseName = room.settings?.courseName || `Room ${rid}`;
-        if (!room.students) return;
-
-        Object.keys(room.students).forEach(stoken => {
-            const s = room.students[stoken];
-            if (!s.name || s.name === "undefined") return;
-
-            const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
-            const sKey = `${s.name.trim()}_${phoneSuffix}`;
-
-            // A. 생활관 정보 찾기
-            const dorm = dormData[sKey] || { building: "-", room: "미배정" };
-            
-            // B. 퇴교 차량 정보 찾기
-            const shuttleReq = room.shuttle?.requests?.[stoken];
-            let shuttleText = "-";
-            let shuttleClass = "";
-            if(shuttleReq) {
-                const types = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
-                shuttleText = types[shuttleReq.type] || "신청";
-                shuttleClass = `badge-shuttle badge-${shuttleReq.type}`;
-            }
-
-            // C. 외출/외박 정보 찾기
-            const action = room.admin_actions?.[today]?.[stoken];
-            let actionText = "-";
-            let actionClass = "";
-            if(action) {
-                actionText = action.type === 'outing' ? '외출' : '외박';
-                actionClass = action.type === 'outing' ? 'text-outing' : 'text-overnight';
-                if(action.returned) actionText += " (복귀)";
-            }
-
-            masterStudentList.push({
-                courseName,
-                name: s.name,
-                phone: phoneSuffix,
-                dormInfo: `${dorm.building} ${dorm.room}${dorm.room !== '미배정'?'호':''}`,
-                shuttleText,
-                shuttleClass,
-                actionText,
-                actionClass,
-                searchKey: (courseName + s.name).toLowerCase()
-            });
-        });
-    });
-
-    renderStudentTable(masterStudentList);
-}
-
-// [신규] 화면 렌더링 함수
-function renderStudentTable(list) {
-    const tbody = document.getElementById('allStudentTableBody');
-    if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:50px; color:#94a3b8;">검색 결과가 없습니다.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = list.map(s => `
-        <tr>
-            <td style="text-align:left; padding-left:15px; font-size:11px; font-weight:700; color:var(--blue-deep);">${s.courseName}</td>
-            <td style="font-weight:800;">${s.name} <small style="color:#94a3b8; font-weight:400;">(${s.phone})</small></td>
-            <td style="font-weight:700; color:#475569;">${s.dormInfo}</td>
-            <td><span class="${s.shuttleClass}">${s.shuttleText}</span></td>
-            <td><span class="status-action ${s.actionClass}">${s.actionText}</span></td>
-        </tr>
-    `).join('');
-}
-
-// [신규] 실시간 검색 필터링
-function filterAllStudents() {
-    const query = document.getElementById('studentSearchInput').value.toLowerCase();
-    const filtered = masterStudentList.filter(s => s.searchKey.includes(query));
-    renderStudentTable(filtered);
-}
-
-// [기존 함수 수정] handleBackNav에 신규 뷰 숨김 추가
-const originalHandleBackNav = handleBackNav;
-handleBackNav = function() {
-    originalHandleBackNav();
-    const allView = document.getElementById('allStudentListView');
-    if(allView) allView.style.display = "none";
-    document.getElementById('studentSearchInput').value = ""; // 검색어 초기화
-}
 
 
 
@@ -1843,20 +1730,7 @@ function updateGlobalStatus() {
     const studentBtn = document.getElementById('g-total-students')?.closest('.dashboard-card-btn');
     if(studentBtn) {
         studentBtn.onclick = function() {
-            const modal = document.getElementById('totalStudentListModal');
-            const tbody = document.getElementById('totalStudentListBody');
-            
-            filteredList.sort((a,b) => a.courseName.localeCompare(b.courseName) || a.name.localeCompare(b.name));
-            
-            tbody.innerHTML = filteredList.length ? filteredList.map(s => `
-                <tr>
-                    <td style="font-size:11px; color:var(--blue-deep); font-weight:800; text-align:left; padding-left:10px;">${s.courseName}</td>
-                    <td style="font-weight:800;">${s.name}</td>
-                    <td style="color:#94a3b8;">${s.phone}</td>
-                </tr>
-            `).join('') : '<tr><td colspan="3" style="padding:20px;">입교생 없음</td></tr>';
-            
-            modal.style.display = 'flex';
+            showTotalStudentList(); // 페이지 전환 함수 호출
         };
     }
 } // updateGlobalStatus 끝
@@ -2226,7 +2100,7 @@ function handleBackNav() {
     currentRID = ""; // 선택된 과정 초기화
     
     // 모든 서브 뷰 숨기기
-    const views = ['individualStatusView', 'pickupStatusView', 'studentShuttleView'];
+    const views = ['individualStatusView', 'pickupStatusView', 'studentShuttleView', 'allStudentListView'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) el.style.display = "none";
@@ -3222,6 +3096,127 @@ init = function() {
 
 
 
+
+
+
+// [수정] 메인 상황판에서 '전체 교육생' 버튼 클릭 시 실행
+async function showTotalStudentList() {
+    currentRID = ""; 
+    handleRoomSelection(); // 모든 뷰 숨기기
+    document.getElementById('totalStatusView').style.display = "none";
+    document.getElementById('allStudentListView').style.display = "flex";
+    
+    const homeBtn = document.getElementById('floatingHomeBtn');
+    if(homeBtn) homeBtn.style.display = "flex";
+    
+    // 데이터 불러오기
+    await loadAllStudentData();
+}
+
+// [신규] 모든 과정의 교육생 정보를 긁어모아 테이블 생성
+async function loadAllStudentData() {
+    const tbody = document.getElementById('allStudentTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:50px;">데이터를 통합 중입니다...</td></tr>';
+    
+    const today = getTodayString();
+    masterStudentList = []; // 초기화
+
+    // 1. 생활관 데이터 미리 가져오기
+    const dormSnap = await firebase.database().ref('system/dormitory_assignments').once('value');
+    const dormData = dormSnap.val() || {};
+
+    // 2. 모든 과정 순회
+    Object.keys(globalAllData).forEach(rid => {
+        const room = globalAllData[rid];
+        const courseName = room.settings?.courseName || `Room ${rid}`;
+        if (!room.students) return;
+
+        Object.keys(room.students).forEach(stoken => {
+            const s = room.students[stoken];
+            if (!s.name || s.name === "undefined") return;
+
+            const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
+            const sKey = `${s.name.trim()}_${phoneSuffix}`;
+
+            // A. 생활관 정보 찾기
+            const dorm = dormData[sKey] || { building: "-", room: "미배정" };
+            
+            // B. 퇴교 차량 정보 찾기
+            const shuttleReq = room.shuttle?.requests?.[stoken];
+            let shuttleText = "-";
+            let shuttleClass = "";
+            if(shuttleReq) {
+                const types = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
+                shuttleText = types[shuttleReq.type] || "신청";
+                shuttleClass = `badge-shuttle badge-${shuttleReq.type}`;
+            }
+
+            // C. 외출/외박 정보 찾기
+            const action = room.admin_actions?.[today]?.[stoken];
+            let actionText = "-";
+            let actionClass = "";
+            if(action) {
+                actionText = action.type === 'outing' ? '외출' : '외박';
+                actionClass = action.type === 'outing' ? 'text-outing' : 'text-overnight';
+                if(action.returned) actionText += " (복귀)";
+            }
+
+            masterStudentList.push({
+                courseName,
+                name: s.name,
+                phone: phoneSuffix,
+                dormInfo: `${dorm.building} ${dorm.room}${dorm.room !== '미배정'?'호':''}`,
+                shuttleText,
+                shuttleClass,
+                actionText,
+                actionClass,
+                searchKey: (courseName + s.name).toLowerCase()
+            });
+        });
+    });
+
+    renderStudentTable(masterStudentList);
+}
+
+// [신규] 화면 렌더링 함수
+function renderStudentTable(list) {
+    const tbody = document.getElementById('allStudentTableBody');
+    if(list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:50px; color:#94a3b8;">검색 결과가 없습니다.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(s => `
+        <tr>
+            <td style="text-align:left; padding-left:15px; font-size:11px; font-weight:700; color:var(--blue-deep);">${s.courseName}</td>
+            <td style="font-weight:800;">${s.name} <small style="color:#94a3b8; font-weight:400;">(${s.phone})</small></td>
+            <td style="font-weight:700; color:#475569;">${s.dormInfo}</td>
+            <td><span class="${s.shuttleClass}">${s.shuttleText}</span></td>
+            <td><span class="status-action ${s.actionClass}">${s.actionText}</span></td>
+        </tr>
+    `).join('');
+}
+
+// [신규] 실시간 검색 필터링
+function filterAllStudents() {
+    const query = document.getElementById('studentSearchInput').value.toLowerCase();
+    const filtered = masterStudentList.filter(s => s.searchKey.includes(query));
+    renderStudentTable(filtered);
+}
+
+// [기존 함수 수정] handleBackNav에 신규 뷰 숨김 추가
+const originalHandleBackNav = handleBackNav;
+handleBackNav = function() {
+    originalHandleBackNav();
+    const allView = document.getElementById('allStudentListView');
+    if(allView) allView.style.display = "none";
+    document.getElementById('studentSearchInput').value = ""; // 검색어 초기화
+}
+
+
+
+
+
     init();
   </script>
 
@@ -3239,10 +3234,6 @@ init = function() {
         <button class="navy-btn" style="margin-top:20px; background:#64748b;" onclick="document.getElementById('shuttleDetailModal').style.display='none'">닫기</button>
     </div>
 </div>
-
-
-
-
 
 
 
