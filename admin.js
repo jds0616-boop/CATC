@@ -3645,6 +3645,7 @@ const setupMgr = {
                     }
                 }
                 this.loadCurrentSettings(); // 나머지 정보 로드
+                this.loadTransportChat();   // 이 줄을 추가 (카카오창 로드)
                 this.loadTransportChat();   // [추가] 카카오톡 스타일 수송 현황 로드
             });
         });
@@ -3706,13 +3707,13 @@ const setupMgr = {
     },
 
     // 4. 모달 닫기
-    closeSetupModal: function() {
+closeSetupModal: function() {
         document.getElementById('courseSetupModal').style.display = 'none';
-        // [추가] 모달 닫을 때 실시간 리스너 해제 (메모리 관리)
+        // 창을 닫을 때 실시간 감시 종료 (추가된 로직)
         if(state.room) firebase.database().ref(`courses/${state.room}/transport_requests`).off();
     },
 
-    // 5. 모든 설정 저장
+// 5. 모든 설정 저장 (기존 기능 유지)
     saveAll: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버 모드에서는 환경설정을 변경할 수 없습니다.");
 
@@ -3753,51 +3754,83 @@ const setupMgr = {
         });
     },
 
-    // --- [신규 추가] 강사 수송 요청 관련 함수들 ---
+    // --- [신규 추가] 강사 수송 관리 로직 (교육운영부 표준 방식) ---
 
-    // 6. 수송 요청 모달 열기
+    // 1. 장소 선택 시 라벨을 즉시 변경 (오송역 -> 항기원 등)
+    updateTransportLabels: function(loc) {
+        const lblIn = document.getElementById('lbl-tr-in');
+        const lblOut = document.getElementById('lbl-tr-out');
+        if(!lblIn || !lblOut) return;
+
+        if(loc === "오송역") {
+            lblIn.innerText = "오송역 → 항기원"; lblOut.innerText = "항기원 → 오송역";
+        } else if(loc === "청주터미널") {
+            lblIn.innerText = "터미널 → 항기원"; lblOut.innerText = "항기원 → 터미널";
+        } else if(loc === "청주공항") {
+            lblIn.innerText = "공항 → 항기원"; lblOut.innerText = "항기원 → 공항";
+        } else {
+            lblIn.innerText = "출발지 → 항기원"; lblOut.innerText = "항기원 → 도착지";
+        }
+    },
+
+    // 2. 수송 신청 모달 열기
     openTransportModal: function() {
-        // 기본 날짜를 오늘로 설정
         document.getElementById('tr-date').value = new Date().toISOString().substring(0, 10);
+        this.updateTransportLabels("오송역"); // 초기 라벨 설정
         document.getElementById('instTransportModal').style.display = 'flex';
     },
 
-    // 7. 수송 요청 모달 닫기
+    // 3. 수송 신청 모달 닫기
     closeTransportModal: function() {
         document.getElementById('instTransportModal').style.display = 'none';
     },
 
-    // 8. 수송 요청 저장 (Firebase)
+    // 4. 수송 신청 저장 (전송 중 상태 표시 및 데이터 저장)
     saveTransportRequest: function() {
         if(state.isObserver) return ui.showAlert("👁️ 옵저버는 신청할 수 없습니다.");
         
+        const btn = document.getElementById('btn-tr-submit');
+        const name = document.getElementById('tr-name').value.trim();
+        const phone = document.getElementById('tr-phone').value.trim();
+        const date = document.getElementById('tr-date').value;
+
+        if(!name || !phone) {
+            alert("강사 성함과 연락처를 입력해주세요.");
+            return;
+        }
+
+        // 버튼 비활성화 (인지 기능)
+        btn.disabled = true;
+        btn.innerText = "데이터 전송 중...";
+        btn.style.background = "#adb5bd";
+
         const data = {
             location: document.getElementById('tr-location').value,
-            date: document.getElementById('tr-date').value,
-            timeIn: document.getElementById('tr-time-in').value,
-            timeOut: document.getElementById('tr-time-out').value,
-            name: document.getElementById('tr-name').value,
-            phone: document.getElementById('tr-phone').value,
-            status: 'pending', // 초기값: 대기(노란색 메시지 전용)
+            date: date,
+            timeIn: document.getElementById('tr-time-in').value || "",
+            timeOut: document.getElementById('tr-time-out').value || "",
+            name: name,
+            phone: phone,
+            status: 'pending', // 대기 상태
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        if(!data.name || !data.date) return alert("강사 성함과 날짜를 입력해주세요.");
-
-        // 현재 강의실(state.room) 하위의 transport_requests 경로에 저장
         firebase.database().ref(`courses/${state.room}/transport_requests`).push(data)
         .then(() => {
-            alert("🚀 수송 요청이 신청되었습니다.");
+            alert(`✅ ${name} 강사님, 수송 신청이 정상적으로 등록되었습니다.`);
             this.closeTransportModal();
+        }).finally(() => {
+            btn.disabled = false;
+            btn.innerText = "수송 예약 등록하기";
+            btn.style.background = "#7c3aed";
         });
     },
 
-    // 9. 실시간 수송 현황 로드 (카카오창)
+    // 5. 카카오톡 스타일 현황창 실시간 로드 (내 과정 내용만 필터링)
     loadTransportChat: function() {
         const chatBox = document.getElementById('kakao-chat-box');
         if(!state.room || !chatBox) return;
 
-        // 해당 과정에 대한 신청 내역만 실시간 감시
         firebase.database().ref(`courses/${state.room}/transport_requests`).on('value', snap => {
             chatBox.innerHTML = "";
             const val = snap.val();
@@ -3810,35 +3843,33 @@ const setupMgr = {
                 const req = val[key];
                 const time = new Date(req.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // 1. 수송 신청 내역 (노란색 - 내가 보낸 메시지 스타일)
-                let chatHtml = `
+                // 보낸 메시지 (노란색: 신청 정보)
+                let html = `
                     <div class="kakao-msg sent">
-                        <span class="status-tag tag-pending">수송 신청</span><br>
+                        <span class="status-tag tag-pending">신청됨</span><br>
                         <b>${req.name} 강사님</b><br>
-                        ${req.date} / ${req.location}<br>
-                        시간: ${req.timeIn || '--:--'} | ${req.timeOut || '--:--'}
+                        📍 ${req.location} / ${req.date}<br>
+                        ⏰ ${req.timeIn || '--:--'} / ${req.timeOut || '--:--'}
                         <span class="kakao-time">${time}</span>
                     </div>
                 `;
                 
-                // 2. 승인이 완료된 경우 (흰색 - 기사님이 보낸 메시지 스타일)
+                // 받은 메시지 (흰색: 승인 완료 시 자동 생성)
                 if(req.status === 'approved') {
-                    chatHtml += `
+                    html += `
                         <div class="kakao-msg received">
-                            <span class="status-tag tag-approved">승인 완료</span><br>
-                            배차 및 승인이 완료되었습니다.<br>안전하게 모시겠습니다.
+                            <span class="status-tag tag-approved">승인완료</span><br>
+                            기사님 배차가 완료되었습니다.<br>안전하게 모시겠습니다.
                             <span class="kakao-time">${time}</span>
                         </div>
                     `;
                 }
-                chatBox.innerHTML += chatHtml;
+                chatBox.innerHTML += html;
             });
-            // 새 메시지가 오면 항상 바닥으로 스크롤
             chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
 }; // setupMgr 마침표
-
 
 
 

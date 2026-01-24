@@ -1355,46 +1355,58 @@
 
 
 
-<!-- [신규] 강사 수송 요청 신청 모달 -->
-    <div id="instTransportModal" class="modal-overlay" style="z-index: 8500;">
-        <div class="modal-box" style="width: 420px; padding:0; overflow:hidden; border-radius:20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+<!-- [신규] 교육운영부 표준 강사 수송 요청 모달 -->
+    <div id="instTransportModal" class="modal-overlay" style="z-index: 9000;">
+        <div class="modal-box" style="width: 420px; padding:0; overflow:hidden; border-radius:20px; box-shadow: 0 25px 50px rgba(0,0,0,0.4);">
+            <!-- 헤더: 보라색 테마 -->
             <div style="background:#7c3aed; color:white; padding:18px 20px; display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="margin:0; font-size:18px;"><i class="fa-solid fa-taxi"></i> 강사 수송 요청 등록</h3>
+                <h3 style="margin:0; font-size:18px;"><i class="fa-solid fa-taxi"></i> 강사 수송(의전) 신청 관리</h3>
                 <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:20px;" onclick="setupMgr.closeTransportModal()"></i>
             </div>
+            
             <div style="padding:25px;" class="setting-container">
+                <!-- 1. 장소 선택 (선택 시 아래 라벨이 바뀜) -->
                 <div class="setup-group" style="margin-bottom:15px;">
-                    <label class="setting-label">픽업/샌딩 장소</label>
-                    <select id="tr-location" class="setup-input">
+                    <label class="setting-label">픽업/샌딩 장소 선택</label>
+                    <select id="tr-location" class="setup-input" onchange="setupMgr.updateTransportLabels(this.value)">
                         <option value="오송역">오송역</option>
                         <option value="청주터미널">청주터미널</option>
                         <option value="청주공항">청주공항</option>
-                        <option value="기타(직접입력)">기타(직접입력)</option>
+                        <option value="기타장소">기타(직접입력)</option>
                     </select>
                 </div>
+
+                <!-- 2. 날짜 선택 -->
                 <div class="setup-group" style="margin-bottom:15px;">
-                    <label class="setting-label">수송 날짜</label>
+                    <label class="setting-label">수송 희망 날짜</label>
                     <input type="date" id="tr-date" class="setup-input">
                 </div>
-                <div style="display:flex; gap:10px; margin-bottom:15px; padding:15px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+
+                <!-- 3. 시간 입력 (라벨 동적 변경 구역) -->
+                <div style="display:flex; gap:10px; margin-bottom:15px; padding:15px; background:#f5f3ff; border-radius:12px; border:1px solid #ddd6fe;">
                     <div style="flex:1;">
-                        <label class="setting-label" style="font-size:10px; color:#7c3aed;">도착 (역→항기원)</label>
+                        <label id="lbl-tr-in" class="setting-label" style="font-size:11px; color:#7c3aed; font-weight:800;">오송역 → 항기원</label>
                         <input type="time" id="tr-time-in" class="setup-input">
                     </div>
                     <div style="flex:1;">
-                        <label class="setting-label" style="font-size:10px; color:#7c3aed;">출발 (항기원→역)</label>
+                        <label id="lbl-tr-out" class="setting-label" style="font-size:11px; color:#7c3aed; font-weight:800;">항기원 → 오송역</label>
                         <input type="time" id="tr-time-out" class="setup-input">
                     </div>
                 </div>
-                <div class="setup-group" style="margin-bottom:15px;">
-                    <input type="text" id="tr-name" class="setup-input" placeholder="강사님 성함">
+
+                <!-- 4. 강사 정보 -->
+                <div class="setup-group" style="margin-bottom:10px;">
+                    <input type="text" id="tr-name" class="setup-input" placeholder="강사명 성함 (필수)">
                 </div>
                 <div class="setup-group" style="margin-bottom:20px;">
-                    <input type="text" id="tr-phone" class="setup-input" placeholder="강사님 연락처">
+                    <input type="text" id="tr-phone" class="setup-input" placeholder="강사 연락처 (필수)">
                 </div>
-                <button class="btn-action btn-transport" onclick="setupMgr.saveTransportRequest()" style="width:100%; height:50px; font-size:16px; font-weight:800;">
-                    수송 예약 신청하기
+
+                <!-- 5. 신청 버튼 (상태 표시 포함) -->
+                <button id="btn-tr-submit" class="btn-action" onclick="setupMgr.saveTransportRequest()" style="width:100%; height:55px; background:#7c3aed; color:white; border:none; border-radius:12px; font-size:17px; font-weight:800; cursor:pointer; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);">
+                    수송 예약 등록하기
                 </button>
+                <p style="text-align:center; font-size:11px; color:#94a3b8; margin-top:12px;">* 신청 즉시 교육운영부 및 기사님께 전달됩니다.</p>
             </div>
         </div>
     </div>
