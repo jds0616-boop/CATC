@@ -532,11 +532,18 @@
 
 
 /* 관리자용 실시간 수송 톡 배경 */
-    #pickupCardContainer {
-      background: #abc1d1; /* 카톡 배경색 */
-      display: flex; flex-direction: column; gap: 15px;
-      padding: 15px; border-radius: 16px; min-height: 500px;
-    }
+#pickupCardContainer {
+    background: #abc1d1;
+    flex: 1;
+    overflow-y: auto !important;
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px;
+    padding: 15px; 
+    min-height: 0;
+    /* [추가] 자동 스크롤 시 부드럽게 이동 */
+    scroll-behavior: smooth; 
+}
 
     /* 날짜 구분선 */
     .chat-date-line { text-align: center; margin: 10px 0; }
@@ -2619,7 +2626,7 @@ function showActionDetail(dataJson) {
 
 
 
-// [수정] 강사 픽업 뷰 진입 시 플로팅 버튼 표시
+// [수정] 강사 픽업 뷰 진입 시 플로팅 버튼 표시 및 하단 스크롤
 function showPickupView() {
     currentRID = ""; 
     handleRoomSelection(); 
@@ -2629,7 +2636,16 @@ function showPickupView() {
     const homeBtn = document.getElementById('floatingHomeBtn');
     if(homeBtn) homeBtn.style.display = "flex";
     
+    // 테이블 렌더링 실행
     renderPickupTable();
+
+    // [추가] 화면이 완전히 표시된 후 하단으로 스크롤 (약간의 지연시간 필요)
+    const container = document.getElementById('pickupCardContainer');
+    if(container) {
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 300); // 0.3초 후 하단으로 이동
+    }
 }
 
 
@@ -2797,7 +2813,7 @@ function renderPickupTable() {
         // [운영부 최적화] 방금 신청한 건 확인을 위해 항상 맨 아래로 스크롤
         setTimeout(() => {
             container.scrollTop = container.scrollHeight;
-        }, 100);
+        }, 150);
     });
 }
 
