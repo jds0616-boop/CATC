@@ -138,6 +138,10 @@
   </div>
 </div>
 
+
+
+
+
 <script src="config.js"></script>
 <script>
   let allCourses = {};
@@ -147,45 +151,48 @@
   let currentTab = 0;
   const alarmAudio = new Audio('timer.mp3');
 
-  function init() {
-    // 1. 과정 정보 로드
-    firebase.database().ref('courses').on('value', snap => {
-      allCourses = snap.val() || {}; 
-      renderAll(); 
-    });
+// 1. 데이터 로드 및 자동 마감 로직 (Timestamp 기준 처리 추가)
+function init() {
+  firebase.database().ref('courses').on('value', snap => {
+    allCourses = snap.val() || {}; 
+    renderAll(); 
+  });
 
-    // 2. 수송 요청 로드 및 자동 마감 로직
-    firebase.database().ref('system/transport_requests').on('value', snap => {
-      const raw = snap.val() || {};
-      const now = new Date();
-      const updates = {};
-      let hasUpdates = false;
+  firebase.database().ref('system/transport_requests').on('value', snap => {
+    const raw = snap.val() || {};
+    const now = new Date();
+    const updates = {};
+    let hasUpdates = false;
 
-      profReqs = Object.keys(raw).map(k => {
-        const item = { id: k, ...raw[k] };
-        
-        // 자동 종료 체크 (한 번에 업데이트하기 위해 updates 객체에 수집)
-        if (item.status === 'approved' && item.date && item.time) {
-          const scheduledTime = new Date(item.date + ' ' + item.time);
-          const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); // 2시간 후
-          if (now > limitTime && !isNaN(scheduledTime.getTime())) {
-            updates[`system/transport_requests/${k}/status`] = 'finished';
-            item.status = 'finished';
-            hasUpdates = true;
-          }
-        }
-        return item;
-      }).filter(r => r.date && r.prof && r.courseRID && r.time);
+    profReqs = Object.keys(raw).map(k => {
+      const item = { id: k, ...raw[k] };
       
-      // 무한 루프 방지를 위해 실제 변경이 있을 때만 딱 한 번 업데이트 실행
-      if (hasUpdates) {
-        firebase.database().ref().update(updates);
+      // 자동 종료 체크
+      if (item.status === 'approved' && item.date && item.time) {
+        const scheduledTime = new Date(item.date + ' ' + item.time);
+        const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); 
+        if (now > limitTime && !isNaN(scheduledTime.getTime())) {
+          updates[`system/transport_requests/${k}/status`] = 'finished';
+          item.status = 'finished';
+          hasUpdates = true;
+        }
       }
+      return item;
+    }).filter(r => r.date && r.prof && r.courseRID && r.time);
+    
+    if (hasUpdates) {
+      firebase.database().ref().update(updates);
+    }
 
-      checkNewRequests();
-      renderAll();
-    });
-  }
+    checkNewRequests();
+    renderAll();
+  });
+}
+
+
+
+
+
 
   function renderAll() { 
     try { 
@@ -247,71 +254,111 @@
     body.innerHTML = bodyHTML;
   }
 
-  function renderInstructorList() {
-    const chatBox = document.getElementById('all-request-container');
-    if (!chatBox) return;
-    chatBox.innerHTML = '<div class="chat-container" id="chat-list-inner"></div>';
-    const inner = document.getElementById('chat-list-inner');
-    const todayStr = new Date().toISOString().split('T')[0];
+// 2. 강사 수송 리스트 (구분선 = 신청일 / 말풍선 내부 = 예약일)
+function renderInstructorList() {
+  const chatBox = document.getElementById('all-request-container');
+  if (!chatBox) return;
+  chatBox.innerHTML = '<div class="chat-container" id="chat-list-inner"></div>';
+  const inner = document.getElementById('chat-list-inner');
+  const todayStr = new Date().toISOString().split('T')[0];
 
-    const grouped = {};
-    profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
-        const groupKey = `${r.prof}_${r.date}_${r.courseRID}`;
-        if (!grouped[groupKey]) grouped[groupKey] = { ...r, legs: [] };
-        grouped[groupKey].legs.push(r);
-    });
+  const grouped = {};
+  profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
+      // [개선] 신청일(Created Date) 기준으로 그룹핑 (구분선용)
+      // timestamp가 없으면 예약일(r.date)을 대신 사용
+      const createdDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
+      const groupKey = `${createdDate}_${r.prof}_${r.courseRID}`;
+      
+      if (!grouped[groupKey]) {
+          grouped[groupKey] = { createdDate, prof: r.prof, courseRID: r.courseRID, legs: [] };
+      }
+      grouped[groupKey].legs.push(r);
+  });
 
-    const sortedGroups = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
-    let lastDate = "";
+  const sortedGroups = Object.values(grouped).sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+  let lastDividerDate = "";
 
-    sortedGroups.forEach(group => {
-        if(group.date !== lastDate) {
-            inner.innerHTML += `<div class="chat-date-line"><span>${group.date}</span></div>`;
-            lastDate = group.date;
-        }
-        const roomInfo = allCourses[group.courseRID];
-        const cName = roomInfo?.settings?.courseName || `과정`;
-        const isAllFin = group.legs.every(r => r.status === 'finished' || r.status === 'completed');
-        const isPast = group.date < todayStr;
-        const shading = (isPast || isAllFin) ? 'opacity: 0.65; filter: grayscale(1);' : '';
+  sortedGroups.forEach(group => {
+      // [수정] 구분선은 예약 날짜가 아닌 '신청 날짜'를 표시
+      if(group.createdDate !== lastDividerDate) {
+          inner.innerHTML += `<div class="chat-date-line"><span>${group.createdDate}</span></div>`;
+          lastDividerDate = group.createdDate;
+      }
 
-        let legsHtml = "";
-        let repliesHtml = "";
-        group.legs.sort((a,b) => (a.time || "").localeCompare(b.time || "")).forEach(r => {
-            const isApp = r.status === 'approved';
-            const isFin = (r.status === 'finished' || r.status === 'completed');
-            const isCan = r.status === 'cancelled';
-            if(isCan) return;
+      const roomInfo = allCourses[group.courseRID];
+      const cName = roomInfo?.settings?.courseName || `과정`;
+      const isAllFin = group.legs.every(r => r.status === 'finished' || r.status === 'completed');
+      
+      // 말풍선 스타일
+      const shading = isAllFin ? 'opacity: 0.6; filter: grayscale(1);' : '';
 
-            legsHtml += `<div class="talk-leg-item">
-                <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px; ${isFin?'text-decoration:line-through;':''}">${r.time} ${r.dir}</div>
-                <div style="margin-top:5px; display:flex; gap:5px;">
-                    ${(!isApp && !isFin && !isPast) ? 
-                        `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
-                         <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">불가</button>` 
-                        : (isApp ? 
-                        `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1;">✓ 승인됨(자동마감)</div>
-                         <button class="mini-talk-btn" style="color:#94a3b8; max-width:60px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
-                        : (isFin ? `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 자동마감</div>` : ''))}
-                </div>
-            </div>`;
+      let legsHtml = "";
+      let repliesHtml = "";
+      
+      // 말풍선 내부의 각 항목(편도들) 렌더링
+      group.legs.sort((a,b) => (a.time || "").localeCompare(b.time || "")).forEach(r => {
+          const isApp = r.status === 'approved';
+          const isFin = (r.status === 'finished' || r.status === 'completed');
+          const isCan = r.status === 'cancelled';
+          
+          // 예약 날짜(r.date)를 말풍선 내부에 명시
+          const scheduledDateText = `<b>${r.date}</b>`;
 
-            if(isApp || isFin) {
-                const replyText = isFin ? `운행 마감 (${r.time})` : `배차 승인 완료! 일정 확인했습니다.`;
-                const replyBg = isFin ? 'background:#f1f5f9; color:#94a3b8;' : 'background:#fee500; color:#1e293b;';
-                repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${replyBg}">${replyText}</div></div>`;
-            }
-        });
+          if(isCan) {
+              legsHtml += `<div class="talk-leg-item" style="opacity:0.5; text-decoration:line-through;">
+                  <div style="font-size:12px;">🚫 취소됨: ${scheduledDateText} [${r.time}]</div>
+                  <div style="font-size:11px;">${r.dir}</div>
+              </div>`;
+              return;
+          }
 
-        inner.innerHTML += `<div class="chat-bubble chat-left" style="${shading}">
-            <div class="talk-header">수송요청 내역</div>
-            <div class="bubble-content" style="${isAllFin?'background:#f1f5f9;':''}">
-                <div class="talk-body" style="font-size:12px;"><b>[${cName}] ${group.prof} 강사님</b></div>
-                <div style="margin-top:8px; border-top:1px solid #f1f5f9; padding-top:8px;">${legsHtml}</div>
-            </div>
-        </div>` + repliesHtml;
-    });
-  }
+          legsHtml += `<div class="talk-leg-item">
+              <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px;">
+                ${scheduledDateText} [${r.time}] 
+              </div>
+              <div style="font-weight:700; font-size:13px; margin:2px 0;">${r.dir.replace('→',' > ')}</div>
+              
+              <div style="margin-top:5px; display:flex; gap:5px;">
+                  ${(!isApp && !isFin) ? 
+                      `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
+                       <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">불가</button>` 
+                      : (isApp ? 
+                      `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1;">✓ 승인됨(자동마감)</div>
+                       <button class="mini-talk-btn" style="color:#94a3b8; max-width:60px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
+                      : (isFin ? `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 자동마감 완료</div>` : ''))}
+              </div>
+          </div>`;
+
+          if(isApp || isFin) {
+              const replyText = isFin ? `운행 마감 (${r.time})` : `승인 완료! ${r.date} [${r.time}] 일정 확인했습니다.`;
+              const replyBg = isFin ? 'background:#f1f5f9; color:#94a3b8;' : 'background:#fee500; color:#1e293b;';
+              repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${replyBg}">${replyText}</div></div>`;
+          }
+      });
+
+      inner.innerHTML += `<div class="chat-bubble chat-left" style="${shading}">
+          <div class="talk-header">수송요청 내역</div>
+          <div class="bubble-content" style="${isAllFin?'background:#f1f5f9;':''}">
+              <div class="talk-body" style="font-size:12px; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:5px;">
+                <b>[${cName}] ${group.prof} 강사님</b>
+              </div>
+              <div>${legsHtml}</div>
+          </div>
+      </div>` + repliesHtml;
+  });
+  
+  // 채팅창 하단으로 스크롤
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+
+
+
+
+
+
+
+
 
   function renderTraineeManagement() {
     const area = document.getElementById('trainee-course-list');
