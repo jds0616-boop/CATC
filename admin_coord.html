@@ -795,17 +795,66 @@ body.modal-open .app-content {
 .text-overnight { color: #dc2626; }
 
 
-/* 전체 교육생 명단 뷰의 스크롤 영역 하단 여백 추가 */
+/* 통합 명단 전용 초슬림 스타일 */
 #allStudentListView .section-card {
-    /* 명단 카드 자체의 높이를 조정하고 아래 여백 확보 */
-    margin-bottom: 100px !important; 
+    padding: 10px !important; /* 카드 내부 여백 축소 */
 }
 
-#allStudentListView div[style*="overflow-y: auto"] {
-    /* 테이블이 들어있는 스크롤 영역 내부 마지막에 여백 추가 */
-    padding-bottom: 80px; 
+#allStudentListView .navy-table {
+    table-layout: fixed !important; /* 컬럼 너비 강제 고정 */
+    width: 100% !important;
+    border-collapse: collapse;
 }
 
+#allStudentListView .navy-table th, 
+#allStudentListView .navy-table td {
+    padding: 6px 1px !important; /* 좌우 여백을 거의 없앰 */
+    font-size: 10px !important; /* 글자 크기 축소 */
+    line-height: 1.2;
+    word-break: break-all;
+    text-align: center !important;
+}
+
+/* 컬럼별 너비 비중 설정 (총 100%) */
+.col-course { width: 23%; } /* 과정명 */
+.col-name   { width: 20%; } /* 성함 */
+.col-dorm   { width: 20%; } /* 생활관 */
+.col-shuttle{ width: 18%; } /* 차량 */
+.col-outing { width: 19%; } /* 외출 */
+
+/* 과정명 말줄임 보정 */
+.course-name-cell {
+    display: block;
+    width: 100%;
+    font-size: 9.5px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 성함 및 강조 텍스트 */
+.name-bold {
+    font-size: 11px;
+    font-weight: 800;
+    color: #1e293b;
+    display: block;
+}
+
+/* 배지 크기 최소화 */
+.badge-shuttle {
+    display: inline-block;
+    padding: 2px 3px;
+    font-size: 9px;
+    border-radius: 4px;
+    font-weight: 800;
+    min-width: 32px;
+}
+
+/* 홈 버튼에 가려지지 않도록 리스트 하단 여백 대폭 추가 */
+#allStudentTableBody tr:last-child td {
+    padding-bottom: 120px !important;
+}
 
 
 
@@ -1001,15 +1050,15 @@ body.modal-open .app-content {
         <!-- 명단 테이블 구역 -->
         <div style="flex: 1; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
             <table class="navy-table" style="min-width: 500px;">
-                <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
-                    <tr>
-                        <th style="width: 25%;">과정명</th>
-                        <th style="width: 15%;">성함</th>
-                        <th style="width: 20%;">생활관</th>
-                        <th style="width: 20%;">퇴교차량</th>
-                        <th style="width: 20%;">외출/외박</th>
-                    </tr>
-                </thead>
+<thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
+    <tr>
+        <th class="col-course">과정명</th>
+        <th class="col-name">성함</th>
+        <th class="col-dorm">생활관</th>
+        <th class="col-shuttle">차량</th>
+        <th class="col-outing">외출</th>
+    </tr>
+</thead>
                 <tbody id="allStudentTableBody">
                     <!-- JS에서 내용 채움 -->
                 </tbody>
@@ -3279,34 +3328,44 @@ async function loadAllStudentData() {
 function renderStudentTable(list) {
     const tbody = document.getElementById('allStudentTableBody');
     if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:50px; color:#94a3b8;">검색 결과가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:50px; color:#94a3b8; font-size:12px;">검색 결과가 없습니다.</td></tr>';
         return;
     }
 
     tbody.innerHTML = list.map(s => {
-        // [추가] 과정명 7자 제한 로직
-        const shortCourseName = s.courseName.length > 7 
-            ? s.courseName.substring(0, 7) + ".." 
-            : s.courseName;
+        // 과정명에서 (76기) 같은 반복 문구 제거 또는 8자 제한
+        let shortCourse = s.courseName.replace("(76기) ", "").replace("과정", "");
+        shortCourse = shortCourse.length > 8 ? shortCourse.substring(0, 7) + ".." : shortCourse;
+
+        // 차량 정보가 없으면 빈칸 대신 연한 점 표시
+        const shuttleHtml = s.shuttleText !== "-" 
+            ? `<span class="badge-shuttle ${s.shuttleClass}">${s.shuttleText}</span>` 
+            : `<span style="color:#e2e8f0;">-</span>`;
+
+        // 외출 정보가 없으면 연한 점 표시
+        const actionHtml = s.actionText !== "-" 
+            ? `<span class="status-action ${s.actionClass}" style="font-size:9px;">${s.actionText}</span>` 
+            : `<span style="color:#e2e8f0;">-</span>`;
 
         return `
         <tr>
-            <td style="text-align:left; padding-left:5px;">
-                <span class="course-name-cell" title="${s.courseName}">${shortCourseName}</span>
+            <td><span class="course-name-cell">${shortCourse}</span></td>
+            <td>
+                <span class="name-bold">${s.name}</span>
+                <span style="color:#94a3b8; font-size:9px;">${s.phone}</span>
             </td>
-            <td style="font-weight:800;">
-                <div style="font-size:12px;">${s.name}</div>
-                <div style="color:#94a3b8; font-weight:400; font-size:9px;">${s.phone}</div>
+            <td>
+                <div style="font-weight:700; color:#3b82f6;">${s.dormBuilding.replace("청렴관","청렴").replace("상생관","상생")}</div>
+                <div style="font-size:9px;">${s.dormRoom}</div>
             </td>
-            <td style="font-weight:700; color:#475569;">
-                <div style="font-size:11px;">${s.dormBuilding}</div>
-                <div style="font-size:10px; color:#64748b;">${s.dormRoom}</div>
-            </td>
-            <td><span class="badge-shuttle ${s.shuttleClass}">${s.shuttleText}</span></td>
-            <td><span class="status-action ${s.actionClass}" style="font-size:10px;">${s.actionText}</span></td>
+            <td>${shuttleHtml}</td>
+            <td>${actionHtml}</td>
         </tr>
     `}).join('');
 }
+
+
+
 
 // [신규] 실시간 검색 필터링
 function filterAllStudents() {
