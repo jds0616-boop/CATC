@@ -883,12 +883,15 @@ function renderPassengers() {
 async function saveSchedule() {
   const type = document.getElementById('s-schedule-type').value;
   const date = document.getElementById('s-date').value;
-  const time = document.getElementById('s-time').value;
   
-// 운행 불가(off)일 때는 날짜만 확인하고, 시간은 임의로 '09:00'을 넣어줍니다.
+  // ★ 여기를 let으로 바꿨습니다. 그래야 나중에 "09:00"으로 바꿀 수 있어요.
+  let time = document.getElementById('s-time').value;
+  
+  // 운행 불가(off)일 때는 날짜만 확인하고, 시간은 임의로 '09:00'을 넣어줍니다.
   if(type === 'off') {
     if(!date) { alert('날짜를 선택해주세요.'); return; }
-    if(!time) { time = "09:00"; } // 운행불가는 시간 상관없이 9시 슬롯에 저장
+    // 시간이 비어있으면 09:00으로 채워줍니다.
+    if(!time || time === "") { time = "09:00"; } 
   } else {
     // 강사 수송일 때는 날짜와 시간이 모두 있어야 합니다.
     if(!date || !time) {
@@ -931,6 +934,7 @@ async function saveSchedule() {
     data.passengers = currentPassengers;
   }
   
+  // 저장 실행
   if(currentEditId) {
     await firebase.database().ref(`system/transport_requests/${currentEditId}`).update(data);
   } else {
@@ -940,8 +944,8 @@ async function saveSchedule() {
   closeModal('scheduleModal');
   currentEditId = null;
   currentPassengers = [];
+  alert('저장되었습니다.'); // 확인을 위해 알림 추가
 }
-
 
 
 
