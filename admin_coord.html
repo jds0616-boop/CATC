@@ -143,33 +143,64 @@
 
 
 
-/* [가독성 강화] 공지사항 입력창 - 글자 크기 및 폰트 강조 */
+
+
+
+
+
+
+
+
+
+/* [추가] 외부를 연한 파란색으로 채우는 카드 스타일 */
+.notice-card-fill {
+    background-color: #f0f7ff !important; /* 외부를 연한 블루로 채움 */
+    border: 1.5px solid #dbeafe !important; /* 테두리도 배경에 맞춰 조정 */
+    border-radius: 20px;
+    padding: 20px;
+}
+
+/* [기존 유지 및 미세조정] 공지사항 입력창 */
 .notice-area { 
     width: 100%; 
-    min-height: 120px; /* 입력창을 좀 더 시원하게 키움 */
-    border-radius: 15px; 
-    border: 1.5px solid #dbeafe !important; 
-    background: #f8fafc !important; 
-    padding: 20px; /* 내부 여백을 늘려 답답함 해소 */
+    min-height: 140px; 
+    border-radius: 12px; 
+    border: 1.5px solid #3b82f6 !important; /* 테두리를 조금 더 선명하게 */
+    background: #ffffff !important; /* 내부를 완전 하얀색으로 하여 외부와 대비 */
+    padding: 20px;
     
-    /* 가독성 핵심 설정 */
-    font-family: 'Pretendard', sans-serif; /* 깔끔한 고딕체 */
-    font-size: 18px;    /* 글자 크기 확대 (기존 14px -> 18px) */
-    font-weight: 800;   /* 글자 두께를 아주 굵게 설정 */
-    line-height: 1.8;   /* 줄 간격을 넓게 주어 가독성 확보 */
-    color: #0f172a !important; /* 완전 진한 남색으로 명암 대비 강화 */
+    /* 가독성 핵심 설정 (기존 유지) */
+    font-family: 'Pretendard', sans-serif;
+    font-size: 18px;    
+    font-weight: 800;   
+    line-height: 1.8;   
+    color: #0f172a !important; 
     
     resize: none; 
-    margin-bottom: 15px; 
+    margin-bottom: 12px; 
     outline: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /* 약간의 입체감 */
     transition: all 0.2s;
 }
 
-/* 글 작성 시 입력창이 더 하얗고 선명하게 변하는 효과 */
+/* 포커스 시 효과 (기존 유지) */
 .notice-area:focus {
-    border-color: #3b82f6 !important;
+    border-color: #2563eb !important;
     background-color: #ffffff !important;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* 버튼 디자인 보강 */
+.notice-btn-blue {
+    width: 100%;
+    height: 48px;
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
 }
 
 
@@ -903,6 +934,15 @@ body.modal-open .app-content {
 
 
 
+
+
+
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -1221,11 +1261,13 @@ body.modal-open .app-content {
           </div>
           </div>
 
-          <div class="section-card">
-              <div class="section-title"><i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (해당 과정 교육생 공지)</div>
-              <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="공지 입력"></textarea>
-              <button class="navy-btn" onclick="saveCourseNotice()">과정 공지 업데이트</button>
-          </div>
+<div class="section-card notice-card-fill"> <!-- 🚩 클래스명 추가 -->
+    <div class="section-title" style="color: #1e40af;">
+        <i class="fa-solid fa-comment-dots"></i> 담당 과정 공지 (해당 과정 교육생 공지)
+    </div>
+    <textarea id="courseNotice" class="notice-area" oninput="autoGrow(this)" placeholder="공지 입력"></textarea>
+    <button class="navy-btn" style="background:#0ea5e9; border:none; box-shadow: 0 4px 10px rgba(14,165,233,0.3);" onclick="saveCourseNotice()">과정 공지 업데이트</button>
+</div>
 
 
           <div class="section-card" style="margin-bottom: 50px;">
