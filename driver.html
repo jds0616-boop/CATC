@@ -495,12 +495,18 @@ function renderSchedule() {
         cell = `<div class="cell-휴" style="font-size:11px;">휴게시간</div>`;
       }
       else {
-        const items = profReqs.filter(r => 
-          r.date === curDate && 
-          parseInt(r.time?.split(':')[0]) === h && 
-          (r.status === 'approved' || r.status === 'finished') && // ★ 승인 또는 완료된 것만 표시
-          r.prof !== '운행중단'
-        );
+        const items = profReqs.filter(r => {
+  if (!r.date || !r.time) return false;
+  
+  // 날짜 형식 통일 (예: 2024.01.25 -> 2024-01-25)
+  const formattedDBDate = r.date.replace(/\./g, '-').replace(/\s/g, '');
+  const formattedCurDate = curDate.replace(/\./g, '-').replace(/\s/g, '');
+  
+  return formattedDBDate === formattedCurDate && 
+         parseInt(r.time.split(':')[0]) === h && 
+         (r.status === 'approved' || r.status === 'finished') &&
+         r.prof !== '운행중단';
+});
 
         if(items.length > 0) {
           const groups = {};
@@ -835,26 +841,68 @@ async function toggleNotice(rid, stat) {
   }
 }
 
+
+
+
+
+
+
+
 async function approveRequest(id) {
   const req = profReqs.find(r => r.id === id);
   if(!req) return;
+
+  // 날짜 형식 통일 함수 (2026.01.25 -> 2026-01-25 등 처리)
+  const normalizeDate = (d) => d ? d.replace(/\./g, '-').replace(/\s/g, '') : '';
+  const targetDate = normalizeDate(req.date);
   
+  // 충돌 확인 (날짜 형식이 달라도 감지할 수 있도록 개선)
   const conflicts = profReqs.filter(r => 
     r.id !== id &&
-    r.date === req.date && 
-    r.status !== 'cancelled' && 
+    normalizeDate(r.date) === targetDate && 
+    (r.status === 'approved' || r.status === 'finished') && // 이미 승인된 건들과 비교
     r.prof !== '운행중단'
   );
   
   if(conflicts.length > 0) {
     const list = conflicts.map(c => `${c.time} ${c.prof} (${c.dir})`).join('\n');
-    if(!confirm(`⚠️ 해당 날짜에 다음 일정이 있습니다:\n\n${list}\n\n승인하시겠습니까?`)) {
+    if(!confirm(`⚠️ 해당 날짜에 이미 승인된 일정이 있습니다:\n\n${list}\n\n추가로 승인하시겠습니까?`)) {
       return;
     }
+  } else {
+    // 충돌이 없더라도 승인 확인 창 띄우기
+    if(!confirm("이 배차 요청을 승인하시겠습니까?")) return;
   }
   
-  await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
+  try {
+    // 1. Firebase 상태 업데이트
+    await firebase.database().ref(`system/transport_requests/${id}`).update({ 
+      status: 'approved' 
+    });
+
+    // 2. 로컬 데이터 상태 즉시 변경 (Firebase 리스너 대기 시간 방지)
+    req.status = 'approved';
+
+    // 3. 화면 다시 그리기 (종합일정표 반영)
+    alert("승인이 완료되었습니다.");
+    renderAll(); 
+
+  } catch (error) {
+    console.error("승인 업데이트 오류:", error);
+    alert("처리 중 오류가 발생했습니다.");
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 async function cancelRequest(id) { 
   if(confirm("불가 처리하시겠습니까?")) {
