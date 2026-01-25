@@ -3199,9 +3199,9 @@ function renderPickupTable() {
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
-                (r.status === 'pending') 
-                ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')">취소(${r.time})</button>` : ''
-            ).join('');
+    (r.status === 'pending' || r.status === 'approved') 
+    ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')" style="color:${r.status==='approved'?'#94a3b8':'#ef4444'}">취소(${r.time})</button>` : ''
+).join('');
 
             // [운영부 말풍선]
             htmlContent += `

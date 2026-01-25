@@ -636,27 +636,25 @@ function renderInstructorChat() {
 
     if (isPending) {
       bgColor = "#fff"; 
-      borderColor = "#ef4444"; // 신규는 빨간 테두리
+      borderColor = "#ef4444"; 
       statusLabel = `<span style="background:#ef4444; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">● 신규요청</span>`;
     } else if (isApproved) {
-      bgColor = "#dcfce7"; // 승인은 연초록 배경
+      bgColor = "#dcfce7"; 
       borderColor = "#22c55e"; 
       statusLabel = `<span style="background:#22c55e; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">✓ 승인완료</span>`;
     } else if (isCancelled) {
-      bgColor = "#f1f5f9"; // 취소는 연회색 배경
+      bgColor = "#f1f5f9"; 
       borderColor = "#cbd5e1";
       statusLabel = `<span style="background:#94a3b8; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">✕ 취소됨</span>`;
       opacity = "0.7";
     } else if (isFinished) {
-      bgColor = "#e5e5e5"; // 종료는 진회색 배경
+      bgColor = "#e5e5e5"; 
       borderColor = "#94a3b8";
       statusLabel = `<span style="background:#475569; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">운행종료</span>`;
       opacity = "0.6";
     }
 
-    // 2. 카드 그리기 시작
     if(isCancelled) {
-      // 취소된 경우 간단한 안내 메시지 (기존 유지)
       html += `<div class="cancel-notice" style="margin:10px 0;"><span><i class="fa-solid fa-ban"></i> ${r.prof || '강사'} 수송 요청이 취소되었습니다</span></div>`;
     } else {
       html += `
@@ -695,9 +693,15 @@ function renderInstructorChat() {
               <button class="mini-btn primary" onclick="approveRequest('${r.id}')" style="flex:1; height:35px; background:#22c55e; border:none; color:#fff;">승인</button>
               <button class="mini-btn" onclick="cancelRequest('${r.id}')" style="flex:1; height:35px; background:#f1f5f9; border:1px solid #ddd;">불가</button>
             </div>
+          ` : isApproved ? `
+            <div style="text-align:center; margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:8px;">
+              <div style="font-size:11px; color:#166534; font-weight:bold; margin-bottom:5px;">기사님이 배차를 확인했습니다.</div>
+              <button class="mini-btn" onclick="if(confirm('이미 승인된 배차입니다. 정말 취소할까요?')) cancelRequest('${r.id}')" 
+                      style="width:100%; height:32px; background:#fff; color:#ef4444; border:1px solid #fecaca; font-size:11px; font-weight:800;">배차 취소하기</button>
+            </div>
           ` : `
             <div style="font-size:11px; color:#64748b; font-weight:bold; border-top:1px dashed rgba(0,0,0,0.1); margin-top:8px; padding-top:8px; text-align:center;">
-              ${isApproved ? '기사님이 배차를 확인했습니다.' : isFinished ? '운행이 완료된 건입니다.' : '처리가 완료되었습니다.'}
+              ${isFinished ? '운행이 완료된 건입니다.' : '처리가 완료되었습니다.'}
             </div>
           `}
         </div>`;
@@ -706,7 +710,6 @@ function renderInstructorChat() {
   
   box.innerHTML = html;
   
-  // 3. 스크롤 위치 조정
   if(currentTab === 2) {
     setTimeout(() => {
       if(firstUnreadIndex >= 0) {
