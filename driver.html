@@ -642,6 +642,45 @@ function renderInstructorChat() {
     const isFinished = r.status === 'finished';
     
     if(firstUnreadIndex === -1 && isPending) firstUnreadIndex = idx;
+
+    // --- [추가] 실시간 중복 검사 로직 ---
+    let conflictHtml = "";
+    if (isPending && r.date && r.time) {
+        let conflicts = [];
+        const currentMin = parseInt(r.time.split(':')[0]) * 60 + parseInt(r.time.split(':')[1]);
+
+        // 1. 다른 강사 수송 일정과 중복 체크 (60분 이내)
+        profReqs.forEach(other => {
+            if (other.id !== r.id && other.date === r.date && (other.status === 'approved' || other.status === 'finished') && other.prof !== '운행중단') {
+                const otherMin = parseInt(other.time.split(':')[0]) * 60 + parseInt(other.time.split(':')[1]);
+                if (Math.abs(currentMin - otherMin) < 60) {
+                    conflicts.push(`<i class="fa-solid fa-user-tie"></i> ${other.time} ${other.prof} 강사님 일정과 중복`);
+                }
+            }
+        });
+
+        // 2. 퇴교 수송 일정과 중복 체크 (120분 이내)
+        for (let rid in allCourses) {
+            const dep = allCourses[rid].shuttle?.departure;
+            if (dep && dep.date === r.date && dep.time && dep.announced) {
+                const depMin = parseInt(dep.time.split(':')[0]) * 60 + parseInt(dep.time.split(':')[1]);
+                if (Math.abs(currentMin - depMin) < 120) {
+                    const cName = allCourses[rid].settings?.courseName || "퇴교수송";
+                    conflicts.push(`<i class="fa-solid fa-bus"></i> ${dep.time} 퇴교수송(${cName.substring(0,8)}..) 중복`);
+                }
+            }
+        }
+
+        if (conflicts.length > 0) {
+            conflictHtml = `
+                <div style="background: #fff1f2; border: 1px solid #fda4af; color: #e11d48; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 10px; line-height: 1.5;">
+                    <div style="margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> 배차 주의 (시간 중복)</div>
+                    ${conflicts.map(msg => `<div style="font-size: 10px; opacity: 0.9;">${msg}</div>`).join('')}
+                </div>
+            `;
+        }
+    }
+    // ----------------------------------
     
     // 1. 상태별 디자인 설정 (색상 및 라벨)
     let bgColor = "#fff";
@@ -651,7 +690,8 @@ function renderInstructorChat() {
 
     if (isPending) {
       bgColor = "#fff"; 
-      borderColor = "#ef4444"; 
+      // 중복이 있으면 테두리를 더 진한 빨강으로 강조
+      borderColor = conflictHtml ? "#e11d48" : "#ef4444"; 
       statusLabel = `<span style="background:#ef4444; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">● 신규요청</span>`;
     } else if (isApproved) {
       bgColor = "#dcfce7"; 
@@ -680,6 +720,9 @@ function renderInstructorChat() {
              data-id="${r.id}" oncontextmenu="showContextMenu(event, '${r.id}')">
           
           <div style="margin-bottom:8px;">${statusLabel}</div>
+
+          <!-- 중복 경고 메시지 삽입 위치 -->
+          ${conflictHtml}
           
           <div style="font-weight:900; font-size:15px; margin-bottom:5px; color:#0f172a;">
             ${r.prof || '이름없음'} 강사님
@@ -738,7 +781,6 @@ function renderInstructorChat() {
     }, 100);
   }
 }
-
 
 
 
