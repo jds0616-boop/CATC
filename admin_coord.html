@@ -3163,26 +3163,34 @@ function renderPickupTable() {
             const roomInfo = globalAllData[group.courseRID];
             const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
 
-            // --- [상태 판별 로직 추가] ---
-            const isAllApproved = group.requests.every(r => r.status === 'approved' || r.status === 'finished');
-            const isAnyCancelled = group.requests.some(r => r.status === 'cancelled');
-            const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed');
+            // --- [상태 판별 로직 수정: 우선순위 변경] ---
+            const isAnyPending = group.requests.some(r => r.status === 'pending'); // 대기중(재신청 포함)이 하나라도 있는가
+            const isAnyApproved = group.requests.some(r => r.status === 'approved'); // 승인된 건이 있는가
+            const isAllFinished = group.requests.every(r => r.status === 'finished' || r.status === 'completed' || r.status === 'cancelled');
+            const isAllCancelled = group.requests.every(r => r.status === 'cancelled');
 
-            let bubbleClass = "";
             let statusBadge = "";
-            let bubbleStyle = "background: #fee500; color: #1e293b;"; // 기본 노란색
+            let bubbleStyle = ""; 
 
-            if (isAllFinished) {
-                bubbleStyle = "background: #e5e7eb; color: #6b7280; border: 1.5px solid #d1d5db;"; // 종료: 회색
-                statusBadge = `<span class="status-stamp-admin" style="background:#475569; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">운행 종료</span>`;
-            } else if (isAllApproved) {
-                bubbleStyle = "background: #dcfce7; color: #166534; border: 1.5px solid #22c55e;"; // 승인: 초록색
+            // 1순위: 대기 중인 건이 하나라도 있으면 무조건 활성화 (재신청 대응)
+            if (isAnyPending) {
+                bubbleStyle = "background: #fff; border: 2.5px solid #f59e0b;"; // 흰색 배경에 주황색 강조 테두리
+                statusBadge = `<span class="status-stamp-admin" style="background:#f59e0b; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">● 승인 대기중 (재신청)</span>`;
+            } 
+            // 2순위: 대기 중은 없지만 승인된 건이 하나라도 있으면 초록색
+            else if (isAnyApproved) {
+                bubbleStyle = "background: #dcfce7; color: #166534; border: 1.5px solid #22c55e;";
                 statusBadge = `<span class="status-stamp-admin" style="background:#22c55e; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">✓ 배차 승인됨</span>`;
-            } else if (isAnyCancelled) {
-                bubbleStyle = "background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1;"; // 취소: 연회색
+            }
+            // 3순위: 모두 종료되었거나 취소된 경우 (운행 종료)
+            else if (isAllFinished && !isAllCancelled) {
+                bubbleStyle = "background: #e5e7eb; color: #6b7280; border: 1.5px solid #d1d5db;";
+                statusBadge = `<span class="status-stamp-admin" style="background:#475569; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">운행 종료</span>`;
+            }
+            // 4순위: 전부 취소된 경우만 회색 처리
+            else {
+                bubbleStyle = "background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1;";
                 statusBadge = `<span class="status-stamp-admin" style="background:#94a3b8; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">✕ 요청 취소됨</span>`;
-            } else {
-                statusBadge = `<span class="status-stamp-admin" style="background:#f59e0b; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900; margin-bottom:8px; display:inline-block;">● 승인 대기중</span>`;
             }
 
             const targetDate = group.requests[0].date;
@@ -3199,9 +3207,9 @@ function renderPickupTable() {
             }).join('');
             
             const cancelButtons = group.requests.map(r => 
-    (r.status === 'pending' || r.status === 'approved') 
-    ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')" style="color:${r.status==='approved'?'#94a3b8':'#ef4444'}">취소(${r.time})</button>` : ''
-).join('');
+                (r.status === 'pending' || r.status === 'approved') 
+                ? `<button class="btn-cancel-talk" onclick="deleteTrans('${r.id}')" style="color:${r.status==='approved'?'#94a3b8':'#ef4444'}">취소(${r.time})</button>` : ''
+            ).join('');
 
             // [운영부 말풍선]
             htmlContent += `
@@ -3221,8 +3229,8 @@ function renderPickupTable() {
                     <div class="chat-time">운영부</div>
                 </div>`;
 
-            // [기사님 답장 말풍선] - 승인/종료 시 표시
-            if (isAllApproved || isAllFinished) {
+            // [기사님 답장 말풍선] - 승인된 건이 하나라도 있거나 종료된 경우 표시
+            if (isAnyApproved || (isAllFinished && !isAllCancelled)) {
                 const isFin = isAllFinished;
                 htmlContent += `
                     <div class="chat-bubble chat-left">
@@ -3248,7 +3256,6 @@ function renderPickupTable() {
         }, 100);
     });
 }
-
 
 
 
