@@ -138,12 +138,12 @@
     <div id="view-0" style="display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <button class="mini-btn primary" onclick="goToday()"><i class="fa-solid fa-calendar-day"></i> 오늘</button>
+          <button class="mini-btn" style="background:var(--danger); color:white; margin-left:5px;" onclick="openNewDayOff()"><i class="fa-solid fa-calendar-xmark"></i> 운행불가 설정</button>
           <div style="display:flex; align-items:center; gap:8px;">
             <i class="fa-solid fa-circle-chevron-left" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(-1)"></i>
             <span id="week-range" style="font-weight:900; font-size:13px; min-width:120px; text-align:center;">...</span>
             <i class="fa-solid fa-circle-chevron-right" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(1)"></i>
           </div>
-          <button class="mini-btn" style="background:var(--danger); color:white; margin-right:5px;" onclick="openNewDayOff()"><i class="fa-solid fa-calendar-xmark"></i> 운행불가 설정</button>
           <button class="mini-btn" onclick="openNewSchedule()"><i class="fa-solid fa-plus"></i> 신규</button>
         </div>
         <div class="schedule-wrapper" id="schedule-capture-area">
@@ -411,7 +411,7 @@ function renderSchedule() {
           }
         }
       }
-      let clickAction = cell === '' ? `onclick="clickCellNewSchedule('${curDate}', '${h}:00')"` : '';
+      let clickAction = cell === '' ? `onclick="clickCellNewSchedule('${curDate}', '${timeLabel}')"` : '';
       html += `<td ondragover="allowDrop(event)" ondrop="onDrop(event, '${curDate}', '${h}:00')" ${clickAction} style="cursor:pointer;">${cell}</td>`;
     }
     html += `</tr>`;
