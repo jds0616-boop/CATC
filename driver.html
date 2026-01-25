@@ -47,13 +47,14 @@
 .schedule-table th, .schedule-table td { 
   border: 1px solid #ddd; 
   text-align: center; 
-  height: 90px; /* 높이를 약간 키우되 고정합니다 */
+  height: 45px !important; /* 처음 높이로 고정 */
   font-size: 10px; 
-  vertical-align: top; /* 위쪽부터 배치 */
+  vertical-align: middle; 
   position: relative; 
-  padding: 2px;
-  overflow: hidden; /* 칸 자체가 늘어나는 것 방지 */
+  padding: 0 2px !important;
+  overflow: hidden; /* 절대 칸이 늘어나지 않음 */
 }
+
 
 .cell-container {
   width: 100%;
@@ -68,17 +69,19 @@
     .drop-target { background-color: #e0f2fe !important; }
 .cell-event { 
   border-radius: 4px; 
-  padding: 4px 2px; 
-  min-height: 35px; /* 이벤트 블록 최소 높이 */
+  padding: 2px; 
+  height: 38px; /* 칸 높이에 맞춤 */
   font-size: 9px; 
   font-weight: 800; 
-  line-height: 1.2; 
+  line-height: 1.1; 
   cursor: pointer; 
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  flex-shrink: 0; /* 크기 줄어들지 않음 */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* 글자가 길면 ... 처리 */
 }
     .block-entry { background: #eff6ff; color: #1e40af; border: 1px solid #1e40af; }
     .block-prof { background: #fae8ff; color: #a21caf; border: 1px solid #a21caf; }
@@ -372,37 +375,49 @@ function renderSchedule() {
     
     for(let d=0; d<5; d++) {
       const curDate = range[d];
-      let cellContent = '<div class="cell-container">'; // 스크롤 가능한 컨테이너 시작
+      let cell = '';
 
-      const hasOffDay = profReqs.some(r => r.date === curDate && r.prof === '운행중단' && r.status !== 'cancelled');
+      // 1. 운행불가 체크
+      const offDayItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단' && r.status !== 'cancelled');
 
-      if(hasOffDay && h !== 12) {
-        const offReason = profReqs.find(r => r.date === curDate && r.prof === '운행중단');
-        cellContent += `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
+      if(offDayItem && h !== 12) {
+        cell = `<div class="cell-event block-off" onclick="openEditModal('${offDayItem.id}')">운행불가<br>${offDayItem?.dir || ''}</div>`;
       }
+      // 2. 입교수송 (월요일 9~10시)
       else if(d === 0 && (h === 9 || h === 10)) {
-        cellContent += `<div class="cell-event block-entry">입교수송</div>`;
+        cell = `<div class="cell-event block-entry">입교수송</div>`;
       }
+      // 3. 점심시간
       else if(h === 12) {
-        cellContent += `<div class="cell-休">휴게시간</div>`;
+        cell = `<div class="cell-休">휴게시간</div>`;
       }
       else {
-        // 강사수송
-        profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled' && r.prof !== '운행중단').forEach(item => {
-          cellContent += `<div class="cell-event block-prof" onclick="openEditModal('${item.id}')">${item.dir}<br>${item.prof}</div>`;
-        });
+        // 4. 강사수송 (지능형 요약 로직)
+        const matches = profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled' && r.prof !== '운행중단');
         
-        // 퇴교수송
-        for(let rid in allCourses) {
-          const dep = allCourses[rid]?.shuttle?.departure;
-          if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) {
-            cellContent += `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
+        if(matches.length > 0) {
+          const first = matches[0];
+          // 2명 이상이면 "외 N명" 표시, 1명이면 "구간/성함" 표시
+          const displayStr = matches.length > 1 
+            ? `${first.dir}<br>외 ${matches.length - 1}건` 
+            : `${first.dir}<br>${first.prof}`;
+          
+          cell = `<div class="cell-event block-prof" onclick="${matches.length > 1 ? 'switchTab(2)' : `openEditModal('${first.id}')`}">${displayStr}</div>`;
+        }
+        
+        // 5. 퇴교수송 (강사수송이 없을 때만 표시하거나 겹치게 처리)
+        if(!cell) {
+          for(let rid in allCourses) {
+            const dep = allCourses[rid]?.shuttle?.departure;
+            if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) {
+              cell = `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
+              break;
+            }
           }
         }
       }
       
-      cellContent += '</div>'; // 컨테이너 끝
-      html += `<td onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cellContent}</td>`;
+      html += `<td onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cell}</td>`;
     }
     html += `</tr>`;
   }
