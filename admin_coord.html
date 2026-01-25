@@ -910,11 +910,12 @@ body.modal-open .app-content {
       </div>
     </div>
 
+<!-- 상단 헤더 부분 -->
 <header class="app-header">
-  <button class="header-btn" onclick="handleBackNav()"><i class="fa-solid fa-chevron-left"></i></button>
+  <!-- 아이콘 대신 << 텍스트로 변경 및 클릭 시 handleBackNav 호출 -->
+  <button class="header-btn" onclick="handleBackNav()" style="font-family: 'Pretendard'; font-weight: 900; letter-spacing: -2px;">&lt;&lt;</button>
   <div class="header-title">항공기술훈련원 교육운영부</div>
   <div style="display:flex; gap:15px; align-items:center;">
-      <!-- [신규] QR 팝업 버튼 -->
       <button class="header-btn" onclick="openCenterQrModal()"><i class="fa-solid fa-qrcode"></i></button>
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
   </div>
@@ -2184,43 +2185,63 @@ function updateTransDirButtons() {
 
 
 
-// [최종] 홈/뒤로가기 클릭 시 모든 상태 해제 및 스크롤 잠금 해제
+// [최종 수정] 뒤로가기 및 포탈 이동 로직
 function handleBackNav() { 
-    // 1. 열려있는 모든 팝업(모달) 닫기
+    // 1. 열려있는 팝업(모달)이 있다면 팝업부터 닫기
     const allModals = [
         'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
         'setupModal', 'transportModal', 'shuttleDetailModal', 
-        'actionDetailModal', 'printSelectModal'
+        'actionDetailModal', 'printSelectModal', 'centerQrModal'
     ];
     
+    let isModalOpen = false;
     allModals.forEach(id => {
         const modal = document.getElementById(id);
-        if(modal) modal.style.display = 'none';
+        if(modal && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            isModalOpen = true;
+        }
     });
 
-    document.body.classList.remove('modal-open');
+    if (isModalOpen) {
+        document.body.classList.remove('modal-open');
+        return; // 팝업을 닫았으면 여기서 중단
+    }
 
-    // 2. 관리대장 뷰가 열려있다면 닫기
+    // 2. 관리대장 뷰가 열려있다면 닫고 종료
     const outingManager = document.getElementById('outingManagerView');
-    if(outingManager) outingManager.style.display = 'none';
+    if(outingManager && outingManager.style.display === 'flex') {
+        outingManager.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        return;
+    }
 
-    // 3. 서브 뷰(개별과정, 강사픽업, 퇴교현황) 상태 해제 및 메인으로 복귀
-    currentRID = ""; // 선택된 과정 초기화
-    
-    // 모든 서브 뷰 숨기기
+    // 3. 현재 서브 뷰(개별과정, 강사픽업 등)에 있는지 확인
     const views = ['individualStatusView', 'pickupStatusView', 'studentShuttleView', 'allStudentListView'];
+    let isSubViewOpen = false;
     views.forEach(v => {
         const el = document.getElementById(v);
-        if(el) el.style.display = "none";
+        if(el && el.style.display === 'flex') {
+            isSubViewOpen = true;
+        }
     });
 
-    // 전체 현황(메인) 페이지 보이기
-    const totalView = document.getElementById('totalStatusView');
-    if(totalView) totalView.style.display = "flex";
-
-    // 사이드 메뉴 버튼 상태 등 정리
-    handleRoomSelection();
+    if (isSubViewOpen) {
+        // 서브 뷰가 열려있다면 메인(Total View)으로 복귀
+        currentRID = ""; 
+        handleRoomSelection();
+    } else {
+        // 🚩 [핵심] 이미 메인 페이지(Total View)라면 포탈로 이동!
+        if(confirm("행정 관리 시스템을 종료하고 포탈로 이동하시겠습니까?")) {
+            location.href = 'potal.html';
+        }
+    }
 }
+
+
+
+
+
 
 
 
