@@ -282,17 +282,23 @@
 
 // ✨ 운행불가일 경우 (점심시간 제외하고 모든 시간대에 표시)
 if(hasOffDay && h !== 12) {
+const hasOffDay = profReqs.some(r => 
+  r.date === curDate && 
+  r.prof === '운행중단' && 
+  r.status !== 'cancelled'
+);
+
+// 운행불가일 경우 (점심시간 제외하고 모든 시간대에 표시)
+if(hasOffDay && h !== 12) {
   const offReason = profReqs.find(r => 
     r.date === curDate && 
     r.prof === '운행중단' && 
     r.status !== 'cancelled'
   );
-  cell = `<div class="cell-event block-off">운행불가<br>${offReason?.dir || ''}</div>`;
+  cell = `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
 }
-
-        
-        // 입교수송 (월요일 9-10시, 10-11시)
-        if(d === 0 && (h === 9 || h === 10)) {
+// ⭐ 입교수송 (월요일 9-10시, 10-11시) - 운행불가 아닐때만
+else if(d === 0 && (h === 9 || h === 10)) {
           cell = `<div class="cell-event block-entry">입교수송</div>`;
         }
         // 점심시간 (12-13시)
@@ -431,18 +437,12 @@ function renderTodayTimeline() {
           <div style="font-weight:900; font-size:14px; margin-bottom:4px;">${isPending?'승인 대기':'승인완료!'}</div>
           <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.date || '날짜없음'}</div>
           <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.time || '--:--'}</div>
-          <div style="font-size:12px; font-weight:700; color:var(--blue-deep); margin-bottom:4px;">
+           <div style="font-size:12px; font-weight:700; color:var(--blue-deep); margin-bottom:4px;">
             <i class="fa-solid fa-route"></i> ${r.dir || '구간 정보 없음'}
           </div>
-
-
-const eta = calculateETA(r.time, r.dir); // 새 함수 필요
-<div style="font-size:11px; color:#047857; font-weight:800;">
-  예상도착: ${eta}
-</div>
-
-
-
+          <div style="font-size:11px; color:#047857; font-weight:800;">
+            예상도착: ${calculateETA(r.time, r.dir)}
+          </div>
           <div style="font-size:12px; font-weight:700;">
             ${r.prof || '이름없음'} 강사님 픽업
             ${r.phone ? 
