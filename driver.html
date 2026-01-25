@@ -350,7 +350,7 @@ function renderSchedule() {
 
   let html = '';
   for(let h=8; h<=18; h++) {
-    const timeLabel = `${h}:00`;
+    const timeLabel = h < 10 ? "0" + h + ":00" : h + ":00";
     html += `<tr><td class="time-col">${timeLabel}</td>`;
     
     for(let d=0; d<5; d++) {
@@ -1117,9 +1117,9 @@ function openNewDayOff() {
 
 // 스케줄표 칸을 클릭했을 때 실행되는 함수
 function clickCellNewSchedule(date, time) {
-  openNewSchedule(); // 신규 창 열기
-  document.getElementById('s-date').value = date; // 클릭한 날짜 넣기
-  document.getElementById('s-time').value = time; // 클릭한 시간 넣기
+  openNewSchedule(); 
+  document.getElementById('s-date').value = date;
+  document.getElementById('s-time').value = time; // 이제 08:00이 그대로 들어갑니다.
 }
 
 
