@@ -628,35 +628,37 @@ function showDetail(type, dataStr) {
 async function handleSmartApprove(id) {
     // 1. 승인하려는 대상 정보 찾기
     const target = profReqs.find(r => r.id === id);
-    if(!target) return;
+    if(!target || target.prof === '운행중단') return;
 
-    // 시간 분 환산 보조 함수
+    // 시간 분 환산 보조 함수 (예: "08:30" -> 510)
     const toMin = (tStr) => {
-        if(!tStr) return -1000;
-        const [h, m] = tStr.split(':').map(Number);
-        return h * 60 + m;
+        if(!tStr || typeof tStr !== 'string') return -1000;
+        const parts = tStr.split(':');
+        if(parts.length !== 2) return -1000;
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     };
 
     const targetMin = toMin(target.time);
     let conflicts = [];
-    let advice = ""; // RouteManager의 제안 메시지를 담을 변수
+    let advice = ""; 
 
     // 2. 다른 강사 수송 일정과 비교 및 노선 분석
     profReqs.forEach(r => {
-        // 본인이 아니고, 승인되었거나 마감된 같은 날짜의 일정 비교
-        if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date) {
-            const diff = Math.abs(toMin(r.time) - targetMin);
+        // 본인이 아니고, 승인/마감된 같은 날짜의 "정상 수송(운행중단 제외)" 건만 비교
+        if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date && r.prof !== '운행중단') {
+            const rMin = toMin(r.time);
+            const diff = Math.abs(rMin - targetMin);
             
             // 60분 이내 일정이 있다면 리스트에 추가
             if(diff < 60) {
                 conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time} / ${r.dir})`);
 
-                // ⭐ RouteManager: 같은 방향/노선일 경우 합승(동선 효율화) 가능성 체크
-                // 기사님 전용 문구로 가공된 결과물 수신
-                const result = RouteManager.analyzeConflict(r, target.time, target.dir);
-                if (result) {
-                    // "기사님과 협의하세요" -> "강사님께 안내하여 조율하시겠습니까?" 식의 문구로 RouteManager 내부가 정의되어 있어야 함
-                    advice = result.msg; 
+                // 노선(→)이 있는 경우에만 합승 가능성 분석
+                if(target.dir.includes('→') && r.dir.includes('→')) {
+                    const result = RouteManager.analyzeConflict(r, target.time, target.dir);
+                    if (result && !advice) { // 첫 번째 유효한 제안만 담음
+                        advice = result.msg; 
+                    }
                 }
             }
         }
@@ -667,7 +669,8 @@ async function handleSmartApprove(id) {
         const room = allCourses[rid];
         const dep = room.shuttle?.departure;
         if(dep && dep.date === target.date && dep.time) {
-            const diff = Math.abs(toMin(dep.time) - targetMin);
+            const dMin = toMin(dep.time);
+            const diff = Math.abs(dMin - targetMin);
             if(diff < 60) {
                 conflicts.push(`🚌 [학생퇴교] ${room.settings?.courseName || rid} (${dep.time})`);
             }
@@ -677,11 +680,11 @@ async function handleSmartApprove(id) {
     // 4. 지능형 알림창 띄우기 (기사님 중심 문구)
     if (advice) {
         // 합승 가능한 동선이 발견된 경우
-        if (!confirm(`💡 [동선 합승 제안]\n\n${advice}`)) return;
+        if (!confirm(advice)) return;
     } else if (conflicts.length > 0) {
-        // 합승은 안 되는데 시간만 겹치는 경우 (몸이 하나인 상황)
+        // 합승은 안 되는데 시간만 겹치는 경우
         const conflictList = conflicts.join('\n');
-        if (!confirm(`⚠️ [배차 중복 경고]\n\n현재 예약하신 시간 전후로 다음 일정이 이미 존재합니다:\n\n${conflictList}\n\n다른 차량을 운행하거나 시간을 이미 조절하셨나요?\n그대로 승인하시겠습니까?`)) return;
+        if (!confirm(`⚠️ [배차 중복 경고]\n\n현재 예약하신 시간 전후로 다음 일정이 이미 존재합니다:\n\n${conflictList}\n\n그대로 승인하시겠습니까?`)) return;
     }
 
     // 5. 최종 승인 처리
@@ -689,12 +692,66 @@ async function handleSmartApprove(id) {
         await firebase.database().ref(`system/transport_requests/${id}`).update({ 
             status: 'approved' 
         });
-        // 승인이 완료되면 리스트가 자동으로 갱신됩니다.
     } catch(e) {
         alert("승인 처리 중 오류가 발생했습니다: " + e.message);
     }
 }
 
+// [핵심 로직] 항기원 노선 및 구간 시간(30분) 계산기
+const RouteManager = {
+    INTERVAL: 30, 
+    points: ['항기원', '오송역', '청주터미널', '청주공항'],
+
+    getOffset: function(dirStr) {
+        if(!dirStr || !dirStr.includes('→')) return { idx: -1, isOutbound: false };
+        const isOutbound = dirStr.startsWith('항기원'); 
+        const path = isOutbound ? [...this.points] : [...this.points].reverse();
+        
+        // 도착지 또는 출발지 키워드 추출
+        const targetLoc = isOutbound ? dirStr.split('→')[1] : dirStr.split('→')[0];
+        const idx = path.findIndex(p => targetLoc && targetLoc.includes(p));
+        return { idx, isOutbound };
+    },
+
+    analyzeConflict: function(existingReq, newTime, newDir) {
+        const existInfo = this.getOffset(existingReq.dir);
+        const newInfo = this.getOffset(newDir);
+
+        // 방향이 다르거나 노선 인식이 안 되면 무시
+        if (existInfo.idx === -1 || newInfo.idx === -1 || existInfo.isOutbound !== newInfo.isOutbound) return null;
+
+        const exMin = this.toMin(existingReq.time);
+        const newMin = this.toMin(newTime);
+        if(exMin < 0 || newMin < 0) return null;
+
+        // 노선 순서에 따른 권장 시간 계산 (정류장 차이 * 30분)
+        const stopDiff = newInfo.idx - existInfo.idx;
+        const recommendedMin = exMin + (stopDiff * this.INTERVAL);
+        
+        const recH = Math.floor(recommendedMin / 60).toString().padStart(2, '0');
+        const recM = (recommendedMin % 60).toString().padStart(2, '0');
+        const recTime = `${recH}:${recM}`;
+
+        const timeDiff = Math.abs(newMin - recommendedMin);
+        const newLoc = newDir.includes('→') ? (newInfo.isOutbound ? newDir.split('→')[1] : newDir.split('→')[0]) : "해당장소";
+
+        // 권장 시간과 20분 이내 차이면 합승 제안
+        if (timeDiff <= 20) {
+            return {
+                type: 'EFFICIENT',
+                msg: `💡 [동선 합승 제안]\n\n이미 ${existingReq.prof}강사님 예약(${existingReq.time})이 노선상에 있습니다.\n\n이 차량을 함께 이용할 경우, ${newLoc} 권장 탑승시간은 [${recTime}]입니다.\n강사님께 연락하여 시간을 조정하고 합승 안내하시겠습니까?`
+            };
+        }
+        return null;
+    },
+
+    // 내부 보조용 시간 변환
+    toMin: function(tStr) {
+        if(!tStr) return -1000;
+        const parts = tStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+}
 
 
 
