@@ -41,7 +41,7 @@
     display: flex; 
     flex-direction: column; 
     gap: 10px; 
-    /* 하단 플로팅 홈버튼 공간을 고려하여 여백 확보 */
+    /* 하단 홈 버튼(Floating Button) 공간 확보를 위해 필수입니다 */
     padding-bottom: 120px !important; 
 }
 
@@ -169,15 +169,30 @@
     justify-content: center; 
     padding: 10px; /* 여백 축소 */
 }
+.modal-input:not([onclick]) { 
+    width: 100%; 
+    height: 40px; 
+    border: 1.5px solid #cbd5e1; 
+    background: #ffffff !important; 
+    border-radius: 8px; 
+    padding: 0 10px; 
+    margin-bottom: 8px; 
+    font-size: 14px !important; /* 너무 컸던 폰트를 14px로 정상화 */
+    font-weight: 600; 
+    color: #334155;
+}
+
 .modal-box { 
     background: #fff; 
-    width: 95%; 
-    max-width: 400px; 
-    border-radius: 20px; 
-    padding: 20px; 
-    max-height: 90dvh; 
+    width: 92%; 
+    max-width: 360px; 
+    border-radius: 16px; 
+    padding: 15px; 
+    max-height: 85vh; /* 화면 높이의 85%만 사용 */
     overflow-y: auto; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
 }
 .modal-input { 
     width: 100%; 
@@ -195,9 +210,10 @@
 
 /* 3. 정보 구역(강사정보, 이동정보 등) 내부 여백 축소 */
 #prof-info-area, #route-info-area, #passengers-area, #off-reason-area {
-    padding: 12px !important;
-    margin-bottom: 10px !important;
+    padding: 10px !important;
+    margin-bottom: 8px !important;
     border-radius: 10px !important;
+    font-size: 12px;
 }
 
 /* 4. 하단 버튼 영역 최적화 (버튼들이 찌그러지지 않게) */
@@ -215,16 +231,32 @@
     margin-top: 10px;
 }
 
+#view-0 .mini-btn[onclick*="openNewDayOff"] {
+    width: 100%;
+    height: 48px; /* 너무 컸던 높이 축소 */
+    font-size: 14px; /* 글자 크기 정상화 */
+    font-weight: 800;
+    border-radius: 10px;
+    margin: 15px 0;
+    background: var(--danger) !important;
+}
+
 /* 버튼 내 텍스트 크기 강제 고정 */
 .modal-box .modal-input[onclick] {
-    height: 50px;
-    border: none !important;
-    color: #fff !important;
-    font-size: 15px !important;
+    height: 44px;
+    font-size: 14px !important; /* 버튼 글자 크기도 14px로 통일 */
     font-weight: 800;
+    color: #fff !important;
+    border: none !important;
+    margin-top: 5px;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 버튼 입체감 */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+.modal-input[onclick*="saveSchedule"] { background: var(--blue) !important; }
+.modal-input[onclick*="deleteSchedule"] { background: var(--danger) !important; }
+.modal-input[onclick*="closeModal"] { background: #64748b !important; }
+
 
 
 button#delete-schedule-btn, .modal-input[onclick*="delete"] { background: var(--danger) !important; }
