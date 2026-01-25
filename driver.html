@@ -202,14 +202,22 @@
     
     <input type="date" id="s-date" class="modal-input">
     <input type="time" id="s-time" class="modal-input">
-    
-    <div style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
+
+<select id="s-schedule-type" class="modal-input" onchange="toggleScheduleType()">
+  <option value="prof">강사 수송</option>
+  <option value="off">운행 불가</option>
+</select>
+
+
+
+
+    <div id="prof-info-area"  style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
       <div style="font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">강사 정보</div>
       <input type="text" id="s-prof" class="modal-input" placeholder="강사 성함 (예: 홍길동)" style="margin-bottom:5px;">
       <input type="tel" id="s-phone" class="modal-input" placeholder="연락처" style="margin-bottom:0;">
     </div>
 
-    <div style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
+    <div id="route-info-area" style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
       <div style="font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">이동 정보</div>
       <select id="s-dir-type" class="modal-input">
         <option value="arrival">항기원 도착</option>
@@ -224,11 +232,28 @@
       <input type="text" id="s-dir-custom" class="modal-input" placeholder="목적지 직접 입력" style="display:none;">
     </div>
 
-    <div style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
+    <div id="passengers-area" style="border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fafafa;">
       <div style="font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">동승객 추가</div>
       <div id="passengers-list" style="margin-bottom:8px;"></div>
       <button class="mini-btn" onclick="addPassenger()" style="width:100%;"><i class="fa-solid fa-user-plus"></i> 동승객 추가</button>
     </div>
+
+
+<!-- 🔥 운행불가 사유 입력 (숨김 상태로 시작) -->
+<div id="off-reason-area" style="display:none; border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; background:#fff3cd;">
+  <div style="font-size:12px; font-weight:800; color:#856404; margin-bottom:8px;">운행불가 사유</div>
+  <select id="s-off-reason" class="modal-input">
+    <option value="건강검진">건강검진</option>
+    <option value="연차">연차</option>
+    <option value="차량고장">차량고장</option>
+    <option value="직접입력">직접입력</option>
+  </select>
+  <input type="text" id="s-off-custom" class="modal-input" placeholder="사유를 직접 입력하세요" style="display:none;">
+</div>
+
+
+
+
 
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button class="modal-input" style="background:#f1f5f9; border:none; flex:1;" onclick="closeModal('scheduleModal')">취소</button>
@@ -623,6 +648,7 @@ function openNewSchedule() {
   currentEditId = null;
   currentPassengers = [];
   document.getElementById('schedule-modal-title').innerText = '신규 일정 추가';
+  document.getElementById('s-schedule-type').value = 'prof';  // 🔥 추가
   document.getElementById('s-date').value = '';
   document.getElementById('s-time').value = '';
   document.getElementById('s-prof').value = '홍길동';
@@ -632,6 +658,7 @@ function openNewSchedule() {
   document.getElementById('s-dir-custom').value = '';
   document.getElementById('s-dir-custom').style.display = 'none';
   document.getElementById('delete-schedule-btn').style.display = 'none';
+  toggleScheduleType();  // 🔥 추가
   renderPassengers();
   document.getElementById('scheduleModal').style.display = 'flex';
 }
@@ -660,6 +687,21 @@ function openEditSchedule(id) {
     setLocValue(loc);
   }
   
+  // 🔥 타입 설정
+  if(item.prof === '운행중단') {
+    document.getElementById('s-schedule-type').value = 'off';
+    document.getElementById('s-off-reason').value = item.dir || '연차';
+  } else {
+    document.getElementById('s-schedule-type').value = 'prof';
+  }
+  
+  document.getElementById('delete-schedule-btn').style.display = 'block';
+  toggleScheduleType();  // 🔥 추가
+  renderPassengers();
+
+
+
+
   document.getElementById('delete-schedule-btn').style.display = 'block';
   renderPassengers();
   document.getElementById('scheduleModal').style.display = 'flex';
@@ -691,6 +733,48 @@ function removePassenger(index) {
   renderPassengers();
 }
 
+
+// 🔥 일정 타입 전환 함수
+function toggleScheduleType() {
+  const type = document.getElementById('s-schedule-type').value;
+  
+  if(type === 'off') {
+    // 운행불가 모드
+    document.getElementById('prof-info-area').style.display = 'none';
+    document.getElementById('route-info-area').style.display = 'none';
+    document.getElementById('passengers-area').style.display = 'none';
+    document.getElementById('off-reason-area').style.display = 'block';
+  } else {
+    // 강사수송 모드
+    document.getElementById('prof-info-area').style.display = 'block';
+    document.getElementById('route-info-area').style.display = 'block';
+    document.getElementById('passengers-area').style.display = 'block';
+    document.getElementById('off-reason-area').style.display = 'none';
+  }
+}
+
+// 🔥 운행불가 사유 직접입력 토글
+document.addEventListener('DOMContentLoaded', function() {
+  const offReasonSelect = document.getElementById('s-off-reason');
+  if(offReasonSelect) {
+    offReasonSelect.addEventListener('change', function() {
+      document.getElementById('s-off-custom').style.display = 
+        this.value === '직접입력' ? 'block' : 'none';
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
 function renderPassengers() {
   const container = document.getElementById('passengers-list');
   if(currentPassengers.length === 0) {
@@ -707,33 +791,57 @@ function renderPassengers() {
   }
 }
 
+
+
+
+
+
+
+
+
 async function saveSchedule() {
+  const type = document.getElementById('s-schedule-type').value;
   const date = document.getElementById('s-date').value;
   const time = document.getElementById('s-time').value;
-  const prof = document.getElementById('s-prof').value;
-  const phone = document.getElementById('s-phone').value;
-  const dirType = document.getElementById('s-dir-type').value;
-  const dirLoc = document.getElementById('s-dir-loc').value;
-  const customLoc = document.getElementById('s-dir-custom').value;
   
-  if(!date || !time || !prof) {
-    alert('날짜, 시간, 강사명은 필수입니다.');
+  if(!date || !time) {
+    alert('날짜, 시간은 필수입니다.');
     return;
   }
   
-  const finalLoc = (dirLoc === '직접입력') ? customLoc : dirLoc;
-  const finalDir = (dirType === 'arrival') ? `${finalLoc}→항기원` : `항기원→${finalLoc}`;
-  const finalProf = (prof === '운행불가' || prof === '') ? '운행중단' : prof;  
-
-
-  const data = { 
-    date, time, 
-    prof: finalProf,  // ← 여기 변경
-    phone, dir: finalDir, 
-    passengers: currentPassengers,
-    status: 'approved', 
-    timestamp: Date.now() 
-  };
+  let data = { date, time, status: 'approved', timestamp: Date.now() };
+  
+  if(type === 'off') {
+    // 운행불가
+    const reasonSel = document.getElementById('s-off-reason').value;
+    const customReason = document.getElementById('s-off-custom').value;
+    const reason = reasonSel === '직접입력' ? customReason : reasonSel;
+    
+    data.prof = '운행중단';
+    data.dir = reason;
+    data.phone = '';
+    data.passengers = [];
+  } else {
+    // 강사수송
+    const prof = document.getElementById('s-prof').value;
+    const phone = document.getElementById('s-phone').value;
+    const dirType = document.getElementById('s-dir-type').value;
+    const dirLoc = document.getElementById('s-dir-loc').value;
+    const customLoc = document.getElementById('s-dir-custom').value;
+    
+    if(!prof) {
+      alert('강사명은 필수입니다.');
+      return;
+    }
+    
+    const finalLoc = (dirLoc === '직접입력') ? customLoc : dirLoc;
+    const finalDir = (dirType === 'arrival') ? `${finalLoc}→항기원` : `항기원→${finalLoc}`;
+    
+    data.prof = prof;
+    data.phone = phone;
+    data.dir = finalDir;
+    data.passengers = currentPassengers;
+  }
   
   if(currentEditId) {
     await firebase.database().ref(`system/transport_requests/${currentEditId}`).update(data);
@@ -745,6 +853,18 @@ async function saveSchedule() {
   currentEditId = null;
   currentPassengers = [];
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 async function deleteSchedule() {
   if(confirm('이 일정을 삭제할까요?')) {
