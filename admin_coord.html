@@ -3095,7 +3095,7 @@ function renderPickupTable() {
 
 
 
-// [수정] 교육생 퇴교차량 통합 테이블 그리기
+// [수정] 교육생 퇴교차량 통합 테이블 (총원 음영 제거 완료)
 function renderShuttleTotalTable() {
     const tbody = document.getElementById('shuttleTotalTableBody');
     if(!tbody) return;
@@ -3108,18 +3108,17 @@ function renderShuttleTotalTable() {
             const requests = room.shuttle?.requests || {};
             const items = Object.values(requests);
             
-            // 신청 내역이 없어도 과정명은 나오게 하거나, 필터링 가능
             const cName = room.settings?.courseName || rid;
             const rO = items.filter(i => i.type === 'osong').length;
             const rT = items.filter(i => i.type === 'terminal').length;
             const rA = items.filter(i => i.type === 'airport').length;
             const rC = items.filter(i => i.type === 'car').length;
 
-            // 행(tr) 클릭 시 해당 RID를 인자로 전달하여 상세 팝업 실행
             html += `
                 <tr onclick="showShuttleApplicationDetails('${rid}')" style="cursor:pointer;" class="shuttle-row-hover">
                     <td style="text-align:left; padding-left:15px; font-weight:800; color:var(--blue-deep);">${cName}</td>
-                    <td style="font-weight:900; background:#f0f9ff;">${items.length}</td>
+                    <!-- 🚩 여기 td에서 background 스타일을 삭제했습니다 -->
+                    <td style="font-weight:900;">${items.length}</td> 
                     <td style="color:#ef4444; font-weight:800;">${rO}</td>
                     <td style="color:#3b82f6; font-weight:800;">${rT}</td>
                     <td style="color:#10b981; font-weight:800;">${rA}</td>
