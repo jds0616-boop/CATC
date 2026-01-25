@@ -92,6 +92,15 @@
     #view-1 { background: var(--bg); min-height: 100%; }
     #view-2 { background: #abc1d1; min-height: 100%; } 
     #view-3 { background: var(--bg); min-height: 100%; }
+
+
+    #prof-info-area { background: #e0f2fe !important; border: 1px solid #7dd3fc !important; } /* 강사정보: 연파랑 */
+    #route-info-area { background: #fef3c7 !important; border: 1px solid #fcd34d !important; } /* 이동정보: 연노랑 */
+    #passengers-area { background: #dcfce7 !important; border: 1px solid #86efac !important; } /* 동승객: 연초록 */
+    #off-reason-area { background: #fee2e2 !important; border: 1px solid #fecaca !important; } /* 운행불가: 연빨강 */
+
+
+
 </style>
 </head>
 <body>
@@ -100,9 +109,7 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header"><div style="font-size:18px; font-weight:900;">기사 전용 설정</div></div>
     <div class="sidebar-menu">
-        <div class="menu-item" onclick="openDayOffModal()"><i class="fa-solid fa-calendar-xmark"></i> 운행불가 통합 공지</div>
         <div class="menu-item" onclick="captureSchedule()"><i class="fa-solid fa-camera"></i> 일정표 캡처</div>
-        <div class="menu-item" onclick="handleBack()"><i class="fa-solid fa-house"></i> 포탈 메인 이동</div>
     </div>
 </div>
 
@@ -136,6 +143,7 @@
             <span id="week-range" style="font-weight:900; font-size:13px; min-width:120px; text-align:center;">...</span>
             <i class="fa-solid fa-circle-chevron-right" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(1)"></i>
           </div>
+          <button class="mini-btn" style="background:var(--danger); color:white; margin-right:5px;" onclick="openNewDayOff()"><i class="fa-solid fa-calendar-xmark"></i> 운행불가 설정</button>
           <button class="mini-btn" onclick="openNewSchedule()"><i class="fa-solid fa-plus"></i> 신규</button>
         </div>
         <div class="schedule-wrapper" id="schedule-capture-area">
@@ -201,7 +209,9 @@
     <div style="font-weight:900; font-size:17px; margin-bottom:15px; border-bottom:2px solid var(--blue); padding-bottom:8px;" id="schedule-modal-title">일정 관리</div>
     
     <input type="date" id="s-date" class="modal-input">
-    <input type="time" id="s-time" class="modal-input">
+<div id="time-section">
+  <input type="time" id="s-time" class="modal-input">
+</div>
 
 <select id="s-schedule-type" class="modal-input" onchange="toggleScheduleType()">
   <option value="prof">강사 수송</option>
@@ -323,6 +333,15 @@ function init() {
   });
 }
 
+
+
+
+
+
+
+
+
+
 function renderSchedule() {
   const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
   const range = getWeekDates(weekOffset);
@@ -370,9 +389,16 @@ function renderSchedule() {
           const hasMultipleDirs = Object.keys(groups).length > 1;
           const finalName = hasMultipleDirs ? `${nameDisplay} (경로다름)` : nameDisplay;
 
-cell = `<div class="cell-event block-prof" draggable="true" ondragstart="onDragStart(event, '${groupItems[0].id}')" onclick="openEditSchedule('${groupItems[0].id}')">
-            ${firstDir}<br>${finalName}
+          // ★ 여기부터 수정됨: 동승객이 있으면 이름을 추가로 표시합니다.
+          let passengerText = "";
+          if(groupItems[0].passengers && groupItems[0].passengers.length > 0) {
+            passengerText = `<br><span style="font-size:8.5px; color:#555; font-weight:normal;">(동승:${groupItems[0].passengers.join(',')})</span>`;
+          }
+
+          cell = `<div class="cell-event block-prof" draggable="true" ondragstart="onDragStart(event, '${groupItems[0].id}')" onclick="openEditSchedule('${groupItems[0].id}')">
+            ${firstDir}<br>${finalName}${passengerText}
           </div>`;
+          // ★ 여기까지 수정됨
         }
         
         if(!cell) {
@@ -391,6 +417,18 @@ cell = `<div class="cell-event block-prof" draggable="true" ondragstart="onDragS
   }
   body.innerHTML = html;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 function renderTodayTimeline() {
   const container = document.getElementById('today-timeline-container');
@@ -737,21 +775,27 @@ function removePassenger(index) {
 // 🔥 일정 타입 전환 함수
 function toggleScheduleType() {
   const type = document.getElementById('s-schedule-type').value;
+  const timeSection = document.getElementById('time-section');
   
   if(type === 'off') {
-    // 운행불가 모드
+    // 운행불가일 때
     document.getElementById('prof-info-area').style.display = 'none';
     document.getElementById('route-info-area').style.display = 'none';
     document.getElementById('passengers-area').style.display = 'none';
     document.getElementById('off-reason-area').style.display = 'block';
+    timeSection.style.display = 'none'; // 시간 숨기기
   } else {
-    // 강사수송 모드
+    // 강사수송일 때
     document.getElementById('prof-info-area').style.display = 'block';
     document.getElementById('route-info-area').style.display = 'block';
     document.getElementById('passengers-area').style.display = 'block';
     document.getElementById('off-reason-area').style.display = 'none';
+    timeSection.style.display = 'block'; // 시간 보이기
   }
 }
+
+
+
 
 // 🔥 운행불가 사유 직접입력 토글
 document.addEventListener('DOMContentLoaded', function() {
@@ -1054,7 +1098,22 @@ function handleBack() {
   if(confirm("포탈로 이동할까요?")) location.href = 'portal.html'; 
 }
 
+
+
+function openNewDayOff() {
+  openNewSchedule(); // 일단 신규 창을 열고
+  document.getElementById('s-schedule-type').value = 'off'; // 타입을 운행불가로 변경
+  toggleScheduleType(); // 화면 구성 변경
+  document.getElementById('schedule-modal-title').innerText = '운행불가 등록';
+}
+
+
+
+
 init();
+
+
+
 </script>
 </body>
 </html>
