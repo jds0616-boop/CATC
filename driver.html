@@ -891,38 +891,55 @@ async function approveRequest(id) {
   const req = profReqs.find(r => r.id === id);
   if(!req) return;
 
-  // 날짜 형식 통일 함수 (2026.01.25 -> 2026-01-25 등 처리)
   const normalizeDate = (d) => d ? d.replace(/\./g, '-').replace(/\s/g, '') : '';
   const targetDate = normalizeDate(req.date);
   
-  // 충돌 확인 (날짜 형식이 달라도 감지할 수 있도록 개선)
-  const conflicts = profReqs.filter(r => 
+  // 1. 같은 시간대에 이미 승인된 '강사 수송' 건이 있는지 확인 (병합 대상 찾기)
+  const existingSchedule = profReqs.find(r => 
     r.id !== id &&
     normalizeDate(r.date) === targetDate && 
-    (r.status === 'approved' || r.status === 'finished') && // 이미 승인된 건들과 비교
+    r.time === req.time && // 같은 시간
+    r.dir === req.dir &&   // 같은 경로
+    (r.status === 'approved' || r.status === 'finished') &&
     r.prof !== '운행중단'
   );
   
-  if(conflicts.length > 0) {
-    const list = conflicts.map(c => `${c.time} ${c.prof} (${c.dir})`).join('\n');
-    if(!confirm(`⚠️ 해당 날짜에 이미 승인된 일정이 있습니다:\n\n${list}\n\n추가로 승인하시겠습니까?`)) {
-      return;
-    }
-  } else {
-    // 충돌이 없더라도 승인 확인 창 띄우기
-    if(!confirm("이 배차 요청을 승인하시겠습니까?")) return;
-  }
-  
   try {
-    // 1. Firebase 상태 업데이트
+    // 2. 병합 대상이 있는 경우 기사님께 물어봄
+    if(existingSchedule) {
+      const msg = `⚠️ 해당 시간에 이미 승인된 일정([${existingSchedule.prof}] 강사님)이 있습니다.\n\n현재 신청자([${req.prof}] 강사님)를 기존 차량의 '동승자'로 추가하여 통합 배차하시겠습니까?\n\n('확인' 클릭 시 동승자로 통합, '취소' 클릭 시 별도 배차)`;
+      
+      if(confirm(msg)) {
+        // [병합 처리 시작]
+        const updatedPassengers = existingSchedule.passengers ? [...existingSchedule.passengers] : [];
+        if(!updatedPassengers.includes(req.prof)) {
+            updatedPassengers.push(req.prof); // 현재 신청자를 기존 일정의 동승자 명단에 추가
+        }
+        
+        // (1) 기존 일정 데이터 업데이트 (동승자 목록 갱신)
+        await firebase.database().ref(`system/transport_requests/${existingSchedule.id}`).update({ 
+          passengers: updatedPassengers 
+        });
+
+        // (2) 현재 요청은 '운행종료(finished)' 처리하여 채팅 목록에서 제거 (이미 통합되었으므로)
+        await firebase.database().ref(`system/transport_requests/${id}`).update({ 
+          status: 'finished',
+          note: `[${existingSchedule.prof}] 강사님 차량으로 통합됨`
+        });
+
+        alert(`✅ [${req.prof}] 강사님이 [${existingSchedule.prof}] 강사님 차량의 동승자로 등록되었습니다.`);
+        renderAll();
+        return;
+      }
+    }
+
+    // 3. 병합 대상이 없거나, 기사님이 '별도 배차'를 선택한 경우 (기존 일반 승인 로직)
+    if(!confirm("이 배차 요청을 승인하시겠습니까?")) return;
+    
     await firebase.database().ref(`system/transport_requests/${id}`).update({ 
       status: 'approved' 
     });
 
-    // 2. 로컬 데이터 상태 즉시 변경 (Firebase 리스너 대기 시간 방지)
-    req.status = 'approved';
-
-    // 3. 화면 다시 그리기 (종합일정표 반영)
     alert("승인이 완료되었습니다.");
     renderAll(); 
 
