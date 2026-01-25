@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -18,7 +18,7 @@
     body { margin: 0; padding: 0; background: #cfd8e3; display: flex; justify-content: center; height: 100dvh; overflow: hidden; }
     
     .app-container { width: 100%; max-width: 600px; height: 100%; background: var(--bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.2); }
-    .app-header { height: 60px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-bottom: 2px solid var(--blue); z-index: 1000; }
+    .app-header { height: 60px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; }
     .header-btn { color: #fff; font-size: 20px; font-weight: 900; cursor: pointer; padding: 10px; }
     .header-title { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
 
@@ -29,27 +29,29 @@
     .sidebar-menu { padding: 10px; }
     .menu-item { padding: 15px; display: flex; align-items: center; gap: 12px; font-weight: 700; color: #334155; border-radius: 8px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
 
-    .tab-bar { display: flex; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .tab-btn { flex: 1; padding: 14px 0; border: none; background: none; font-size: 12px; font-weight: 800; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
+    .tab-bar { display: flex; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.08); flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 14px 0; border: none; background: none; font-size: 11px; font-weight: 800; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
     .tab-btn.active { color: var(--blue-deep); border-bottom-color: var(--blue); background: #f8fafc; }
     .badge { position: absolute; top: 5px; right: 5px; background: var(--danger); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
 
     .app-content { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 
-    /* 일정표 최적화 */
+    /* 종합일정표 */
     .schedule-wrapper { background: #fff; border: 2px solid #000; border-radius: 8px; overflow-x: auto; }
     .schedule-table { width: 100%; border-collapse: collapse; min-width: 450px; }
     .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px; font-size: 10px; vertical-align: middle; position: relative; }
     .schedule-table th { background: #f1f5f9; font-weight: 900; color: var(--navy); }
-    .time-col { width: 40px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
+    .time-col { width: 50px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
     .drop-target { background-color: #e0f2fe !important; }
     .cell-event { border-radius: 4px; padding: 4px 2px; height: 90%; font-size: 9px; font-weight: 800; line-height: 1.2; cursor: move; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0 2px; }
     .block-entry { background: #eff6ff; color: #1e40af; border: 1px solid #1e40af; }
     .block-prof { background: #fae8ff; color: #a21caf; border: 1px solid #a21caf; }
     .block-departure { background: #ecfdf5; color: #047857; border: 1px solid #047857; }
-    .block-off { background: #fee2e2; color: #ef4444; border: 1px dashed #ef4444; }
+    .block-off { background: #fee2e2; color: #ef4444; border: 1px dashed #ef4444; position: relative; }
+    .block-off::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(239,68,68,0.2) 5px, rgba(239,68,68,0.2) 10px); }
+    .cell-休 { background: #fafafa; color: #999; font-size: 9px; }
 
-    /* 카톡 스타일 채팅창 수정 */
+    /* 카톡 스타일 채팅창 */
     .chat-container { background: #abc1d1; padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 100%; }
     .req-card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 85%; position: relative; align-self: flex-start; }
     .req-card.mine { align-self: flex-end; background: #fee500; }
@@ -58,17 +60,26 @@
     .req-btn-group { display: flex; gap: 5px; margin-top: 8px; }
     .mini-btn { padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
     .mini-btn.primary { background: var(--blue); color:#fff; border:none; }
+    .cancel-notice { text-align: center; margin: 8px 0; }
+    .cancel-notice span { background: rgba(0,0,0,0.1); padding: 4px 12px; border-radius: 10px; font-size: 10px; color: #666; }
 
-    /* 퇴교 수송 디자인 수정 */
+    /* 퇴교 수송 */
     .list-wrapper { background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; }
     .list-header, .course-row { display: grid; grid-template-columns: 1.2fr 0.5fr 2fr 0.5fr; align-items: center; text-align: center; }
     .list-header { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; font-weight: 900; }
     .course-row { border-bottom: 1px solid #f1f5f9; padding: 5px 0; }
     .t-cell { padding: 8px 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border-right: 1px solid #f1f5f9; }
     .t-cell:last-child { border-right: none; }
-    .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; padding: 0 5px; }
+    .time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%; padding: 0 5px; }
+    .time-input { width: 100%; padding: 4px; font-size: 10px; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
     .notice-btn { border: none; background: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
     .notice-btn.active { color: var(--warning); }
+
+    /* 금일 수송일정 */
+    .timeline-card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 8px; }
+    .timeline-time { font-size: 16px; font-weight: 900; color: var(--blue-deep); margin-bottom: 8px; }
+    .timeline-item { padding: 8px 0; border-left: 3px solid var(--blue); padding-left: 12px; margin-left: 5px; font-size: 12px; font-weight: 700; }
+    .timeline-route { color: #047857; font-weight: 800; }
 
     /* 모달 */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
@@ -95,21 +106,21 @@
   </header>
 
   <div class="tab-bar">
-    <button id="tab0" class="tab-btn active" onclick="switchTab(0)">종합 일정표</button>
-    <button id="tab1" class="tab-btn" onclick="switchTab(1)">금일 일정</button>
-    <button id="tab2" class="tab-btn" onclick="switchTab(2)">강사 수송 <span id="badge-count" class="badge" style="display:none;">0</span></button>
-    <button id="tab3" class="tab-btn" onclick="switchTab(3)">퇴교 수송</button>
+    <button id="tab0" class="tab-btn active" onclick="switchTab(0)">종합일정표</button>
+    <button id="tab1" class="tab-btn" onclick="switchTab(1)">금일일정</button>
+    <button id="tab2" class="tab-btn" onclick="switchTab(2)">강사수송 <span id="badge-count" class="badge" style="display:none;">0</span></button>
+    <button id="tab3" class="tab-btn" onclick="switchTab(3)">퇴교수송</button>
   </div>
 
   <main class="app-content">
-    <!-- 탭 0 -->
+    <!-- 탭 0: 종합일정표 -->
     <div id="view-0" style="display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <button class="mini-btn" onclick="goToday()">오늘</button>
+          <button class="mini-btn primary" onclick="goToday()"><i class="fa-solid fa-calendar-day"></i> 오늘</button>
           <div style="display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-circle-chevron-left" style="font-size:22px; color:var(--blue);" onclick="changeWeek(-1)"></i>
+            <i class="fa-solid fa-circle-chevron-left" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(-1)"></i>
             <span id="week-range" style="font-weight:900; font-size:13px; min-width:120px; text-align:center;">...</span>
-            <i class="fa-solid fa-circle-chevron-right" style="font-size:22px; color:var(--blue);" onclick="changeWeek(1)"></i>
+            <i class="fa-solid fa-circle-chevron-right" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(1)"></i>
           </div>
         </div>
         <div class="schedule-wrapper">
@@ -119,19 +130,58 @@
           </table>
         </div>
     </div>
-    <!-- 탭 1 -->
-    <div id="view-1" style="display: none;"><div id="today-timeline-container" style="display:flex; flex-direction:column; gap:10px;"></div></div>
-    <!-- 탭 2 -->
+
+    <!-- 탭 1: 금일 일정 -->
+    <div id="view-1" style="display: none;">
+      <div style="background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; text-align:center;">
+        <div style="font-size:16px; font-weight:900; color:var(--blue-deep);" id="today-date-display">오늘의 수송 일정</div>
+      </div>
+      <div id="today-timeline-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+
+    <!-- 탭 2: 강사 수송 -->
     <div id="view-2" style="display: none; height:100%; overflow:hidden; display:flex; flex-direction:column;">
-      <div style="padding: 5px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end;"><button class="mini-btn" onclick="clearFinished()">완료 목록 삭제</button></div>
+      <div style="padding: 5px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end;">
+        <button class="mini-btn" onclick="clearFinished()"><i class="fa-solid fa-broom"></i> 완료목록 정리</button>
+      </div>
       <div class="chat-container" id="chat-list-inner" style="flex:1; overflow-y:auto;"></div>
     </div>
-    <!-- 탭 3 -->
-    <div id="view-3" style="display: none;"><div class="list-wrapper"><div class="list-header"><div>과정명</div><div>총원</div><div>출발시간</div><div>공지</div></div><div id="trainee-list-body"></div></div></div>
+
+    <!-- 탭 3: 퇴교 수송 -->
+    <div id="view-3" style="display: none;">
+      <div class="list-wrapper">
+        <div class="list-header">
+          <div>과정명</div>
+          <div>인원</div>
+          <div>출발시간</div>
+          <div>공지</div>
+        </div>
+        <div id="trainee-list-body"></div>
+      </div>
+    </div>
   </main>
 </div>
 
-<!-- 통합 모달 -->
+<!-- 운행불가 공지 모달 -->
+<div id="dayOffModal" class="modal-overlay" onclick="if(event.target==this) closeModal('dayOffModal')">
+  <div class="modal-box">
+    <div style="font-weight:900; font-size:17px; margin-bottom:15px; border-bottom:2px solid var(--danger); padding-bottom:8px;">운행불가 일정 등록</div>
+    <input type="date" id="off-date" class="modal-input">
+    <select id="off-reason" class="modal-input">
+        <option value="건강검진">건강검진</option>
+        <option value="연차">연차</option>
+        <option value="차량고장">차량고장</option>
+        <option value="직접입력">직접입력</option>
+    </select>
+    <input type="text" id="off-custom" class="modal-input" placeholder="직접 입력 시 사유를 적어주세요" style="display:none;">
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="modal-input" style="background:#f1f5f9; border:none;" onclick="closeModal('dayOffModal')">취소</button>
+        <button class="modal-input" style="background:var(--danger); color:#fff; border:none;" onclick="saveDayOff()">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 일정 관리 모달 -->
 <div id="allInOneModal" class="modal-overlay" onclick="if(event.target==this) closeModal('allInOneModal')">
   <div class="modal-box">
     <div id="m-header" style="font-weight:900; font-size:17px; margin-bottom:15px; border-bottom:2px solid var(--blue); padding-bottom:8px;">일정 상세 관리</div>
@@ -142,7 +192,10 @@
     </select>
     <div id="reason-area">
         <input type="text" id="m-reason" class="modal-input" placeholder="이름 또는 사유 입력">
-        <div id="prof-fields"><input type="time" id="m-time" class="modal-input"><input type="text" id="m-dir" class="modal-input" placeholder="오송->항기원"></div>
+        <div id="prof-fields">
+          <input type="time" id="m-time" class="modal-input">
+          <input type="text" id="m-dir" class="modal-input" placeholder="오송→항기원">
+        </div>
     </div>
     <div style="display:flex; gap:10px; margin-top:10px;">
         <button class="modal-input" style="background:#f1f5f9; border:none;" onclick="closeModal('allInOneModal')">취소</button>
@@ -159,10 +212,14 @@
   function init() {
     const now = new Date();
     const day = now.getDay(); 
-    // 금요일(5), 토요일(6) 일 때만 자동으로 다음 주(1) 보기. 일요일(0)은 이번 주 로직으로 다음 주를 오늘처럼 보여줌.
+    // 금요일(5), 토요일(6) 일 때만 자동으로 다음 주(1) 보기
     weekOffset = (day === 5 || day === 6) ? 1 : 0; 
 
-    firebase.database().ref('courses').on('value', snap => { allCourses = snap.val() || {}; renderAll(); });
+    firebase.database().ref('courses').on('value', snap => { 
+      allCourses = snap.val() || {}; 
+      renderAll(); 
+    });
+    
     firebase.database().ref('system/transport_requests').on('value', snap => {
       const raw = snap.val() || {};
       let pendingCount = 0;
@@ -174,6 +231,12 @@
       updateBadge(pendingCount);
       renderAll();
     });
+
+    // 운행불가 사유 선택 변경 시
+    document.getElementById('off-reason').addEventListener('change', function() {
+      const custom = document.getElementById('off-custom');
+      custom.style.display = this.value === '직접입력' ? 'block' : 'none';
+    });
   }
 
   function renderSchedule() {
@@ -184,22 +247,37 @@
 
     let html = '';
     for(let h=8; h<=18; h++) {
-      html += `<tr><td class="time-col">${h}:00</td>`;
+      const timeLabel = `${h}:00-${h+1}:00`;
+      html += `<tr><td class="time-col">${timeLabel}</td>`;
+      
       for(let d=0; d<5; d++) {
         const curDate = range[d];
         let cell = '';
-        if(d === 0 && (h === 9 || h === 10)) cell = `<div class="cell-event block-entry">입교수송</div>`;
-        else if(h === 12) cell = `<span style="opacity:0.3; font-size:9px;">휴게</span>`;
-        else {
-            profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled').forEach(item => {
-                const isOff = item.prof === '운행중단';
-                cell += `<div class="cell-event ${isOff?'block-off':'block-prof'}" draggable="true" ondragstart="onDragStart(event,'${item.id}')" onclick="openEditModal('${item.id}')">${isOff?'운행불가':(item.prof||'강사')}</div>`;
-            });
-            for(let rid in allCourses) {
-                const dep = allCourses[rid]?.shuttle?.departure;
-                if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) cell += `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
-            }
+        
+        // 입교수송 (월요일 9-10시, 10-11시)
+        if(d === 0 && (h === 9 || h === 10)) {
+          cell = `<div class="cell-event block-entry">입교수송</div>`;
         }
+        // 점심시간 (12-13시)
+        else if(h === 12) {
+          cell = `<div class="cell-休">휴게시간</div>`;
+        }
+        else {
+          // 강사수송 및 운행불가
+          profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled').forEach(item => {
+            const isOff = item.prof === '운행중단';
+            cell += `<div class="cell-event ${isOff?'block-off':'block-prof'}" draggable="true" ondragstart="onDragStart(event,'${item.id}')" onclick="openEditModal('${item.id}')">${isOff?('운행불가<br>'+item.dir):(item.prof||'강사')}</div>`;
+          });
+          
+          // 퇴교수송
+          for(let rid in allCourses) {
+            const dep = allCourses[rid]?.shuttle?.departure;
+            if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) {
+              cell += `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
+            }
+          }
+        }
+        
         html += `<td ondrop="onDrop(event,'${curDate}','${h}:00')" ondragover="allowDrop(event)" ondragenter="onDragEnter(event)" ondragleave="onDragLeave(event)" onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cell}</td>`;
       }
       html += `</tr>`;
@@ -207,24 +285,109 @@
     body.innerHTML = html;
   }
 
-  function handleCellClick(ev, date, time) {
-      if(ev.target.closest('.cell-event') || (date.includes('Monday') && (time==='9:00'||time==='10:00'))) return;
-      openEmptyCell(date, time);
+  function renderTodayTimeline() {
+    const container = document.getElementById('today-timeline-container');
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('today-date-display').innerText = `${today} 수송 일정`;
+
+    // 오늘의 모든 일정 수집
+    const todaySchedule = [];
+
+    // 입교수송 (월요일만)
+    const dayOfWeek = new Date(today).getDay();
+    if(dayOfWeek === 1) {
+      todaySchedule.push({ time: '09:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
+      todaySchedule.push({ time: '10:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
+    }
+
+    // 강사 수송
+    profReqs.filter(r => r.date === today && r.status !== 'cancelled').forEach(item => {
+      if(item.prof === '운행중단') {
+        todaySchedule.push({ 
+          time: item.time, 
+          type: '운행불가', 
+          desc: item.dir || '사유 없음',
+          route: ''
+        });
+      } else {
+        todaySchedule.push({ 
+          time: item.time, 
+          type: '강사수송', 
+          desc: `${item.prof || '강사'} 픽업`,
+          route: item.dir || '구간 정보 없음'
+        });
+      }
+    });
+
+    // 퇴교수송
+    for(let rid in allCourses) {
+      const dep = allCourses[rid]?.shuttle?.departure;
+      if(dep && dep.date === today) {
+        const courseName = allCourses[rid].settings?.courseName || '과정명 없음';
+        const total = Object.values(allCourses[rid].shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+        todaySchedule.push({ 
+          time: dep.time, 
+          type: '퇴교수송', 
+          desc: `${courseName} (${total}명)`,
+          route: '항기원 → 청주공항/오송역'
+        });
+      }
+    }
+
+    // 시간순 정렬
+    todaySchedule.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+    let html = '';
+    if(todaySchedule.length === 0) {
+      html = '<div class="timeline-card"><div style="text-align:center; color:#999;">오늘은 예정된 수송 일정이 없습니다.</div></div>';
+    } else {
+      todaySchedule.forEach(item => {
+        html += `<div class="timeline-card">
+          <div class="timeline-time"><i class="fa-solid fa-clock"></i> ${item.time}</div>
+          <div class="timeline-item">
+            <div style="font-size:14px; font-weight:900; margin-bottom:4px;">${item.type}</div>
+            <div>${item.desc}</div>
+            ${item.route ? `<div class="timeline-route"><i class="fa-solid fa-route"></i> ${item.route}</div>` : ''}
+          </div>
+        </div>`;
+      });
+    }
+    container.innerHTML = html;
   }
 
   function renderInstructorChat() {
     const box = document.getElementById('chat-list-inner');
     let html = "";
-    profReqs.forEach(r => {
-      const isPending = r.status === 'pending', isMine = r.status === 'approved' || r.status === 'finished', isCancelled = r.status === 'cancelled';
-      if(isCancelled) html += `<div style="text-align:center; margin:8px 0;"><span style="background:rgba(0,0,0,0.1); padding:2px 10px; border-radius:10px; font-size:10px; color:#666;">취소: ${r.prof || '강사'}</span></div>`;
-      else html += `<div class="req-card ${isMine?'mine':''}">
-            <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800; margin-bottom:3px;">${isPending?'● 신규요청':'✓ 확인됨'}</div>
-            <div style="font-weight:900; font-size:13px; line-height:1.2;">${r.date || '날짜없음'} (${r.time || '--:--'})</div>
-            <div style="font-size:11px; font-weight:800; color:var(--blue-deep); margin:2px 0;">${r.dir || '구간 정보 없음'}</div>
-            <div style="font-size:12px; font-weight:700;">${r.prof || '이름없음'} 강사 <a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a></div>
-            ${isPending ? `<div class="req-btn-group"><button class="mini-btn primary" onclick="approveRequest('${r.id}')">승인</button><button class="mini-btn" onclick="cancelRequest('${r.id}')">불가</button></div>` : ''}
+    
+    profReqs.forEach((r, idx) => {
+      const isPending = r.status === 'pending';
+      const isMine = r.status === 'approved' || r.status === 'finished';
+      const isCancelled = r.status === 'cancelled';
+      
+      if(isCancelled) {
+        // 취소 알림은 최신 메시지로
+        html += `<div class="cancel-notice"><span><i class="fa-solid fa-ban"></i> ${r.prof || '강사'} 수송 요청이 취소되었습니다</span></div>`;
+      } else {
+        html += `<div class="req-card ${isMine?'mine':''}">
+          <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800; margin-bottom:3px;">
+            ${isPending?'● 신규요청':'✓ 확인됨'}
+          </div>
+          <div style="font-weight:900; font-size:14px; margin-bottom:4px;">${isPending?'승인 대기':'승인완료!'}</div>
+          <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.date || '날짜없음'}</div>
+          <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.time || '--:--'}</div>
+          <div style="font-size:12px; font-weight:700; color:var(--blue-deep); margin-bottom:4px;">
+            <i class="fa-solid fa-route"></i> ${r.dir || '구간 정보 없음'}
+          </div>
+          <div style="font-size:12px; font-weight:700;">
+            ${r.prof || '이름없음'} 강사님 픽업
+            ${r.phone ? `<a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a>` : ''}
+          </div>
+          ${isPending ? `<div class="req-btn-group">
+            <button class="mini-btn primary" onclick="approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> 승인</button>
+            <button class="mini-btn" onclick="cancelRequest('${r.id}')"><i class="fa-solid fa-times"></i> 불가</button>
+          </div>` : '<div style="font-size:11px; color:#666; margin-top:8px; text-align:center;">확인했습니다</div>'}
         </div>`;
+      }
     });
     box.innerHTML = html;
     if(currentTab === 2) box.scrollTop = box.scrollHeight;
@@ -234,88 +397,249 @@
     const container = document.getElementById('trainee-list-body');
     let html = "";
     Object.keys(allCourses).forEach(rid => {
-        const room = allCourses[rid]; if(room.status?.roomStatus !== 'active') return;
-        const dep = room.shuttle?.departure || { time: "", announced: false }, total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
-        html += `<div class="course-row">
-            <div class="t-cell">${room.settings?.courseName}</div>
-            <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
-            <div class="t-cell"><div class="time-grid">
-                ${['14:00','16:00','17:00','18:00'].map(t => `<button class="mini-btn ${dep.time===t?'primary':''}" onclick="setDeparture('${rid}','${t}')">${t}</button>`).join('')}
-            </div></div>
-            <div class="t-cell"><button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})"><i class="fa-solid fa-bullhorn"></i></button></div>
-        </div>`;
+      const room = allCourses[rid]; 
+      if(room.status?.roomStatus !== 'active') return;
+      const dep = room.shuttle?.departure || { time: "", announced: false };
+      const total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+      
+      html += `<div class="course-row">
+        <div class="t-cell">${room.settings?.courseName || '과정명'}</div>
+        <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
+        <div class="t-cell">
+          <div class="time-grid">
+            ${['13:00','15:00'].map(t => `<button class="mini-btn ${dep.time===t?'primary':''}" onclick="setDeparture('${rid}','${t}')">${t}</button>`).join('')}
+            <input type="time" class="time-input" value="${dep.time && dep.time!=='13:00' && dep.time!=='15:00' ? dep.time : ''}" onchange="setDeparture('${rid}', this.value)" placeholder="직접입력">
+          </div>
+        </div>
+        <div class="t-cell">
+          <button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})">
+            <i class="fa-solid fa-bullhorn"></i>
+          </button>
+        </div>
+      </div>`;
     });
     container.innerHTML = html;
   }
 
   async function setDeparture(rid, time) { 
-      const depDate = allCourses[rid].shuttle?.departure?.date || new Date().toISOString().split('T')[0];
-      await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ time, date: depDate }); 
-      alert(time + " 수송 확정");
+    if(!time) return;
+    const depDate = allCourses[rid].shuttle?.departure?.date || new Date().toISOString().split('T')[0];
+    await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ time, date: depDate }); 
+    alert(time + " 수송 확정");
   }
+
   async function toggleNotice(rid, stat) { 
-      if(confirm(`${stat?'공지를 취소할까요?':'확성기 공지를 완료했습니까?'}`)) {
-          await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ announced: !stat });
-      }
+    if(confirm(`${stat?'공지를 취소할까요?':'확성기 공지를 완료했습니까?'}`)) {
+      await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ announced: !stat });
+    }
   }
 
   function getWeekDates(offset) {
     const now = new Date();
     const day = now.getDay();
-    const diff = (day === 0 ? -6 : 1 - day); // 월요일 찾기
+    const diff = (day === 0 ? -6 : 1 - day);
     const monday = new Date(now);
     monday.setDate(now.getDate() + diff + (offset * 7));
     const res = [];
     for(let i=0; i<5; i++) {
-        const d = new Date(monday); d.setDate(monday.getDate()+i);
-        res.push(d.toISOString().split('T')[0]);
+      const d = new Date(monday); 
+      d.setDate(monday.getDate()+i);
+      res.push(d.toISOString().split('T')[0]);
     }
     return res;
   }
 
-  // 기존 액션 함수들 유지 및 보강
-  async function approveRequest(id) { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); }
-  async function cancelRequest(id) { if(confirm("불가 처리하시겠습니까?")) await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'cancelled' }); }
+  function handleCellClick(ev, date, time) {
+    if(ev.target.closest('.cell-event') || (date.includes('Monday') && (time==='9:00'||time==='10:00'))) return;
+    openEmptyCell(date, time);
+  }
+
+  async function approveRequest(id) { 
+    await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
+  }
+
+  async function cancelRequest(id) { 
+    if(confirm("불가 처리하시겠습니까?")) {
+      await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'cancelled' }); 
+    }
+  }
+
   function onDragStart(ev, id) { draggedItem = id; }
-  function onDragEnter(ev) { let t = ev.target.closest('td'); if(t) t.classList.add('drop-target'); }
-  function onDragLeave(ev) { let t = ev.target.closest('td'); if(t) t.classList.remove('drop-target'); }
+  function onDragEnter(ev) { 
+    let t = ev.target.closest('td'); 
+    if(t) t.classList.add('drop-target'); 
+  }
+  function onDragLeave(ev) { 
+    let t = ev.target.closest('td'); 
+    if(t) t.classList.remove('drop-target'); 
+  }
+
   async function onDrop(ev, date, time) {
-    ev.preventDefault(); onDragLeave(ev); if(!draggedItem) return;
+    ev.preventDefault(); 
+    onDragLeave(ev); 
+    if(!draggedItem) return;
     const req = profReqs.find(r => r.id === draggedItem);
     const newTime = time.split(':')[0] + ":" + (req.time ? req.time.split(':')[1] : "00");
-    if(confirm(`${date} ${newTime}으로 변경할까요?`)) { await firebase.database().ref(`system/transport_requests/${draggedItem}`).update({ date, time: newTime }); }
+    if(confirm(`${date} ${newTime}으로 변경할까요?`)) { 
+      await firebase.database().ref(`system/transport_requests/${draggedItem}`).update({ date, time: newTime }); 
+    }
     draggedItem = null;
   }
+
   function openEmptyCell(date, time) {
-    document.getElementById('m-header').innerText = "새 일정 추가"; document.getElementById('m-date').value = date; document.getElementById('m-time').value = time;
-    document.getElementById('prof-fields').style.display = 'block'; document.getElementById('m-type').value = 'prof';
-    document.getElementById('del-btn').style.display = 'none'; document.getElementById('allInOneModal').style.display = 'flex';
+    document.getElementById('m-header').innerText = "새 일정 추가"; 
+    document.getElementById('m-date').value = date; 
+    document.getElementById('m-time').value = time;
+    document.getElementById('prof-fields').style.display = 'block'; 
+    document.getElementById('m-type').value = 'prof';
+    document.getElementById('del-btn').style.display = 'none'; 
+    document.getElementById('allInOneModal').style.display = 'flex';
   }
+
   function openEditModal(id) {
-    const item = profReqs.find(r => r.id === id); if(!item) return;
-    document.getElementById('m-header').innerText = "일정 수정"; document.getElementById('m-date').value = item.date; document.getElementById('m-time').value = item.time;
-    document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof; document.getElementById('m-dir').value = item.dir||"";
-    document.getElementById('m-type').value = item.prof==='운행중단'?'off':'prof'; toggleReasonInput();
-    document.getElementById('allInOneModal').dataset.editId = id; document.getElementById('del-btn').style.display='block'; document.getElementById('allInOneModal').style.display='flex';
+    const item = profReqs.find(r => r.id === id); 
+    if(!item) return;
+    document.getElementById('m-header').innerText = "일정 수정"; 
+    document.getElementById('m-date').value = item.date; 
+    document.getElementById('m-time').value = item.time;
+    document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof; 
+    document.getElementById('m-dir').value = item.dir||"";
+    document.getElementById('m-type').value = item.prof==='운행중단'?'off':'prof'; 
+    toggleReasonInput();
+    document.getElementById('allInOneModal').dataset.editId = id; 
+    document.getElementById('del-btn').style.display='block'; 
+    document.getElementById('allInOneModal').style.display='flex';
   }
+
+  function openDayOffModal() {
+    toggleSidebar();
+    document.getElementById('dayOffModal').style.display = 'flex';
+  }
+
+  async function saveDayOff() {
+    const date = document.getElementById('off-date').value;
+    const reasonSel = document.getElementById('off-reason').value;
+    const customReason = document.getElementById('off-custom').value;
+    const reason = reasonSel === '직접입력' ? customReason : reasonSel;
+    
+    if(!date || !reason) {
+      alert('날짜와 사유를 모두 입력해주세요');
+      return;
+    }
+
+    const data = { 
+      date, 
+      time: '09:00',
+      prof: '운행중단', 
+      dir: reason, 
+      status: 'approved', 
+      timestamp: Date.now() 
+    };
+    
+    await firebase.database().ref('system/transport_requests').push(data);
+    closeModal('dayOffModal');
+    alert('운행불가 일정이 등록되었습니다');
+  }
+
   async function saveAllInOne() {
-    const id = document.getElementById('allInOneModal').dataset.editId; const type = document.getElementById('m-type').value, date = document.getElementById('m-date').value, time = document.getElementById('m-time').value, reason = document.getElementById('m-reason').value, dir = document.getElementById('m-dir').value;
-    const data = { date, time, prof: type==='off'?'운행중단':reason, dir: type==='off'?reason:dir, status: 'approved', timestamp: Date.now() };
-    if(id) await firebase.database().ref(`system/transport_requests/${id}`).update(data); else await firebase.database().ref('system/transport_requests').push(data);
+    const id = document.getElementById('allInOneModal').dataset.editId; 
+    const type = document.getElementById('m-type').value;
+    const date = document.getElementById('m-date').value;
+    const time = document.getElementById('m-time').value;
+    const reason = document.getElementById('m-reason').value;
+    const dir = document.getElementById('m-dir').value;
+    
+    const data = { 
+      date, 
+      time, 
+      prof: type==='off'?'운행중단':reason, 
+      dir: type==='off'?reason:dir, 
+      status: 'approved', 
+      timestamp: Date.now() 
+    };
+    
+    if(id) {
+      await firebase.database().ref(`system/transport_requests/${id}`).update(data);
+    } else {
+      await firebase.database().ref('system/transport_requests').push(data);
+    }
     closeModal('allInOneModal');
   }
-  async function deleteRecord() { if(confirm("삭제할까요?")) { await firebase.database().ref(`system/transport_requests/${document.getElementById('allInOneModal').dataset.editId}`).remove(); closeModal('allInOneModal'); } }
-  function toggleSidebar() { const sb = document.getElementById('sidebar'), ol = document.querySelector('.sidebar-overlay'), isOpen = sb.classList.contains('open'); sb.classList.toggle('open', !isOpen); ol.style.display = isOpen ? 'none' : 'block'; }
-  function switchTab(n) { currentTab = n; document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n)); document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none'); renderAll(); }
-  function updateBadge(count) { const b = document.getElementById('badge-count'); if(count > 0) { b.innerText = count; b.style.display = 'block'; } else b.style.display = 'none'; }
-  function renderAll() { renderSchedule(); renderInstructorChat(); renderTraineeGrid(); }
-  function changeWeek(n) { weekOffset += n; renderAll(); }
-  function goToday() { init(); }
-  function closeModal(id) { document.getElementById(id).style.display = 'none'; delete document.getElementById(id).dataset.editId; }
-  function toggleReasonInput() { document.getElementById('prof-fields').style.display = document.getElementById('m-type').value==='off'?'none':'block'; }
-  async function clearFinished() { if(confirm("완료된 내역을 정리할까요?")) { profReqs.filter(r => r.status==='finished' || r.status==='cancelled').forEach(t => firebase.database().ref(`system/transport_requests/${t.id}`).remove()); } }
-  function handleBack() { if(confirm("포탈로 이동할까요?")) location.href = 'potal.html'; }
-  function allowDrop(ev) { ev.preventDefault(); }
+
+  async function deleteRecord() { 
+    if(confirm("삭제할까요?")) { 
+      await firebase.database().ref(`system/transport_requests/${document.getElementById('allInOneModal').dataset.editId}`).remove(); 
+      closeModal('allInOneModal'); 
+    } 
+  }
+
+  function toggleSidebar() { 
+    const sb = document.getElementById('sidebar');
+    const ol = document.querySelector('.sidebar-overlay');
+    const isOpen = sb.classList.contains('open'); 
+    sb.classList.toggle('open', !isOpen); 
+    ol.style.display = isOpen ? 'none' : 'block'; 
+  }
+
+  function switchTab(n) { 
+    currentTab = n; 
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n)); 
+    document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none'); 
+    renderAll(); 
+  }
+
+  function updateBadge(count) { 
+    const b = document.getElementById('badge-count'); 
+    if(count > 0) { 
+      b.innerText = count; 
+      b.style.display = 'block'; 
+    } else {
+      b.style.display = 'none'; 
+    }
+  }
+
+  function renderAll() { 
+    renderSchedule(); 
+    renderTodayTimeline();
+    renderInstructorChat(); 
+    renderTraineeGrid(); 
+  }
+
+  function changeWeek(n) { 
+    weekOffset += n; 
+    renderAll(); 
+  }
+
+  function goToday() { 
+    weekOffset = 0;
+    const now = new Date();
+    const day = now.getDay(); 
+    weekOffset = (day === 5 || day === 6) ? 1 : 0;
+    renderAll();
+  }
+
+  function closeModal(id) { 
+    document.getElementById(id).style.display = 'none'; 
+    delete document.getElementById(id).dataset.editId; 
+  }
+
+  function toggleReasonInput() { 
+    document.getElementById('prof-fields').style.display = document.getElementById('m-type').value==='off'?'none':'block'; 
+  }
+
+  async function clearFinished() { 
+    if(confirm("완료된 내역을 정리할까요?")) { 
+      profReqs.filter(r => r.status==='finished' || r.status==='cancelled').forEach(t => firebase.database().ref(`system/transport_requests/${t.id}`).remove()); 
+    } 
+  }
+
+  function handleBack() { 
+    if(confirm("포탈로 이동할까요?")) location.href = 'potal.html'; 
+  }
+
+  function allowDrop(ev) { 
+    ev.preventDefault(); 
+  }
   
   init();
 </script>
