@@ -957,16 +957,35 @@ body.modal-open .app-content {
       </div>
     </div>
 
-<!-- 상단 헤더 부분 -->
+
+
+
+
+
+<!-- 상단 헤더 부분 (수정됨) -->
 <header class="app-header">
-  <!-- 아이콘 대신 << 텍스트로 변경 및 클릭 시 handleBackNav 호출 -->
+  <!-- 아이콘 대신 << 텍스트 사용 (클릭 시 메인복귀 또는 포탈이동) -->
   <button class="header-btn" onclick="handleBackNav()" style="font-family: 'Pretendard'; font-weight: 900; letter-spacing: -2px;">&lt;&lt;</button>
+  
   <div class="header-title">항공기술훈련원 교육운영부</div>
+  
   <div style="display:flex; gap:15px; align-items:center;">
+      <!-- 1. 접속 QR 아이콘 -->
       <button class="header-btn" onclick="openCenterQrModal()"><i class="fa-solid fa-qrcode"></i></button>
+      
+      <!-- 2. 전체 공지 아이콘 (신규 추가) -->
+      <button class="header-btn" onclick="openGlobalNoticeModal()"><i class="fa-solid fa-bullhorn"></i></button>
+      
+      <!-- 3. 사이드 메뉴 아이콘 -->
       <button class="header-btn" onclick="toggleMenu(true)"><i class="fa-solid fa-bars"></i></button>
   </div>
 </header>
+
+
+
+
+
+
 
 
     <main class="app-content">
@@ -1011,18 +1030,6 @@ body.modal-open .app-content {
             <!-- 자바스크립트가 여기에 ROOM A, ROOM C 등의 카드를 채워넣습니다 -->
         </div>
     </div>
-
-
-<!-- [이동됨] 항기원 전체 공지 (센터 공통 공지) -->
-<div class="section-card">
-    <div class="section-title"><i class="fa-solid fa-earth-asia"></i> 과정 전체 공지 (모든과정에 표출됩니다!!)</div>
-    <textarea id="globalNotice" class="notice-area" oninput="autoGrow(this)" placeholder="센터 전체 공지 입력"></textarea>
-    <button class="navy-btn green" onclick="saveGlobalNotice()">모든 과정에 공지사항 보내기</button>
-</div>
-
-
-
-
 
 
 </div> <!-- totalStatusView 닫기 -->
@@ -1112,6 +1119,10 @@ body.modal-open .app-content {
         </div>
     </div>
 </div>
+
+
+
+
 
 
 
@@ -2234,12 +2245,13 @@ function updateTransDirButtons() {
 
 // [최종 수정] 뒤로가기 및 포탈 이동 로직
 function handleBackNav() { 
-    // 1. 열려있는 팝업(모달)이 있다면 팝업부터 닫기
-    const allModals = [
-        'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
-        'setupModal', 'transportModal', 'shuttleDetailModal', 
-        'actionDetailModal', 'printSelectModal', 'centerQrModal'
-    ];
+// handleBackNav 함수 안의 allModals 부분을 이렇게 수정
+const allModals = [
+    'totalStudentListModal', 'dormManagerModal', 'coordManageModal', 
+    'setupModal', 'transportModal', 'shuttleDetailModal', 
+    'actionDetailModal', 'printSelectModal', 'centerQrModal', 
+    'globalNoticeModal' // 🚩 이 줄을 추가하세요
+];
     
     let isModalOpen = false;
     allModals.forEach(id => {
@@ -3505,8 +3517,77 @@ handleBackNav = function() {
 
 
 
+
+
+
+// [추가] 센터 전체 공지 팝업 열기
+function openGlobalNoticeModal() {
+    toggleMenu(false); 
+    const modal = document.getElementById('globalNoticeModal');
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open'); 
+    
+    firebase.database().ref('system/globalNotice').once('value', s => {
+        const textarea = document.getElementById('globalNotice');
+        textarea.value = s.val() || "";
+        if(typeof autoGrow === 'function') autoGrow(textarea); 
+    });
+}
+
+// [추가] 전체 공지 저장 로직
+async function saveGlobalNotice() {
+    const content = document.getElementById('globalNotice').value;
+    try {
+        await firebase.database().ref(`system/globalNotice`).set(content);
+        alert("✅ 모든 과정의 교육생 화면에 공지가 반영되었습니다.");
+        document.getElementById('globalNoticeModal').style.display = 'none';
+        document.body.classList.remove('modal-open');
+    } catch(e) {
+        alert("오류 발생: " + e.message);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
     init();
   </script>
+
+
+
+
+
+<!-- 센터 전체 공지 관리 팝업 -->
+<div id="globalNoticeModal" class="setup-modal" style="z-index: 9900;">
+    <div class="setup-box" style="max-width: 450px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; font-size:17px; color:var(--navy-dark);"><i class="fa-solid fa-bullhorn"></i> 센터 전체 공지사항 송부</h3>
+            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size:22px;" onclick="document.getElementById('globalNoticeModal').style.display='none'; document.body.classList.remove('modal-open');"></i>
+        </div>
+        
+        <div style="margin-bottom:15px;">
+            <p style="font-size: 11px; color: #ef4444; font-weight: 800; margin-bottom: 8px;">※ 여기에 입력하면 모든 과정(Room A~Z) 교육생 화면에 즉시 노출됩니다.</p>
+            <textarea id="globalNotice" class="notice-area" style="min-height: 250px; width: 100%;" placeholder="공지 내용을 입력하세요..."></textarea>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button class="navy-btn" style="background:#64748b; flex:1;" onclick="document.getElementById('globalNoticeModal').style.display='none'; document.body.classList.remove('modal-open');">닫기</button>
+            <button class="navy-btn green" style="flex:2;" onclick="saveGlobalNotice()">공지 업데이트 (전송)</button>
+        </div>
+    </div>
+</div>
+
+
+
+
 
 
 <!-- 퇴교 차량 상세 신청 현황 모달 -->
