@@ -142,347 +142,610 @@
 
 
 
-
 <script src="config.js"></script>
 <script>
-  let allCourses = {}
-  let profReqs = []
-  let weekOffset = 0
-  let prevPendingCount = 0
-  let currentTab = 0
-  const alarmAudio = new Audio('timer.mp3')
+  let allCourses = {};
+  let profReqs = [];
+  let weekOffset = 0;
+  let prevPendingCount = 0;
+  let currentTab = 0;
+  const alarmAudio = new Audio('timer.mp3');
 
-  // 1. 데이터 로드 및 자동 마감 로직
-  function init() {
-    firebase.database().ref('courses').on('value', snap => {
-      allCourses = snap.val() || {}
-      renderAll()
-    })
+// 1. 데이터 로드 및 자동 마감 로직 (Timestamp 기준 처리 추가)
+function init() {
+  firebase.database().ref('courses').on('value', snap => {
+    allCourses = snap.val() || {}; 
+    renderAll(); 
+  });
 
-    firebase.database().ref('system/transport_requests').on('value', snap => {
-      const raw = snap.val() || {}
-      const now = new Date()
-      const updates = {}
-      let hasUpdates = false
+  firebase.database().ref('system/transport_requests').on('value', snap => {
+    const raw = snap.val() || {};
+    const now = new Date();
+    const updates = {};
+    let hasUpdates = false;
 
-      profReqs = Object.keys(raw).map(k => {
-        const item = { id: k, ...raw[k] }
-        if (item.status === 'approved' && item.date && item.time) {
-          const scheduledTime = new Date(item.date + ' ' + item.time)
-          const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000)
-          if (now > limitTime && !isNaN(scheduledTime.getTime())) {
-            updates[`system/transport_requests/${k}/status`] = 'finished'
-            item.status = 'finished'
-            hasUpdates = true
-          }
+    profReqs = Object.keys(raw).map(k => {
+      const item = { id: k, ...raw[k] };
+      
+      // 자동 종료 체크
+      if (item.status === 'approved' && item.date && item.time) {
+        const scheduledTime = new Date(item.date + ' ' + item.time);
+        const limitTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); 
+        if (now > limitTime && !isNaN(scheduledTime.getTime())) {
+          updates[`system/transport_requests/${k}/status`] = 'finished';
+          item.status = 'finished';
+          hasUpdates = true;
         }
-        return item
-      }).filter(r => r.date && r.prof && r.courseRID && r.time)
+      }
+      return item;
+    }).filter(r => r.date && r.prof && r.courseRID && r.time);
+    
+    if (hasUpdates) {
+      firebase.database().ref().update(updates);
+    }
 
-      if (hasUpdates) firebase.database().ref().update(updates)
-      checkNewRequests()
-      renderAll()
-    })
-  }
+    checkNewRequests();
+    renderAll();
+  });
+}
 
-  // [핵심] 노선 및 구간 시간 계산기 (객체 내부 쉼표 유지 필수)
-  const RouteManager = {
-    INTERVAL: 30,
+
+
+
+// [핵심 로직] 항기원 노선 및 구간 시간(30분) 계산기
+const RouteManager = {
+    INTERVAL: 30, // 구간별 이동 시간 (분)
+    // 노선 순서 (인덱스 0: 센터, 3: 가장 먼 곳)
     points: ['항기원', '오송역', '청주터미널', '청주공항'],
 
+    // 해당 방향 노선에서 특정 장소가 몇 번째 정류장인지 계산
     getOffset: function(dirStr) {
-      if(!dirStr || !dirStr.includes('→')) return { idx: -1, isOutbound: false }
-      const isOutbound = dirStr.startsWith('항기원')
-      const path = isOutbound ? [...this.points] : [...this.points].reverse()
-      const targetLoc = isOutbound ? dirStr.split('→')[1] : dirStr.split('→')[0]
-      const idx = path.findIndex(p => targetLoc && targetLoc.includes(p))
-      return { idx, isOutbound }
+        const isOutbound = dirStr.includes('항기원→'); // 나가는 길 여부
+        const path = isOutbound ? [...this.points] : [...this.points].reverse();
+        
+        // 장소명 추출 (화살표 앞뒤에서 장소 키워드 찾기)
+        const targetLoc = isOutbound ? dirStr.split('→')[1] : dirStr.split('→')[0];
+        
+        const idx = path.findIndex(p => targetLoc.includes(p));
+        return { idx, isOutbound };
     },
 
+    // 두 예약 건이 같은 차량에 '합승' 가능한지 분석
     analyzeConflict: function(existingReq, newTime, newDir) {
-      const existInfo = this.getOffset(existingReq.dir)
-      const newInfo = this.getOffset(newDir)
-      if (existInfo.idx === -1 || newInfo.idx === -1 || existInfo.isOutbound !== newInfo.isOutbound) return null
+        const existInfo = this.getOffset(existingReq.dir);
+        const newInfo = this.getOffset(newDir);
 
-      const exMin = this.toMin(existingReq.time)
-      const newMin = this.toMin(newTime)
-      if(exMin < 0 || newMin < 0) return null
+        // 1. 방향이 다르면(하나는 입교, 하나는 퇴교) 합승 불가
+        if (existInfo.isOutbound !== newInfo.isOutbound) return null;
 
-      const stopDiff = newInfo.idx - existInfo.idx
-      const recommendedMin = exMin + (stopDiff * this.INTERVAL)
-      const recH = Math.floor(recommendedMin / 60).toString().padStart(2, '0')
-      const recM = (recommendedMin % 60).toString().padStart(2, '0')
-      const recTime = `${recH}:${recM}`
+        // 2. 시간차 계산
+        const [exH, exM] = existingReq.time.split(':').map(Number);
+        const [newH, newM] = newTime.split(':').map(Number);
+        const existMin = exH * 60 + exM;
+        const newMin = newH * 60 + newM;
 
-      if (Math.abs(newMin - recommendedMin) <= 20) {
-        const newLoc = newDir.includes('→') ? (newInfo.isOutbound ? newDir.split('→')[1] : newDir.split('→')[0]) : "해당장소"
-        return {
-          msg: `💡 [동선 합승 제안]\n\n이미 ${existingReq.prof}강사님 예약(${existingReq.time})이 노선상에 있습니다.\n\n이 차량을 함께 이용할 경우, ${newLoc} 권장 탑승시간은 [${recTime}]입니다.\n강사님께 연락하여 시간을 조율하고 합승 안내하시겠습니까?`
+        // 3. 노선 순서에 따른 권장 시간 계산 (정류장 차이 * 30분)
+        // 기존 예약자가 기준이 됨
+        const stopDiff = newInfo.idx - existInfo.idx;
+        const recommendedMin = existMin + (stopDiff * this.INTERVAL);
+        
+        const recH = Math.floor(recommendedMin / 60).toString().padStart(2, '0');
+        const recM = (recommendedMin % 60).toString().padStart(2, '0');
+        const recTime = `${recH}:${recM}`;
+
+        // 4. 권장 시간과 신청 시간의 오차가 15분 이내면 "합승 가능"으로 판단
+        const timeDiff = Math.abs(newMin - recommendedMin);
+
+        const newLoc = newDir.includes('→') ? (newInfo.isOutbound ? newDir.split('→')[1] : newDir.split('→')[0]) : "해당장소";
+
+        if (timeDiff <= 15) {
+            return {
+                type: 'EFFICIENT',
+                msg: `💡 [배차 효율화 제안]\n이미 ${existingReq.prof}강사님의 예약이 노선상에 있습니다.\n이 차량을 함께 이용할 경우, [${newLoc}] 권장 탑승시간은 [${recTime}]입니다.\n\n기사님과 협의하여 시간을 조정하시겠습니까?`
+            };
         }
-      }
-      return null
-    },
-
-    toMin: function(tStr) {
-      if(!tStr) return -1000
-      const parts = tStr.split(':')
-      return parseInt(parts[0]) * 60 + parseInt(parts[1])
+        return null; // 너무 멀면 그냥 충돌로 처리
     }
-  }
+};
 
-  // 지능형 배차 승인 함수
-  async function handleSmartApprove(id) {
-    const target = profReqs.find(r => r.id === id)
-    if(!target || target.prof === '운행중단') return
 
-    const toMin = (tStr) => {
-      if(!tStr || typeof tStr !== 'string') return -1000
-      const p = tStr.split(':')
-      return parseInt(p[0]) * 60 + parseInt(p[1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+  function renderAll() { 
+    try { 
+      renderSchedule(); 
+      renderInstructorList(); 
+      renderTraineeManagement(); 
+    } catch(e) { 
+      console.error("화면 갱신 중 오류 발생:", e);
     }
-
-    const targetMin = toMin(target.time)
-    let conflicts = []
-    let advice = ""
-
-    profReqs.forEach(r => {
-      if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date && r.prof !== '운행중단') {
-        const rMin = toMin(r.time)
-        if(Math.abs(rMin - targetMin) < 60) {
-          conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time} / ${r.dir})`)
-          const result = RouteManager.analyzeConflict(r, target.time, target.dir)
-          if (result && !advice) advice = result.msg
-        }
-      }
-    })
-
-    Object.keys(allCourses).forEach(rid => {
-      const dep = allCourses[rid]?.shuttle?.departure
-      if(dep && dep.date === target.date && dep.time) {
-        if(Math.abs(toMin(dep.time) - targetMin) < 60) {
-          conflicts.push(`🚌 [학생퇴교] ${allCourses[rid].settings?.courseName || rid} (${dep.time})`)
-        }
-      }
-    })
-
-    if (advice) { if (!confirm(advice)) return }
-    else if (conflicts.length > 0) { if (!confirm(`⚠️ [배차 중복 경고]\n\n예약하신 시간 전후로 이미 일정이 존재합니다:\n\n${conflicts.join('\n')}\n\n그대로 승인하시겠습니까?`)) return }
-
-    try {
-      await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' })
-    } catch(e) { alert("오류: " + e.message) }
-  }
-
-  function renderAll() {
-    renderSchedule()
-    renderInstructorList()
-    renderTraineeManagement()
   }
 
   function renderSchedule() {
-    const head = document.getElementById('sched-head')
-    const body = document.getElementById('sched-body')
-    const range = getWeekDates(weekOffset)
-    if (!head || !body || !range) return
+    const head = document.getElementById('sched-head');
+    const body = document.getElementById('sched-body');
+    const label = document.getElementById('week-range');
+    const range = getWeekDates(weekOffset);
+    if (!range || range.length < 5) return;
+
+    const dayNames = ['월','화','수','목','금'];
+    label.innerText = `${range[0]} ~ ${range[4].substring(5)}`;
     
-    document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`
-    head.innerHTML = `<tr><th class="time-col">시간</th>${['월','화','수','목','금'].map((day, i) => `<th onclick="askDayOff('${range[i]}')">${range[i].substring(5)}<br>${day}</th>`).join('')}</tr>`
+    head.innerHTML = `<tr><th class="time-col">시간</th>${range.map((d, i) => `<th onclick="askDayOff('${d}')">${d.substring(5)}<br>${dayNames[i]}</th>`).join('')}</tr>`;
     
-    let html = ''
+    let bodyHTML = '';
     for(let h=8; h<=18; h++) {
-      html += `<tr><td class="time-col">${h}:00</td>`
-      for(let d=0; d<5; d++) {
-        const curDate = range[d]
-        let cell = ''
-        const isOff = profReqs.some(r => r.date === curDate && r.prof === '운행중단')
-        if(isOff) cell = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`
-        else if(h === 12) cell = `<div class="cell-event" style="opacity:0.3;">점심</div>`
-        else if(d === 0 && (h === 9 || h === 10)) cell = `<div class="cell-event block-entry">입교수송</div>`
-        else {
-          const matched = profReqs.filter(r => (r.status === 'approved' || r.status === 'finished') && r.date === curDate && parseInt(r.time.split(':')[0]) === h)
-          if(matched.length > 0) {
-            const isFin = matched.every(r => r.status === 'finished')
-            cell = `<div class="cell-event block-prof" style="${isFin?'background:#e2e8f0;':''}" onclick="showDetail('prof', '${encodeURIComponent(JSON.stringify(matched))}')">${matched[0].dir.replace('→','>')}<br>${matched.length>1?'강사 '+matched.length+'명':matched[0].prof}</div>`
-          } else {
-            for (const rid in allCourses) {
-              const dep = allCourses[rid]?.shuttle?.departure
-              if(dep && dep.date === curDate && parseInt(dep.time.split(':')[0]) === h) {
-                cell = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`
-                break
-              }
+        bodyHTML += `<tr><td class="time-col">${h}:00</td>`;
+        for(let d=0; d<5; d++) {
+            const curDate = range[d];
+            let cellContent = '';
+            const isDayOff = profReqs.some(r => r.date === curDate && r.prof === '운행중단');
+            if(isDayOff) {
+                cellContent = (h === 12) ? `<div class="cell-event block-off">운행불가</div>` : `<div class="cell-event block-off"></div>`;
+            } else if(h === 12) {
+                cellContent = `<div class="cell-event" style="font-size:10px; opacity:0.3; display:flex; align-items:center; justify-content:center;">점심</div>`;
+            } else if(d === 0 && (h === 9 || h === 10)) {
+                cellContent = `<div class="cell-event block-entry">입교수송</div>`;
+            } else {
+                const matchedProfs = profReqs.filter(r => (r.status === 'approved' || r.status === 'finished' || r.status === 'completed') && r.date === curDate && parseInt(String(r.time || "").split(':')[0]) === h);
+                if(matchedProfs.length > 0) {
+                    const item = matchedProfs[0];
+                    const profLabel = matchedProfs.length > 1 ? `강사 ${matchedProfs.length}명` : item.prof;
+                    const route = (item.dir || "").replace(/→|>>/g, '>');
+                    const isFin = matchedProfs.every(r => r.status === 'finished' || r.status === 'completed');
+                    cellContent = `<div class="cell-event block-prof" style="${isFin?'background:#e2e8f0; border-color:#cbd5e1; color:#94a3b8;':''}" onclick="showDetail('prof', '${encodeURIComponent(JSON.stringify(matchedProfs))}')">${route}<br>${profLabel}</div>`;
+                } else {
+                    for (const rid in allCourses) {
+                        const dep = allCourses[rid]?.shuttle?.departure;
+                        if(dep && dep.date === curDate && parseInt(String(dep.time || "").split(':')[0]) === h) {
+                            cellContent = `<div class="cell-event block-departure" onclick="showDrillDown('course', '${rid}')">퇴교수송</div>`;
+                            break; 
+                        }
+                    }
+                }
             }
-          }
+            bodyHTML += `<td>${cellContent}</td>`;
         }
-        html += `<td>${cell}</td>`
-      }
-      html += `</tr>`
+        bodyHTML += `</tr>`;
     }
-    body.innerHTML = html
+    body.innerHTML = bodyHTML;
   }
 
-  function renderInstructorList() {
-    const inner = document.getElementById('all-request-container')
-    if (!inner) return
-    inner.innerHTML = '<div class="chat-container" id="chat-list-inner" style="overflow-y:auto; height: 400px;"></div>'
-    const box = document.getElementById('chat-list-inner')
+
+
+
+
+
+
+
+// [추가] 숫자를 전화번호 형식으로 바꿔주는 함수 (이게 없으면 에러가 납니다)
+function formatPhone(num) {
+    if (!num) return "연락처 미등록";
+    const s = num.replace(/[^0-9]/g, "");
+    if (s.length === 11) {
+        return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    } else if (s.length === 10) {
+        return s.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+    }
+    return num; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 강사 수송 리스트 렌더링 함수 (미확인 메시지 추적 스크롤 버전)
+function renderInstructorList() {
+    const chatBox = document.getElementById('all-request-container');
+    if (!chatBox) return;
     
-    const grouped = {}
+    // 1. 기본 컨테이너 구조 설정
+    chatBox.innerHTML = '<div class="chat-container" id="chat-list-inner" style="overflow-y:auto; height: 100%; display: flex; flex-direction: column; gap: 15px; padding: 15px;"></div>';
+    const inner = document.getElementById('chat-list-inner');
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let htmlContent = "";
+    let firstUnreadElementId = null; // 아직 승인 안 한(미확인) 첫 번째 메시지의 ID 저장
+
+    // 2. 데이터 그룹화 (신청일 기준)
+    const grouped = {};
     profReqs.filter(r => r.prof !== '운행중단').forEach(r => {
-      const day = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date
-      const k = `${day}_${r.prof}_${r.courseRID}`
-      if (!grouped[k]) grouped[k] = { day, prof: r.prof, phone: r.phone || "", rid: r.courseRID, legs: [] }
-      grouped[k].legs.push(r)
-    })
-
-    let html = ""
-    let lastDay = ""
-    Object.values(grouped).sort((a,b) => a.day.localeCompare(b.day)).forEach((g, idx) => {
-      if(g.day !== lastDay) { html += `<div class="chat-date-line"><span>${g.day} 요청</span></div>`; lastDay = g.day; }
-      const cName = allCourses[g.rid]?.settings?.courseName || "과정 정보 없음"
-      const isFin = g.legs.every(r => r.status === 'finished')
-      
-      let legs = ""
-      let replies = ""
-      g.legs.sort((a,b) => a.time.localeCompare(b.time)).forEach(r => {
-        if(r.status === 'cancelled') {
-           legs += `<div class="talk-leg-item" style="opacity:0.5; text-decoration:line-through;">${r.date} [${r.time}] ${r.dir}</div>`
-        } else {
-           const isApp = r.status === 'approved'
-           const isF = r.status === 'finished'
-           legs += `<div class="talk-leg-item">
-              <b>${r.date} [${r.time}]</b><br>${r.dir}<br>
-              <div style="margin-top:5px; display:flex; gap:5px;">
-                ${(!isApp && !isF) ? `<button class="mini-talk-btn" style="background:#3b82f6; color:#fff;" onclick="handleSmartApprove('${r.id}')">승인</button><button class="mini-talk-btn" onclick="confirmAction('delete', '${r.id}')">불가</button>` : (isApp ? `<span style="color:#10b981; font-size:11px;">✓ 승인됨</span><button class="mini-talk-btn" style="width:50px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` : `<span style="color:#94a3b8; font-size:11px;">✅ 마감됨</span>`)}
-              </div>
-           </div>`
-           if(isApp || isF) replies += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${isF?'background:#f1f5f9;':''}">${isF?'운행 마감':'승인했습니다!'}</div></div>`
+        const createdDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
+        const groupKey = `${createdDate}_${r.prof}_${r.courseRID}`;
+        if (!grouped[groupKey]) {
+            grouped[groupKey] = { createdDate, prof: r.prof, phone: r.phone || "", courseRID: r.courseRID, legs: [] };
         }
-      })
+        grouped[groupKey].legs.push(r);
+    });
 
-      html += `<div class="chat-bubble chat-left" style="${isFin?'opacity:0.6;':''}">
-        <div class="talk-header">수송요청</div>
-        <div class="bubble-content">
-          <div style="font-size:10px; color:#64748b;">${cName}</div>
-          <b>${g.prof} 강사님</b> (${formatPhone(g.phone)})
-          <div style="margin-top:8px; border-top:1px solid #f1f5f9;">${legs}</div>
-        </div>
-      </div>` + replies
-    })
-    box.innerHTML = html
-    setTimeout(() => { box.scrollTop = box.scrollHeight }, 100)
-  }
+    const sortedGroups = Object.values(grouped).sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+    let lastDividerDate = "";
+
+    sortedGroups.forEach((group, gIdx) => {
+        if(group.createdDate !== lastDividerDate) {
+            htmlContent += `<div class="chat-date-line"><span>${group.createdDate} 요청</span></div>`;
+            lastDividerDate = group.createdDate;
+        }
+
+        const roomInfo = allCourses[group.courseRID];
+        const cName = roomInfo?.settings?.courseName || `과정 정보 없음`;
+        
+        // 이 그룹에 '대기 중(pending)'인 항목이 있는지 확인
+        const hasPending = group.legs.some(r => r.status === 'pending');
+        
+        // [핵심] 아직 승인 안 한 첫 번째 그룹의 ID를 찜합니다.
+        const currentGroupId = `group-msg-${gIdx}`;
+        if (hasPending && !firstUnreadElementId) {
+            firstUnreadElementId = currentGroupId;
+        }
+
+        const isAllFin = group.legs.every(r => r.status === 'finished' || r.status === 'completed');
+        const shading = isAllFin ? 'opacity: 0.6; filter: grayscale(1);' : '';
+        const bubbleBg = isAllFin ? 'background: #e2e8f0; color: #64748b;' : 'background: #fff;';
+
+        let legsHtml = "";
+        let repliesHtml = "";
+        
+        group.legs.sort((a,b) => (a.time || "").localeCompare(b.time || "")).forEach(r => {
+            const isApp = r.status === 'approved';
+            const isFin = (r.status === 'finished' || r.status === 'completed');
+            const isCan = r.status === 'cancelled';
+            const scheduledDateText = `<b>${r.date}</b>`;
+
+            if(isCan) {
+                legsHtml += `<div class="talk-leg-item" style="opacity:0.5; text-decoration:line-through;">
+                    <div style="font-size:12px;">🚫 취소: ${scheduledDateText} [${r.time}] ${r.dir}</div>
+                </div>`;
+            } else {
+                legsHtml += `
+                <div class="talk-leg-item">
+                    <div style="font-weight:800; color:${isFin?'#94a3b8':'#0369a1'}; font-size:13px;">
+                      ${scheduledDateText} [${r.time}] 
+                    </div>
+                    <div style="font-weight:700; font-size:13px; margin:2px 0;">${r.dir.replace('→',' > ')}</div>
+                    <div style="margin-top:5px; display:flex; gap:5px;">
+                        ${(!isApp && !isFin) ? 
+                            `<button class="mini-talk-btn" style="background:#3b82f6; color:white; border:none;" onclick="handleSmartApprove('${r.id}')">승인</button>
+                             <button class="mini-talk-btn" style="color:#ef4444;" onclick="confirmAction('delete', '${r.id}')">불가</button>` 
+                            : (isApp ? 
+                            `<div style="color:#10b981; font-size:11px; font-weight:900; flex:1;">✓ 승인됨 (자동마감 예정)</div>
+                             <button class="mini-talk-btn" style="color:#94a3b8; max-width:60px;" onclick="confirmAction('cancel', '${r.id}')">취소</button>` 
+                            : `<div style="color:#94a3b8; font-size:11px; font-weight:900;">✅ 자동 마감됨</div>`)}
+                    </div>
+                </div>`;
+            }
+
+            if(isApp || isFin) {
+                const replyText = isFin ? `운행 마감 (${r.time})` : `승인 완료! ${r.date} [${r.time}] 확인했습니다.`;
+                const replyBg = isFin ? 'background:#f1f5f9; color:#94a3b8;' : 'background:#fee500; color:#1e293b;';
+                repliesHtml += `<div class="chat-bubble chat-right"><div class="bubble-reply" style="${replyBg}">${replyText}</div></div>`;
+            }
+        });
+
+        // 말풍선 시작 부분에 id="${currentGroupId}" 를 넣어줍니다.
+        htmlContent += `
+        <div id="${currentGroupId}" class="chat-bubble chat-left" style="${shading}">
+            <div class="talk-header">수송요청</div>
+            <div class="bubble-content" style="${bubbleBg}">
+                <div style="font-size:11px; opacity:0.7; font-weight:800; margin-bottom:2px;">${cName}</div>
+                <div class="talk-body" style="font-size:14px; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:5px;">
+                  <b>${group.prof} 강사님</b> <span style="font-size:12px; font-weight:700;">(${formatPhone(group.phone)})</span>
+                </div>
+                <div>${legsHtml}</div>
+            </div>
+        </div>` + repliesHtml;
+    });
+
+    inner.innerHTML = htmlContent;
+
+    // 3. [지능형 스크롤]
+    setTimeout(() => {
+        if (firstUnreadElementId) {
+            // 안 본 메시지(승인 대기)가 있다면 해당 위치로 스크롤
+            const targetEl = document.getElementById(firstUnreadElementId);
+            if(targetEl) {
+                targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+                // 약간의 여백을 위해 상단으로 조금 올림
+                inner.scrollTop -= 20; 
+            }
+        } else {
+            // 모든 메시지를 확인했다면 맨 아래로 이동
+            inner.scrollTop = inner.scrollHeight;
+        }
+    }, 100);
+}
+
+
+
+
+
+
+
+
 
   function renderTraineeManagement() {
-    const area = document.getElementById('trainee-course-list')
-    if (!area) return
-    let html = `<div class="list-wrapper"><div class="list-header"><div class="t-cell name">과정명</div><div class="t-cell">총원</div><div class="t-cell">출발시간</div><div class="t-cell">공지</div></div>`
+    const area = document.getElementById('trainee-course-list');
+    if (!area) return;
+    const now = new Date();
+    const grace = new Date(); grace.setDate(grace.getDate() - 3);
+    const limitStr = grace.toISOString().split('T')[0];
+    
+    let html = `<div class="list-wrapper"><div class="list-header"><div class="t-cell name">과정명</div><div class="t-cell">총원</div><div class="t-cell">출발시간</div><div class="t-cell">공지</div></div>`;
+    let count = 0;
     Object.keys(allCourses).forEach(rid => {
-      const room = allCourses[rid]
-      if (room.status?.roomStatus !== 'active') return
-      const dep = room.shuttle?.departure || { time: "" }
-      const total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length
-      html += `<div class="course-row">
-        <div class="t-cell name">${room.settings?.courseName || rid}</div>
-        <div class="t-cell count" onclick="showDrillDown('course', '${rid}')">${total}명</div>
-        <div class="t-cell btns">
-          <button class="mini-btn ${dep.time === '13:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '13:00')">13:00</button>
-          <button class="mini-btn ${dep.time === '15:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '15:00')">15:00</button>
-        </div>
-        <div class="t-cell">${dep.time ? '✅' : '-'}</div>
-      </div>`
-    })
-    area.innerHTML = html + '</div>'
+        const room = allCourses[rid];
+        if (!room || room.status?.roomStatus !== 'active') return;
+        const p = room.settings?.period || "";
+        const end = p.includes(" ~ ") ? p.split(" ~ ")[1] : "9999-12-31";
+        if (end < limitStr) return; 
+
+        count++;
+        const dep = room.shuttle?.departure || { time: "" };
+        const subTotal = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+        const curT = String(dep.time || "").trim();
+
+        html += `<div class="course-row">
+            <div class="t-cell name">${room.settings.courseName || rid}</div>
+            <div class="t-cell count" onclick="showDrillDown('course', '${rid}')">${subTotal}명</div>
+            <div class="t-cell btns">
+                <button class="mini-btn ${curT === '13:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '13:00', '${end}')">13:00</button>
+                <button class="mini-btn ${curT === '15:00'?'active':''}" onclick="confirmAction('dep', '${rid}', '15:00', '${end}')">15:00</button>
+            </div>
+            <div class="t-cell status">${curT ? '<i class="fa-solid fa-circle-check" style="color:#10b981"></i>':'<i class="fa-solid fa-minus" style="opacity:0.2"></i>'}</div>
+        </div>`;
+    });
+    area.innerHTML = html + (count === 0 ? '<div style="padding:40px; text-align:center; color:#94a3b8">과정 없음</div>':'') + '</div>';
   }
 
   function getWeekDates(offset) {
-    const now = new Date(); const day = now.getDay()
-    const diff = (day === 0 ? 1 : 1 - day); const mon = new Date(now)
-    mon.setDate(now.getDate() + diff + (offset * 7))
-    const res = []; for(let i=0; i<5; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); res.push(d.toISOString().split('T')[0]) }
-    return res
+    try {
+        const now = new Date();
+        const day = now.getDay(); 
+        const diffToMon = (day === 0 ? 1 : 1 - day);
+        const mon = new Date(now);
+        mon.setDate(now.getDate() + diffToMon);
+        if (day === 0 || day === 6 || day === 5) mon.setDate(mon.getDate() + 7);
+        mon.setDate(mon.getDate() + (offset * 7));
+        const dates = [];
+        for (let i = 0; i < 5; i++) {
+            const d = new Date(mon);
+            d.setDate(mon.getDate() + i);
+            dates.push(d.toISOString().split('T')[0]);
+        }
+        return dates;
+    } catch(e) { return null; }
   }
 
   function checkNewRequests() {
-    const curr = profReqs.filter(r => r.status === 'pending').length
-    if (curr > prevPendingCount) alarmAudio.play().catch(e => {})
-    prevPendingCount = curr
+    const current = profReqs.filter(r => r.status === 'pending').length;
+    if (current > prevPendingCount) alarmAudio.play().catch(e => {});
+    prevPendingCount = current;
   }
 
   function switchTab(n) {
-    currentTab = n; document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n))
-    document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none')
-    document.getElementById('floating-home').style.display = (n === 0) ? 'none' : 'flex'
+    currentTab = n;
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
+    document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none');
+    document.getElementById('floating-home').style.display = (n === 0) ? 'none' : 'flex';
+    document.getElementById('back-btn-text').innerText = (n === 0) ? "<<" : "Back";
   }
 
-  function handleBack() { currentTab === 0 ? location.href = 'potal.html' : switchTab(0) }
-  function changeWeek(n) { weekOffset += n; renderAll() }
-  function closeModal(id) { document.getElementById(id).style.display = 'none' }
-  function formatPhone(s) { if(!s) return ""; s = s.replace(/[^0-9]/g, ""); return s.length === 11 ? s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3") : s }
+  function handleBack() { currentTab === 0 ? location.href = 'potal.html' : switchTab(0); }
+  function changeWeek(n) { weekOffset += n; renderAll(); }
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  
+// [수정] 수송 상세 정보 팝업 함수
+function showDetail(type, dataStr) {
+    const data = JSON.parse(decodeURIComponent(dataStr));
+    const modal = document.getElementById('detailModal');
+    const content = document.getElementById('m-content');
+    
+    document.getElementById('m-title').innerText = "수송 상세 정보";
+    
+    // 시간순 정렬
+    data.sort((a,b) => a.time.localeCompare(b.time));
 
-  async function confirmAction(type, id, val) {
-    const ok = document.getElementById('c-ok-btn')
-    if(type === 'dep') {
-      document.getElementById('c-title').innerText = "퇴교 시간 공지"
-      document.getElementById('c-desc').innerText = `${val}시로 공지하시겠습니까?`
-      ok.onclick = async () => { await firebase.database().ref(`courses/${id}/shuttle/departure`).update({ time: val }); closeModal('confirmModal') }
-    } else if(type === 'cancel') {
-      ok.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); closeModal('confirmModal') }
-    } else if(type === 'delete') {
-      if(confirm("삭제하시겠습니까?")) await firebase.database().ref(`system/transport_requests/${id}`).remove()
-      return
-    }
-    document.getElementById('confirmModal').style.display = 'flex'
-  }
+    let html = `<div style="margin-bottom:15px; padding-bottom:10px; border-bottom:2px solid #f1f5f9;">
+                    <b style="font-size:16px; color:var(--navy);">${data[0].date}</b>
+                </div>`;
 
-  function showDetail(type, str) {
-    const data = JSON.parse(decodeURIComponent(str))
-    let html = `<b>${data[0].date} 수송 내역</b><br>`
     data.forEach(p => {
-      html += `<div style="background:#f8fafc; padding:10px; border-radius:8px; margin-top:10px;">
-        ${p.time} / <b>${p.prof} 강사님</b><br>${p.dir}
-      </div>`
-    })
-    document.getElementById('m-content').innerHTML = html
-    document.getElementById('detailModal').style.display = 'flex'
-  }
+        const isFin = (p.status === 'finished' || p.status === 'completed');
+        html += `
+            <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1.5px solid #e2e8f0; margin-bottom:10px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div>
+                        <span style="background:var(--blue-deep); color:white; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:800; margin-right:5px;">${p.time}</span>
+                        <b style="font-size:15px;">${p.prof} 강사님</b>
+                    </div>
+                    <a href="tel:${p.phone}" style="color:var(--blue); font-size:20px;"><i class="fa-solid fa-phone"></i></a>
+                </div>
+                <div style="font-size:13px; font-weight:700; color:#475569;">
+                    <i class="fa-solid fa-route"></i> ${p.dir.replace('→',' > ')}
+                </div>
+                ${isFin ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.6); border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:900; color:#94a3b8;">운행 마감</div>` : ''}
+            </div>`;
+    });
+    
+    content.innerHTML = html;
+    modal.style.display = 'flex';
+}
 
   function showDrillDown(type, rid) {
-    const room = allCourses[rid]
-    const reqs = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car')
-    let html = ""
-    const groups = { osong: "🚅 오송", terminal: "🚌 터미널", airport: "✈️ 공항" }
-    Object.keys(groups).forEach(k => {
-      const list = reqs.filter(r => r.type === k)
-      if(list.length > 0) html += `<b>${groups[k]} (${list.length})</b>: ${list.map(l => l.name).join(', ')}<br>`
-    })
-    document.getElementById('m-content').innerHTML = html || "신청자 없음"
-    document.getElementById('detailModal').style.display = 'flex'
+    const room = allCourses[rid];
+    const area = document.getElementById('m-content');
+    document.getElementById('m-title').innerText = room.settings.courseName || "명단";
+    const reqs = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car');
+    if(reqs.length === 0) { area.innerHTML = "신청자 없음"; }
+    else {
+        const groups = { osong: "🚅 오송", terminal: "🚌 터미널", airport: "✈️ 공항" };
+        let html = '';
+        Object.keys(groups).forEach(key => {
+            const list = reqs.filter(r => r.type === key);
+            if(list.length > 0) {
+                html += `<div style="margin-bottom:10px;"><b>${groups[key]} (${list.length})</b><div style="display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:5px;">`;
+                list.forEach(p => { html += `<div style="background:#f1f5f9; padding:5px; font-size:12px; text-align:center;">${p.name}</div>`; });
+                html += `</div></div>`;
+            }
+        });
+        area.innerHTML = html;
+    }
+    document.getElementById('detailModal').style.display = 'flex';
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [기사용] 지능형 배차 승인 (노선 분석 및 효율적 배차 제안 포함)
+async function handleSmartApprove(id) {
+    // 1. 승인하려는 대상 정보 찾기
+    const target = profReqs.find(r => r.id === id);
+    if(!target) return;
+
+    // 시간 분 환산 보조 함수
+    const toMin = (tStr) => {
+        if(!tStr) return -1000;
+        const [h, m] = tStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const targetMin = toMin(target.time);
+    let conflicts = [];
+    let advice = ""; // RouteManager의 제안 메시지를 담을 변수
+
+    // 2. 다른 강사 수송 일정과 비교 및 노선 분석
+    profReqs.forEach(r => {
+        if(r.id !== id && (r.status === 'approved' || r.status === 'finished') && r.date === target.date) {
+            const diff = Math.abs(toMin(r.time) - targetMin);
+            
+            // 60분 이내 일정이 있다면 충돌 리스트에 추가
+            if(diff < 60) {
+                conflicts.push(`🚖 [강사수송] ${r.prof}님 (${r.time} / ${r.dir})`);
+
+                // ⭐ RouteManager 두뇌 가동: 합승(Efficient Dispatch) 가능성 체크
+                // targetLoc 추출 (예: '오송역→항기원' -> '오송역' 추출)
+                const targetLoc = target.dir.includes('→항기원') ? target.dir.split('→')[0] : target.dir.split('→')[1];
+                
+                const result = RouteManager.analyzeConflict(r, target.time, targetLoc, target.dir);
+                if (result) {
+                    advice = result.msg; // 효율적인 탑승 제안 메시지 세팅
+                }
+            }
+        }
+    });
+
+    // 3. 교육생 퇴교 셔틀 일정과 비교 (물리적 충돌 체크)
+    Object.keys(allCourses).forEach(rid => {
+        const room = allCourses[rid];
+        const dep = room.shuttle?.departure;
+        if(dep && dep.date === target.date && dep.time) {
+            const diff = Math.abs(toMin(dep.time) - targetMin);
+            if(diff < 60) {
+                conflicts.push(`🚌 [학생퇴교] ${room.settings?.courseName || rid} (${dep.time})`);
+            }
+        }
+    });
+
+    // 4. 지능형 알림창 띄우기
+    if(conflicts.length > 0) {
+        // RouteManager가 추천 시간을 계산해냈다면 제안 메시지를 보여주고, 아니면 일반 경고를 보여줍니다.
+        const header = advice ? "💡 배차 효율화 제안" : "⚠️ 배차 충돌 경고";
+        const mainMsg = advice ? advice : `현재 시간(±60분) 내에 이미 다음 일정이 잡혀 있습니다:\n\n${conflicts.join('\n')}\n\n몸은 하나입니다! 그래도 승인하시겠습니까?`;
+
+        if(!confirm(`${header}\n\n${mainMsg}`)) return;
+    }
+
+    // 5. 최종 승인 처리
+    try {
+        await firebase.database().ref(`system/transport_requests/${id}`).update({ 
+            status: 'approved' 
+        });
+        // Firebase on('value') 리스너가 리스트를 자동으로 다시 그리게 됩니다.
+    } catch(e) {
+        alert("승인 처리 중 오류가 발생했습니다: " + e.message);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+  async function confirmAction(type, id, val = null, date = null) {
+    const ok = document.getElementById('c-ok-btn');
+    if(type === 'dep') {
+        document.getElementById('c-title').innerText = "퇴교 공지";
+        document.getElementById('c-desc').innerText = `시간: ${val}\n공지하시겠습니까?`;
+        ok.onclick = async () => { await firebase.database().ref(`courses/${id}/shuttle/departure`).set({ time: val, date: date }); closeModal('confirmModal'); };
+    } else if(type === 'cancel') {
+        document.getElementById('c-title').innerText = "승인 취소";
+        document.getElementById('c-desc').innerText = "배차 승인을 취소하시겠습니까?";
+        ok.onclick = async () => { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'pending' }); closeModal('confirmModal'); };
+    } else if(type === 'delete') {
+        if(!confirm("삭제하시겠습니까?")) return;
+        await firebase.database().ref(`system/transport_requests/${id}`).remove();
+        return;
+    }
+    document.getElementById('confirmModal').style.display = 'flex';
   }
 
   async function captureSchedule() {
-    const area = document.getElementById('capture-area')
-    const canvas = await html2canvas(area, { backgroundColor: "#f1f5f9", scale: 2 })
-    const link = document.createElement('a'); link.download = '일정표.png'; link.href = canvas.toDataURL(); link.click()
+    const area = document.getElementById('capture-area');
+    try {
+      const canvas = await html2canvas(area, { backgroundColor: "#f1f5f9", scale: 2 });
+      const link = document.createElement('a');
+      link.download = `일정표.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) { alert("실패"); }
   }
 
   function askDayOff(date) {
-    const reason = prompt(`${date} 운행중단 사유`, "차량 정비")
-    if(reason) firebase.database().ref('system/transport_requests').push({ date, prof: '운행중단', dir: reason, status: 'approved', time: '00:00' })
+    const reason = prompt(`${date} 운행중단 사유`, "차량 정비");
+    if(reason) firebase.database().ref('system/transport_requests').push({ date, prof: '운행중단', dir: reason, status: 'approved', time: '00:00' });
   }
 
-  init()
+  init();
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
 </body>
 </html>
