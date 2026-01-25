@@ -138,7 +138,6 @@
     <div id="view-0" style="display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <button class="mini-btn primary" onclick="goToday()"><i class="fa-solid fa-calendar-day"></i> 오늘</button>
-          <button class="mini-btn" style="background:var(--danger); color:white; margin-left:5px;" onclick="openNewDayOff()"><i class="fa-solid fa-calendar-xmark"></i> 운행불가 설정</button>
           <div style="display:flex; align-items:center; gap:8px;">
             <i class="fa-solid fa-circle-chevron-left" style="font-size:22px; color:var(--blue); cursor:pointer;" onclick="changeWeek(-1)"></i>
             <span id="week-range" style="font-weight:900; font-size:13px; min-width:120px; text-align:center;">...</span>
@@ -151,6 +150,12 @@
             <thead id="sched-head"></thead>
             <tbody id="sched-body"></tbody>
           </table>
+        </div>
+<!-- 표 바로 아래 우측 정렬된 버튼 영역 -->
+        <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+          <button class="mini-btn" style="background:var(--danger); color:white; padding:10px 15px; font-weight:bold;" onclick="openNewDayOff()">
+            <i class="fa-solid fa-calendar-xmark"></i> 운행불가 설정
+          </button>
         </div>
     </div>
 
