@@ -175,44 +175,92 @@
 
 
 
-.shuttle-detail-section { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
-.shuttle-detail-header { padding: 10px 15px; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; }
-/* [변경] 상세 명단 리스트 - 3열 격자 정렬 (바둑판 모양) */
-.shuttle-detail-list { 
-    display: grid;
-    /* 화면 너비에 맞춰 3칸씩 똑같이 나눔 */
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 8px; /* 칸 사이 간격 */
-    padding: 15px; 
-    background: #fff; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 섹션 박스 : 전체적인 마진 축소 */
+.shuttle-detail-section { 
+    margin-bottom: 10px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 12px; 
+    overflow: hidden; 
+    background: #fff;
 }
 
-/* 개별 이름표 스타일 */
+/* 헤더 : 더 슬림하게 */
+.shuttle-detail-header { 
+    padding: 8px 15px; 
+    font-weight: 800; 
+    font-size: 12px; 
+    display: flex; 
+    justify-content: space-between; 
+}
+
+/* 그리드 리스트 : min-height를 없애서 사람이 없으면 자동으로 줄어들게 함 */
+.shuttle-detail-list { 
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 6px; 
+    padding: 10px; /* 내부 여백 축소 */
+    background: #fff;
+}
+
+/* 개별 이름표 스타일 (요청하신 내용 반영) */
 .shuttle-detail-list span {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     padding: 8px 2px; /* 위아래 여백 */
     border-radius: 8px;
-    font-size: 11.5px; /* 글자가 박스를 넘지 않도록 살짝 조절 */
+    font-size: 11px; /* 11.5px에서 약간 조정하여 범용성 높임 */
     font-weight: 700;
     color: #334155;
     text-align: center;
-    white-space: nowrap; /* 글자 줄바꿈 방지 */
+    white-space: nowrap; 
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* 모바일 화면이 아주 작을 경우를 대비해 2열로 자동 조절 */
-@media (max-width: 360px) {
-    .shuttle-detail-list { grid-template-columns: repeat(2, 1fr); }
+/* [추가] 사람이 없을 때 나타나는 메시지 전용 (매우 슬림하게) */
+.empty-shuttle-msg {
+    grid-column: span 3; /* 3칸 전체 차지 */
+    padding: 10px 0;    /* 높이 최소화 */
+    color: #cbd5e1;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-/* 테이블 행 호버 효과 */
+/* 모바일 2열 조절 (요청 내용 유지) */
+@media (max-width: 360px) {
+    .shuttle-detail-list { grid-template-columns: repeat(2, 1fr); }
+    .empty-shuttle-msg { grid-column: span 2; }
+}
+
+/* 테이블 행 호버 (요청 내용 유지) */
 .shuttle-row-hover:hover td {
     background-color: #f8fafc !important;
     color: var(--blue-main) !important;
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -3132,20 +3180,20 @@ function renderShuttleTotalTable() {
 
 
 
-// [최종] 격자 정렬 및 스크롤 잠금이 적용된 퇴교 차량 상세 팝업
+
+
+
 async function showShuttleApplicationDetails(rid) {
     const targetRID = rid || currentRID;
     const room = globalAllData[targetRID];
     if (!room) return;
 
-    // 팝업 열 때 배경 스크롤 차단
     document.body.classList.add('modal-open');
 
     const cName = room.settings?.courseName || targetRID;
     const requests = room.shuttle?.requests || {};
     const appliedData = Object.values(requests);
 
-    // 가나다순 정렬을 미리 수행
     appliedData.sort((a, b) => a.name.localeCompare(b.name));
 
     const categories = {
@@ -3162,17 +3210,23 @@ async function showShuttleApplicationDetails(rid) {
         }
     });
 
-    let html = `<div style="margin-bottom:15px; font-weight:800; color:var(--navy-bg); font-size:15px; padding-left:5px;">[${cName}] 수송 명단</div>`;
+    // 팝업 상단 제목 부분
+    let html = `<div style="margin-bottom:12px; font-weight:900; color:#1e293b; font-size:14px; padding-left:5px; border-left:4px solid var(--blue-main); margin-left:5px;">${cName}</div>`;
     
     Object.keys(categories).forEach(key => {
         const cat = categories[key];
+        const hasMembers = cat.members.length > 0;
+
         html += `
             <div class="shuttle-detail-section">
-                <div class="shuttle-detail-header ${cat.color}" style="border-bottom:1px solid rgba(0,0,0,0.05);">
-                    <span style="font-weight:900;"><i class="fa-solid ${cat.icon}"></i> ${cat.title} (${cat.members.length}명)</span>
+                <div class="shuttle-detail-header ${cat.color}">
+                    <span><i class="fa-solid ${cat.icon}"></i> ${cat.title} (${cat.members.length}명)</span>
                 </div>
                 <div class="shuttle-detail-list">
-                    ${cat.members.length > 0 ? cat.members.map(m => `<span>${m}</span>`).join('') : '<div style="grid-column: span 3; padding: 20px; color: #cbd5e1; text-align: center; font-size: 12px;">신청자 없음</div>'}
+                    ${hasMembers ? 
+                        cat.members.map(m => `<span>${m}</span>`).join('') : 
+                        `<div class="empty-shuttle-msg">신청자가 없습니다.</div>`
+                    }
                 </div>
             </div>
         `;
@@ -3180,7 +3234,14 @@ async function showShuttleApplicationDetails(rid) {
 
     document.getElementById('shuttleDetailContent').innerHTML = html;
     document.getElementById('shuttleDetailModal').style.display = 'flex';
+    
+    // 팝업을 열 때 스크롤을 맨 위로 초기화
+    document.getElementById('shuttleDetailContent').scrollTop = 0;
 }
+
+
+
+
 
 
 
