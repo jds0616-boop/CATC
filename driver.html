@@ -52,8 +52,25 @@
     .cell-休 { background: #fafafa; color: #999; font-size: 9px; }
 
     /* 카톡 스타일 채팅창 */
-    .chat-container { background: #abc1d1; padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 100%; }
-    .req-card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 85%; position: relative; align-self: flex-start; }
+.chat-container { 
+  background: #abc1d1; 
+  padding: 10px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px;  /* 10px → 8px */
+  min-height: 100%; 
+}
+.req-card { 
+  background: #fff; 
+  border-radius: 10px; 
+  padding: 10px;  /* 12px → 10px */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+  width: 85%; 
+  position: relative; 
+  align-self: flex-start; 
+  font-size: 11px;  /* ✨ 추가 */
+  line-height: 1.4;  /* ✨ 추가 */
+}
     .req-card.mine { align-self: flex-end; background: #fee500; }
     .req-card.mine::after { content: ''; position: absolute; top: 10px; right: -8px; border-left: 10px solid #fee500; border-bottom: 10px solid transparent; }
     .req-card:not(.mine)::after { content: ''; position: absolute; top: 10px; left: -8px; border-right: 10px solid #fff; border-bottom: 10px solid transparent; }
@@ -62,6 +79,13 @@
     .mini-btn.primary { background: var(--blue); color:#fff; border:none; }
     .cancel-notice { text-align: center; margin: 8px 0; }
     .cancel-notice span { background: rgba(0,0,0,0.1); padding: 4px 12px; border-radius: 10px; font-size: 10px; color: #666; }
+/* ✨ 완료된 카드의 말풍선 색상도 회색으로 */
+.req-card.mine[style*="grayscale"] {
+  background: #d0d0d0 !important;
+}
+.req-card.mine[style*="grayscale"]::after {
+  border-left-color: #d0d0d0 !important;
+}
 
     /* 퇴교 수송 */
     .list-wrapper { background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; }
@@ -152,13 +176,15 @@
       <div id="today-timeline-container" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
-    <!-- 탭 2: 강사 수송 -->
-    <div id="view-2" style="display: none; height:100%; overflow:hidden; display:flex; flex-direction:column;">
-      <div style="padding: 5px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end;">
-        <button class="mini-btn" onclick="clearFinished()"><i class="fa-solid fa-broom"></i> 완료목록 정리</button>
-      </div>
-      <div class="chat-container" id="chat-list-inner" style="flex:1; overflow-y:auto;"></div>
-    </div>
+<!-- 탭 2: 강사 수송 -->
+<div id="view-2" style="display: none; height:100%; display:flex; flex-direction:column;">
+  <div style="padding: 5px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end; flex-shrink:0;">
+    <button class="mini-btn" onclick="clearFinished()"><i class="fa-solid fa-broom"></i> 완료목록 정리</button>
+  </div>
+  <div style="flex:1; overflow-y:auto; background:#abc1d1;">
+    <div class="chat-container" id="chat-list-inner"></div>
+  </div>
+</div>
 
     <!-- 탭 3: 퇴교 수송 -->
     <div id="view-3" style="display: none;">
@@ -222,23 +248,28 @@
 <script>
   let allCourses = {}, profReqs = [], weekOffset = 0, currentTab = 0, draggedItem = null;
 
-  function init() {
-  document.getElementById('loading-spinner').style.display = 'flex'; // 추가
+function init() {
+  document.getElementById('loading-spinner').style.display = 'flex';
 
+  const now = new Date();
+  const day = now.getDay(); 
+  
+  // ✨ 금요일(5), 토요일(6), 일요일(0) 일 때 다음 주 보기
+  weekOffset = (day === 5 || day === 6 || day === 0) ? 1 : 0; 
 
-
-
-    const now = new Date();
-    const day = now.getDay(); 
-    // 금요일(5), 토요일(6) 일 때만 자동으로 다음 주(1) 보기
-    weekOffset = (day === 5 || day === 6) ? 1 : 0; 
-
-    firebase.database().ref('courses').on('value', snap => { 
-      allCourses = snap.val() || {}; 
-      renderAll(); 
-    document.getElementById('loading-spinner').style.display = 'none'; // 추가
-    });
+  firebase.database().ref('courses').on('value', snap => { 
+    allCourses = snap.val() || {}; 
+    renderAll(); 
+    document.getElementById('loading-spinner').style.display = 'none';
+  });
     
+
+
+
+
+
+
+
     firebase.database().ref('system/transport_requests').on('value', snap => {
       const raw = snap.val() || {};
       let pendingCount = 0;
@@ -257,6 +288,12 @@
       custom.style.display = this.value === '직접입력' ? 'block' : 'none';
     });
   }
+
+
+
+
+
+
 
   function renderSchedule() {
     const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
@@ -298,11 +335,16 @@ for(let d=0; d<5; d++) {
           cell = `<div class="cell-休">휴게시간</div>`;
         }
         else {
-          // 강사수송 및 운행불가
-          profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled').forEach(item => {
-            const isOff = item.prof === '운행중단';
-            cell += `<div class="cell-event ${isOff?'block-off':'block-prof'}" draggable="true" ondragstart="onDragStart(event,'${item.id}')" onclick="openEditModal('${item.id}')">${isOff?('운행불가<br>'+item.dir):(item.prof||'강사')}</div>`;
-          });
+         // 강사수송 및 운행불가
+profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled').forEach(item => {
+  const isOff = item.prof === '운행중단';
+  // ✨ 이름 + 구간 두 줄로 표시
+  const displayText = isOff ? 
+    `운행불가<br>${item.dir || ''}` : 
+    `${item.dir || '구간정보없음'}<br>${item.prof || '강사'}`;
+  
+  cell += `<div class="cell-event ${isOff?'block-off':'block-prof'}" draggable="true" ondragstart="onDragStart(event,'${item.id}')" onclick="openEditModal('${item.id}')">${displayText}</div>`;
+});
           
           // 퇴교수송
           for(let rid in allCourses) {
@@ -406,53 +448,88 @@ function renderTodayTimeline() {
 
 
 
-  function renderInstructorChat() {
-
+function renderInstructorChat() {
   if(currentTab !== 2) return;
 
-    const box = document.getElementById('chat-list-inner');
-    let html = "";
+  const box = document.getElementById('chat-list-inner');
+  let html = "";
+  let firstUnreadIndex = -1;
+  
+  profReqs.forEach((r, idx) => {
+    const isPending = r.status === 'pending';
+    const isMine = r.status === 'approved' || r.status === 'finished';
+    const isCancelled = r.status === 'cancelled';
+    const isFinished = r.status === 'finished';
     
-    profReqs.forEach((r, idx) => {
-      const isPending = r.status === 'pending';
-      const isMine = r.status === 'approved' || r.status === 'finished';
-      const isCancelled = r.status === 'cancelled';
+    // 첫 번째 안읽은 메시지 위치 저장
+    if(firstUnreadIndex === -1 && isPending) {
+      firstUnreadIndex = idx;
+    }
+    
+    if(isCancelled) {
+      // 취소 알림은 최신 메시지로
+      html += `<div class="cancel-notice"><span><i class="fa-solid fa-ban"></i> ${r.prof || '강사'} 수송 요청이 취소되었습니다</span></div>`;
+    } else {
+      // ✨ 완료된 메시지는 회색 음영 처리
+      const cardStyle = isFinished ? 'opacity:0.5; filter:grayscale(80%);' : '';
+      const bgColor = isFinished ? '#e5e5e5' : (isMine ? '#fee500' : '#fff');
       
-      if(isCancelled) {
-        // 취소 알림은 최신 메시지로
-        html += `<div class="cancel-notice"><span><i class="fa-solid fa-ban"></i> ${r.prof || '강사'} 수송 요청이 취소되었습니다</span></div>`;
+      html += `<div class="req-card ${isMine?'mine':''}" style="${cardStyle} background:${bgColor};" data-id="${r.id}">
+        <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800; margin-bottom:2px;">
+          ${isPending?'● 신규요청':(isFinished?'✓ 운행완료':'✓ 확인됨')}
+        </div>
+        <div style="font-weight:900; font-size:13px; margin-bottom:3px;">${isPending?'승인 대기':(isFinished?'운행완료':'승인완료!')}</div>
+        <div style="font-weight:700; font-size:12px; margin-bottom:2px;">${r.date || '날짜없음'}</div>
+        <div style="font-weight:700; font-size:12px; margin-bottom:2px;">${r.time || '--:--'}</div>
+        <div style="font-size:11px; font-weight:600; color:var(--blue-deep); margin-bottom:2px;">
+          <i class="fa-solid fa-route"></i> ${r.dir || '구간 정보 없음'}
+        </div>
+        <div style="font-size:10px; color:#047857; font-weight:700; margin-bottom:3px;">
+          예상도착: ${calculateETA(r.time, r.dir)}
+        </div>
+        <div style="font-size:11px; font-weight:600;">
+          ${r.prof || '이름없음'} 강사님 픽업
+          ${r.phone ? 
+            `<a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a>` 
+            : 
+            `<span style="color:#999; margin-left:5px; font-size:9px;">(연락처 없음)</span>`
+          }
+        </div>
+        ${isPending ? `<div class="req-btn-group" style="margin-top:6px;">
+          <button class="mini-btn primary" onclick="approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> 승인</button>
+          <button class="mini-btn" onclick="cancelRequest('${r.id}')"><i class="fa-solid fa-times"></i> 불가</button>
+        </div>` : `<div style="font-size:10px; color:#666; margin-top:6px; text-align:center;">${isFinished?'운행 완료됨':'확인했습니다'}</div>`}
+      </div>`;
+    }
+  });
+  
+  box.innerHTML = html;
+  
+  // ✨ 안읽은 메시지가 있으면 그곳으로 스크롤
+  if(currentTab === 2) {
+    setTimeout(() => {
+      if(firstUnreadIndex >= 0) {
+        const firstUnread = box.querySelector(`[data-id="${profReqs[firstUnreadIndex].id}"]`);
+        if(firstUnread) {
+          firstUnread.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       } else {
-        html += `<div class="req-card ${isMine?'mine':''}">
-          <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800; margin-bottom:3px;">
-            ${isPending?'● 신규요청':'✓ 확인됨'}
-          </div>
-          <div style="font-weight:900; font-size:14px; margin-bottom:4px;">${isPending?'승인 대기':'승인완료!'}</div>
-          <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.date || '날짜없음'}</div>
-          <div style="font-weight:800; font-size:13px; margin-bottom:4px;">${r.time || '--:--'}</div>
-           <div style="font-size:12px; font-weight:700; color:var(--blue-deep); margin-bottom:4px;">
-            <i class="fa-solid fa-route"></i> ${r.dir || '구간 정보 없음'}
-          </div>
-          <div style="font-size:11px; color:#047857; font-weight:800;">
-            예상도착: ${calculateETA(r.time, r.dir)}
-          </div>
-          <div style="font-size:12px; font-weight:700;">
-            ${r.prof || '이름없음'} 강사님 픽업
-            ${r.phone ? 
-  `<a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a>` 
-  : 
-  `<span style="color:#999; margin-left:5px; font-size:10px;">(연락처 없음)</span>`
-}
-          </div>
-          ${isPending ? `<div class="req-btn-group">
-            <button class="mini-btn primary" onclick="approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> 승인</button>
-            <button class="mini-btn" onclick="cancelRequest('${r.id}')"><i class="fa-solid fa-times"></i> 불가</button>
-          </div>` : '<div style="font-size:11px; color:#666; margin-top:8px; text-align:center;">확인했습니다</div>'}
-        </div>`;
+        // 안읽은게 없으면 맨 아래로
+        box.parentElement.scrollTop = box.parentElement.scrollHeight;
       }
-    });
-    box.innerHTML = html;
-    if(currentTab === 2) box.scrollTop = box.scrollHeight;
+    }, 100);
   }
+}
+
+
+
+
+
+
+
+
+
+
 
   function renderTraineeGrid() {
     const container = document.getElementById('trainee-list-body');
@@ -714,28 +791,43 @@ if(conflicts.length > 0) {
 
 function renderAll() { 
   renderSchedule(); 
-  renderTodayTimeline();
   
-  // ✨ 현재 탭이 강사수송일 때만 렌더링
+  // 금일일정은 탭1일 때만
+  if(currentTab === 1) {
+    renderTodayTimeline();
+  }
+  
+  // 강사수송은 탭2일 때만
   if(currentTab === 2) {
     renderInstructorChat();
   }
   
-  renderTraineeGrid(); 
+  // 퇴교수송은 탭3일 때만
+  if(currentTab === 3) {
+    renderTraineeGrid();
+  }
 }
+
+
+
+
+
+
 
   function changeWeek(n) { 
     weekOffset += n; 
     renderAll(); 
   }
 
-  function goToday() { 
-    weekOffset = 0;
-    const now = new Date();
-    const day = now.getDay(); 
-    weekOffset = (day === 5 || day === 6) ? 1 : 0;
-    renderAll();
-  }
+function goToday() { 
+  const now = new Date();
+  const day = now.getDay(); 
+  // ✨ 금요일(5), 토요일(6), 일요일(0) 일 때 다음 주 보기
+  weekOffset = (day === 5 || day === 6 || day === 0) ? 1 : 0;
+  renderAll();
+}
+
+
 
   function closeModal(id) { 
     document.getElementById(id).style.display = 'none'; 
