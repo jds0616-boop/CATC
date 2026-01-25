@@ -269,36 +269,28 @@
       const timeLabel = `${h}:00-${h+1}:00`;
       html += `<tr><td class="time-col">${timeLabel}</td>`;
       
-      for(let d=0; d<5; d++) {
-        const curDate = range[d];
-        let cell = '';
+for(let d=0; d<5; d++) {
+  const curDate = range[d];
+  let cell = '';
 
-
+  // 운행불가 체크
   const hasOffDay = profReqs.some(r => 
     r.date === curDate && 
     r.prof === '운행중단' && 
     r.status !== 'cancelled'
   );
 
-// ✨ 운행불가일 경우 (점심시간 제외하고 모든 시간대에 표시)
-if(hasOffDay && h !== 12) {
-const hasOffDay = profReqs.some(r => 
-  r.date === curDate && 
-  r.prof === '운행중단' && 
-  r.status !== 'cancelled'
-);
-
-// 운행불가일 경우 (점심시간 제외하고 모든 시간대에 표시)
-if(hasOffDay && h !== 12) {
-  const offReason = profReqs.find(r => 
-    r.date === curDate && 
-    r.prof === '운행중단' && 
-    r.status !== 'cancelled'
-  );
-  cell = `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
-}
-// ⭐ 입교수송 (월요일 9-10시, 10-11시) - 운행불가 아닐때만
-else if(d === 0 && (h === 9 || h === 10)) {
+  // 운행불가일 경우 (점심시간 제외)
+  if(hasOffDay && h !== 12) {
+    const offReason = profReqs.find(r => 
+      r.date === curDate && 
+      r.prof === '운행중단' && 
+      r.status !== 'cancelled'
+    );
+    cell = `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
+  }
+  // 입교수송 (월요일 9-10시, 10-11시) - 운행불가 아닐때만
+  else if(d === 0 && (h === 9 || h === 10)) {
           cell = `<div class="cell-event block-entry">입교수송</div>`;
         }
         // 점심시간 (12-13시)
