@@ -118,12 +118,48 @@
     }
     .app-container { width: 100%; max-width: 600px; min-height: 100dvh; background: var(--bg-cool); position: relative; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.1); }
     
-    /* 상단바 */
-    .app-header { height: 55px; background: var(--navy-dark); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 2px solid var(--blue-main); position: sticky; top:0; z-index: 1000; }
-    .header-btn { font-size: 20px; color: #fff; cursor: pointer; border:none; background:none; }
-    .header-title { color: #fff; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+/* 상단바 (1안: 실선 제거 및 모던한 그림자 적용) */
+    .app-header { 
+        height: 55px; 
+        background: var(--navy-dark); 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        padding: 0 20px; 
+        flex-shrink: 0; 
+        /* 🚩 기존 border-bottom 제거 및 그림자 추가 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+        position: sticky; 
+        top: 0; 
+        z-index: 1000; 
+    }
+    
+    .header-btn { 
+        font-size: 20px; 
+        color: #fff; 
+        cursor: pointer; 
+        border: none; 
+        background: none; 
+        /* 버튼 클릭 시 약간 투명해지는 효과 추가 (선택사항) */
+        transition: opacity 0.2s;
+    }
+    .header-btn:active { opacity: 0.6; }
 
-    .app-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .header-title { 
+        color: #fff; 
+        font-size: 18px; 
+        font-weight: 900; 
+        letter-spacing: -0.5px; 
+    }
+
+    .app-content { 
+        flex: 1; 
+        padding: 12px; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+        overflow-y: auto; 
+    }
 
 
 /* [변경] 큰 카드 디자인 - 테두리는 연하게, 그림자는 부드럽게 */
