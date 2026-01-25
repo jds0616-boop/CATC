@@ -723,9 +723,13 @@ async function saveSchedule() {
   
   const finalLoc = (dirLoc === '직접입력') ? customLoc : dirLoc;
   const finalDir = (dirType === 'arrival') ? `${finalLoc}→항기원` : `항기원→${finalLoc}`;
-  
+  const finalProf = (prof === '운행불가' || prof === '') ? '운행중단' : prof;  
+
+
   const data = { 
-    date, time, prof, phone, dir: finalDir, 
+    date, time, 
+    prof: finalProf,  // ← 여기 변경
+    phone, dir: finalDir, 
     passengers: currentPassengers,
     status: 'approved', 
     timestamp: Date.now() 
