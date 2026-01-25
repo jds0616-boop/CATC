@@ -893,27 +893,43 @@ async function approveRequest(id) {
 
   const normalizeDate = (d) => d ? d.replace(/\./g, '-').replace(/\s/g, '') : '';
   const targetDate = normalizeDate(req.date);
-  
-  // 1. 같은 시간대에 이미 승인된 '강사 수송' 건이 있는지 확인 (병합 대상 찾기)
-  const existingSchedule = profReqs.find(r => 
-    r.id !== id &&
-    normalizeDate(r.date) === targetDate && 
-    r.time === req.time && // 같은 시간
-    r.dir === req.dir &&   // 같은 경로
-    (r.status === 'approved' || r.status === 'finished') &&
-    r.prof !== '운행중단'
-  );
-  
+  const reqMin = parseInt(req.time.split(':')[0]) * 60 + parseInt(req.time.split(':')[1]);
+
+  // --- [추가 1] 퇴교 수송 중복 체크 (120분 이내) ---
+  let shuttleConflict = "";
+  for (let rid in allCourses) {
+    const dep = allCourses[rid].shuttle?.departure;
+    if (dep && dep.date === req.date && dep.time && dep.announced) {
+      const depMin = parseInt(dep.time.split(':')[0]) * 60 + parseInt(dep.time.split(':')[1]);
+      if (Math.abs(reqMin - depMin) < 120) {
+        const cName = allCourses[rid].settings?.courseName || rid;
+        shuttleConflict = `⚠️ [퇴교중복 알림]\n해당 날짜 ${dep.time}에 [${cName}] 퇴교 수송이 예정되어 있습니다.`;
+      }
+    }
+  }
+  if (shuttleConflict) {
+    if (!confirm(shuttleConflict + "\n\n기사님 일정이 겹칠 수 있습니다. 그래도 승인하시겠습니까?")) return;
+  }
+
   try {
-    // 2. 병합 대상이 있는 경우 기사님께 물어봄
+    // --- [기존+추가 2] 병합 대상 확인 (날짜/시간/경로 완전 일치) ---
+    const existingSchedule = profReqs.find(r => 
+      r.id !== id &&
+      normalizeDate(r.date) === targetDate && 
+      r.time === req.time && 
+      r.dir === req.dir &&
+      (r.status === 'approved' || r.status === 'finished') &&
+      r.prof !== '운행중단'
+    );
+
     if(existingSchedule) {
       const msg = `⚠️ 해당 시간에 이미 승인된 일정([${existingSchedule.prof}] 강사님)이 있습니다.\n\n현재 신청자([${req.prof}] 강사님)를 기존 차량의 '동승자'로 추가하여 통합 배차하시겠습니까?\n\n('확인' 클릭 시 동승자로 통합, '취소' 클릭 시 별도 배차)`;
       
       if(confirm(msg)) {
-        // [병합 처리 시작]
+        // [병합 처리]
         const updatedPassengers = existingSchedule.passengers ? [...existingSchedule.passengers] : [];
         if(!updatedPassengers.includes(req.prof)) {
-            updatedPassengers.push(req.prof); // 현재 신청자를 기존 일정의 동승자 명단에 추가
+            updatedPassengers.push(req.prof); 
         }
         
         // (1) 기존 일정 데이터 업데이트 (동승자 목록 갱신)
@@ -921,7 +937,7 @@ async function approveRequest(id) {
           passengers: updatedPassengers 
         });
 
-        // (2) 현재 요청은 '운행종료(finished)' 처리하여 채팅 목록에서 제거 (이미 통합되었으므로)
+        // (2) 현재 요청은 '운행종료(finished)' 처리하여 채팅 목록에서 제거
         await firebase.database().ref(`system/transport_requests/${id}`).update({ 
           status: 'finished',
           note: `[${existingSchedule.prof}] 강사님 차량으로 통합됨`
@@ -933,7 +949,20 @@ async function approveRequest(id) {
       }
     }
 
-    // 3. 병합 대상이 없거나, 기사님이 '별도 배차'를 선택한 경우 (기존 일반 승인 로직)
+    // --- [추가 3] 근접 시간 강사 수송 경고 (60분 이내) ---
+    const nearbySchedule = profReqs.find(r => 
+      r.id !== id &&
+      normalizeDate(r.date) === targetDate && 
+      Math.abs((parseInt(r.time.split(':')[0]) * 60 + parseInt(r.time.split(':')[1])) - reqMin) < 60 &&
+      (r.status === 'approved' || r.status === 'finished') &&
+      r.prof !== '운행중단'
+    );
+
+    if (nearbySchedule) {
+      if (!confirm(`⚠️ [시간근접 경고]\n이미 ${nearbySchedule.time}에 [${nearbySchedule.prof}] 강사님 배차가 있습니다.\n시간이 1시간 이내로 겹칩니다. 그래도 승인하시겠습니까?`)) return;
+    }
+
+    // --- [최종] 일반 승인 로직 ---
     if(!confirm("이 배차 요청을 승인하시겠습니까?")) return;
     
     await firebase.database().ref(`system/transport_requests/${id}`).update({ 
@@ -948,7 +977,6 @@ async function approveRequest(id) {
     alert("처리 중 오류가 발생했습니다.");
   }
 }
-
 
 
 
@@ -993,49 +1021,83 @@ function openNewSchedule() {
   document.getElementById('scheduleModal').style.display = 'flex';
 }
 
+
+
+
+
+
+
+
 function openEditSchedule(id) {
+  // 1. 해당 ID의 일정을 데이터에서 찾기
   const item = profReqs.find(r => r.id === id);
   if(!item) return;
   
+  // 2. 수정 중인 ID 저장 및 동승객 목록 복사 (중요: 복사본을 만들어야 원본이 바로 바뀌지 않음)
   currentEditId = id;
-  currentPassengers = item.passengers || [];
+  currentPassengers = item.passengers ? [...item.passengers] : [];
   
+  // 3. 모달 제목 설정
   document.getElementById('schedule-modal-title').innerText = '일정 수정';
-  document.getElementById('s-date').value = item.date;
-  document.getElementById('s-time').value = item.time;
-  document.getElementById('s-prof').value = item.prof === '운행중단' ? '' : item.prof;
+  
+  // 4. 날짜, 시간, 연락처 채우기
+  document.getElementById('s-date').value = item.date || '';
+  document.getElementById('s-time').value = item.time || '';
   document.getElementById('s-phone').value = item.phone || '';
   
+  // 5. 강사명 설정 (운행중단일 때는 비워둠)
+  document.getElementById('s-prof').value = item.prof === '운행중단' ? '' : (item.prof || '');
+  
+  // 6. 이동 경로 파싱 (장소 정보 추출)
   const dirText = item.dir || '';
   if(dirText.includes('→항기원')) {
     document.getElementById('s-dir-type').value = 'arrival';
     const loc = dirText.replace('→항기원', '');
-    setLocValue(loc);
+    setLocValue(loc); // 직접입력인지 아닌지 판단하여 세팅하는 함수
   } else if(dirText.includes('항기원→')) {
     document.getElementById('s-dir-type').value = 'departure';
     const loc = dirText.replace('항기원→', '');
-    setLocValue(loc);
+    setLocValue(loc); // 직접입력인지 아닌지 판단하여 세팅하는 함수
   }
   
-  // 🔥 타입 설정
+  // 7. 일정 타입 설정 (강사 수송 vs 운행 불가)
   if(item.prof === '운행중단') {
     document.getElementById('s-schedule-type').value = 'off';
-    document.getElementById('s-off-reason').value = item.dir || '연차';
+    
+    // 운행불가 사유 처리 (직접입력 포함)
+    const reasonSelect = document.getElementById('s-off-reason');
+    const customInput = document.getElementById('s-off-custom');
+    if(['건강검진', '연차', '차량고장'].includes(item.dir)) {
+        reasonSelect.value = item.dir;
+        customInput.style.display = 'none';
+    } else {
+        reasonSelect.value = '직접입력';
+        customInput.value = item.dir || '';
+        customInput.style.display = 'block';
+    }
   } else {
     document.getElementById('s-schedule-type').value = 'prof';
   }
   
+  // 8. 삭제 버튼 보이기
   document.getElementById('delete-schedule-btn').style.display = 'block';
-  toggleScheduleType();  // 🔥 추가
+  
+  // 9. 타입에 따른 UI 영역 보임/숨김 처리
+  toggleScheduleType(); 
+  
+  // 10. 동승객 명단 그리기 (중요: 이 함수가 호출되어야 동승자가 보입니다)
   renderPassengers();
-
-
-
-
-  document.getElementById('delete-schedule-btn').style.display = 'block';
-  renderPassengers();
+  
+  // 11. 모달 열기
   document.getElementById('scheduleModal').style.display = 'flex';
 }
+
+
+
+
+
+
+
 
 function setLocValue(loc) {
   const locSelect = document.getElementById('s-dir-loc');
