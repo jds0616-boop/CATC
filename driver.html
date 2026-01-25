@@ -127,17 +127,84 @@
   border-left-color: #d0d0d0 !important;
 }
 
-    /* 퇴교 수송 */
-    .list-wrapper { background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; }
-    .list-header, .course-row { display: grid; grid-template-columns: 1.2fr 0.5fr 2fr 0.5fr; align-items: center; text-align: center; }
-    .list-header { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; font-weight: 900; }
-    .course-row { border-bottom: 1px solid #f1f5f9; padding: 5px 0; }
-    .t-cell { padding: 8px 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border-right: 1px solid #f1f5f9; }
-    .t-cell:last-child { border-right: none; }
-    .time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%; padding: 0 5px; }
-    .time-input { width: 100%; padding: 4px; font-size: 10px; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
-    .notice-btn { border: none; background: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
-    .notice-btn.active { color: var(--warning); }
+/* 퇴교 수송 - 카드 스타일 디자인 (Ctrl+F: /* 퇴교 수송 */ 검색) */
+    .list-wrapper { 
+      background: transparent; 
+      border: none; 
+      overflow: hidden; 
+    }
+    .list-header { 
+      display: grid; 
+      grid-template-columns: 1.5fr 0.6fr 1.5fr 0.5fr; 
+      padding: 12px 15px;
+      background: #f8fafc; 
+      border-radius: 12px;
+      margin-bottom: 10px;
+      font-size: 11px; 
+      font-weight: 800; 
+      color: #64748b;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .course-row { 
+      display: grid; 
+      grid-template-columns: 1.5fr 0.6fr 1.5fr 0.5fr; 
+      background: #fff;
+      border-radius: 15px;
+      margin-bottom: 8px;
+      padding: 10px 5px;
+      align-items: center; 
+      text-align: center; 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      border: 1px solid #f1f5f9;
+      transition: transform 0.2s;
+    }
+    .course-row:active { transform: scale(0.98); }
+    .t-cell { 
+      padding: 8px 2px; 
+      font-size: 12px; 
+      font-weight: 700; 
+      color: var(--navy);
+    }
+    /* 인원수 배지 스타일 */
+    .count-badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    /* 시간 선택 드롭다운 디자인 */
+    .time-select-custom {
+      width: 90%;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1.5px solid #e2e8f0;
+      background: #fcfcfc;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--blue-deep);
+      text-align: center;
+      outline: none;
+    }
+    /* 공지 버튼 디자인 */
+    .notice-btn { 
+      border: none; 
+      background: #f1f5f9; 
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      font-size: 18px; 
+      cursor: pointer; 
+      color: #cbd5e1; 
+      transition: 0.3s;
+    }
+    .notice-btn.active { 
+      background: #fef3c7;
+      color: var(--warning); 
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
 
     /* 금일 수송일정 */
     .timeline-card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 8px; }
@@ -602,13 +669,21 @@ function renderInstructorChat() {
 function renderTraineeGrid() {
   const container = document.getElementById('trainee-list-body');
   let html = "";
+  
+  // 데이터가 없을 때 표시
+  if (Object.keys(allCourses).length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#94a3b8; font-size:13px; font-weight:700;">현재 진행 중인 교육 과정이 없습니다.</div>`;
+    return;
+  }
+
   Object.keys(allCourses).forEach(rid => {
     const room = allCourses[rid]; 
     if(room.status?.roomStatus !== 'active') return;
+    
     const dep = room.shuttle?.departure || { time: "", announced: false };
     const total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
     
-    // 13:00부터 18:00까지 선택 옵션 만들기
+    // 시간 옵션 생성
     let timeOptions = `<option value="">시간 선택</option>`;
     for(let h=13; h<=18; h++) {
       const t1 = h + ":00";
@@ -617,23 +692,36 @@ function renderTraineeGrid() {
       if(h !== 18) timeOptions += `<option value="${t2}" ${dep.time===t2?'selected':''}>${t2}</option>`;
     }
 
-    html += `<div class="course-row">
-      <div class="t-cell">${room.settings?.courseName || '과정명'}</div>
-      <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
-      <div class="t-cell">
-        <select class="time-input" style="width:90%;" onchange="setDeparture('${rid}', this.value)">
-          ${timeOptions}
-        </select>
-      </div>
-      <div class="t-cell">
-        <button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})">
-          <i class="fa-solid fa-bullhorn"></i>
-        </button>
-      </div>
-    </div>`;
+    // 카드 한 장 그리기
+    html += `
+      <div class="course-row">
+        <div class="t-cell" style="text-align:left; padding-left:10px; font-size:11px; line-height:1.3;">
+          ${room.settings?.courseName || '과정명 없음'}
+        </div>
+        <div class="t-cell">
+          <span class="count-badge">${total}명</span>
+        </div>
+        <div class="t-cell">
+          <select class="time-select-custom" onchange="setDeparture('${rid}', this.value)">
+            ${timeOptions}
+          </select>
+        </div>
+        <div class="t-cell">
+          <button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})">
+            <i class="fa-solid fa-bullhorn"></i>
+          </button>
+        </div>
+      </div>`;
   });
   container.innerHTML = html;
 }
+
+
+
+
+
+
+
   async function setDeparture(rid, time) { 
     if(!time) return;
     const depDate = allCourses[rid].shuttle?.departure?.date || new Date().toISOString().split('T')[0];
