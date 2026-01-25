@@ -17,17 +17,17 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', sans-serif; }
     body { margin: 0; padding: 0; background: #cfd8e3; display: flex; justify-content: center; height: 100dvh; overflow: hidden; }
     
-    /* [1] 상단바 디자인 (그림자/레이아웃) */
+    /* [1] 헤더 및 그림자 */
     .app-container { width: 100%; max-width: 600px; height: 100%; background: var(--bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.2); }
     .app-header { 
         height: 60px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* 입체적 그림자 */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4); /* 입체적 그림자 */
         border-bottom: 2px solid var(--blue); z-index: 1000; 
     }
-    .header-btn { color: #fff; font-size: 18px; font-weight: 900; cursor: pointer; width: 50px; }
-    .header-title { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.5px; text-align: center; flex: 1; }
+    .header-btn { color: #fff; font-size: 18px; font-weight: 900; cursor: pointer; width: 40px; }
+    .header-title { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
 
-    /* [1-1] 햄버거 아이콘 우측 배치 사이드바 */
+    /* [1-1] 우측 햄버거 사이드바 */
     .sidebar { position: absolute; top: 0; right: -280px; width: 280px; height: 100%; background: #fff; z-index: 10000; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
     .sidebar.open { right: 0; }
     .sidebar-header { padding: 30px 20px; background: var(--navy); color: #fff; }
@@ -42,7 +42,7 @@
 
     .app-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
 
-    /* [2] 종합 일정표 (드래그앤드롭/상호작용) */
+    /* [2] 종합 일정표 (드래그앤드롭) */
     .schedule-wrapper { background: #fff; border: 1.5px solid #000; border-radius: 8px; overflow: hidden; }
     .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 50px; font-size: 10px; vertical-align: middle; position: relative; }
@@ -58,29 +58,32 @@
     .block-departure { background: #ecfdf5; color: #047857; border: 1px solid #047857; }
     .block-off { background: #fee2e2; color: #ef4444; border: 1px dashed #ef4444; }
 
-    /* [3] 강사 수송 리스트 (카톡 방식/최적화 버튼) */
+    /* [1] 금일 일정 타임라인 */
+    .timeline-item { display: flex; gap: 15px; padding: 10px; background: #fff; border-radius: 10px; border-left: 5px solid var(--blue); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .tm-time { font-weight: 900; font-size: 15px; color: var(--navy); min-width: 60px; }
+    .tm-info { flex: 1; font-size: 13px; font-weight: 700; color: #475569; }
+
+    /* [3] 강사 수송 리스트 (카톡 방식/미니 버튼) */
     .chat-container { background: #abc1d1; padding: 15px; display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
-    .req-card { background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); align-self: flex-start; max-width: 85%; }
+    .req-card { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); align-self: flex-start; max-width: 85%; }
     .req-card.mine { align-self: flex-end; background: #fee500; }
     .req-btn-group { display: flex; gap: 5px; margin-top: 8px; }
     .mini-btn { padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; background: #fff; font-size: 10px; font-weight: 800; cursor: pointer; }
     .mini-btn.primary { background: var(--blue); color:#fff; border:none; }
 
-    /* [4] 퇴교 수송 (그리드 디자인 복구) */
+    /* [4] 퇴교 수송 (그리드 복구) */
     .list-wrapper { background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .list-header, .course-row { display: grid; grid-template-columns: 1.5fr 0.5fr 1.8fr 0.6fr; align-items: center; text-align: center; }
-    .list-header { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; font-weight: 900; color: #475569; }
+    .list-header { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; font-weight: 900; }
     .course-row { border-bottom: 1px solid #f1f5f9; }
     .t-cell { padding: 12px 5px; display: flex; align-items: center; justify-content: center; height: 100%; border-right: 1px solid #f1f5f9; }
     .t-cell:last-child { border-right: none; }
-    .notice-btn { border: none; background: none; font-size: 20px; cursor: pointer; }
+    .notice-btn { border: none; background: none; font-size: 22px; cursor: pointer; }
 
-    /* 모달 공통 */
+    /* 통합 모달 */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
-    .modal-box { background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-box { background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; }
     .modal-input { width: 100%; height: 45px; border: 1.5px solid #ddd; border-radius: 8px; padding: 0 10px; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
-    .m-btn-group { display: flex; gap: 10px; }
-    .m-btn { flex: 1; height: 45px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -108,16 +111,16 @@
     <button id="tab3" class="tab-btn" onclick="switchTab(3)">퇴교 수송</button>
   </div>
 
-  <main class="app-content">
+  <main class="app-content" id="main-content">
     <!-- 탭 0: 종합 일정표 -->
     <div id="view-0" style="display: block;">
       <div id="capture-area">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <button class="mini-btn" onclick="goToday()">오늘</button>
           <div style="display:flex; align-items:center; gap:10px;">
-            <i class="fa-solid fa-circle-chevron-left" style="font-size:24px; color:var(--blue);" onclick="changeWeek(-1)"></i>
-            <span id="week-range" style="font-weight:900; font-size:14px;">...</span>
-            <i class="fa-solid fa-circle-chevron-right" style="font-size:24px; color:var(--blue);" onclick="changeWeek(1)"></i>
+            <i class="fa-solid fa-chevron-left" style="color:var(--blue);" onclick="changeWeek(-1)"></i>
+            <span id="week-range" style="font-weight:900; font-size:13px;">...</span>
+            <i class="fa-solid fa-chevron-right" style="color:var(--blue);" onclick="changeWeek(1)"></i>
           </div>
         </div>
         <div class="schedule-wrapper">
@@ -129,15 +132,15 @@
       </div>
     </div>
 
-    <!-- 탭 1: 금일 일정 -->
+    <!-- 탭 1: 금일 일정 (보강됨) -->
     <div id="view-1" style="display: none;">
-      <div id="today-timeline" style="display:flex; flex-direction:column; gap:12px;"></div>
+      <div id="today-timeline-container" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 
     <!-- 탭 2: 강사 수송 -->
     <div id="view-2" style="display: none; height:100%; overflow:hidden; display:flex; flex-direction:column;">
-      <div style="padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end;">
-          <button class="mini-btn" onclick="clearFinished()">완료 목록 삭제</button>
+      <div style="padding: 8px; background: #fff; border-bottom: 1px solid #ddd; display:flex; justify-content:flex-end;">
+          <button class="mini-btn" onclick="clearFinished()">완료/취소 목록 삭제</button>
       </div>
       <div class="chat-container" id="chat-list-inner" style="flex:1; overflow-y:auto;"></div>
     </div>
@@ -154,33 +157,27 @@
   </main>
 </div>
 
-<!-- [5] 통합 모달 UI -->
+<!-- 통합 모달 -->
 <div id="allInOneModal" class="modal-overlay" onclick="if(event.target==this) closeModal('allInOneModal')">
   <div class="modal-box">
-    <div id="m-header" style="font-weight:900; font-size:17px; margin-bottom:15px; border-bottom:2px solid var(--blue); padding-bottom:8px;">일정 상세 관리</div>
-    <div style="font-size:12px; font-weight:800; margin-bottom:4px;">날짜</div>
+    <div id="m-header" style="font-weight:900; font-size:16px; margin-bottom:15px; border-bottom:2px solid var(--blue); padding-bottom:5px;">일정 관리</div>
     <input type="date" id="m-date" class="modal-input">
-    <div style="font-size:12px; font-weight:800; margin-bottom:4px;">구분</div>
     <select id="m-type" class="modal-input" onchange="toggleReasonInput()">
         <option value="prof">강사 수송 추가</option>
         <option value="off">운행 불가(OFF) 설정</option>
     </select>
     <div id="reason-area">
-        <div style="font-size:12px; font-weight:800; margin-bottom:4px;">강사명 / 사유</div>
-        <input type="text" id="m-reason" class="modal-input" placeholder="이름 또는 사유 입력">
-        <div id="prof-only-fields">
-            <div style="font-size:12px; font-weight:800; margin-bottom:4px;">시간 및 구간</div>
-            <div style="display:flex; gap:5px;">
-                <input type="time" id="m-time" class="modal-input" style="flex:1">
-                <input type="text" id="m-dir" class="modal-input" style="flex:1.5" placeholder="오송->항기원">
-            </div>
+        <input type="text" id="m-reason" class="modal-input" placeholder="강사명 또는 사유">
+        <div id="prof-fields">
+            <input type="time" id="m-time" class="modal-input">
+            <input type="text" id="m-dir" class="modal-input" placeholder="오송->항기원">
         </div>
     </div>
-    <div class="m-btn-group">
-        <button class="m-btn" style="background:#f1f5f9;" onclick="closeModal('allInOneModal')">취소</button>
-        <button class="m-btn" style="background:var(--blue); color:#fff;" onclick="saveAllInOne()">저장하기</button>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="m-btn" style="background:#f1f5f9; flex:1; height:45px; border-radius:8px; border:none; font-weight:800;" onclick="closeModal('allInOneModal')">취소</button>
+        <button class="m-btn" style="background:var(--blue); color:#fff; flex:1; height:45px; border-radius:8px; border:none; font-weight:800;" onclick="saveAllInOne()">저장</button>
     </div>
-    <button id="del-btn" class="m-btn" style="background:var(--danger); color:#fff; width:100%; margin-top:10px; display:none;" onclick="deleteRequest()">일정 삭제</button>
+    <button id="del-btn" style="width:100%; height:40px; margin-top:10px; background:var(--danger); color:#fff; border:none; border-radius:8px; font-weight:800; display:none;" onclick="deleteRecord()">일정 삭제</button>
   </div>
 </div>
 
@@ -197,7 +194,7 @@
         const item = { id: k, ...raw[k] };
         if(item.status === 'pending') pendingCount++;
         return item;
-      }).sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0)); // [3-2] 카톡식 하단 정렬
+      }).sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0)); // [3-2] 카톡 정렬 (최신 아래)
 
       updateBadge(pendingCount);
       renderAll();
@@ -205,7 +202,7 @@
     });
   }
 
-  // [2] 종합 일정표 렌더링
+  // [2] 종합 일정표
   function renderSchedule() {
     const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
     const range = getWeekDates(weekOffset);
@@ -218,7 +215,6 @@
       for(let d=0; d<5; d++) {
         const curDate = range[d];
         let cell = '';
-        // [2-3] 월요일 입교수송 디폴트
         if(d === 0 && (h === 9 || h === 10)) cell = `<div class="cell-event block-entry">입교수송</div>`;
         else if(h === 12) cell = `<span style="opacity:0.3; font-size:9px;">휴게</span>`;
         else {
@@ -238,17 +234,50 @@
     body.innerHTML = html;
   }
 
+  // [1] 금일 일정 (보강된 로직)
+  function renderTodayTimeline() {
+    const container = document.getElementById('today-timeline-container');
+    const today = new Date().toISOString().split('T')[0];
+    let items = [];
+
+    // 강사 수송 추가
+    profReqs.filter(r => r.date === today && r.status === 'approved').forEach(r => {
+        items.push({ time: r.time, info: `🚖 강사수송: ${r.prof} (${r.dir})`, type: 'prof' });
+    });
+
+    // 퇴교 수송 추가
+    Object.keys(allCourses).forEach(rid => {
+        const dep = allCourses[rid].shuttle?.departure;
+        if(dep && dep.date === today && dep.time) {
+            items.push({ time: dep.time, info: `🚌 퇴교수송: ${allCourses[rid].settings.courseName}`, type: 'dep' });
+        }
+    });
+
+    items.sort((a,b) => a.time.localeCompare(b.time));
+    
+    if(items.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:40px; color:#888;">금일 예정된 수송 일정이 없습니다.</div>`;
+    } else {
+        container.innerHTML = items.map(i => `
+            <div class="timeline-item">
+                <div class="tm-time">${i.time}</div>
+                <div class="tm-info">${i.info}</div>
+            </div>
+        `).join('');
+    }
+  }
+
   // [3] 강사 수송 리스트 (카톡 방식)
   function renderInstructorChat() {
     const box = document.getElementById('chat-list-inner');
     let html = "";
     profReqs.forEach(r => {
       const isPending = r.status === 'pending', isMine = r.status === 'approved' || r.status === 'finished', isCancelled = r.status === 'cancelled';
-      if(isCancelled) html += `<div style="text-align:center; margin:8px 0;"><span style="background:#eee; padding:3px 10px; border-radius:10px; font-size:10px; color:#888;">취소 알림: ${r.prof} 강사님 수송 취소</span></div>`;
+      if(isCancelled) html += `<div style="text-align:center; margin:5px 0;"><span style="background:rgba(0,0,0,0.1); padding:2px 8px; border-radius:10px; font-size:10px;">취소 알림: ${r.prof} 강사님 수송 취소</span></div>`;
       else html += `
         <div class="req-card ${isMine?'mine':''}">
-            <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800;">${isPending?'● 미확인':'✓ 확인'}</div>
-            <div style="font-weight:900; font-size:12px; margin-bottom:2px;">${r.date} (${r.time})</div>
+            <div style="font-size:9px; color:${isPending?'var(--danger)':'#666'}; font-weight:800;">${isPending?'● 신규요청':'✓ 확인됨'}</div>
+            <div style="font-weight:900; font-size:12px;">${r.date} (${r.time})</div>
             <div style="font-size:11px; color:var(--blue-deep); font-weight:800;">${r.dir}</div>
             <div style="font-size:11px; font-weight:700;">${r.prof} <a href="tel:${r.phone}" style="color:var(--blue); margin-left:5px;"><i class="fa-solid fa-phone"></i></a></div>
             ${isPending ? `<div class="req-btn-group"><button class="mini-btn primary" onclick="approveRequest('${r.id}')">승인</button><button class="mini-btn" onclick="cancelRequest('${r.id}')">불가</button></div>` : ''}
@@ -257,13 +286,13 @@
     box.innerHTML = html;
   }
 
-  // [4] 퇴교 수송 (그리드 방식 복구)
+  // [4] 퇴교 수송 (그리드 방식/DB 연동 보강)
   function renderTraineeGrid() {
     const container = document.getElementById('trainee-list-body');
     let html = "";
     Object.keys(allCourses).forEach(rid => {
         const room = allCourses[rid]; if(room.status?.roomStatus !== 'active') return;
-        const dep = room.shuttle?.departure || { time: "" }, total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+        const dep = room.shuttle?.departure || { time: "", announced: false }, total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
         html += `<div class="course-row">
             <div class="t-cell" style="font-weight:800; font-size:12px;">${room.settings?.courseName}</div>
             <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
@@ -271,17 +300,34 @@
                 <button class="mini-btn ${dep.time==='13:00'?'primary':''}" onclick="setDeparture('${rid}','13:00')">13:00</button>
                 <button class="mini-btn ${dep.time==='15:00'?'primary':''}" onclick="setDeparture('${rid}','15:00')">15:00</button>
             </div></div>
-            <div class="t-cell"><button class="notice-btn" onclick="toggleNotice('${rid}')">${dep.time ? '🔔' : '🔕'}</button></div>
+            <div class="t-cell"><button class="notice-btn" onclick="toggleNotice('${rid}', ${dep.announced})">${dep.announced ? '🔔' : '🔕'}</button></div>
         </div>`;
     });
     container.innerHTML = html;
   }
 
-  // [4-2] 피드백 팝업 및 [4-3] 수동 공지
-  async function setDeparture(rid, time) { await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ time }); alert(`${time} 출발 공지 완료!`); }
-  async function toggleNotice(rid) { if(confirm("퇴교 공지 방송을 진행하시겠습니까?")) alert("정상적으로 공지되었습니다."); }
+  // [4-2] 피드백 및 DB 저장 보강
+  async function setDeparture(rid, time) { 
+      const today = new Date().toISOString().split('T')[0];
+      await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ time, date: today }); 
+      alert(`${time} 출발로 설정되었습니다.`); 
+  }
+  async function toggleNotice(rid, currentStatus) { 
+      if(confirm(`퇴교 수송 정보를 ${currentStatus ? '공지 취소' : '공지 완료'} 처리하시겠습니까?`)) {
+          await firebase.database().ref(`courses/${rid}/shuttle/departure`).update({ announced: !currentStatus });
+          alert("처리되었습니다.");
+      }
+  }
 
-  // [2-2] 드래그 앤 드롭 및 스케줄 변경
+  // [AI] 지능형 배차 가이드 (10분 전 도착 원칙)
+  function runAICheck(newTime) {
+      const hh = parseInt(newTime.split(':')[0]);
+      const mm = parseInt(newTime.split(':')[1]);
+      if (mm > 40) return `⚠️ 주의: 과정 시작 정시 10분 전(${hh}:50) 도착이 어려울 수 있습니다. 개별 픽업을 권장합니다.`;
+      return null;
+  }
+
+  // [2-2] 드래그 앤 드롭
   function allowDrop(ev) { ev.preventDefault(); }
   function onDragStart(ev, id) { draggedItem = id; }
   async function onDrop(ev, date, time) {
@@ -293,7 +339,7 @@
     draggedItem = null;
   }
 
-  // [5] 통합 모달 제어
+  // 통합 모달
   function openEmptyCell(date, time) {
     document.getElementById('m-header').innerText = "새 수송 일정 추가";
     document.getElementById('m-date').value = date; document.getElementById('m-time').value = time;
@@ -302,7 +348,7 @@
   }
   function openEditModal(id) {
     const item = profReqs.find(r => r.id === id); if(!item) return;
-    document.getElementById('m-header').innerText = "일정 수정 및 관리";
+    document.getElementById('m-header').innerText = "일정 수정";
     document.getElementById('m-date').value = item.date; document.getElementById('m-time').value = item.time;
     document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof;
     document.getElementById('m-dir').value = item.dir || "";
@@ -316,31 +362,34 @@
     const data = { date, time, prof: type==='off'?'운행중단':reason, dir: type==='off'?reason:dir, status: 'approved', timestamp: Date.now() };
     if(id) await firebase.database().ref(`system/transport_requests/${id}`).update(data);
     else await firebase.database().ref('system/transport_requests').push(data);
-    alert("저장 완료!"); closeModal('allInOneModal');
+    alert("저장되었습니다."); closeModal('allInOneModal');
   }
-  async function deleteRequest() {
+  async function deleteRecord() {
       const id = document.getElementById('allInOneModal').dataset.editId;
-      if(id && confirm("해당 일정을 완전히 삭제하시겠습니까?")) {
-          await firebase.database().ref(`system/transport_requests/${id}`).remove();
-          alert("삭제되었습니다."); closeModal('allInOneModal');
-      }
+      if(confirm("정말 삭제하시겠습니까?")) { await firebase.database().ref(`system/transport_requests/${id}`).remove(); closeModal('allInOneModal'); }
   }
 
-  // [1-2] 뒤로가기 팝업
+  async function approveRequest(id) { 
+      const r = profReqs.find(it => it.id === id);
+      const aiWarn = runAICheck(r.time);
+      if(aiWarn) { if(!confirm(aiWarn + "\n\n그래도 승인하시겠습니까?")) return; }
+      await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); 
+      alert("승인 완료!"); 
+  }
+  async function cancelRequest(id) { if(confirm("불가 처리하시겠습니까?")) { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'cancelled' }); alert("취소되었습니다."); } }
+  
   function handleBack() { if(confirm("포탈 사이트로 이동하시겠습니까?")) location.href = 'potal.html'; }
   function toggleSidebar() { const sb = document.getElementById('sidebar'), ol = document.querySelector('.sidebar-overlay'), isOpen = sb.classList.contains('open'); sb.classList.toggle('open', !isOpen); ol.style.display = isOpen ? 'none' : 'block'; }
-  function switchTab(n) { currentTab = n; document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n)); document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none'); if(n === 2) setTimeout(scrollToBottom, 100); }
+  function switchTab(n) { currentTab = n; document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n)); document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none'); renderAll(); if(n === 2) setTimeout(scrollToBottom, 100); }
   function scrollToBottom() { const box = document.getElementById('chat-list-inner'); box.scrollTop = box.scrollHeight; }
   function updateBadge(count) { const b = document.getElementById('badge-count'); if(count > 0) { b.innerText = count; b.style.display = 'block'; } else b.style.display = 'none'; }
-  function renderAll() { renderSchedule(); renderInstructorChat(); renderTraineeGrid(); }
+  function renderAll() { renderSchedule(); renderTodayTimeline(); renderInstructorChat(); renderTraineeGrid(); }
   function changeWeek(n) { weekOffset += n; renderAll(); }
   function goToday() { weekOffset = 0; renderAll(); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; delete document.getElementById(id).dataset.editId; }
   function getWeekDates(offset) { const now = new Date(), day = now.getDay(), diff = (day === 0 ? 1 : 1 - day), mon = new Date(now); mon.setDate(now.getDate() + diff + (offset * 7)); const res = []; for(let i=0; i<5; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); res.push(d.toISOString().split('T')[0]); } return res; }
-  function toggleReasonInput() { const type = document.getElementById('m-type').value; document.getElementById('prof-only-fields').style.display = type==='off'?'none':'block'; }
-  async function approveRequest(id) { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'approved' }); alert("승인 완료!"); }
-  async function cancelRequest(id) { if(confirm("불가 처리하시겠습니까?")) { await firebase.database().ref(`system/transport_requests/${id}`).update({ status: 'cancelled' }); alert("취소되었습니다."); } }
-  async function clearFinished() { if(confirm("완료 및 취소된 목록을 모두 삭제하시겠습니까?")) { profReqs.filter(r => r.status==='finished' || r.status==='cancelled').forEach(t => firebase.database().ref(`system/transport_requests/${t.id}`).remove()); } }
+  function toggleReasonInput() { const type = document.getElementById('m-type').value; document.getElementById('prof-fields').style.display = type==='off'?'none':'block'; }
+  async function clearFinished() { if(confirm("완료/취소된 목록을 삭제하시겠습니까?")) { profReqs.filter(r => r.status==='finished' || r.status==='cancelled').forEach(t => firebase.database().ref(`system/transport_requests/${t.id}`).remove()); } }
   
   init();
 </script>
