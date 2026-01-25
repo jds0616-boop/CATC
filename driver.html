@@ -70,8 +70,26 @@
 
 
 
-    .chat-container { background: #abc1d1; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 100%; }
-    .req-card { background: #fff; border-radius: 10px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: auto; max-width: 70%; position: relative; align-self: flex-start; font-size: 11px; line-height: 1.4; }
+.chat-container { 
+    background: #abc1d1; 
+    padding: 12px; /* 좌우 여백을 약간 줘서 말풍선이 쏠린게 잘 보이게 함 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    min-height: 100%; 
+}
+.req-card { 
+    background: #fff; 
+    border-radius: 12px; 
+    padding: 12px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    width: auto;      /* 내용이 짧으면 짧게 */
+    max-width: 75%;  /* 하지만 최대 75%까지만 늘어남 */
+    position: relative; 
+    align-self: flex-start; 
+    font-size: 11px; 
+    line-height: 1.4; 
+}
     .req-card.mine { align-self: flex-end; background: #fee500; }
 /* [추가] 강사수송 카드 상태별 색상 */
     .req-card.approved { background: #dcfce7 !important; border: 1.5px solid #22c55e !important; } /* 승인: 연초록 */
@@ -684,7 +702,9 @@ function renderInstructorChat() {
     } else {
       html += `
         <div class="req-card" 
-             style="background:${bgColor}; border:1.5px solid ${borderColor}; opacity:${opacity}; margin-bottom:12px; width:85%; align-self:${isPending ? 'flex-start' : 'flex-end'}; position:relative;" 
+             style="background:${bgColor}; border:1.5px solid ${borderColor}; opacity:${opacity}; margin-bottom:12px; 
+                    width:auto; max-width:75%; /* 가로폭을 내용에 맞게 줄이고 최대 75%로 제한 */
+                    align-self:${isPending ? 'flex-start' : 'flex-end'}; position:relative;" 
              data-id="${r.id}" oncontextmenu="showContextMenu(event, '${r.id}')">
           
           <div style="margin-bottom:8px;">${statusLabel}</div>
@@ -715,14 +735,14 @@ function renderInstructorChat() {
 
           ${isPending ? `
             <div class="req-btn-group" style="display:flex; gap:5px; margin-top:8px;">
-              <button class="mini-btn primary" onclick="approveRequest('${r.id}')" style="flex:1; height:35px; background:#22c55e; border:none; color:#fff;">승인</button>
-              <button class="mini-btn" onclick="cancelRequest('${r.id}')" style="flex:1; height:35px; background:#f1f5f9; border:1px solid #ddd;">불가</button>
+              <button class="mini-btn primary" onclick="approveRequest('${r.id}')" style="flex:1; height:35px; background:#22c55e; border:none; color:#fff; padding: 0 15px;">승인</button>
+              <button class="mini-btn" onclick="cancelRequest('${r.id}')" style="flex:1; height:35px; background:#f1f5f9; border:1px solid #ddd; padding: 0 15px;">불가</button>
             </div>
           ` : isApproved ? `
             <div style="text-align:center; margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:8px;">
               <div style="font-size:11px; color:#166534; font-weight:bold; margin-bottom:5px;">기사님이 배차를 확인했습니다.</div>
               <button class="mini-btn" onclick="if(confirm('이미 승인된 배차입니다. 정말 취소할까요?')) cancelRequest('${r.id}')" 
-                      style="width:100%; height:32px; background:#fff; color:#ef4444; border:1px solid #fecaca; font-size:11px; font-weight:800;">배차 취소하기</button>
+                      style="width:100%; height:32px; background:transparent; color:#ef4444; border:none; font-size:11px; font-weight:800; text-decoration:underline;">배차 취소하기</button>
             </div>
           ` : `
             <div style="font-size:11px; color:#64748b; font-weight:bold; border-top:1px dashed rgba(0,0,0,0.1); margin-top:8px; padding-top:8px; text-align:center;">
@@ -746,6 +766,11 @@ function renderInstructorChat() {
     }, 100);
   }
 }
+
+
+
+
+
 
 
 
