@@ -392,7 +392,7 @@ function renderSchedule() {
       const offDayItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단' && r.status !== 'cancelled');
 
       if(offDayItem && h !== 12) {
-        cell = `<div class="cell-event block-off" draggable="true" ondragstart="onDragStart(event, '${offDayItem.id}')" onclick="openEditSchedule('${offDayItem.id}')">운행불가<br>${offDayItem?.dir || ''}</div>`;
+        cell = `<div class="cell-event block-off" draggable="true" ondragstart="onDragStart(event, '${offDayItem.id}')" onclick="cancelDayOff('${offDayItem.id}')">운행불가<br>${offDayItem?.dir || ''}</div>`;
       }
       else if(d === 0 && (h === 9 || h === 10)) {
         cell = `<div class="cell-event block-entry">입교수송</div>`;
@@ -1162,6 +1162,20 @@ function clickCellNewSchedule(date, time) {
   document.getElementById('s-time').value = time; // 이제 08:00이 그대로 들어갑니다.
 }
 
+
+
+
+// 운행불가 블록 클릭 시 실행되는 함수
+async function cancelDayOff(id) {
+  if (confirm("운행불가를 취소할까요?")) {
+    try {
+      await firebase.database().ref(`system/transport_requests/${id}`).remove();
+      alert("운행불가 일정이 취소(삭제)되었습니다.");
+    } catch (error) {
+      alert("오류가 발생했습니다: " + error.message);
+    }
+  }
+}
 
 init();
 
