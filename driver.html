@@ -448,7 +448,7 @@ function renderSchedule() {
         const items = profReqs.filter(r => 
           r.date === curDate && 
           parseInt(r.time?.split(':')[0]) === h && 
-          r.status !== 'cancelled' && 
+          (r.status === 'approved' || r.status === 'finished') && // ★ 승인 또는 완료된 것만 표시
           r.prof !== '운행중단'
         );
 
