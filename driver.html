@@ -30,7 +30,7 @@
     .menu-item { padding: 15px; display: flex; align-items: center; gap: 12px; font-weight: 700; color: #334155; border-radius: 8px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
 
     .tab-bar { display: flex; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.08); flex-shrink: 0; }
-    .tab-btn { flex: 1; padding: 14px 0; border: none; background: none; font-size: 11px; font-weight: 800; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
+    .tab-btn { flex: 1; padding: 14px 0; border: none; background: none; font-size: 15px; font-weight: 800; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
     .tab-btn.active { color: var(--blue-deep); border-bottom-color: var(--blue); background: #f8fafc; }
     .badge { position: absolute; top: 5px; right: 5px; background: var(--danger); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
 
@@ -38,7 +38,7 @@
 
     .schedule-wrapper { background: #fff; border: 2px solid #000; border-radius: 8px; overflow-x: auto; }
     .schedule-table { width: 100%; border-collapse: collapse; min-width: 450px; table-layout: fixed; }
-    .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px !important; font-size: 10px; vertical-align: middle; position: relative; padding: 0 2px !important; overflow: hidden; }
+    .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px !important; font-size: 13px; vertical-align: middle; position: relative; padding: 0 2px !important; overflow: hidden; }
     .cell-container { width: 100%; height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
     .schedule-table th { background: #f1f5f9; font-weight: 900; color: var(--navy); }
     .time-col { width: 50px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
@@ -359,12 +359,31 @@ function renderSchedule() {
   const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
   const range = getWeekDates(weekOffset);
   document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
-  head.innerHTML = `<tr><th class="time-col">시간</th>${['월','화','수','목','금'].map((day, i) => `<th>${range[i].substring(5)}<br>${day}</th>`).join('')}</tr>`;
+
+  // 1. 상단 날짜 헤더 부분 수정 (요일 크게, 날짜 아래에)
+  const days = ['월', '화', '수', '목', '금'];
+  let headerHtml = `<tr style="height:65px;"><th class="time-col" style="font-size:14px;">시간</th>`;
+  
+  days.forEach((day, i) => {
+    // 2026-01-26 형태에서 월과 일을 추출합니다.
+    const [y, m, d] = range[i].split('-');
+    const formattedDate = `(${parseInt(m)}월 ${parseInt(d)}일)`; // 예: (1월 26일)
+    
+    headerHtml += `<th>
+      <div style="font-size:17px; margin-bottom:3px;">${day}</div>
+      <div style="font-size:11px; font-weight:normal; color:#666;">${formattedDate}</div>
+    </th>`;
+  });
+  headerHtml += `</tr>`;
+  head.innerHTML = headerHtml;
 
   let html = '';
   for(let h=8; h<=18; h++) {
+    // 8시, 9시는 08:00, 09:00으로 표시 (입력창 인식용)
     const timeLabel = h < 10 ? "0" + h + ":00" : h + ":00";
-    html += `<tr><td class="time-col">${timeLabel}</td>`;
+    
+    // 2. 시간 표시칸 글자 크기 살짝 키움 (13px)
+    html += `<tr><td class="time-col" style="font-size:13px; font-weight:bold;">${timeLabel}</td>`;
     
     for(let d=0; d<5; d++) {
       const curDate = range[d];
@@ -379,7 +398,7 @@ function renderSchedule() {
         cell = `<div class="cell-event block-entry">입교수송</div>`;
       }
       else if(h === 12) {
-        cell = `<div class="cell-휴">휴게시간</div>`;
+        cell = `<div class="cell-휴" style="font-size:11px;">휴게시간</div>`;
       }
       else {
         const items = profReqs.filter(r => 
@@ -396,18 +415,18 @@ function renderSchedule() {
             groups[item.dir].push(item);
           });
 
-         const firstDir = Object.keys(groups)[0];
+          const firstDir = Object.keys(groups)[0];
           const groupItems = groups[firstDir];
           const nameDisplay = groupItems.length > 1 ? `${groupItems[0].prof} 외 ${groupItems.length-1}` : groupItems[0].prof;
           const hasMultipleDirs = Object.keys(groups).length > 1;
           const finalName = hasMultipleDirs ? `${nameDisplay} (경로다름)` : nameDisplay;
 
-          // ★ 방향에 따라 색상 클래스 결정
-          let dirClass = "block-prof"; // 기본값
+          // 방향에 따라 색상 클래스 결정 (도착: 빨강계열, 출발: 파랑계열)
+          let dirClass = "block-prof"; 
           if (firstDir.includes("→항기원")) {
-            dirClass = "block-arr"; // 도착은 빨간색
+            dirClass = "block-arr"; 
           } else if (firstDir.includes("항기원→")) {
-            dirClass = "block-dep"; // 출발은 파란색
+            dirClass = "block-dep"; 
           }
 
           let passengerText = "";
@@ -415,11 +434,9 @@ function renderSchedule() {
             passengerText = `<br><span style="font-size:8.5px; opacity:0.8;">(동승:${groupItems[0].passengers.join(',')})</span>`;
           }
 
-          // div class 부분에 dirClass를 넣습니다.
           cell = `<div class="cell-event ${dirClass}" draggable="true" ondragstart="onDragStart(event, '${groupItems[0].id}')" onclick="openEditSchedule('${groupItems[0].id}')">
             ${firstDir}<br>${finalName}${passengerText}
           </div>`;
-          // ★ 여기까지 수정됨
         }
         
         if(!cell) {
@@ -439,8 +456,6 @@ function renderSchedule() {
   }
   body.innerHTML = html;
 }
-
-
 
 
 
