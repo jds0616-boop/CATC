@@ -346,12 +346,16 @@
     </select>
 <!-- 2-1. 입력 필드 지능형 구성 (Ctrl+F: id="reason-area" 검색) -->
     <div id="reason-area">
-        <!-- 강사명 입력 (제주맨 삭제) -->
-        <input type="text" id="m-reason" class="modal-input" placeholder="강사 성함을 입력하세요">
-        
         <div id="prof-fields">
+          <!-- 시간 선택 -->
           <input type="time" id="m-time" class="modal-input">
-          
+
+          <!-- 자동 추천 영역 (새로 추가) -->
+          <div id="smart-suggestion" style="display:none; margin-bottom:15px; padding:10px; background:#eff6ff; border-radius:10px; border:1px solid #bfdbfe;">
+            <div style="font-size:11px; font-weight:800; color:var(--blue-deep); margin-bottom:8px;">💡 이 시간대 승인 대기 목록 (클릭시 자동입력)</div>
+            <div id="suggestion-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+          </div>
+
           <!-- 방향 및 목적지 선택 -->
           <div style="display: flex; gap: 5px; margin-bottom: 10px;">
             <select id="m-dir-type" class="modal-input" style="flex: 1; margin-bottom: 0;">
@@ -365,17 +369,15 @@
               <option value="직접입력">직접입력</option>
             </select>
           </div>
-          <!-- 직접입력 시 나타날 칸 -->
-          <input type="text" id="m-dir-custom" class="modal-input" placeholder="목적지를 직접 입력하세요" style="display:none;">
-          <input type="tel" id="m-phone" class="modal-input" placeholder="강사 연락처">
+          <input type="text" id="m-dir-custom" class="modal-input" placeholder="목적지 직접 입력" style="display:none; margin-bottom:10px;">
+
+          <!-- 강사 정보 (자동입력됨) -->
+          <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 10px; background: #fff;">
+            <input type="text" id="m-reason" class="modal-input" placeholder="강사 성함" style="margin-bottom:5px;">
+            <input type="tel" id="m-phone" class="modal-input" placeholder="연락처" style="margin-bottom:0;">
+          </div>
         </div>
     </div>
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="modal-input" style="background:#f1f5f9; border:none;" onclick="closeModal('allInOneModal')">취소</button>
-        <button class="modal-input" style="background:var(--blue); color:#fff; border:none;" onclick="saveAllInOne()">저장</button>
-    </div>
-    <button id="del-btn" style="width:100%; height:40px; margin-top:10px; background:var(--danger); color:#fff; border:none; border-radius:8px; font-weight:800; display:none;" onclick="deleteRecord()">삭제하기</button>
-  </div>
 </div>
 
 <script src="config.js"></script>
@@ -444,35 +446,48 @@ function renderSchedule() {
       const curDate = range[d];
       let cell = '';
 
-      // 1. 운행불가 체크
       const offDayItem = profReqs.find(r => r.date === curDate && r.prof === '운행중단' && r.status !== 'cancelled');
 
       if(offDayItem && h !== 12) {
         cell = `<div class="cell-event block-off" onclick="openEditModal('${offDayItem.id}')">운행불가<br>${offDayItem?.dir || ''}</div>`;
       }
-      // 2. 입교수송 (월요일 9~10시)
       else if(d === 0 && (h === 9 || h === 10)) {
         cell = `<div class="cell-event block-entry">입교수송</div>`;
       }
-      // 3. 점심시간
       else if(h === 12) {
         cell = `<div class="cell-休">휴게시간</div>`;
       }
       else {
-        // 4. 강사수송 (지능형 요약 로직)
-        const matches = profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled' && r.prof !== '운행중단');
-        
-        if(matches.length > 0) {
-          const first = matches[0];
-          // 2명 이상이면 "외 N명" 표시, 1명이면 "구간/성함" 표시
-          const displayStr = matches.length > 1 
-            ? `${first.dir}<br>외 ${matches.length - 1}건` 
-            : `${first.dir}<br>${first.prof}`;
+        // [지능형 합승 로직] 같은 날짜/시간/방향인 데이터를 그룹화
+        const items = profReqs.filter(r => 
+          r.date === curDate && 
+          parseInt(r.time?.split(':')[0]) === h && 
+          r.status !== 'cancelled' && 
+          r.prof !== '운행중단'
+        );
+
+        if(items.length > 0) {
+          // 방향별로 묶기
+          const groups = {};
+          items.forEach(item => {
+            if(!groups[item.dir]) groups[item.dir] = [];
+            groups[item.dir].push(item);
+          });
+
+          // 화면에는 첫 번째 그룹(방향) 위주로 표시
+          const firstDir = Object.keys(groups)[0];
+          const groupItems = groups[firstDir];
+          const nameDisplay = groupItems.length > 1 ? `${groupItems[0].prof} 외 ${groupItems.length-1}` : groupItems[0].prof;
           
-          cell = `<div class="cell-event block-prof" onclick="${matches.length > 1 ? 'switchTab(2)' : `openEditModal('${first.id}')`}">${displayStr}</div>`;
+          // 방향이 여러 개면 색상이나 텍스트로 알림
+          const hasMultipleDirs = Object.keys(groups).length > 1;
+          const finalName = hasMultipleDirs ? `${nameDisplay} (경로다름)` : nameDisplay;
+
+          cell = `<div class="cell-event block-prof" onclick="openMultiSelect('${curDate}', '${h}:00')">
+            ${firstDir}<br>${finalName}
+          </div>`;
         }
         
-        // 5. 퇴교수송 (강사수송이 없을 때만 표시하거나 겹치게 처리)
         if(!cell) {
           for(let rid in allCourses) {
             const dep = allCourses[rid]?.shuttle?.departure;
@@ -483,7 +498,6 @@ function renderSchedule() {
           }
         }
       }
-      
       html += `<td onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cell}</td>`;
     }
     html += `</tr>`;
@@ -787,15 +801,90 @@ function renderTraineeGrid() {
     draggedItem = null;
   }
 
-  function openEmptyCell(date, time) {
-    document.getElementById('m-header').innerText = "새 일정 추가"; 
-    document.getElementById('m-date').value = date; 
-    document.getElementById('m-time').value = time;
-    document.getElementById('prof-fields').style.display = 'block'; 
-    document.getElementById('m-type').value = 'prof';
-    document.getElementById('del-btn').style.display = 'none'; 
-    document.getElementById('allInOneModal').style.display = 'flex';
+function openEmptyCell(date, time) {
+  const modal = document.getElementById('allInOneModal');
+  document.getElementById('m-header').innerText = "새 일정 추가"; 
+  document.getElementById('m-date').value = date; 
+  document.getElementById('m-time').value = time;
+  
+  // 입력 필드 초기화
+  document.getElementById('m-reason').value = "";
+  document.getElementById('m-phone').value = "";
+  document.getElementById('m-dir-custom').value = "";
+  document.getElementById('prof-fields').style.display = 'block'; 
+  document.getElementById('m-type').value = 'prof';
+  document.getElementById('del-btn').style.display = 'none'; 
+
+  // [지능형 로직] 해당 시간대의 승인 대기 강사 찾기
+  const suggestions = profReqs.filter(r => r.date === date && r.status === 'pending');
+  const suggestDiv = document.getElementById('smart-suggestion');
+  const suggestList = document.getElementById('suggestion-list');
+
+  if(suggestions.length > 0) {
+    suggestDiv.style.display = 'block';
+    suggestList.innerHTML = suggestions.map(s => `
+      <button type="button" class="mini-btn" style="width:100%; text-align:left; padding:8px; background:#fff;" 
+        onclick="autoFillProf('${s.id}')">
+        <b>${s.prof}</b> (${s.dir}) - ${s.time}
+      </button>
+    `).join('');
+  } else {
+    suggestDiv.style.display = 'none';
   }
+
+  modal.style.display = 'flex';
+}
+
+
+
+
+
+
+// 자동 입력 함수 (추가)
+function autoFillProf(id) {
+  const item = profReqs.find(r => r.id === id);
+  if(!item) return;
+  
+  document.getElementById('m-time').value = item.time;
+  document.getElementById('m-reason').value = item.prof;
+  document.getElementById('m-phone').value = item.phone || "";
+  
+  // 방향 자동 선택
+  if(item.dir.includes('→항기원')) {
+    document.getElementById('m-dir-type').value = 'arrival';
+    setLocValues(item.dir.replace('→항기원', ''));
+  } else if(item.dir.includes('항기원→')) {
+    document.getElementById('m-dir-type').value = 'departure';
+    setLocValues(item.dir.replace('항기원→', ''));
+  }
+  
+  // 자동 승인 처리용 ID 보관
+  document.getElementById('allInOneModal').dataset.pendingId = id;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function openEditModal(id) {
   const item = profReqs.find(r => r.id === id); 
@@ -901,37 +990,42 @@ function setLocValue(loc) {
   }
 
 async function saveAllInOne() {
-  const id = document.getElementById('allInOneModal').dataset.editId; 
+  const modal = document.getElementById('allInOneModal');
+  const id = modal.dataset.editId;
+  const pendingId = modal.dataset.pendingId; // 자동매칭된 원본 ID
   const type = document.getElementById('m-type').value;
+  
   const date = document.getElementById('m-date').value;
   const time = document.getElementById('m-time').value;
-  const profName = document.getElementById('m-reason').value;
+  const prof = document.getElementById('m-reason').value;
   const phone = document.getElementById('m-phone').value;
 
-  // 방향 및 목적지 합치기
   const dirType = document.getElementById('m-dir-type').value;
   const dirLoc = document.getElementById('m-dir-loc').value;
   const customLoc = document.getElementById('m-dir-custom').value;
-  
   const finalLoc = (dirLoc === '직접입력') ? customLoc : dirLoc;
   const finalDir = (dirType === 'arrival') ? `${finalLoc}→항기원` : `항기원→${finalLoc}`;
 
-  if(type === 'prof' && !profName) { alert("강사 성함을 입력해주세요."); return; }
-
   const data = { 
     date, time, 
-    prof: type === 'off' ? '운행중단' : profName, 
-    dir: finalDir,
-    phone: phone,
+    prof: type === 'off' ? '운행중단' : prof, 
+    phone, dir: finalDir, 
     status: 'approved', 
     timestamp: Date.now() 
   };
   
   if(id) {
+    // 1. 기존 일정 수정
     await firebase.database().ref(`system/transport_requests/${id}`).update(data);
+  } else if(pendingId) {
+    // 2. 대기 중인 요청을 선택해서 등록한 경우 (자동 업데이트)
+    await firebase.database().ref(`system/transport_requests/${pendingId}`).update(data);
   } else {
+    // 3. 완전히 새로 수동 등록
     await firebase.database().ref('system/transport_requests').push(data);
   }
+  
+  delete modal.dataset.pendingId;
   closeModal('allInOneModal');
 }
 
