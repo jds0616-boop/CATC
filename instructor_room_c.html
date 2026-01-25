@@ -1,3 +1,5 @@
+--- START OF FILE instructor_room_c.html ---
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
-    <!-- 공통 설정 파일 (이미 Firebase 앱이 실행되어 있어도 중복에러 안나게 로직 처리함) -->
+    <!-- 공통 설정 파일 -->
     <script src="config.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -37,24 +39,45 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--kac-blue); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 30px;
+            padding: 20px;
         }
         .login-box {
             background: white; width: 100%; max-width: 320px;
-            padding: 35px 30px; border-radius: 24px; text-align: center;
+            padding: 30px 25px; border-radius: 24px; text-align: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
-        .login-box h2 { font-size: 18px; margin-bottom: 25px; color: var(--kac-blue); font-weight: 800; }
+        .login-box h2 { font-size: 18px; margin-bottom: 20px; color: var(--kac-blue); font-weight: 800; }
         .login-input {
             width: 100%; padding: 14px; border: 2px solid #e2e8f0;
             border-radius: 12px; font-size: 16px; text-align: center;
-            margin-bottom: 15px; outline: none; transition: 0.3s;
+            margin-bottom: 12px; outline: none; transition: 0.3s;
         }
         .login-input:focus { border-color: var(--accent-blue); }
         .login-btn {
             width: 100%; padding: 14px; background: var(--accent-blue);
             color: white; border: none; border-radius: 12px;
             font-weight: 800; font-size: 16px; cursor: pointer;
+        }
+
+        /* QR 코드 섹션 추가 */
+        .qr-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px dashed #e2e8f0;
+        }
+        .qr-section p {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .qr-section img {
+            width: 120px;
+            height: 120px;
+            background: white;
+            padding: 5px;
+            border: 1px solid #eee;
+            border-radius: 8px;
         }
 
         /* 메인 헤더 */
@@ -111,14 +134,20 @@
 </head>
 <body>
 
-    <!-- 1. 비밀번호 인증 (5시간 유지 로직) -->
+    <!-- 1. 비밀번호 인증 (QR코드 포함) -->
     <div id="authOverlay">
         <div class="login-box">
             <h2>Room C 강사 인증</h2>
             <input type="password" id="pwInput" class="login-input" placeholder="비밀번호 입력" onkeyup="if(window.event.keyCode==13){checkAuth()}">
             <button class="login-btn" onclick="checkAuth()">입장하기</button>
             <p id="errorMsg" style="color:#ef4444; font-size:12px; margin-top:10px; display:none;">비밀번호가 일치하지 않습니다.</p>
-            <p style="color:#94a3b8; font-size:11px; margin-top:15px;">인증 시 5시간 동안 자동 로그인됩니다.</p>
+            
+            <!-- QR 코드 안내 영역 -->
+            <div class="qr-section">
+                <p><i class="fa-solid fa-qrcode"></i> 모바일 접속 QR코드</p>
+                <img id="qrCode" src="" alt="접속 QR코드">
+                <div style="color:#94a3b8; font-size:10px; margin-top:8px;">이 화면을 스캔하면 바로 접속됩니다.</div>
+            </div>
         </div>
     </div>
 
@@ -147,11 +176,8 @@
          * [파이어베이스 중복 초기화 방지 로직]
          */
         if (!firebase.apps.length) {
-            // config.js에 정의된 firebaseConfig가 있을 경우 실행
             if (typeof firebaseConfig !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
-            } else {
-                console.error("Firebase config not found. Please check config.js");
             }
         }
         const db = firebase.database();
@@ -163,7 +189,7 @@
          * [인증 로직 - 5시간 유지]
          */
         const AUTH_KEY = 'kac_room_c_auth_v4';
-        const EXPIRE_TIME = 5 * 60 * 60 * 1000; // 5시간
+        const EXPIRE_TIME = 5 * 60 * 60 * 1000;
 
         function checkAuth() {
             const inputVal = document.getElementById('pwInput').value.trim();
@@ -177,8 +203,18 @@
             }
         }
 
-        // 로드 시 자동 로그인 체크
+        // QR 코드 생성 함수 (현재 페이지 주소 기반)
+        function generatePageQR() {
+            const currentUrl = window.location.href;
+            const qrImg = document.getElementById('qrCode');
+            // QR Server API 활용
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
+        }
+
+        // 로드 시 실행
         window.addEventListener('load', () => {
+            generatePageQR(); // QR 생성
+            
             const lastAuth = localStorage.getItem(AUTH_KEY);
             if (lastAuth && (new Date().getTime() - lastAuth < EXPIRE_TIME)) {
                 document.getElementById('authOverlay').style.display = 'none';
@@ -190,12 +226,10 @@
          * [앱 메인 로직]
          */
         function startApp() {
-            // 과정명 로드
             db.ref(`courses/${ROOM_ID}/settings/courseName`).on('value', snap => {
                 document.getElementById('courseTitle').innerText = snap.val() || "진행 중인 과정 정보 없음";
             });
 
-            // 강사 명단 로드 (Subjects)
             db.ref(`courses/${ROOM_ID}/settings/subjects`).on('value', snap => {
                 const subjects = snap.val() || {};
                 const wrapper = document.getElementById('instructorChips');
@@ -221,12 +255,10 @@
          * [강사 선택 시 질문 로딩]
          */
         function setInstructor(name, el) {
-            // UI 상태 변경
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
             currentInstructor = name;
 
-            // 기존 리스너 해제 (데이터 중복 방지)
             if (qaListener) db.ref(`courses/${ROOM_ID}/questions`).off('value', qaListener);
 
             const container = document.getElementById('qaList');
@@ -236,30 +268,23 @@
                     <p>${name} 강사님에게 온 질문을<br>실시간으로 불러오는 중입니다...</p>
                 </div>`;
 
-            // 선택된 강사 질문만 실시간 연결
             qaListener = db.ref(`courses/${ROOM_ID}/questions`).on('value', snap => {
                 const allData = snap.val() || {};
                 renderFilteredList(allData);
             });
         }
 
-        /**
-         * [필터링 렌더링]
-         */
         function renderFilteredList(data) {
             const container = document.getElementById('qaList');
             container.innerHTML = "";
 
             let items = Object.keys(data).map(k => ({ id: k, ...data[k] }));
 
-            // 1. 삭제된 질문 제외
-            // 2. 현재 선택한 강사 이름이 subject에 포함된 경우만 필터링
             items = items.filter(q => 
                 q.status !== 'delete' && 
                 (q.subject || "").includes(currentInstructor)
             );
 
-            // 공감(좋아요)순 -> 최신순 정렬
             items.sort((a, b) => (b.likes || 0) - (a.likes || 0) || b.timestamp - a.timestamp);
 
             if (items.length === 0) {
