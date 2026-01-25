@@ -38,7 +38,12 @@
 
     /* 종합일정표 */
     .schedule-wrapper { background: #fff; border: 2px solid #000; border-radius: 8px; overflow-x: auto; }
-    .schedule-table { width: 100%; border-collapse: collapse; min-width: 450px; }
+.schedule-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  min-width: 450px; 
+  table-layout: fixed; /* 모든 칸 너비를 일정하게 고정 */
+}
     .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px; font-size: 10px; vertical-align: middle; position: relative; }
     .schedule-table th { background: #f1f5f9; font-weight: 900; color: var(--navy); }
     .time-col { width: 50px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
@@ -63,13 +68,14 @@
 .req-card { 
   background: #fff; 
   border-radius: 10px; 
-  padding: 10px;  /* 12px → 10px */
+  padding: 10px; 
   box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-  width: 85%; 
+  width: auto;           /* 너비를 내용에 맞게 */
+  max-width: 70%;        /* 너무 길지 않게 제한 */
   position: relative; 
   align-self: flex-start; 
-  font-size: 11px;  /* ✨ 추가 */
-  line-height: 1.4;  /* ✨ 추가 */
+  font-size: 11px; 
+  line-height: 1.4; 
 }
     .req-card.mine { align-self: flex-end; background: #fee500; }
     .req-card.mine::after { content: ''; position: absolute; top: 10px; right: -8px; border-left: 10px solid #fee500; border-bottom: 10px solid transparent; }
@@ -109,6 +115,14 @@
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
     .modal-box { background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; }
     .modal-input { width: 100%; height: 45px; border: 1.5px solid #ddd; border-radius: 8px; padding: 0 10px; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+
+#view-0 { background: var(--bg); min-height: 100%; }
+#view-1 { background: var(--bg); min-height: 100%; }
+#view-2 { background: #abc1d1; min-height: 100%; } 
+#view-3 { background: var(--bg); min-height: 100%; }
+
+
+
 </style>
 </head>
 <body>
@@ -234,6 +248,7 @@
         <div id="prof-fields">
           <input type="time" id="m-time" class="modal-input">
           <input type="text" id="m-dir" class="modal-input" placeholder="오송→항기원">
+          <input type="tel" id="m-phone" class="modal-input" placeholder="강사 연락처 (예: 010-1234-5678)">
         </div>
     </div>
     <div style="display:flex; gap:10px; margin-top:10px;">
@@ -531,34 +546,41 @@ function renderInstructorChat() {
 
 
 
-  function renderTraineeGrid() {
-    const container = document.getElementById('trainee-list-body');
-    let html = "";
-    Object.keys(allCourses).forEach(rid => {
-      const room = allCourses[rid]; 
-      if(room.status?.roomStatus !== 'active') return;
-      const dep = room.shuttle?.departure || { time: "", announced: false };
-      const total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
-      
-      html += `<div class="course-row">
-        <div class="t-cell">${room.settings?.courseName || '과정명'}</div>
-        <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
-        <div class="t-cell">
-          <div class="time-grid">
-            ${['13:00','15:00'].map(t => `<button class="mini-btn ${dep.time===t?'primary':''}" onclick="setDeparture('${rid}','${t}')">${t}</button>`).join('')}
-            <input type="time" class="time-input" value="${dep.time && dep.time!=='13:00' && dep.time!=='15:00' ? dep.time : ''}" onchange="setDeparture('${rid}', this.value)" placeholder="직접입력">
-          </div>
-        </div>
-        <div class="t-cell">
-          <button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})">
-            <i class="fa-solid fa-bullhorn"></i>
-          </button>
-        </div>
-      </div>`;
-    });
-    container.innerHTML = html;
-  }
+function renderTraineeGrid() {
+  const container = document.getElementById('trainee-list-body');
+  let html = "";
+  Object.keys(allCourses).forEach(rid => {
+    const room = allCourses[rid]; 
+    if(room.status?.roomStatus !== 'active') return;
+    const dep = room.shuttle?.departure || { time: "", announced: false };
+    const total = Object.values(room.shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+    
+    // 13:00부터 18:00까지 선택 옵션 만들기
+    let timeOptions = `<option value="">시간 선택</option>`;
+    for(let h=13; h<=18; h++) {
+      const t1 = h + ":00";
+      const t2 = h + ":30";
+      timeOptions += `<option value="${t1}" ${dep.time===t1?'selected':''}>${t1}</option>`;
+      if(h !== 18) timeOptions += `<option value="${t2}" ${dep.time===t2?'selected':''}>${t2}</option>`;
+    }
 
+    html += `<div class="course-row">
+      <div class="t-cell">${room.settings?.courseName || '과정명'}</div>
+      <div class="t-cell" style="color:var(--blue); font-weight:900;">${total}명</div>
+      <div class="t-cell">
+        <select class="time-input" style="width:90%;" onchange="setDeparture('${rid}', this.value)">
+          ${timeOptions}
+        </select>
+      </div>
+      <div class="t-cell">
+        <button class="notice-btn ${dep.announced?'active':''}" onclick="toggleNotice('${rid}', ${dep.announced})">
+          <i class="fa-solid fa-bullhorn"></i>
+        </button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
   async function setDeparture(rid, time) { 
     if(!time) return;
     const depDate = allCourses[rid].shuttle?.departure?.date || new Date().toISOString().split('T')[0];
@@ -634,20 +656,21 @@ function renderInstructorChat() {
     document.getElementById('allInOneModal').style.display = 'flex';
   }
 
-  function openEditModal(id) {
-    const item = profReqs.find(r => r.id === id); 
-    if(!item) return;
-    document.getElementById('m-header').innerText = "일정 수정"; 
-    document.getElementById('m-date').value = item.date; 
-    document.getElementById('m-time').value = item.time;
-    document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof; 
-    document.getElementById('m-dir').value = item.dir||"";
-    document.getElementById('m-type').value = item.prof==='운행중단'?'off':'prof'; 
-    toggleReasonInput();
-    document.getElementById('allInOneModal').dataset.editId = id; 
-    document.getElementById('del-btn').style.display='block'; 
-    document.getElementById('allInOneModal').style.display='flex';
-  }
+function openEditModal(id) {
+  const item = profReqs.find(r => r.id === id); 
+  if(!item) return;
+  document.getElementById('m-header').innerText = "일정 수정"; 
+  document.getElementById('m-date').value = item.date; 
+  document.getElementById('m-time').value = item.time;
+  document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof; 
+  document.getElementById('m-dir').value = item.dir||"";
+  document.getElementById('m-phone').value = item.phone||""; // 연락처 불러오기 추가
+  document.getElementById('m-type').value = item.prof==='운행중단'?'off':'prof'; 
+  toggleReasonInput();
+  document.getElementById('allInOneModal').dataset.editId = id; 
+  document.getElementById('del-btn').style.display='block'; 
+  document.getElementById('allInOneModal').style.display='flex';
+}
 
   function openDayOffModal() {
     toggleSidebar();
@@ -696,10 +719,10 @@ function renderInstructorChat() {
     alert('운행불가 일정이 등록되었습니다');
   }
 
-  async function saveAllInOne() {
-    const id = document.getElementById('allInOneModal').dataset.editId; 
-    const type = document.getElementById('m-type').value;
-    const date = document.getElementById('m-date').value;
+async function saveAllInOne() {
+  const id = document.getElementById('allInOneModal').dataset.editId; 
+  const type = document.getElementById('m-type').value;
+  const date = document.getElementById('m-date').value;
 
   const today = new Date().toISOString().split('T')[0];
   if(date < today && !id) {
@@ -707,26 +730,41 @@ function renderInstructorChat() {
     return;
   }
 
+  const time = document.getElementById('m-time').value;
+  const reason = document.getElementById('m-reason').value;
+  const dir = document.getElementById('m-dir').value;
+  const phone = document.getElementById('m-phone').value; // 연락처 가져오기
 
+  const conflicts = profReqs.filter(r => 
+    r.date === date && 
+    r.time === time && 
+    r.status !== 'cancelled' &&
+    r.id !== id
+  );
 
-    const time = document.getElementById('m-time').value;
-    const reason = document.getElementById('m-reason').value;
-    const dir = document.getElementById('m-dir').value;
-    
-
-
-const conflicts = profReqs.filter(r => 
-  r.date === date && 
-  r.time === time && 
-  r.status !== 'cancelled' &&
-  r.id !== id
-);
-
-if(conflicts.length > 0) {
-  const names = conflicts.map(c => c.prof || '강사').join(', ');
-  if(!confirm(`⚠️ ${time}에 이미 ${names} 일정이 있습니다.\n계속 추가하시겠습니까?`)) {
-    return;
+  if(conflicts.length > 0) {
+    const names = conflicts.map(c => c.prof || '강사').join(', ');
+    if(!confirm(`⚠️ ${time}에 이미 ${names} 일정이 있습니다.\n계속 추가하시겠습니까?`)) {
+      return;
+    }
   }
+
+  const data = { 
+    date, 
+    time, 
+    prof: type==='off'?'운행중단':reason, 
+    dir: type==='off'?reason:dir, 
+    phone: type==='off'?'':phone, // 연락처 데이터 추가
+    status: 'approved', 
+    timestamp: Date.now() 
+  };
+  
+  if(id) {
+    await firebase.database().ref(`system/transport_requests/${id}`).update(data);
+  } else {
+    await firebase.database().ref('system/transport_requests').push(data);
+  }
+  closeModal('allInOneModal');
 }
 
 
@@ -740,22 +778,6 @@ if(conflicts.length > 0) {
 
 
 
-    const data = { 
-      date, 
-      time, 
-      prof: type==='off'?'운행중단':reason, 
-      dir: type==='off'?reason:dir, 
-      status: 'approved', 
-      timestamp: Date.now() 
-    };
-    
-    if(id) {
-      await firebase.database().ref(`system/transport_requests/${id}`).update(data);
-    } else {
-      await firebase.database().ref('system/transport_requests').push(data);
-    }
-    closeModal('allInOneModal');
-  }
 
   async function deleteRecord() { 
     if(confirm("삭제할까요?")) { 
