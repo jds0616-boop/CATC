@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover" />
   <title>항공기술훈련원 차량지원시스템</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -37,11 +37,22 @@
     .app-content { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 
     .schedule-wrapper { background: #fff; border: 2px solid #000; border-radius: 8px; overflow-x: auto; }
-    .schedule-table { width: 100%; border-collapse: collapse; min-width: 450px; table-layout: fixed; }
+    .schedule-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  min-width: 380px; /* 450px에서 380px로 하향 조정 */
+  table-layout: fixed; 
+}
     .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px !important; font-size: 13px; vertical-align: middle; position: relative; padding: 0 2px !important; overflow: hidden; }
     .cell-container { width: 100%; height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
     .schedule-table th { background: #f1f5f9; font-weight: 900; color: var(--navy); }
-    .time-col { width: 50px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
+.time-col { 
+  width: 42px; /* 50px에서 42px로 축소 */
+  background: #f1f5f9 !important; 
+  font-weight: 800; 
+  font-size: 11px; /* 글자 크기도 살짝 줄임 */
+  border-right: 2px solid var(--navy) !important; 
+}
     .drop-target { background-color: #e0f2fe !important; }
     .cell-event { border-radius: 4px; padding: 2px; height: 38px; font-size: 9px; font-weight: 800; line-height: 1.1; cursor: pointer; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .block-entry { background: #eff6ff; color: #1e40af; border: 1px solid #1e40af; }
@@ -143,7 +154,15 @@
 
 
 
-
+/* CSS 맨 아래에 추가 */
+@media screen and (max-width: 400px) {
+    .schedule-table th { font-size: 11px; } /* 요일 글자 */
+    .schedule-table td { height: 40px !important; } /* 칸 높이 줄임 */
+    .cell-event { 
+        font-size: 8px !important; /* 일정 글자 크기 축소 */
+        padding: 1px !important;
+    }
+}
 
 
 
