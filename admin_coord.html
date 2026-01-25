@@ -827,11 +827,10 @@ body.modal-open .app-content {
 }
 
 /* 5개 열 너비 비율 강제 고정 (합계 100%) */
-.col-1 { width: 22%; } /* 과정명 */
-.col-2 { width: 17%; } /* 성함 */
-.col-3 { width: 22%; } /* 생활관 */
-.col-4 { width: 17%; } /* 차량 */
-.col-5 { width: 22%; } /* 외출 */
+.col-1 { width: 28%; } /* 과정명 */
+.col-2 { width: 22%; } /* 성함 */
+.col-3 { width: 30%; } /* 생활관 */
+.col-4 { width: 20%; } /* 차량 */
 
 /* 과정명 2줄까지만 허용하고 자르기 */
 .course-cell {
@@ -3265,10 +3264,14 @@ async function showTotalStudentList() {
     await loadAllStudentData();
 }
 
-// [수정] 모든 과정의 교육생 정보를 긁어모아 테이블 데이터 생성
+
+
+
+
+
 async function loadAllStudentData() {
     const tbody = document.getElementById('allStudentTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:50px;">데이터를 통합 중입니다...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:50px;">데이터를 통합 중입니다...</td></tr>';
     
     const today = getTodayString();
     masterStudentList = [];
@@ -3288,45 +3291,32 @@ async function loadAllStudentData() {
             const phoneSuffix = s.phone ? s.phone.slice(-4) : "0000";
             const sKey = `${s.name.trim()}_${phoneSuffix}`;
 
-            // A. 생활관 정보 찾기
             let assigned = dormData[sKey] || dormData[s.name.trim()];
-            if (!assigned) {
-                const foundKey = Object.keys(dormData).find(k => k.startsWith(s.name.trim()));
-                if (foundKey) assigned = dormData[foundKey];
-            }
-
             const dorm = assigned || { building: "-", room: "미배정" };
             
-            // B. 퇴교 차량 정보 찾기
+            // 퇴교 차량 정보
             const shuttleReq = room.shuttle?.requests?.[stoken];
             let shuttleText = "-";
             let shuttleClass = "";
+            let shuttleType = ""; 
             if(shuttleReq) {
                 const types = { osong: '오송역', terminal: '터미널', airport: '공항', car: '자차' };
                 shuttleText = types[shuttleReq.type] || "신청";
                 shuttleClass = `badge-shuttle badge-${shuttleReq.type}`;
-            }
-
-            // C. 외출/외박 정보 찾기
-            const action = room.admin_actions?.[today]?.[stoken];
-            let actionText = "-";
-            let actionClass = "";
-            if(action) {
-                actionText = action.type === 'outing' ? '외출' : '외박';
-                actionClass = action.type === 'outing' ? 'text-outing' : 'text-overnight';
-                if(action.returned) actionText += " (복귀)";
+                shuttleType = shuttleReq.type;
             }
 
             masterStudentList.push({
+                rid,      // 과정ID 추가
+                stoken,   // 학생토큰 추가
                 courseName,
                 name: s.name,
                 phone: phoneSuffix,
-                dormBuilding: dorm.building, // 건물명 분리
-                dormRoom: dorm.room !== '미배정' ? `${dorm.room}호` : "미배정", // 호실 분리
+                dormBuilding: dorm.building,
+                dormRoom: dorm.room !== '미배정' ? `${dorm.room}호` : "미배정",
                 shuttleText,
                 shuttleClass,
-                actionText,
-                actionClass,
+                shuttleType,
                 searchKey: (courseName + s.name).toLowerCase()
             });
         });
@@ -3342,42 +3332,81 @@ async function loadAllStudentData() {
 
 
 
+
+
+
 function renderStudentTable(list) {
     const tbody = document.getElementById('allStudentTableBody');
     if(!tbody) return;
 
     if(list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;">데이터가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:40px;">데이터가 없습니다.</td></tr>';
         return;
     }
 
     tbody.innerHTML = list.map(s => {
-        // 차량/외출 데이터가 없으면 '-' 표시
         const shuttleHtml = s.shuttleText !== "-" 
-            ? `<span class="badge-shuttle ${s.shuttleClass}" style="font-size:9px; padding:2px 3px;">${s.shuttleText}</span>` 
-            : `<span style="color:#eee">-</span>`;
-
-        const actionHtml = s.actionText !== "-" 
-            ? `<span class="status-action ${s.actionClass}" style="font-size:9px; font-weight:800;">${s.actionText}</span>` 
-            : `<span style="color:#eee">-</span>`;
+            ? `<span class="badge-shuttle ${s.shuttleClass}" style="font-size:10px; padding:4px 6px;">${s.shuttleText}</span>` 
+            : `<span style="color:#cbd5e1; font-size:12px;">미신청</span>`;
 
         return `
         <tr>
-            <td><div class="course-cell">${s.courseName}</div></td>
-            <td>
-                <span class="bold-text" style="font-size:11px;">${s.name}</span>
-                <span style="color:#cbd5e1; font-size:8.5px;">${s.phone}</span>
+            <td class="col-1"><div class="course-cell">${s.courseName}</div></td>
+            <td class="col-2">
+                <span class="bold-text" style="font-size:13px;">${s.name}</span>
+                <span style="color:#94a3b8; font-size:10px;">${s.phone}</span>
             </td>
-            <td>
-                <span class="blue-text" style="font-size:10px;">${s.dormBuilding}</span>
-                <span style="color:#64748b; font-size:9px;">${s.dormRoom}</span>
+            <td class="col-3">
+                <span class="blue-text" style="font-size:12px;">${s.dormBuilding}</span>
+                <span style="color:#64748b; font-size:11px;">${s.dormRoom}</span>
             </td>
-            <td>${shuttleHtml}</td>
-            <td>${actionHtml}</td>
+            <!-- 차량 칸 클릭 시 수정 함수 호출 -->
+            <td class="col-4" onclick="changeStudentTransport('${s.rid}', '${s.stoken}', '${s.name}')" style="cursor:pointer; background:#f0f9ff;">
+                ${shuttleHtml}
+            </td>
         </tr>
         `;
     }).join('');
 }
+
+// [신규] 관리자용 차량 이동수단 강제 변경 함수
+async function changeStudentTransport(rid, stoken, name) {
+    const menu = `[${name}님 차량 변경]\n\n1. 오송역\n2. 터미널\n3. 청주공항\n4. 자차\n0. 신청취소(삭제)`;
+    const input = prompt(menu, "1");
+    
+    if (input === null) return; // 취소 클릭 시
+
+    const typeMap = { "1": "osong", "2": "terminal", "3": "airport", "4": "car" };
+    const selectedType = typeMap[input];
+
+    try {
+        const ref = firebase.database().ref(`courses/${rid}/shuttle/requests/${stoken}`);
+        
+        if (input === "0") {
+            if(confirm(`${name}님의 수송 신청을 삭제할까요?`)) {
+                await ref.remove();
+            }
+        } else if (selectedType) {
+            await ref.update({
+                name: name,
+                type: selectedType,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        } else {
+            alert("잘못된 입력입니다. 1~4번 숫자를 입력해주세요.");
+            return;
+        }
+        
+        // 데이터 리로드는 리스너가 처리하지만, 즉각적인 반응을 위해 로컬 데이터 갱신 유도
+        alert("변경되었습니다.");
+        loadAllStudentData(); // 명단 새로고침
+        
+    } catch (e) {
+        alert("변경 중 오류 발생: " + e.message);
+    }
+}
+
+
 
 
 
