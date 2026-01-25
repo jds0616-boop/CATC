@@ -51,6 +51,14 @@
     .block-off::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(239,68,68,0.2) 5px, rgba(239,68,68,0.2) 10px); }
     .cell-휴 { background: #fafafa; color: #999; font-size: 9px; }
 
+
+/* 도착(빨강) 및 출발(파랑) 색상 정의 */
+    .block-arr { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #f87171 !important; } /* 도착: 연빨강 */
+    .block-dep { background: #e0f2fe !important; color: #075985 !important; border: 1px solid #7dd3fc !important; } /* 출발: 연파랑 */
+
+
+
+
     .chat-container { background: #abc1d1; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 100%; }
     .req-card { background: #fff; border-radius: 10px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: auto; max-width: 70%; position: relative; align-self: flex-start; font-size: 11px; line-height: 1.4; }
     .req-card.mine { align-self: flex-end; background: #fee500; }
@@ -388,19 +396,27 @@ function renderSchedule() {
             groups[item.dir].push(item);
           });
 
-          const firstDir = Object.keys(groups)[0];
+         const firstDir = Object.keys(groups)[0];
           const groupItems = groups[firstDir];
           const nameDisplay = groupItems.length > 1 ? `${groupItems[0].prof} 외 ${groupItems.length-1}` : groupItems[0].prof;
           const hasMultipleDirs = Object.keys(groups).length > 1;
           const finalName = hasMultipleDirs ? `${nameDisplay} (경로다름)` : nameDisplay;
 
-          // ★ 여기부터 수정됨: 동승객이 있으면 이름을 추가로 표시합니다.
-          let passengerText = "";
-          if(groupItems[0].passengers && groupItems[0].passengers.length > 0) {
-            passengerText = `<br><span style="font-size:8.5px; color:#555; font-weight:normal;">(동승:${groupItems[0].passengers.join(',')})</span>`;
+          // ★ 방향에 따라 색상 클래스 결정
+          let dirClass = "block-prof"; // 기본값
+          if (firstDir.includes("→항기원")) {
+            dirClass = "block-arr"; // 도착은 빨간색
+          } else if (firstDir.includes("항기원→")) {
+            dirClass = "block-dep"; // 출발은 파란색
           }
 
-          cell = `<div class="cell-event block-prof" draggable="true" ondragstart="onDragStart(event, '${groupItems[0].id}')" onclick="openEditSchedule('${groupItems[0].id}')">
+          let passengerText = "";
+          if(groupItems[0].passengers && groupItems[0].passengers.length > 0) {
+            passengerText = `<br><span style="font-size:8.5px; opacity:0.8;">(동승:${groupItems[0].passengers.join(',')})</span>`;
+          }
+
+          // div class 부분에 dirClass를 넣습니다.
+          cell = `<div class="cell-event ${dirClass}" draggable="true" ondragstart="onDragStart(event, '${groupItems[0].id}')" onclick="openEditSchedule('${groupItems[0].id}')">
             ${firstDir}<br>${finalName}${passengerText}
           </div>`;
           // ★ 여기까지 수정됨
