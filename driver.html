@@ -109,6 +109,32 @@
 
 
 
+/* [추가] 하단 중앙 플로팅 홈 버튼 스타일 */
+    #floatingHomeBtn {
+        width: 56px; height: 56px;
+        background: var(--blue); color: #fff;
+        border-radius: 50%;
+        display: none; /* 기본은 숨김 */
+        align-items: center; justify-content: center;
+        position: fixed; bottom: 30px; left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        cursor: pointer;
+        border: 4px solid #fff;
+        z-index: 10000;
+        transition: 0.2s;
+    }
+    #floatingHomeBtn:active { transform: translateX(-50%) scale(0.9); }
+    #floatingHomeBtn i { font-size: 22px; }
+
+
+
+
+
+
+
+
+
 </style>
 </head>
 <body>
@@ -1124,6 +1150,15 @@ function switchTab(n) {
   currentTab = n; 
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n)); 
   document.querySelectorAll('[id^="view-"]').forEach((v, i) => v.style.display = i === n ? 'block' : 'none'); 
+  
+  // ★ 하단 홈 버튼 제어 로직 추가
+  const homeBtn = document.getElementById('floatingHomeBtn');
+  if (n === 0) {
+    homeBtn.style.display = 'none'; // 종합일정표(탭 0)에서는 숨김
+  } else {
+    homeBtn.style.display = 'flex'; // 나머지 페이지에서는 보임
+  }
+  
   renderAll(); 
 }
 
@@ -1161,7 +1196,13 @@ function closeModal(id) {
 }
 
 function handleBack() { 
-  if(confirm("포탈로 이동할까요?")) location.href = 'portal.html'; 
+  if (currentTab === 0) {
+    // 종합일정표일 때만 포탈로 이동
+    if(confirm("포탈로 이동할까요?")) location.href = 'potal.html'; 
+  } else {
+    // 서브페이지일 때는 종합일정표(탭 0)로 이동
+    switchTab(0);
+  }
 }
 
 
@@ -1200,7 +1241,18 @@ init();
 
 
 </script>
+
+
+<!-- 하단 플로팅 홈 버튼 -->
+<div id="floatingHomeBtn" onclick="switchTab(0)">
+    <i class="fa-solid fa-house"></i>
+</div>
+
+
+
 </body>
+
+
 </html>
 
 
