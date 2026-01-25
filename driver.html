@@ -337,7 +337,10 @@
   let allCourses = {}, profReqs = [], weekOffset = 0, currentTab = 0;
   let currentEditId = null, currentPassengers = [];
   let pendingDepartureData = null;
-  let lastPendingCount = 0; // 이전에 확인한 대기 요청 갯수를 기억합니다.
+  let knownRequestIds = []; // 이미 확인한 요청들의 고유 ID 목록을 저장합니다.
+  let isFirstLoad = true;   // 처음 앱을 켰을 때 기존 목록에 소리 나는 것을 방지합니다.
+
+
 
 
 function init() {
@@ -356,22 +359,36 @@ function init() {
 firebase.database().ref('system/transport_requests').on('value', snap => {
     const raw = snap.val() || {};
     let pendingCount = 0;
-    profReqs = Object.keys(raw).map(k => {
+    const currentIds = Object.keys(raw); // 현재 서버에 있는 모든 요청 ID들
+
+    // 새로운 요청이 있는지 체크
+    let hasNewRequest = false;
+    currentIds.forEach(id => {
+      // 1. 기존에 몰랐던 ID이고 2. 상태가 'pending'(대기)인 경우
+      if (!knownRequestIds.includes(id) && raw[id].status === 'pending') {
+        hasNewRequest = true;
+      }
+    });
+
+    // 데이터 분석 (기존 로직 유지)
+    profReqs = currentIds.map(k => {
       const item = { id: k, ...raw[k] };
-      if(item.status === 'pending') pendingCount++; // '대기' 상태인 것만 셉니다.
+      if(item.status === 'pending') pendingCount++;
       return item;
     }).sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-    // ★ 여기부터 소리 재생 로직 ★
-    // 이전에 기억한 갯수보다 지금 갯수가 더 많으면 (새로 들어왔으면)
-    if (pendingCount > lastPendingCount) {
+    // ★ 소리 재생 결정 ★
+    if (!isFirstLoad && hasNewRequest) {
       const sound = document.getElementById('alarm-sound');
       if (sound) {
-        sound.play().catch(e => console.log("자동 재생이 차단되었습니다. 화면을 한번 클릭해주세요."));
+        sound.currentTime = 0; // 소리를 처음부터 재생
+        sound.play().catch(e => console.log("클릭 필요"));
       }
     }
-    lastPendingCount = pendingCount; // 현재 갯수를 다시 기억합니다.
-    // ★ 여기까지 ★
+
+    // 현재 ID 목록을 기억하고, 첫 로딩 표시를 해제
+    knownRequestIds = currentIds;
+    isFirstLoad = false;
 
     updateBadge(pendingCount);
     renderAll();
