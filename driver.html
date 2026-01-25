@@ -44,11 +44,42 @@
   min-width: 450px; 
   table-layout: fixed; /* 모든 칸 너비를 일정하게 고정 */
 }
-    .schedule-table th, .schedule-table td { border: 1px solid #ddd; text-align: center; height: 45px; font-size: 10px; vertical-align: middle; position: relative; }
+.schedule-table th, .schedule-table td { 
+  border: 1px solid #ddd; 
+  text-align: center; 
+  height: 90px; /* 높이를 약간 키우되 고정합니다 */
+  font-size: 10px; 
+  vertical-align: top; /* 위쪽부터 배치 */
+  position: relative; 
+  padding: 2px;
+  overflow: hidden; /* 칸 자체가 늘어나는 것 방지 */
+}
+
+.cell-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* 일정이 많으면 칸 내부에서 스크롤 */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
     .schedule-table th { background: #f1f5f9; font-weight: 900; color: var(--navy); }
     .time-col { width: 50px; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid var(--navy) !important; }
     .drop-target { background-color: #e0f2fe !important; }
-    .cell-event { border-radius: 4px; padding: 4px 2px; height: 90%; font-size: 9px; font-weight: 800; line-height: 1.2; cursor: move; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0 2px; }
+.cell-event { 
+  border-radius: 4px; 
+  padding: 4px 2px; 
+  min-height: 35px; /* 이벤트 블록 최소 높이 */
+  font-size: 9px; 
+  font-weight: 800; 
+  line-height: 1.2; 
+  cursor: pointer; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  flex-shrink: 0; /* 크기 줄어들지 않음 */
+}
     .block-entry { background: #eff6ff; color: #1e40af; border: 1px solid #1e40af; }
     .block-prof { background: #fae8ff; color: #a21caf; border: 1px solid #a21caf; }
     .block-departure { background: #ecfdf5; color: #047857; border: 1px solid #047857; }
@@ -243,12 +274,30 @@
         <option value="prof">강사 수송 추가</option>
         <option value="off">운행 불가(OFF) 설정</option>
     </select>
+<!-- 2-1. 입력 필드 지능형 구성 (Ctrl+F: id="reason-area" 검색) -->
     <div id="reason-area">
-        <input type="text" id="m-reason" class="modal-input" placeholder="이름 또는 사유 입력">
+        <!-- 강사명 입력 (제주맨 삭제) -->
+        <input type="text" id="m-reason" class="modal-input" placeholder="강사 성함을 입력하세요">
+        
         <div id="prof-fields">
           <input type="time" id="m-time" class="modal-input">
-          <input type="text" id="m-dir" class="modal-input" placeholder="오송→항기원">
-          <input type="tel" id="m-phone" class="modal-input" placeholder="강사 연락처 (예: 010-1234-5678)">
+          
+          <!-- 방향 및 목적지 선택 -->
+          <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <select id="m-dir-type" class="modal-input" style="flex: 1; margin-bottom: 0;">
+              <option value="arrival">항기원 도착</option>
+              <option value="departure">항기원 출발</option>
+            </select>
+            <select id="m-dir-loc" class="modal-input" style="flex: 1; margin-bottom: 0;">
+              <option value="오송역">오송역</option>
+              <option value="청주공항">청주공항</option>
+              <option value="청주터미널">청주터미널</option>
+              <option value="직접입력">직접입력</option>
+            </select>
+          </div>
+          <!-- 직접입력 시 나타날 칸 -->
+          <input type="text" id="m-dir-custom" class="modal-input" placeholder="목적지를 직접 입력하세요" style="display:none;">
+          <input type="tel" id="m-phone" class="modal-input" placeholder="강사 연락처">
         </div>
     </div>
     <div style="display:flex; gap:10px; margin-top:10px;">
@@ -310,72 +359,61 @@ function init() {
 
 
 
-  function renderSchedule() {
-    const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
-    const range = getWeekDates(weekOffset);
-    document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
-    head.innerHTML = `<tr><th class="time-col">시간</th>${['월','화','수','목','금'].map((day, i) => `<th>${range[i].substring(5)}<br>${day}</th>`).join('')}</tr>`;
+function renderSchedule() {
+  const head = document.getElementById('sched-head'), body = document.getElementById('sched-body');
+  const range = getWeekDates(weekOffset);
+  document.getElementById('week-range').innerText = `${range[0]} ~ ${range[4].substring(5)}`;
+  head.innerHTML = `<tr><th class="time-col">시간</th>${['월','화','수','목','금'].map((day, i) => `<th>${range[i].substring(5)}<br>${day}</th>`).join('')}</tr>`;
 
-    let html = '';
-    for(let h=8; h<=18; h++) {
-      const timeLabel = `${h}:00-${h+1}:00`;
-      html += `<tr><td class="time-col">${timeLabel}</td>`;
-      
-for(let d=0; d<5; d++) {
-  const curDate = range[d];
-  let cell = '';
+  let html = '';
+  for(let h=8; h<=18; h++) {
+    const timeLabel = `${h}:00`;
+    html += `<tr><td class="time-col">${timeLabel}</td>`;
+    
+    for(let d=0; d<5; d++) {
+      const curDate = range[d];
+      let cellContent = '<div class="cell-container">'; // 스크롤 가능한 컨테이너 시작
 
-  // 운행불가 체크
-  const hasOffDay = profReqs.some(r => 
-    r.date === curDate && 
-    r.prof === '운행중단' && 
-    r.status !== 'cancelled'
-  );
+      const hasOffDay = profReqs.some(r => r.date === curDate && r.prof === '운행중단' && r.status !== 'cancelled');
 
-  // 운행불가일 경우 (점심시간 제외)
-  if(hasOffDay && h !== 12) {
-    const offReason = profReqs.find(r => 
-      r.date === curDate && 
-      r.prof === '운행중단' && 
-      r.status !== 'cancelled'
-    );
-    cell = `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
-  }
-  // 입교수송 (월요일 9-10시, 10-11시) - 운행불가 아닐때만
-  else if(d === 0 && (h === 9 || h === 10)) {
-          cell = `<div class="cell-event block-entry">입교수송</div>`;
-        }
-        // 점심시간 (12-13시)
-        else if(h === 12) {
-          cell = `<div class="cell-休">휴게시간</div>`;
-        }
-        else {
-         // 강사수송 및 운행불가
-profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled').forEach(item => {
-  const isOff = item.prof === '운행중단';
-  // ✨ 이름 + 구간 두 줄로 표시
-  const displayText = isOff ? 
-    `운행불가<br>${item.dir || ''}` : 
-    `${item.dir || '구간정보없음'}<br>${item.prof || '강사'}`;
-  
-  cell += `<div class="cell-event ${isOff?'block-off':'block-prof'}" draggable="true" ondragstart="onDragStart(event,'${item.id}')" onclick="openEditModal('${item.id}')">${displayText}</div>`;
-});
-          
-          // 퇴교수송
-          for(let rid in allCourses) {
-            const dep = allCourses[rid]?.shuttle?.departure;
-            if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) {
-              cell += `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
-            }
+      if(hasOffDay && h !== 12) {
+        const offReason = profReqs.find(r => r.date === curDate && r.prof === '운행중단');
+        cellContent += `<div class="cell-event block-off" onclick="openEditModal('${offReason.id}')">운행불가<br>${offReason?.dir || ''}</div>`;
+      }
+      else if(d === 0 && (h === 9 || h === 10)) {
+        cellContent += `<div class="cell-event block-entry">입교수송</div>`;
+      }
+      else if(h === 12) {
+        cellContent += `<div class="cell-休">휴게시간</div>`;
+      }
+      else {
+        // 강사수송
+        profReqs.filter(r => r.date === curDate && parseInt(r.time?.split(':')[0]) === h && r.status !== 'cancelled' && r.prof !== '운행중단').forEach(item => {
+          cellContent += `<div class="cell-event block-prof" onclick="openEditModal('${item.id}')">${item.dir}<br>${item.prof}</div>`;
+        });
+        
+        // 퇴교수송
+        for(let rid in allCourses) {
+          const dep = allCourses[rid]?.shuttle?.departure;
+          if(dep && dep.date === curDate && parseInt(dep.time?.split(':')[0]) === h) {
+            cellContent += `<div class="cell-event block-departure" onclick="switchTab(3)">퇴교수송</div>`;
           }
         }
-        
-        html += `<td ondrop="onDrop(event,'${curDate}','${h}:00')" ondragover="allowDrop(event)" ondragenter="onDragEnter(event)" ondragleave="onDragLeave(event)" onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cell}</td>`;
       }
-      html += `</tr>`;
+      
+      cellContent += '</div>'; // 컨테이너 끝
+      html += `<td onclick="handleCellClick(event, '${curDate}', '${h}:00')">${cellContent}</td>`;
     }
-    body.innerHTML = html;
+    html += `</tr>`;
   }
+  body.innerHTML = html;
+}
+
+
+
+
+
+
 
 function renderTodayTimeline() {
   const container = document.getElementById('today-timeline-container');
@@ -659,18 +697,58 @@ function renderTraineeGrid() {
 function openEditModal(id) {
   const item = profReqs.find(r => r.id === id); 
   if(!item) return;
+  
   document.getElementById('m-header').innerText = "일정 수정"; 
   document.getElementById('m-date').value = item.date; 
   document.getElementById('m-time').value = item.time;
-  document.getElementById('m-reason').value = item.prof==='운행중단'?item.dir:item.prof; 
-  document.getElementById('m-dir').value = item.dir||"";
-  document.getElementById('m-phone').value = item.phone||""; // 연락처 불러오기 추가
-  document.getElementById('m-type').value = item.prof==='운행중단'?'off':'prof'; 
+  document.getElementById('m-reason').value = item.prof === '운행중단' ? "" : item.prof;
+  document.getElementById('m-phone').value = item.phone || "";
+
+  // 방향 분석 로직
+  const dirText = item.dir || "";
+  if(dirText.includes('→항기원')) {
+    document.getElementById('m-dir-type').value = 'arrival';
+    const loc = dirText.replace('→항기원', '');
+    setLocValue(loc);
+  } else if(dirText.includes('항기원→')) {
+    document.getElementById('m-dir-type').value = 'departure';
+    const loc = dirText.replace('항기원→', '');
+    setLocValue(loc);
+  }
+
+  document.getElementById('m-type').value = item.prof === '운행중단' ? 'off' : 'prof'; 
   toggleReasonInput();
   document.getElementById('allInOneModal').dataset.editId = id; 
-  document.getElementById('del-btn').style.display='block'; 
-  document.getElementById('allInOneModal').style.display='flex';
+  document.getElementById('del-btn').style.display = 'block'; 
+  document.getElementById('allInOneModal').style.display = 'flex';
 }
+
+
+
+
+// 목적지 선택창 세팅 도와주는 함수 (추가)
+function setLocValue(loc) {
+  const locSelect = document.getElementById('m-dir-loc');
+  const customInput = document.getElementById('m-dir-custom');
+  if(['오송역', '청주공항', '청주터미널'].includes(loc)) {
+    locSelect.value = loc;
+    customInput.style.display = 'none';
+  } else {
+    locSelect.value = '직접입력';
+    customInput.value = loc;
+    customInput.style.display = 'block';
+  }
+}
+
+
+
+
+
+
+
+
+
+
 
   function openDayOffModal() {
     toggleSidebar();
@@ -723,38 +801,25 @@ async function saveAllInOne() {
   const id = document.getElementById('allInOneModal').dataset.editId; 
   const type = document.getElementById('m-type').value;
   const date = document.getElementById('m-date').value;
-
-  const today = new Date().toISOString().split('T')[0];
-  if(date < today && !id) {
-    alert('⚠️ 과거 날짜에는 새 일정을 추가할 수 없습니다');
-    return;
-  }
-
   const time = document.getElementById('m-time').value;
-  const reason = document.getElementById('m-reason').value;
-  const dir = document.getElementById('m-dir').value;
-  const phone = document.getElementById('m-phone').value; // 연락처 가져오기
+  const profName = document.getElementById('m-reason').value;
+  const phone = document.getElementById('m-phone').value;
 
-  const conflicts = profReqs.filter(r => 
-    r.date === date && 
-    r.time === time && 
-    r.status !== 'cancelled' &&
-    r.id !== id
-  );
+  // 방향 및 목적지 합치기
+  const dirType = document.getElementById('m-dir-type').value;
+  const dirLoc = document.getElementById('m-dir-loc').value;
+  const customLoc = document.getElementById('m-dir-custom').value;
+  
+  const finalLoc = (dirLoc === '직접입력') ? customLoc : dirLoc;
+  const finalDir = (dirType === 'arrival') ? `${finalLoc}→항기원` : `항기원→${finalLoc}`;
 
-  if(conflicts.length > 0) {
-    const names = conflicts.map(c => c.prof || '강사').join(', ');
-    if(!confirm(`⚠️ ${time}에 이미 ${names} 일정이 있습니다.\n계속 추가하시겠습니까?`)) {
-      return;
-    }
-  }
+  if(type === 'prof' && !profName) { alert("강사 성함을 입력해주세요."); return; }
 
   const data = { 
-    date, 
-    time, 
-    prof: type==='off'?'운행중단':reason, 
-    dir: type==='off'?reason:dir, 
-    phone: type==='off'?'':phone, // 연락처 데이터 추가
+    date, time, 
+    prof: type === 'off' ? '운행중단' : profName, 
+    dir: finalDir,
+    phone: phone,
     status: 'approved', 
     timestamp: Date.now() 
   };
@@ -911,7 +976,10 @@ function calculateETA(startTime, route) {
 }
 
 
-
+// 목적지 선택 변경 시 직접입력창 제어
+document.getElementById('m-dir-loc')?.addEventListener('change', function() {
+  document.getElementById('m-dir-custom').style.display = (this.value === '직접입력') ? 'block' : 'none';
+});
 
 
   init();
