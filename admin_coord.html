@@ -2940,7 +2940,7 @@ function renderPickupTable() {
         const updates = {};
         let hasUpdates = false;
 
-        // 1. 데이터 배열화 및 자동 종료(마감) 로직
+        // 1. 데이터 배열화 및 마감 로직 (기존과 동일)
         const items = Object.keys(data).map(k => {
             const item = { id: k, ...data[k] };
             if (item.status === 'approved' && item.date && item.time) {
@@ -2963,8 +2963,6 @@ function renderPickupTable() {
         }
 
         const validItems = items.filter(r => r.prof && r.date && r.courseRID);
-
-        // 2. 그룹핑 (신청일/강사명/과정 기준)
         const grouped = {};
         validItems.forEach(r => {
             const requestDate = r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : r.date;
@@ -2975,7 +2973,6 @@ function renderPickupTable() {
             grouped[groupKey].requests.push(r);
         });
 
-        // 날짜순으로 정렬 (과거가 위, 최신이 아래로 쌓임)
         const sortedGroups = Object.values(grouped).sort((a, b) => a.requestDate.localeCompare(b.requestDate));
         let htmlContent = ""; 
         let lastDividerDate = "";
@@ -3047,20 +3044,20 @@ function renderPickupTable() {
             });
         });
 
-        // 1. HTML을 컨테이너에 먼저 삽입
+        // 🚩 [핵심] 톡 내용 마지막에 보이지 않는 점(Anchor) 추가
+        htmlContent += `<div id="chat-bottom-anchor" style="height:10px; width:100%; clear:both;"></div>`;
+
         container.innerHTML = htmlContent;
 
-        // 2. [핵심 해결책] 스크롤을 맨 바닥으로 즉시 이동 후, 레이아웃 정착을 위해 100ms 후 다시 한 번 이동
-        // scrollToBottomPickup() 함수가 이미 정의되어 있다면 그것을 사용하고, 없다면 직접 작성합니다.
-        const scrollAction = () => {
-            container.scrollTop = container.scrollHeight;
-        };
-
-        scrollAction(); // 즉시 실행
-        setTimeout(scrollAction, 100); // 0.1초 뒤 한 번 더 (렌더링 오차 방지)
+        // 🚩 [핵심] 보이지 않는 점으로 즉시 화면 초점 이동
+        setTimeout(() => {
+            const anchor = document.getElementById('chat-bottom-anchor');
+            if(anchor) {
+                anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
+            }
+        }, 100);
     });
 }
-
 
 
 
