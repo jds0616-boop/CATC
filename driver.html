@@ -895,7 +895,7 @@ async function approveRequest(id) {
   const targetDate = normalizeDate(req.date);
   const reqMin = parseInt(req.time.split(':')[0]) * 60 + parseInt(req.time.split(':')[1]);
 
-  // --- [추가 1] 퇴교 수송 중복 체크 (120분 이내) ---
+  // --- [1] 퇴교 수송 중복 체크 (120분 이내) ---
   let shuttleConflict = "";
   for (let rid in allCourses) {
     const dep = allCourses[rid].shuttle?.departure;
@@ -912,7 +912,7 @@ async function approveRequest(id) {
   }
 
   try {
-    // --- [기존+추가 2] 병합 대상 확인 (날짜/시간/경로 완전 일치) ---
+    // --- [2] 병합 대상 확인 (날짜/시간/경로 완전 일치 시 동승자로 자동 합치기) ---
     const existingSchedule = profReqs.find(r => 
       r.id !== id &&
       normalizeDate(r.date) === targetDate && 
@@ -923,33 +923,34 @@ async function approveRequest(id) {
     );
 
     if(existingSchedule) {
-      const msg = `⚠️ 해당 시간에 이미 승인된 일정([${existingSchedule.prof}] 강사님)이 있습니다.\n\n현재 신청자([${req.prof}] 강사님)를 기존 차량의 '동승자'로 추가하여 통합 배차하시겠습니까?\n\n('확인' 클릭 시 동승자로 통합, '취소' 클릭 시 별도 배차)`;
+      const msg = `⚠️ 해당 시간/경로에 이미 승인된 일정([${existingSchedule.prof}] 강사님)이 있습니다.\n\n[${req.prof}] 강사님을 기존 차량의 '동승자'로 추가하여 통합 배차하시겠습니까?\n\n('확인' 클릭 시 동승자로 통합되어 하나로 표시됩니다.)`;
       
       if(confirm(msg)) {
-        // [병합 처리]
-        const updatedPassengers = existingSchedule.passengers ? [...existingSchedule.passengers] : [];
+        // 동승자 명단 업데이트 (기존 명단 + 새 강사님)
+        let updatedPassengers = existingSchedule.passengers ? [...existingSchedule.passengers] : [];
         if(!updatedPassengers.includes(req.prof)) {
             updatedPassengers.push(req.prof); 
         }
         
-        // (1) 기존 일정 데이터 업데이트 (동승자 목록 갱신)
+        // (1) 기존 대표 일정 업데이트 (동승자 목록 갱신)
         await firebase.database().ref(`system/transport_requests/${existingSchedule.id}`).update({ 
           passengers: updatedPassengers 
         });
 
-        // (2) 현재 요청은 '운행종료(finished)' 처리하여 채팅 목록에서 제거
+        // (2) 현재 요청은 '운행종료(finished)' 처리 (채팅창에서 제거 및 병합 기록)
         await firebase.database().ref(`system/transport_requests/${id}`).update({ 
           status: 'finished',
-          note: `[${existingSchedule.prof}] 강사님 차량으로 통합됨`
+          mergedInto: existingSchedule.id,
+          note: `[${existingSchedule.prof}] 차량으로 통합됨`
         });
 
-        alert(`✅ [${req.prof}] 강사님이 [${existingSchedule.prof}] 강사님 차량의 동승자로 등록되었습니다.`);
-        renderAll();
+        alert(`✅ 통합 완료: [${req.prof}] 강사님이 [${existingSchedule.prof}] 강사님 차량의 동승자로 등록되었습니다.`);
+        renderAll(); // 화면 갱신 (스케줄표에 '외 N명'으로 표시됨)
         return;
       }
     }
 
-    // --- [추가 3] 근접 시간 강사 수송 경고 (60분 이내) ---
+    // --- [3] 근접 시간 강사 수송 경고 (60분 이내) ---
     const nearbySchedule = profReqs.find(r => 
       r.id !== id &&
       normalizeDate(r.date) === targetDate && 
@@ -959,17 +960,17 @@ async function approveRequest(id) {
     );
 
     if (nearbySchedule) {
-      if (!confirm(`⚠️ [시간근접 경고]\n이미 ${nearbySchedule.time}에 [${nearbySchedule.prof}] 강사님 배차가 있습니다.\n시간이 1시간 이내로 겹칩니다. 그래도 승인하시겠습니까?`)) return;
+      if (!confirm(`⚠️ [시간근접 경고]\n이미 ${nearbySchedule.time}에 [${nearbySchedule.prof}] 강사님 배차가 있습니다.\n시간이 1시간 이내로 가깝습니다. 그래도 별도 승인하시겠습니까?`)) return;
     }
 
-    // --- [최종] 일반 승인 로직 ---
-    if(!confirm("이 배차 요청을 승인하시겠습니까?")) return;
+    // --- [4] 일반 승인 로직 (중복/병합 사항 없을 때) ---
+    if(!confirm(`[${req.prof}] 강사님 배차 요청을 승인하시겠습니까?`)) return;
     
     await firebase.database().ref(`system/transport_requests/${id}`).update({ 
       status: 'approved' 
     });
 
-    alert("승인이 완료되었습니다.");
+    alert("✅ 승인이 완료되었습니다.");
     renderAll(); 
 
   } catch (error) {
@@ -977,6 +978,12 @@ async function approveRequest(id) {
     alert("처리 중 오류가 발생했습니다.");
   }
 }
+
+
+
+
+
+
 
 
 
@@ -1029,42 +1036,43 @@ function openNewSchedule() {
 
 
 function openEditSchedule(id) {
-  // 1. 해당 ID의 일정을 데이터에서 찾기
+  // 1. 해당 ID의 일정을 데이터(profReqs)에서 찾기
   const item = profReqs.find(r => r.id === id);
   if(!item) return;
   
-  // 2. 수정 중인 ID 저장 및 동승객 목록 복사 (중요: 복사본을 만들어야 원본이 바로 바뀌지 않음)
+  // 2. 수정 중인 ID 저장 및 동승객 목록 복사
+  // (중요: item.passengers가 있으면 그 내용을 가져오고, 없으면 빈 배열로 초기화)
   currentEditId = id;
   currentPassengers = item.passengers ? [...item.passengers] : [];
   
   // 3. 모달 제목 설정
   document.getElementById('schedule-modal-title').innerText = '일정 수정';
   
-  // 4. 날짜, 시간, 연락처 채우기
+  // 4. 기본 정보 채우기 (날짜, 시간, 연락처)
   document.getElementById('s-date').value = item.date || '';
   document.getElementById('s-time').value = item.time || '';
   document.getElementById('s-phone').value = item.phone || '';
   
-  // 5. 강사명 설정 (운행중단일 때는 비워둠)
+  // 5. 강사명 설정 (운행중단일 때는 입력창을 비워둠)
   document.getElementById('s-prof').value = item.prof === '운행중단' ? '' : (item.prof || '');
   
-  // 6. 이동 경로 파싱 (장소 정보 추출)
+  // 6. 이동 경로 및 장소 설정
   const dirText = item.dir || '';
   if(dirText.includes('→항기원')) {
     document.getElementById('s-dir-type').value = 'arrival';
     const loc = dirText.replace('→항기원', '');
-    setLocValue(loc); // 직접입력인지 아닌지 판단하여 세팅하는 함수
+    setLocValue(loc); // 직접입력 여부 판단 함수
   } else if(dirText.includes('항기원→')) {
     document.getElementById('s-dir-type').value = 'departure';
     const loc = dirText.replace('항기원→', '');
-    setLocValue(loc); // 직접입력인지 아닌지 판단하여 세팅하는 함수
+    setLocValue(loc); // 직접입력 여부 판단 함수
   }
   
   // 7. 일정 타입 설정 (강사 수송 vs 운행 불가)
   if(item.prof === '운행중단') {
     document.getElementById('s-schedule-type').value = 'off';
     
-    // 운행불가 사유 처리 (직접입력 포함)
+    // 운행불가 사유 처리 (기존에 정의된 사유인지 직접 입력인지 판단)
     const reasonSelect = document.getElementById('s-off-reason');
     const customInput = document.getElementById('s-off-custom');
     if(['건강검진', '연차', '차량고장'].includes(item.dir)) {
@@ -1079,13 +1087,14 @@ function openEditSchedule(id) {
     document.getElementById('s-schedule-type').value = 'prof';
   }
   
-  // 8. 삭제 버튼 보이기
+  // 8. 하단 버튼 설정 (삭제 버튼 표시)
   document.getElementById('delete-schedule-btn').style.display = 'block';
   
-  // 9. 타입에 따른 UI 영역 보임/숨김 처리
+  // 9. 타입(수송/불가)에 따라 화면 UI 영역(색상 박스들) 보임/숨김 처리
   toggleScheduleType(); 
   
-  // 10. 동승객 명단 그리기 (중요: 이 함수가 호출되어야 동승자가 보입니다)
+  // 10. ★ 핵심: 동승객 명단 그리기 ★
+  // 복사해온 currentPassengers 배열을 바탕으로 초록색 박스 안에 이름을 뿌려줍니다.
   renderPassengers();
   
   // 11. 모달 열기
@@ -1197,30 +1206,41 @@ function renderPassengers() {
 
 
 
+
+
+
+
 async function saveSchedule() {
   const type = document.getElementById('s-schedule-type').value;
   const date = document.getElementById('s-date').value;
   
-  // ★ 여기를 let으로 바꿨습니다. 그래야 나중에 "09:00"으로 바꿀 수 있어요.
+  // ★ 시간 변수 설정 (운행불가 시 09:00 자동 할당을 위해 let 사용)
   let time = document.getElementById('s-time').value;
   
-  // 운행 불가(off)일 때는 날짜만 확인하고, 시간은 임의로 '09:00'을 넣어줍니다.
+  // 1. 유효성 검사
   if(type === 'off') {
+    // 운행 불가(off)일 때
     if(!date) { alert('날짜를 선택해주세요.'); return; }
-    // 시간이 비어있으면 09:00으로 채워줍니다.
-    if(!time || time === "") { time = "09:00"; } 
+    if(!time || time === "") { time = "09:00"; } // 시간이 없으면 기본값 설정
   } else {
-    // 강사 수송일 때는 날짜와 시간이 모두 있어야 합니다.
+    // 강사 수송(prof)일 때
     if(!date || !time) {
       alert('날짜와 시간을 모두 입력해주세요.');
       return;
     }
   }
   
-  let data = { date, time, status: 'approved', timestamp: Date.now() };
+  // 2. 공통 데이터 구조 생성
+  let data = { 
+    date: date, 
+    time: time, 
+    status: 'approved', 
+    timestamp: Date.now() 
+  };
   
+  // 3. 타입별 세부 데이터 설정
   if(type === 'off') {
-    // 운행불가
+    // [운행불가 모드]
     const reasonSel = document.getElementById('s-off-reason').value;
     const customReason = document.getElementById('s-off-custom').value;
     const reason = reasonSel === '직접입력' ? customReason : reasonSel;
@@ -1228,14 +1248,14 @@ async function saveSchedule() {
     data.prof = '운행중단';
     data.dir = reason;
     data.phone = '';
-    data.passengers = [];
+    data.passengers = []; // 운행불가일 때는 동승객 없음
   } else {
-    // 강사수송
-    const prof = document.getElementById('s-prof').value;
-    const phone = document.getElementById('s-phone').value;
+    // [강사수송 모드]
+    const prof = document.getElementById('s-prof').value.trim();
+    const phone = document.getElementById('s-phone').value.trim();
     const dirType = document.getElementById('s-dir-type').value;
     const dirLoc = document.getElementById('s-dir-loc').value;
-    const customLoc = document.getElementById('s-dir-custom').value;
+    const customLoc = document.getElementById('s-dir-custom').value.trim();
     
     if(!prof) {
       alert('강사명은 필수입니다.');
@@ -1248,21 +1268,37 @@ async function saveSchedule() {
     data.prof = prof;
     data.phone = phone;
     data.dir = finalDir;
-    data.passengers = currentPassengers;
+    // ★ 핵심: 현재 모달 리스트에 표시된 동승객 배열을 그대로 저장
+    data.passengers = currentPassengers; 
   }
   
-  // 저장 실행
-  if(currentEditId) {
-    await firebase.database().ref(`system/transport_requests/${currentEditId}`).update(data);
-  } else {
-    await firebase.database().ref('system/transport_requests').push(data);
+  try {
+    // 4. Firebase 저장 실행
+    if(currentEditId) {
+      // 수정 모드
+      await firebase.database().ref(`system/transport_requests/${currentEditId}`).update(data);
+    } else {
+      // 신규 등록 모드
+      await firebase.database().ref('system/transport_requests').push(data);
+    }
+    
+    // 5. 마무리 및 UI 갱신
+    closeModal('scheduleModal');
+    currentEditId = null;
+    currentPassengers = []; // 전역 변수 초기화
+    
+    alert('저장되었습니다.');
+    renderAll(); // 스케줄표 즉시 새로고침
+    
+  } catch (error) {
+    console.error("저장 중 오류 발생:", error);
+    alert("저장에 실패했습니다. 다시 시도해주세요.");
   }
-  
-  closeModal('scheduleModal');
-  currentEditId = null;
-  currentPassengers = [];
-  alert('저장되었습니다.'); // 확인을 위해 알림 추가
 }
+
+
+
+
 
 
 
