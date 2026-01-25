@@ -112,6 +112,19 @@
     <button id="tab3" class="tab-btn" onclick="switchTab(3)">퇴교수송</button>
   </div>
 
+
+
+<div id="loading-spinner" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:20000; align-items:center; justify-content:center;">
+  <div style="background:#fff; padding:20px; border-radius:10px; text-align:center;">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size:30px; color:var(--blue);"></i>
+    <div style="margin-top:10px; font-weight:800;">데이터 로딩중...</div>
+  </div>
+</div>
+
+
+
+
+
   <main class="app-content">
     <!-- 탭 0: 종합일정표 -->
     <div id="view-0" style="display: block;">
@@ -210,6 +223,11 @@
   let allCourses = {}, profReqs = [], weekOffset = 0, currentTab = 0, draggedItem = null;
 
   function init() {
+  document.getElementById('loading-spinner').style.display = 'flex'; // 추가
+
+
+
+
     const now = new Date();
     const day = now.getDay(); 
     // 금요일(5), 토요일(6) 일 때만 자동으로 다음 주(1) 보기
@@ -218,6 +236,7 @@
     firebase.database().ref('courses').on('value', snap => { 
       allCourses = snap.val() || {}; 
       renderAll(); 
+    document.getElementById('loading-spinner').style.display = 'none'; // 추가
     });
     
     firebase.database().ref('system/transport_requests').on('value', snap => {
@@ -253,6 +272,24 @@
       for(let d=0; d<5; d++) {
         const curDate = range[d];
         let cell = '';
+
+
+  const hasOffDay = profReqs.some(r => 
+    r.date === curDate && 
+    r.prof === '운행중단' && 
+    r.status !== 'cancelled'
+  );
+
+// ✨ 운행불가일 경우 (점심시간 제외하고 모든 시간대에 표시)
+if(hasOffDay && h !== 12) {
+  const offReason = profReqs.find(r => 
+    r.date === curDate && 
+    r.prof === '운행중단' && 
+    r.status !== 'cancelled'
+  );
+  cell = `<div class="cell-event block-off">운행불가<br>${offReason?.dir || ''}</div>`;
+}
+
         
         // 입교수송 (월요일 9-10시, 10-11시)
         if(d === 0 && (h === 9 || h === 10)) {
@@ -285,77 +322,96 @@
     body.innerHTML = html;
   }
 
-  function renderTodayTimeline() {
-    const container = document.getElementById('today-timeline-container');
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('today-date-display').innerText = `${today} 수송 일정`;
+function renderTodayTimeline() {
+  const container = document.getElementById('today-timeline-container');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('today-date-display').innerText = `${today} 수송 일정`;
 
-    // 오늘의 모든 일정 수집
-    const todaySchedule = [];
+  // 오늘의 모든 일정 수집
+  const todaySchedule = [];
 
-    // 입교수송 (월요일만)
-    const dayOfWeek = new Date(today).getDay();
-    if(dayOfWeek === 1) {
-      todaySchedule.push({ time: '09:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
-      todaySchedule.push({ time: '10:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
-    }
-
-    // 강사 수송
-    profReqs.filter(r => r.date === today && r.status !== 'cancelled').forEach(item => {
-      if(item.prof === '운행중단') {
-        todaySchedule.push({ 
-          time: item.time, 
-          type: '운행불가', 
-          desc: item.dir || '사유 없음',
-          route: ''
-        });
-      } else {
-        todaySchedule.push({ 
-          time: item.time, 
-          type: '강사수송', 
-          desc: `${item.prof || '강사'} 픽업`,
-          route: item.dir || '구간 정보 없음'
-        });
-      }
-    });
-
-    // 퇴교수송
-    for(let rid in allCourses) {
-      const dep = allCourses[rid]?.shuttle?.departure;
-      if(dep && dep.date === today) {
-        const courseName = allCourses[rid].settings?.courseName || '과정명 없음';
-        const total = Object.values(allCourses[rid].shuttle?.requests || {}).filter(r => r.type !== 'car').length;
-        todaySchedule.push({ 
-          time: dep.time, 
-          type: '퇴교수송', 
-          desc: `${courseName} (${total}명)`,
-          route: '항기원 → 청주공항/오송역'
-        });
-      }
-    }
-
-    // 시간순 정렬
-    todaySchedule.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
-    let html = '';
-    if(todaySchedule.length === 0) {
-      html = '<div class="timeline-card"><div style="text-align:center; color:#999;">오늘은 예정된 수송 일정이 없습니다.</div></div>';
-    } else {
-      todaySchedule.forEach(item => {
-        html += `<div class="timeline-card">
-          <div class="timeline-time"><i class="fa-solid fa-clock"></i> ${item.time}</div>
-          <div class="timeline-item">
-            <div style="font-size:14px; font-weight:900; margin-bottom:4px;">${item.type}</div>
-            <div>${item.desc}</div>
-            ${item.route ? `<div class="timeline-route"><i class="fa-solid fa-route"></i> ${item.route}</div>` : ''}
-          </div>
-        </div>`;
-      });
-    }
-    container.innerHTML = html;
+  // 입교수송 (월요일만)
+  const dayOfWeek = new Date(today).getDay();
+  if(dayOfWeek === 1) {
+    todaySchedule.push({ time: '09:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
+    todaySchedule.push({ time: '10:00', type: '입교수송', desc: '신규 교육생 입교 수송' });
   }
 
+  // 강사 수송
+  profReqs.filter(r => r.date === today && r.status !== 'cancelled').forEach(item => {
+    if(item.prof === '운행중단') {
+      todaySchedule.push({ 
+        id: item.id,
+        time: item.time, 
+        type: '운행불가', 
+        desc: item.dir || '사유 없음',
+        route: '',
+        completed: item.status === 'finished'
+      });
+    } else {
+      todaySchedule.push({ 
+        id: item.id,
+        time: item.time, 
+        type: '강사수송', 
+        desc: `${item.prof || '강사'} 픽업`,
+        route: item.dir || '구간 정보 없음',
+        completed: item.status === 'finished'
+      });
+    }
+  });
+
+  // 퇴교수송
+  for(let rid in allCourses) {
+    const dep = allCourses[rid]?.shuttle?.departure;
+    if(dep && dep.date === today) {
+      const courseName = allCourses[rid].settings?.courseName || '과정명 없음';
+      const total = Object.values(allCourses[rid].shuttle?.requests || {}).filter(r => r.type !== 'car').length;
+      todaySchedule.push({ 
+        time: dep.time, 
+        type: '퇴교수송', 
+        desc: `${courseName} (${total}명)`,
+        route: '항기원 → 청주공항/오송역'
+      });
+    }
+  }
+
+  // 시간순 정렬
+  todaySchedule.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+  let html = '';
+  if(todaySchedule.length === 0) {
+    html = '<div class="timeline-card"><div style="text-align:center; color:#999;">오늘은 예정된 수송 일정이 없습니다.</div></div>';
+  } else {
+    todaySchedule.forEach(item => {
+      html += `<div class="timeline-card" style="${item.completed ? 'opacity:0.5; background:#f1f5f9;' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="timeline-time"><i class="fa-solid fa-clock"></i> ${item.time}</div>
+          ${item.id ? `<label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleComplete('${item.id}')" style="width:20px; height:20px; cursor:pointer;">
+            <span style="font-size:10px; color:#666;">완료</span>
+          </label>` : ''}
+        </div>
+        <div class="timeline-item">
+          <div style="font-size:14px; font-weight:900; margin-bottom:4px; ${item.completed ? 'text-decoration:line-through; color:#999;' : ''}">${item.type}</div>
+          <div style="${item.completed ? 'color:#999;' : ''}">${item.desc}</div>
+          ${item.route ? `<div class="timeline-route"><i class="fa-solid fa-route"></i> ${item.route}</div>` : ''}
+        </div>
+      </div>`;
+    });
+  }
+  container.innerHTML = html;
+}
+
+
+
+
+
+
+
   function renderInstructorChat() {
+
+  if(currentTab !== 2) return;
+
     const box = document.getElementById('chat-list-inner');
     let html = "";
     
@@ -378,9 +434,22 @@
           <div style="font-size:12px; font-weight:700; color:var(--blue-deep); margin-bottom:4px;">
             <i class="fa-solid fa-route"></i> ${r.dir || '구간 정보 없음'}
           </div>
+
+
+const eta = calculateETA(r.time, r.dir); // 새 함수 필요
+<div style="font-size:11px; color:#047857; font-weight:800;">
+  예상도착: ${eta}
+</div>
+
+
+
           <div style="font-size:12px; font-weight:700;">
             ${r.prof || '이름없음'} 강사님 픽업
-            ${r.phone ? `<a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a>` : ''}
+            ${r.phone ? 
+  `<a href="tel:${r.phone}"><i class="fa-solid fa-phone" style="color:var(--blue); margin-left:5px;"></i></a>` 
+  : 
+  `<span style="color:#999; margin-left:5px; font-size:10px;">(연락처 없음)</span>`
+}
           </div>
           ${isPending ? `<div class="req-btn-group">
             <button class="mini-btn primary" onclick="approveRequest('${r.id}')"><i class="fa-solid fa-check"></i> 승인</button>
@@ -527,6 +596,23 @@
       return;
     }
 
+  const existingSchedules = profReqs.filter(r => 
+    r.date === date && 
+    r.prof !== '운행중단' && 
+    r.status !== 'cancelled'
+  );
+  
+  if(existingSchedules.length > 0) {
+    const list = existingSchedules.map(s => `${s.time} ${s.prof}`).join('\n');
+    if(!confirm(`⚠️ 해당 날짜에 아래 일정이 있습니다:\n\n${list}\n\n운행불가로 설정하시겠습니까?`)) {
+      return;
+    }
+  }
+
+
+
+
+
     const data = { 
       date, 
       time: '09:00',
@@ -545,10 +631,46 @@
     const id = document.getElementById('allInOneModal').dataset.editId; 
     const type = document.getElementById('m-type').value;
     const date = document.getElementById('m-date').value;
+
+  const today = new Date().toISOString().split('T')[0];
+  if(date < today && !id) {
+    alert('⚠️ 과거 날짜에는 새 일정을 추가할 수 없습니다');
+    return;
+  }
+
+
+
     const time = document.getElementById('m-time').value;
     const reason = document.getElementById('m-reason').value;
     const dir = document.getElementById('m-dir').value;
     
+
+
+const conflicts = profReqs.filter(r => 
+  r.date === date && 
+  r.time === time && 
+  r.status !== 'cancelled' &&
+  r.id !== id
+);
+
+if(conflicts.length > 0) {
+  const names = conflicts.map(c => c.prof || '강사').join(', ');
+  if(!confirm(`⚠️ ${time}에 이미 ${names} 일정이 있습니다.\n계속 추가하시겠습니까?`)) {
+    return;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
     const data = { 
       date, 
       time, 
@@ -598,12 +720,17 @@
     }
   }
 
-  function renderAll() { 
-    renderSchedule(); 
-    renderTodayTimeline();
-    renderInstructorChat(); 
-    renderTraineeGrid(); 
+function renderAll() { 
+  renderSchedule(); 
+  renderTodayTimeline();
+  
+  // ✨ 현재 탭이 강사수송일 때만 렌더링
+  if(currentTab === 2) {
+    renderInstructorChat();
   }
+  
+  renderTraineeGrid(); 
+}
 
   function changeWeek(n) { 
     weekOffset += n; 
@@ -633,6 +760,25 @@
     } 
   }
 
+
+
+// ✨ 여기에 추가!
+async function toggleComplete(id) {
+  const item = profReqs.find(r => r.id === id);
+  if(!item) return;
+  
+  await firebase.database().ref(`system/transport_requests/${id}`).update({
+    status: item.status === 'finished' ? 'approved' : 'finished'
+  });
+}
+
+
+
+
+
+
+
+
   function handleBack() { 
     if(confirm("포탈로 이동할까요?")) location.href = 'potal.html'; 
   }
@@ -641,6 +787,27 @@
     ev.preventDefault(); 
   }
   
+
+function calculateETA(startTime, route) {
+  if(!startTime || !route) return '시간 미정';
+  
+  const [hour, min] = startTime.split(':').map(Number);
+  let totalMinutes = hour * 60 + min;
+  
+  // 구간별 30분씩 계산
+  const segments = route.split('→').length - 1;
+  totalMinutes += segments * 30;
+  
+  const etaHour = Math.floor(totalMinutes / 60);
+  const etaMin = totalMinutes % 60;
+  
+  return `${String(etaHour).padStart(2,'0')}:${String(etaMin).padStart(2,'0')}`;
+}
+
+
+
+
+
   init();
 </script>
 </body>
