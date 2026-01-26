@@ -355,43 +355,40 @@ enterAsObserver: function() {
 
 
 forceEnterRoom: async function(room) {
-    // [핵심 수정 1] 이전 방(state.room)에 걸려있던 모든 리스너를 전역적으로 강제 종료
+    // [핵심 수정 1] 이전 방에 연결된 모든 실시간 감시(Listener)를 뿌리부터 제거
     if (state.room) {
-        const oldPath = `courses/${state.room}`;
-        // 해당 경로의 모든 하위 리스너를 완전히 연결 해제 (.off() 호출)
-        firebase.database().ref(oldPath).off();
-        firebase.database().ref(`${oldPath}/settings`).off();
-        firebase.database().ref(`${oldPath}/status`).off();
-        firebase.database().ref(`${oldPath}/questions`).off();
-        firebase.database().ref(`${oldPath}/students`).off();
-        firebase.database().ref(`${oldPath}/activeQuiz`).off();
-        firebase.database().ref(`${oldPath}/quizAnswers`).off();
-        firebase.database().ref(`${oldPath}/internal_attendance`).off(); // 자체 출결 리스너 제거
-        firebase.database().ref(`${oldPath}/shuttle/departure`).off();
-        firebase.database().ref(`${oldPath}/shuttle/requests`).off();
-        firebase.database().ref(`${oldPath}/notice`).off();
-        firebase.database().ref(`${oldPath}/coordNotice`).off();
-        firebase.database().ref(`${oldPath}/attendanceQR`).off();
+        // 특정 경로뿐만 아니라 해당 방의 루트 경로 아래의 모든 리스너를 한꺼번에 종료
+        firebase.database().ref(`courses/${state.room}`).off();
+        
+        // 추가로 개별 참조들에 걸린 리스너도 확실히 해제
+        Object.values(dbRef).forEach(ref => {
+            if (ref && typeof ref.off === 'function') ref.off();
+        });
     }
 
+    // [핵심 수정 2] 이전 방의 데이터 잔상 즉시 삭제 (화면 깜빡임 방지)
+    state.qaData = {}; 
+    const qaList = document.getElementById('qaList');
+    if (qaList) qaList.innerHTML = `<div style="text-align:center; padding:50px; color:#94a3b8;">데이터를 불러오는 중...</div>`;
+
     // 1. 옵저버 상태 복구 (세션 저장소 확인)
-    if (sessionStorage.getItem('kac_observer_room') === room) {
-        state.isObserver = true;
-    } else {
-        state.isObserver = false;
-    }
+    state.isObserver = (sessionStorage.getItem('kac_observer_room') === room);
 
     // 2. 강사 입장 시 제어권 체크 (옵저버는 통과)
     if (!state.isObserver) {
-        const snap = await firebase.database().ref(`courses/${room}/status`).get();
-        const st = snap.val() || {};
-        if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
-            state.pendingRoom = room;
-            document.getElementById('takeoverPwInput').value = "";
-            document.getElementById('takeoverModal').style.display = 'flex';
-            document.getElementById('takeoverPwInput').focus();
-            ui.showWaitingRoom();
-            return;
+        try {
+            const snap = await firebase.database().ref(`courses/${room}/status`).get();
+            const st = snap.val() || {};
+            if (st.roomStatus === 'active' && st.ownerSessionId !== state.sessionId) {
+                state.pendingRoom = room;
+                document.getElementById('takeoverPwInput').value = "";
+                document.getElementById('takeoverModal').style.display = 'flex';
+                document.getElementById('takeoverPwInput').focus();
+                ui.showWaitingRoom();
+                return;
+            }
+        } catch (e) {
+            console.error("Room Status Check Error:", e);
         }
     }
 
@@ -400,41 +397,50 @@ forceEnterRoom: async function(room) {
     localStorage.setItem('kac_last_room', room); 
     const roomSelect = document.getElementById('roomSelect');
     if(roomSelect) roomSelect.value = room;
-    document.querySelector('.mode-tabs').style.display = 'flex';
+    
+    const tabs = document.querySelector('.mode-tabs');
+    if(tabs) tabs.style.display = 'flex';
 
     // 4. 데이터베이스 경로 재설정 (현시점 방 번호 반영)
     const rPath = `courses/${room}`;
-    dbRef.settings = firebase.database().ref(`${rPath}/settings`);
-    dbRef.qa = firebase.database().ref(`${rPath}/questions`);
-    dbRef.quiz = firebase.database().ref(`${rPath}/activeQuiz`);
-    dbRef.ans = firebase.database().ref(`${rPath}/quizAnswers`);
-    dbRef.status = firebase.database().ref(`${rPath}/status`);
+    dbRef = {
+        settings: firebase.database().ref(`${rPath}/settings`),
+        qa: firebase.database().ref(`${rPath}/questions`),
+        quiz: firebase.database().ref(`${rPath}/activeQuiz`),
+        ans: firebase.database().ref(`${rPath}/quizAnswers`),
+        status: firebase.database().ref(`${rPath}/status`),
+        students: firebase.database().ref(`${rPath}/students`)
+    };
 
     ui.updateHeaderRoom(room);
     ui.updateObserverButton();
     
-    // 모듈 초기화 (방 번호가 바뀌었으므로 새로 감시 시작)
-    subjectMgr.init();
+    // 모듈 초기화 (각 모듈 내부에서 .off() 후 재시작하도록 설계됨)
+    subjectMgr.init(); 
+    guideMgr.init();
     
-    // 5. [중요] 실시간 감시 시작 시 '방 번호 검증' 로직 추가
-    // (리스너가 작동할 때 여전히 그 방을 보고 있는지 확인하여 꼬임 방지)
+    // 5. [강력 보정] 실시간 감시 시작 (Closure 보호 적용)
+    const currentEntryRoom = room; // 리스너 콜백 내에서 검증용으로 사용
 
+    // (A) 과정 설정 감시
     dbRef.settings.on('value', s => {
-        if(state.room !== room) return; // [방 검증] 방이 바뀌었다면 무시
+        if(state.room !== currentEntryRoom) return; 
         const val = s.val() || {};
         ui.renderSettings(val); 
         if(localStorage.getItem('kac_last_mode') === 'dashboard') ui.loadDashboardStats();
     });
 
+    // (B) 강의실 상태 감시
     dbRef.status.on('value', s => {
-        if(state.room !== room) return; // [방 검증]
+        if(state.room !== currentEntryRoom) return;
         const statusData = s.val() || {};
         ui.renderRoomStatus(statusData.roomStatus || 'idle'); 
 
         if (!state.isObserver) {
+            // 다른 사람에 의해 제어권이 뺏긴 경우 처리
             if (statusData.roomStatus === 'active' && statusData.ownerSessionId !== state.sessionId) {
                 ui.checkLockStatus(statusData);
-                state.pendingRoom = room;
+                state.pendingRoom = currentEntryRoom;
                 document.getElementById('takeoverModal').style.display = 'flex';
             } else {
                 ui.checkLockStatus(statusData);
@@ -445,8 +451,9 @@ forceEnterRoom: async function(room) {
         }
     });
 
-    firebase.database().ref(`courses/${room}/students`).on('value', s => {
-        if(state.room !== room) return; // [방 검증]
+    // (C) 접속자 수 감시
+    dbRef.students.on('value', s => {
+        if(state.room !== currentEntryRoom) return;
         const data = s.val() || {};
         const validUsers = Object.values(data).filter(user => user.name && user.name !== "undefined");
         const activeUsers = validUsers.filter(user => user.isOnline === true).length;
@@ -457,8 +464,9 @@ forceEnterRoom: async function(room) {
         if(dashCount) dashCount.innerText = activeUsers + "명";
     });
 
+    // (D) Q&A 게시판 감시
     dbRef.qa.on('value', s => { 
-        if(state.room !== room) return; // [방 검증]
+        if(state.room !== currentEntryRoom) return;
         state.qaData = s.val() || {}; 
         ui.renderQaList('all'); 
     });
@@ -467,9 +475,6 @@ forceEnterRoom: async function(room) {
     this.fetchCodeAndRenderQr(room);
     const lastMode = localStorage.getItem('kac_last_mode') || 'dashboard';
     ui.setMode(lastMode);
-    
-    // 가이드 및 다른 모듈 재로딩 (init 내부에서 이전 리스너를 끄도록 설계되어야 함)
-    guideMgr.init();
 },
 
 
