@@ -633,609 +633,1754 @@
 
 
 
-<script src="config.js"></script>
-    <script>
-        let serverTimeOffset = 0;
-        let confirmCallback = null;
 
-        // 커스텀 확인창 제어
+
+    <script src="config.js"></script>
+    <script>
+        let serverTimeOffset = 0; // 추가
+let confirmCallback = null;
         function showKacConfirm(msg, callback) {
             document.getElementById('kacConfirmMsg').innerText = msg;
             document.getElementById('kacConfirm').style.display = 'flex';
             confirmCallback = callback;
         }
-
         function closeKacConfirm(result) {
             document.getElementById('kacConfirm').style.display = 'none';
             if(result && confirmCallback) confirmCallback();
             confirmCallback = null;
         }
 
-        // 전역 상태 변수
-        let dbRef = {}; 
-        let currentRoom = null; 
-        let myQs = {}; 
-        let myLikes = {}; 
-        let lastPostTimeMap = {}; 
-        let editingKey = null; 
-        let currentSort = 'new'; 
-        let currentQuizId = null; 
-        let canAnswer = false;  
-        let myLastChoice = null; 
-        let myLastChoiceIdx = null; 
-        let hasClosedSummary = false; 
-        let rankingListener = null; 
-        let studentTimerInterval = null; 
-        let currentFilter = "공통질문"; 
-        let currentShuttleData = null;
-        let selectedAdminType = 'none';
 
-        // 1. [초기화] 페이지 로드 시 실행
-        (async function init() {
-            const params = new URLSearchParams(window.location.search);
-            const directRoom = params.get('room');
-            const code = params.get('code');
 
-            if (directRoom) { currentRoom = directRoom; } 
-            else if (code) { currentRoom = await resolveRoomFromCode(code); }
+        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null; let currentFilter = "공통질문"; 
 
-            if (!currentRoom) {
-                alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
-                return;
-            }
 
-            // UI 업데이트
-            document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
-            document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+function sendAns(idx) {
+    if (!canAnswer || !currentQuizId) return; 
 
-            // 방별 로컬 데이터 로드
-            myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
-            myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
-            lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
+    myLastChoiceIdx = idx; // 내가 선택한 번호 저장
+    const oxArea = document.getElementById('btnGroupOX');
+    const multArea = document.getElementById('btnGroupMultiple');
+    
+    // 현재 어떤 버튼 그룹이 화면에 보이는지 확인
+    const isOX = (oxArea.style.display === 'flex' || oxArea.offsetParent !== null);
+    myLastChoice = isOX ? (idx === 1 ? 'O' : 'X') : idx + '번';
 
-            const db = firebase.database();
-            const rPath = `courses/${currentRoom}`;
-            dbRef = { 
-                qa: db.ref(`${rPath}/questions`), 
-                quiz: db.ref(`${rPath}/activeQuiz`), 
-                ans: db.ref(`${rPath}/quizAnswers`), 
-                settings: db.ref(`${rPath}/settings`), 
-                status: db.ref(`${rPath}/status`), 
-                connections: db.ref(`${rPath}/connections`) 
-            };
+    // [핵심 수정] 현재 눈에 보이는 버튼 그룹 안에서만 버튼을 찾아 색을 바꿉니다.
+    const activeArea = isOX ? oxArea : multArea;
+    const buttons = activeArea.querySelectorAll('.quiz-opt-btn');
+    
+    buttons.forEach((btn, i) => {
+        btn.classList.remove('selected'); // 기존 파란색 제거
+        if ((i + 1) === idx) {
+            btn.classList.add('selected'); // 선택한 버튼만 파란색 추가
+        }
+    });
 
-            handleInternalAttendance(currentRoom); // 자동 출결 체크
-            setupListeners(); // 리얼타임 감시 시작
-            checkCooldown(); // 질문 쿨타임 체크
-            initKeyboardFix(); // 모바일 키보드 대응
-        })();
+    // Firebase 서버로 데이터 전송
+    const uToken = localStorage.getItem('uToken');
+    if(uToken && currentQuizId) {
+        dbRef.ans.child(currentQuizId).child(uToken).set({
+            choice: idx,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+    
+    // 하단 피드백 문구 출력
+    document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-check"></i> ${myLastChoice} 선택 완료!`;
+}
 
-        // 2. [입장 로직] 강사 상태 확인 및 프로필 체크
-        async function enterApp() {
-            const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status/roomStatus`).once('value');
-            if (statusSnap.val() !== 'active') {
-                alert("⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.");
-                return;
-            }
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
-            await checkProfile();
+
+
+
+
+        
+// [수정] index.html의 최하단 (async function init() { ... })
+(async function init() {
+    const params = new URLSearchParams(window.location.search);
+    const directRoom = params.get('room'); // 새로 찍은 QR의 방 (예: C)
+    const code = params.get('code');
+
+    // [강력 로직 1] URL에 방 번호가 있으면 무조건 그 방을 현재 방으로 확정
+    if (directRoom) {
+        currentRoom = directRoom;
+    } else if (code) {
+        currentRoom = await resolveRoomFromCode(code);
+    }
+
+    // [강력 로직 2] 방 번호가 바뀌었는지 확인하고, 데이터 경로 리셋
+    if (!currentRoom) {
+        alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
+        return;
+    }
+
+    // UI 즉시 업데이트 (이전 방 이름이 보이지 않게)
+    document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+    document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+
+    // 해당 방(currentRoom) 전용 데이터 저장소 연결
+    myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
+    myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
+    lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
+
+    const db = firebase.database();
+    const rPath = `courses/${currentRoom}`;
+    dbRef = { 
+        qa: db.ref(`${rPath}/questions`), 
+        quiz: db.ref(`${rPath}/activeQuiz`), 
+        ans: db.ref(`${rPath}/quizAnswers`), 
+        settings: db.ref(`${rPath}/settings`), 
+        status: db.ref(`${rPath}/status`), 
+        connections: db.ref(`${rPath}/connections`) 
+    };
+
+    // [중요] 출석 체크 함수 호출 (이때 room은 새로 찍은 'C'여야 함)
+    handleInternalAttendance(currentRoom); 
+
+    // 리스너 및 키보드 보정 실행
+    setupListeners(); 
+    checkCooldown(); 
+    initKeyboardFix();
+})();
+
+
+
+
+async function enterApp() {
+    // 1. 강사의 강의실 상태를 먼저 확인합니다.
+    const statusSnap = await firebase.database().ref(`courses/${currentRoom}/status/roomStatus`).once('value');
+    const roomStatus = statusSnap.val();
+
+    // 2. 'active'(사용중)가 아니면 입장을 막습니다.
+    if (roomStatus !== 'active') {
+        alert("⚠️ 강사님이 아직 강의를 시작하지 않았거나 준비 중입니다.\n잠시 후 다시 시도해 주세요.");
+        return; // 여기서 함수 종료 (입장 안 됨)
+    }
+
+    // 3. 'active'일 때만 기존 입장 로직 실행
+    const doc = document.documentElement;
+    if (doc.requestFullscreen) doc.requestFullscreen().catch(e=>{});
+    await checkProfile();
+}
+
+
+function openMainMenu() {
+    // 1. 내 정보 가져오기 (공백 제거)
+    const myName = (localStorage.getItem('kac_user_name') || "미등록").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone') || "0000").trim();
+    const dormTextEl = document.getElementById('displayMyDorm');
+
+    // 2. 상단 이름/번호 표시
+    document.getElementById('displayMyName').innerText = myName;
+    document.getElementById('displayMyPhone').innerText = myPhone;
+
+    // 3. [지능형 실시간 매칭] 
+    // 우선순위 1: '이름_번호'로 된 정밀 데이터가 있는지 확인 (동명이인 수동 구분용)
+    // 우선순위 2: 일반 '이름' 데이터가 있는지 확인 (기본 매칭)
+    
+    const dormAssignmentsRef = firebase.database().ref(`system/dormitory_assignments`);
+
+    // .on을 사용하여 지원부에서 어떤 방식으로 수정하든 실시간으로 반응합니다.
+    dormAssignmentsRef.on('value', snap => {
+        const allDormData = snap.val() || {};
+        
+        // [A] 이름_번호 조합 (예: 홍길동_3126) 확인
+        const precisionKey = `${myName}_${myPhone}`;
+        
+        if (allDormData[precisionKey]) {
+            const data = allDormData[precisionKey];
+            dormTextEl.innerText = `${data.building} ${data.room}호`;
+            dormTextEl.style.color = "#3b82f6";
+            dormTextEl.style.fontWeight = "900";
+        } 
+        // [B] 일반 이름 (예: 홍길동) 확인
+        else if (allDormData[myName]) {
+            const data = allDormData[myName];
+            dormTextEl.innerText = `${data.building} ${data.room}호`;
+            dormTextEl.style.color = "#3b82f6";
+            dormTextEl.style.fontWeight = "900";
+        } 
+        // [C] 데이터 없음
+        else {
+            dormTextEl.innerText = "생활관 배정 정보 확인 중...";
+            dormTextEl.style.color = "#94a3b8";
+        }
+    });
+
+    document.getElementById('menuModal').style.display = 'flex';
+}
+
+
+
+
+
+// [신규] 정보 수정 버튼 클릭 시 호출되는 함수
+function editProfile() {
+    // [중요] 수정 전의 이름과 번호를 미리 백업해둡니다. (나중에 지우기 위함)
+    const oldName = localStorage.getItem('kac_user_name');
+    const oldPhone = localStorage.getItem('kac_user_phone');
+    localStorage.setItem('kac_old_uToken', `${oldName}_${oldPhone}`);
+
+    document.getElementById('userName').value = oldName || "";
+    document.getElementById('userPhone').value = oldPhone || "";
+    
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('profileOverlay').style.display = 'flex';
+}
+
+
+
+
+
+
+        // [수정] 완전히 나가기 (주소 초기화)
+function exitApp() {
+
+    if (confirm("현재 강의실에서 나가시겠습니까?")) {
+
+    const uToken = localStorage.getItem('uToken');
+    if (uToken && currentRoom) {
+        firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`).set(false);
+    }
+
+        const ua = navigator.userAgent.toLowerCase();
+        
+        // 1. 카카오톡 인앱 브라우저 강제 종료 (성공 시 여기서 끝남)
+        if (ua.indexOf('kakaotalk') !== -1) {
+            location.href = 'kakaotalk://inappbrowser/close';
+            return;
         }
 
-        async function checkProfile() {
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            const savedName = localStorage.getItem('kac_user_name_' + currentRoom);
-
-            if (!uToken || !savedName) {
-                // 다른 방에서 썼던 이름 자동완성용
-                const globalName = localStorage.getItem('kac_user_name');
-                const globalPhone = localStorage.getItem('kac_user_phone');
-                if(globalName) document.getElementById('userName').value = globalName;
-                if(globalPhone) document.getElementById('userPhone').value = globalPhone;
-                document.getElementById('profileOverlay').style.display = 'flex';
-                return;
-            }
-            showMainDashboard();
+        // 2. 네이버 앱 인앱 브라우저 강제 종료 (성공 시 여기서 끝남)
+        if (ua.indexOf('naver') !== -1) {
+            location.href = 'naversearchapp://inappbrowser/close';
+            return;
         }
 
-        function showMainDashboard() {
-            document.getElementById('landingPage').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'flex';
-            startPresence();
+        // 3. 그 외 (아이폰 카메라, 크롬, 사파리 등)
+        // [중요] 절대 window.location.href 로직을 넣지 마세요! (입장창으로 가는 원인)
+        
+        // 브라우저가 창을 닫는 것을 거부할 때를 대비해 화면을 '퇴장 안내'로 덮어버립니다.
+        document.documentElement.innerHTML = `
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>퇴장 완료</title>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                <style>
+                    body { background: #0f172a; color: white; margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; }
+                    .exit-box { height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+                    .icon { font-size: 80px; color: #3b82f6; margin-bottom: 20px; }
+                    h2 { font-size: 24px; margin: 0; }
+                    p { font-size: 16px; opacity: 0.7; margin-top: 15px; line-height: 1.5; }
+                    .btn-close { margin-top: 30px; padding: 12px 40px; background: #334155; color: white; border: none; border-radius: 30px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="exit-box">
+                    <div class="icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+                    <h2>퇴장 완료</h2>
+                    <p>정상적으로 퇴장되었습니다.<br>이 브라우저 창(탭)을 닫아주세요.</p>
+                    <button class="btn-close" onclick="window.close()">창 닫기 시도</button>
+                </div>
+
+            </body>
+        `;
+
+        // 히스토리를 꼬아버려 뒤로가기를 해도 입장창으로 못 돌아가게 함
+        window.history.pushState(null, null, window.location.href);
+        window.onpopstate = function() { window.history.go(1); };
+
+        // 마지막으로 창 닫기 시도
+        setTimeout(() => { window.close(); }, 300);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [최종 보강] 유령 회원 방지 및 강제 퇴출 로직 완결판
+function startPresence() {
+    const uToken = localStorage.getItem('uToken');
+    const name = localStorage.getItem('kac_user_name');
+    const phone = localStorage.getItem('kac_user_phone');
+    
+    // 입장권이 없으면 실행 중단
+    if (!uToken || !currentRoom || !name) {
+        if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
+        return;
+    }
+
+    const myRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
+    const connectedRef = firebase.database().ref(".info/connected");
+
+    // [1] 실시간 감시: 내가 서버에서 지워지는 순간 즉시 화면 차단
+    myRef.on('value', snap => {
+        if (!snap.exists()) {
+            evictUser("해당 정보가 변경되어 재시작합니다.");
         }
+    });
 
-        // 3. [프로필 저장] 방별 독립 토큰 발행
-        function saveProfileWithCheck() {
-            if(!document.getElementById('privacyAgree').checked) {
-                alert("개인정보 수집 및 이용에 동의해야 서비스 이용이 가능합니다.");
-                return;
-            }
-            saveProfile();
-        }
-
-        async function saveProfile() {
-            const name = document.getElementById('userName').value.trim();
-            const phone = document.getElementById('userPhone').value.trim();
-            if (!name || phone.length !== 4) {
-                alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
-                return;
-            }
-            
-            const newUToken = `${name}_${phone}`;
-            const oldToken = localStorage.getItem('kac_old_uToken');
-            
-            try {
-                // 수정 모드인 경우 이전 데이터 삭제
-                if(oldToken && oldToken !== newUToken) {
-                    await firebase.database().ref(`courses/${currentRoom}/students/${oldToken}`).remove();
-                }
-
-                // 로컬 저장 (방별 독립)
-                localStorage.setItem('kac_user_name', name); // 공통 자동완성용
-                localStorage.setItem('kac_user_phone', phone); // 공통 자동완성용
-                localStorage.setItem('uToken_' + currentRoom, newUToken);
-                localStorage.setItem('kac_user_name_' + currentRoom, name);
-                localStorage.setItem('kac_user_phone_' + currentRoom, phone);
-                localStorage.removeItem('kac_old_uToken');
-
-                // 서버 저장
-                await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
-                    name: name, phone: phone, joinedAt: firebase.database.ServerValue.TIMESTAMP, isOnline: true
-                });
-
-                document.getElementById('profileOverlay').style.display = 'none';
-                
-                // 출결 체크 파라미터가 있으면 즉시 실행
-                if (new URLSearchParams(window.location.search).get('checkin') === 'true') {
-                    handleInternalAttendance(currentRoom); 
-                } else {
-                    showMainDashboard();
-                }
-            } catch (e) {
-                alert("등록 중 오류가 발생했습니다.");
-            }
-        }
-
-        // 4. [접속 유지] 유령 회원 방지 및 강제 퇴출
-        function startPresence() {
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            const name = localStorage.getItem('kac_user_name_' + currentRoom);
-            const phone = localStorage.getItem('kac_user_phone_' + currentRoom);
-            if (!uToken || !currentRoom || !name) return;
-
-            const myRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
-            const connectedRef = firebase.database().ref(".info/connected");
-
-            // 서버에서 내가 지워졌는지 감시
-            myRef.on('value', snap => {
-                if (!snap.exists() && document.getElementById('mainApp').style.display === 'flex') {
-                    myRef.off();
-                    localStorage.removeItem('uToken_' + currentRoom);
-                    alert("정보가 변경되었거나 삭제되어 다시 입장합니다.");
-                    location.reload();
-                }
-            });
-
-            // 온라인/오프라인 상태 보고
-            connectedRef.on("value", (snap) => {
-                if (snap.val() === true) {
-                    myRef.update({ name: name, phone: phone, isOnline: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+    // [2] 접속 상태 업데이트: 서버 확인 후 명단에 있을 때만 데이터 전송
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            myRef.once('value').then(s => {
+                if (s.exists()) {
+                    // 서버 명단에 내가 있을 때만 온라인 상태 보고
+                    myRef.update({
+                        name: name,
+                        phone: phone,
+                        isOnline: true,
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
                     myRef.child('isOnline').onDisconnect().set(false);
+                } else {
+                    // 서버 명단에 없으면 부활 시도 차단 및 퇴출
+                    evictUser("유효하지 않은 접근입니다.");
                 }
             });
-
-            // 전체 접속자 수 카운트
-            firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
-                const data = snap.val() || {};
-                const activeUsers = Object.values(data).filter(user => user.isOnline === true);
-                document.getElementById('realUserCount').innerText = `${activeUsers.length}명 접속`;
-            });
         }
+    });
 
-        // 5. [질문 기능] 필터링 및 쿨타임
-        function submitQ() {
-            const txt = document.getElementById('qInput').value.trim();
-            if(!txt) return;
+    // [강제 퇴출 함수] 모든 데이터 삭제 및 화면 봉쇄
+    function evictUser(msg) {
+        myRef.off(); // 서버 연결 끊기
+        localStorage.removeItem('uToken'); // 입장권 삭제
+        if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
+        alert(msg);
+        location.reload(); // 초기 화면으로 강제 이동
+    }
 
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            const subject = document.getElementById('subjectSelect').value;
-            const now = Date.now();
-            
-            // 수정 모드 처리
-            if(editingKey) {
-                dbRef.qa.child(editingKey).update({ text: txt, subject: subject }).then(() => { 
-                    alert("수정 완료"); 
-                    resetInput(); 
-                });
-                return;
-            }
+    // 전체 접속자 수 감시
+    firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
+        const data = snap.val() || {};
+        const activeUsers = Object.values(data).filter(user => 
+            user.name && user.name !== "undefined" && user.isOnline === true
+        );
+        const countEl = document.getElementById('realUserCount');
+        if(countEl) countEl.innerText = `${activeUsers.length}명 접속`;
+    });
+}
 
-            // 도배 방지 쿨타임 (2분)
-            if(now - (lastPostTimeMap[subject] || 0) < 120000) { 
-                alert(`'${subject}'님께는 잠시 후 다시 질문해주세요.`); 
-                return; 
-            }
 
-            const ref = dbRef.qa.push();
-            ref.set({
-                text: txt, subject: subject, likes: 0, 
-                timestamp: firebase.database.ServerValue.TIMESTAMP, uToken: uToken
-            });
 
-            myQs[ref.key] = now;
-            localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
-            lastPostTimeMap[subject] = now;
-            localStorage.setItem(`lastTimeMap_${currentRoom}`, JSON.stringify(lastPostTimeMap));
-            
-            resetInput();
-            checkCooldown();
-        }
 
-        function renderList(data) {
-            const list = document.getElementById('qList'); 
-            list.innerHTML = ""; 
-            let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
-            
-            if (currentFilter !== "공통질문") items = items.filter(item => item.subject === currentFilter);
-            
-            if(currentSort === 'like') {
-                items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
-            } else {
-                items.sort((a,b) => b.timestamp - a.timestamp);
-            }
 
-            if (items.length === 0) {
-                list.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-size:14px;">등록된 질문이 없습니다.</div>`;
-                return;
-            }
 
-            items.forEach(item => {
-                if(item.status === 'delete') return;
-                const isMine = myQs[item.id] ? true : false;
-                const likedClass = myLikes[item.id] ? 'active' : '';
-                
-                const instructorTag = `<span style="display:inline-block; background:${isMine?'#d1fae5':'#eff6ff'}; color:${isMine?'#059669':'#3b82f6'}; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid ${isMine?'#a7f3d0':'#dbeafe'}; font-weight:800; vertical-align:middle;">To. ${item.subject || '공통질문'}</span>`;
 
-                list.innerHTML += `
-                    <div class="q-card ${isMine?'my-q':''}">
-                        <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
-                        <div class="q-content">
-                            <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
-                            <div class="q-meta">
-                                <span>${formatTime(item.timestamp)}</span>
-                                ${isMine && (Date.now() - myQs[item.id] < 300000) ? 
-                                `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="q-like-area">
-                            <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
-                            <span class="like-count">${item.likes||0}</span>
-                        </div>
-                    </div>`;
-            });
-        }
 
-        // 6. [행정 신청] 외출/외박/석식 통합 관리
-        function selectAdminType(type) {
-            selectedAdminType = type;
-            const types = ['outing', 'overnight'];
-            types.forEach(t => {
-                const btn = document.getElementById(`btn-${t}`);
-                if(!btn) return;
-                btn.style.background = (t === type) ? "#3b82f6" : "#f8fafc";
-                btn.style.color = (t === type) ? "white" : "#64748b";
-            });
-            document.getElementById('returnDateArea').style.display = (type === 'overnight') ? 'block' : 'none';
-            if(type === 'overnight') {
-                const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-                document.getElementById('returnDate').value = tomorrow.toISOString().substring(0, 10);
-            }
-        }
 
-        async function openAdminAction() {
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            const today = getTodayString();
-            
-            const [actionSnap, dinnerSnap] = await Promise.all([
-                firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value'),
-                firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).once('value')
-            ]);
 
-            const actionData = actionSnap.val();
-            const hasDinner = dinnerSnap.exists();
 
-            if (!actionData && !hasDinner) {
-                document.getElementById('adminActionForm').style.display = 'flex';
-                document.getElementById('adminStatusArea').style.display = 'none';
-                selectedAdminType = 'none';
-            } else {
-                document.getElementById('adminActionForm').style.display = 'none';
-                document.getElementById('adminStatusArea').style.display = 'block';
 
-                let txt = "";
-                if(hasDinner) txt += `<div style="margin-bottom:10px; padding:10px; background:#fff1f2; border:1px solid #fda4af; border-radius:10px; color:#e11d48; font-weight:800;">🍴 오늘 석식 제외 신청됨</div>`;
-                if(actionData) txt += `<div style="background:#fff; padding:12px; border:1px solid #dbeafe; border-radius:10px;"><b>${actionData.returned ? '[복귀 완료 보고됨]' : '[미복귀 / 외출 중]'}</b><br>유형: ${actionData.type=='outing'?'외출':'외박'}<br>시간: ${actionData.startTime} ~ ${actionData.endTime}</div>`;
-                document.getElementById('adminStatusText').innerHTML = txt;
 
-                document.getElementById('beforeReturnGroup').style.display = (actionData && !actionData.returned) ? 'flex' : 'none';
-                document.getElementById('afterReturnGroup').style.display = (actionData && actionData.returned) ? 'block' : 'none';
-                document.getElementById('dinnerOnlyGroup').style.display = (!actionData && hasDinner) ? 'block' : 'none';
-            }
-            document.getElementById('adminActionModal').style.display = 'flex';
-        }
 
-        async function submitAdminAction() {
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            const name = localStorage.getItem('kac_user_name_' + currentRoom);
-            const phone = localStorage.getItem('kac_user_phone_' + currentRoom);
-            const skipDinner = document.getElementById('skipDinner').checked;
-            const today = getTodayString();
 
-            if(selectedAdminType === 'none' && !skipDinner) return alert("유형을 선택하거나 석식제외에 체크하세요.");
-
-            if(selectedAdminType !== 'none') {
-                const dept = document.getElementById('userDept').value.trim();
-                const start = document.getElementById('startTime').value;
-                const end = document.getElementById('endTime').value;
-                const dest = document.getElementById('destination').value.trim();
-                const reason = document.getElementById('outingReason').value.trim();
-                const fullPhone = document.getElementById('fullPhone').value.trim();
-                const retDate = (selectedAdminType === 'overnight') ? document.getElementById('returnDate').value : today;
-
-                if(!dept || !start || !end || !dest || !reason || !fullPhone) return alert("외출 정보를 모두 입력하세요.");
-                
-                await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set({
-                    name, dept, startTime: start, endTime: end, returnDate: retDate, destination: dest, reason, phone: fullPhone, type: selectedAdminType, timestamp: firebase.database.ServerValue.TIMESTAMP, returned: false
-                });
-            }
-
-            if(skipDinner) {
-                if(new Date().getHours() >= 16) alert("석식 신청/취소는 16시 마감되었습니다.");
-                else await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phone})`);
-            }
-            alert("✅ 신청서가 접수되었습니다.");
-            document.getElementById('adminActionModal').style.display = 'none';
-        }
-
-        async function cancelDinnerOnly() {
-            if(new Date().getHours() >= 16) return alert("석식 취소는 16시 마감되었습니다.");
-            if(confirm("석식 제외 신청을 취소하시겠습니까?")) {
-                const u = localStorage.getItem('uToken_' + currentRoom);
-                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${getTodayString()}/${u}`).remove();
-                alert("취소되었습니다."); openAdminAction();
-            }
-        }
-
-        async function cancelAdminAction() {
-            if(confirm("기존 신청 내역을 모두 취소하시겠습니까?")) {
-                const u = localStorage.getItem('uToken_' + currentRoom);
-                const t = getTodayString();
-                await firebase.database().ref(`courses/${currentRoom}/admin_actions/${t}/${u}`).remove();
-                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${t}/${u}`).remove();
-                alert("취소 완료"); openAdminAction();
-            }
-        }
-
-        async function confirmReturnAction() {
-            if(confirm("현 시각부로 복귀하셨습니까?")) {
-                const u = localStorage.getItem('uToken_' + currentRoom);
-                await firebase.database().ref(`courses/${currentRoom}/admin_actions/${getTodayString()}/${u}`).update({
-                    returned: true, returnReportTime: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                });
-                alert("✅ 복귀 보고 완료"); openAdminAction();
-            }
-        }
-
-        // 7. [차량 신청]
-        async function openShuttleApply() {
-            document.getElementById('menuModal').style.display = 'none';
-            document.getElementById('shuttleModal').style.display = 'flex';
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            
-            firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
-                const d = snap.val();
-                document.getElementById('departureTimeText').innerText = (d && d.time) ? `${d.date} [ ${d.time} ] 출발 예정` : "기사님이 출발 시간을 설정 중입니다.";
+function setupListeners() {
+            // 1. 서버 시간 동기화
+            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+                serverTimeOffset = snap.val() || 0;
             });
 
-            const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
-            currentShuttleData = snap.val();
-            document.getElementById('shuttleSelectionArea').style.display = currentShuttleData ? 'none' : 'block';
-            document.getElementById('shuttleCancelArea').style.display = currentShuttleData ? 'block' : 'none';
-            if(currentShuttleData) document.getElementById('myCurrentShuttleText').innerText = currentShuttleData.typeText;
-        }
 
-        function selectShuttle(typeId, typeName) {
-            showKacConfirm(`[${typeName}] 신청하시겠습니까?`, async function() {
-                const u = localStorage.getItem('uToken_' + currentRoom);
-                const n = localStorage.getItem('kac_user_name_' + currentRoom);
-                const p = localStorage.getItem('kac_user_phone_' + currentRoom);
-                await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${u}`).set({
-                    type: typeId, typeText: typeName, name: n, phone: p, timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                alert("신청이 완료되었습니다."); closeShuttleModal();
-            });
-        }
+            watchNotices(); 
 
-        async function cancelShuttleRequest() {
-            if(confirm("차량 신청을 취소하시겠습니까?")) {
-                await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${localStorage.getItem('uToken_'+currentRoom)}`).remove();
-                alert("정상적으로 취소되었습니다."); openShuttleApply();
-            }
-        }
 
-        // 8. [퀴즈 답변] 방별 토큰으로 전달
-        function sendAns(idx) {
-            if (!canAnswer || !currentQuizId) return; 
-            myLastChoiceIdx = idx;
-            const oxArea = document.getElementById('btnGroupOX');
-            const multArea = document.getElementById('btnGroupMultiple');
-            const isOX = (oxArea.style.display === 'flex' || oxArea.offsetParent !== null);
-            myLastChoice = isOX ? (idx === 1 ? 'O' : 'X') : idx + '번';
-
-            const activeArea = isOX ? oxArea : multArea;
-            activeArea.querySelectorAll('.quiz-opt-btn').forEach((btn, i) => {
-                btn.classList.remove('selected');
-                if ((i + 1) === idx) btn.classList.add('selected');
-            });
-
-            const uToken = localStorage.getItem('uToken_' + currentRoom);
-            if(uToken && currentQuizId) {
-                dbRef.ans.child(currentQuizId).child(uToken).set({
-                    choice: idx, timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-            document.getElementById('quizFeedback').innerHTML = `<i class="fa-solid fa-check"></i> ${myLastChoice} 선택 완료!`;
-        }
-
-        // 9. [실시간 리스너] 퀴즈 및 상태 감시
-        function setupListeners() {
-            firebase.database().ref(".info/serverTimeOffset").on("value", s => { serverTimeOffset = s.val() || 0; });
-            watchNotices();
-
+            // 2. 과정명 및 기본 설정 감시
             dbRef.settings.on('value', s => { 
-                const v = s.val() || {}; 
-                document.getElementById('roomTitle').innerText = v.courseName || `Room ${currentRoom}`; 
-                document.getElementById('landingTitle').innerText = v.courseName || `Room ${currentRoom}`;
+                const val = s.val() || {}; 
+                const title = val.courseName || `Course ${currentRoom}`; 
+                document.getElementById('roomTitle').innerText = title; 
+                document.getElementById('landingTitle').innerText = title; 
             });
 
-            dbRef.qa.on('value', s => renderList(s.val() || {}));
+            // 3. 질문 리스트 실시간 감시
+            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
 
-            dbRef.status.on('value', s => {
-                const st = s.val() || {};
-                const sk = st.resetKey || 'init';
-                if (localStorage.getItem(`kac_resetKey_${currentRoom}`) && localStorage.getItem(`kac_resetKey_${currentRoom}`) !== sk) {
-                    localStorage.clear(); location.reload(); return;
-                }
-                localStorage.setItem(`kac_resetKey_${currentRoom}`, sk);
-                
-                if (st.mode === 'quiz' && st.quizStep !== 'summary') {
-                    document.getElementById('quizOverlay').style.display = 'flex';
-                } else if (st.quizStep === 'summary' && !hasClosedSummary) {
-                    showFinalRanking();
-                } else if (st.mode !== 'quiz') {
-                    forceCloseQuiz();
-                }
+            // [신규 추가] 1분마다 리스트를 강제로 다시 그려서 5분 지난 글의 '수정' 버튼을 자동으로 없앱니다.
+            setInterval(() => {
+                dbRef.qa.once('value', snap => {
+                    if(snap.exists()) renderList(snap.val());
+                });
+            }, 60000);
+
+            // 4. 과목 리스트 실시간 로드
+            firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
+                const data = s.val() || {};
+                const sel = document.getElementById('subjectSelect');
+                if(!sel) return;
+                let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
+                Object.values(data).forEach(name => {
+                    html += `<option value="${name}">${name}</option>`;
+                });
+                sel.innerHTML = html;
             });
 
+// 5. 강의실 상태 감시 (중복 코드 제거 및 로직 통합 버전)
+dbRef.status.on('value', snap => {
+    const st = snap.val() || {};
+
+    // [A] 리셋 및 삭제 체크
+    const serverResetKey = st.resetKey || 'init';
+    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
+    if (!myLocalKey) {
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+    } else if (myLocalKey !== serverResetKey) {
+        localStorage.clear();
+        alert("강의실 정보가 초기화되었습니다.");
+        location.replace(location.pathname + location.search);
+        return;
+    }
+
+    const uToken = localStorage.getItem('uToken');
+    if (uToken && st.roomStatus === 'active') {
+        firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
+            if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
+                localStorage.removeItem('uToken');
+                alert("정보가 갱신되었거나 삭제되었습니다.");
+                location.reload();
+            }
+        });
+    }
+
+    // [B] 강사 상태 체크
+    if (st.roomStatus !== 'active') {
+        forceCloseQuiz();
+        return;
+    }
+
+    // [C] 퀴즈 모드 전환
+    if (st.mode === 'quiz') {
+        if (st.quizStep !== 'summary') {
+            document.getElementById('quizOverlay').style.display = 'flex';
+        }
+    } else {
+        forceCloseQuiz();
+    }
+    
+    // [D] 퀴즈 결과 발표 체크
+    if (st.quizStep === 'summary') { 
+        if(!hasClosedSummary) showFinalRanking(); 
+    }
+});
+
+
+
+
+
+
+// 6. 퀴즈 세부 진행 감시 (리셋 로직 및 연동 보완)
             dbRef.quiz.on('value', s => {
                 const q = s.val(); if(!q) return;
+
+                // [핵심 수정] 문제 ID가 바뀌면 (즉, 진짜 새 문제가 나오면) 무조건 모든 상태 초기화
                 if (currentQuizId !== q.id) {
-                    currentQuizId = q.id; myLastChoiceIdx = null; myLastChoice = null; canAnswer = false;
-                    document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected', 'locked'));
+                    currentQuizId = q.id;
+                    myLastChoiceIdx = null;
+                    myLastChoice = null;
+                    canAnswer = false;
+                    // 이전 문제의 모든 선택/잠금 효과 제거
+                    document.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                        b.classList.remove('selected', 'locked');
+                    });
                 }
-                const msgBox = document.getElementById('quizStatusMsg');
-                const feedBox = document.getElementById('quizFeedback');
-                const multArea = document.getElementById('btnGroupMultiple');
-                const oxArea = document.getElementById('btnGroupOX');
 
-                if(q.status === 'open') {
-                    canAnswer = true; msgBox.innerText = "정답을 선택하세요!";
-                    multArea.style.display = q.isOX ? 'none' : 'flex';
-                    oxArea.style.display = q.isOX ? 'flex' : 'none';
-                    if(!q.isOX) {
-                        multArea.innerHTML = "";
-                        q.options.forEach((opt, i) => {
-                            const btn = document.createElement('button');
-                            btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
-                            btn.innerText = `${i+1}. ${opt}`; btn.onclick = () => sendAns(i+1);
-                            multArea.appendChild(btn);
-                        });
+                if(studentTimerInterval) clearInterval(studentTimerInterval);
+                const sTimerBox = document.getElementById('studentQuizTimerBox');
+                const sTimerText = document.getElementById('studentTimer');
+                if(sTimerBox) sTimerBox.style.display = 'none';
+
+                dbRef.status.once('value', statusSnap => {
+                    const st = statusSnap.val() || {};
+                    if (st.quizStep === 'summary' && !hasClosedSummary) return; 
+                    if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
+
+                    document.getElementById('quizOverlay').style.display = 'flex';
+                    const msgBox = document.getElementById('quizStatusMsg');
+                    const feedBox = document.getElementById('quizFeedback');
+
+                    // [상태: 일시정지]
+                    if(q.status === 'pause') {
+                        canAnswer = false; 
+                        msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
+                        if(sTimerBox && q.remainingTime !== undefined) {
+                            sTimerBox.style.display = 'flex';
+                            sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
+                        }
+                        // 버튼 잠금 유지
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+                        return; 
                     }
-                } else if(q.status === 'result') {
-                    canAnswer = false; 
-                    msgBox.innerText = q.isSurvey ? "📋 설문 결과" : (myLastChoiceIdx === q.correct ? "🎉 정답입니다!" : "앗, 틀렸습니다.");
-                    feedBox.innerText = q.isSurvey ? (q.surveyResult || "") : `정답: ${q.isOX ? (q.correct==1?'O':'X') : q.correct+'번'}`;
-                } else if(q.status === 'close') {
-                    canAnswer = false; document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
-                    msgBox.innerText = "마감되었습니다.";
-                }
+
+                    // [상태: 결과 발표]
+                    if (q.status === 'result') { 
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        const correctAns = q.correct;
+                        if (q.isSurvey) {
+                            msgBox.innerText = "📋 설문 결과 요약";
+                            feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계 완료"}</span>`;
+                        } else {
+                            if (myLastChoiceIdx === correctAns) {
+                                 msgBox.innerText = "🎉 정답입니다!"; feedBox.innerHTML = `훌륭합니다!`;
+                            } else {
+                                 msgBox.innerText = "앗, 틀렸습니다...";
+                                 const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
+                                 feedBox.innerHTML = `정답은 [ ${ansText} ] 입니다.`;
+                            }
+                        }
+                        return; 
+                    }
+
+                    // [상태: 대기 중]
+                    if(q.status === 'ready') {
+                        canAnswer = false; 
+                        msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        feedBox.innerText = "";
+                    } 
+                    // [상태: 진행 중]
+                    else if(q.status === 'open') {
+                        canAnswer = true; 
+                        msgBox.innerText = "정답을 선택하세요!";
+                        
+                        // 타이머 작동
+                        if(q.endTime && sTimerBox) {
+                            sTimerBox.style.display = 'flex';
+                            studentTimerInterval = setInterval(() => {
+                                const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
+                                const display = remain < 0 ? 0 : remain;
+                                sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
+                                if(remain <= 0) clearInterval(studentTimerInterval);
+                            }, 200);
+                        }
+
+                        if(q.isOX) {
+                            document.getElementById('btnGroupMultiple').style.display = 'none';
+                            const oxArea = document.getElementById('btnGroupOX');
+                            oxArea.style.display = 'flex';
+                            // 버튼 리셋 후 내 선택 강조
+                            document.querySelectorAll('.ox-btn').forEach((btn, i) => {
+                                btn.classList.remove('locked', 'selected');
+                                if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
+                            });
+                        } else {
+                            document.getElementById('btnGroupOX').style.display = 'none';
+                            const multArea = document.getElementById('btnGroupMultiple');
+                            multArea.style.display = 'flex'; multArea.innerHTML = ""; 
+                            q.options.forEach((opt, i) => {
+                                const btn = document.createElement('button');
+                                btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
+                                btn.innerText = `${i+1}. ${opt}`; 
+                                btn.onclick = () => sendAns(i+1);
+                                multArea.appendChild(btn);
+                            });
+                        }
+                    }
+                    // [상태: 시간 종료/마감]
+                    else if(q.status === 'close') {
+                        canAnswer = false;
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+                        msgBox.innerText = myLastChoice ? "제출 완료" : "미제출 마감";
+                    }
+                });
+            });
+
+            // 7. 입력창 자동 높이 조절 및 글자수 제한
+            const qInputEl = document.getElementById('qInput');
+            qInputEl.addEventListener('input', function() {
+                const len = this.value.length; 
+                document.getElementById('charCount').innerText = `${len} / 100`;
+                if (len >= 90) document.getElementById('charCount').classList.add('limit'); 
+                else document.getElementById('charCount').classList.remove('limit');
+                this.style.height = '1px'; 
+                this.style.height = (this.scrollHeight) + 'px';
             });
         }
 
-        // 10. [출결 처리] 내부 자체 출석부
-        function handleInternalAttendance(room) {
-            const isCheckIn = new URLSearchParams(window.location.search).get('checkin') === 'true';
-            if (!isCheckIn || !room) return;
-            const today = getTodayString();
-            const storageKey = `kac_attended_${room}_${today}`;
-            if (localStorage.getItem(storageKey)) { cleanUrlAndGo(room); return; }
 
-            const n = (localStorage.getItem('kac_user_name_' + room) || "").trim();
-            const p = (localStorage.getItem('kac_user_phone_' + room) || "").trim();
-            if (!n || p.length !== 4) {
-                document.getElementById('profileOverlay').style.display = 'flex'; 
-                return; 
+
+        function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
+
+// [추가] 누락된 유틸리티 함수 (이게 있어야 질문 목록이 뜹니다)
+        function formatTime(ts) {
+            if(!ts) return "";
+            const d = new Date(ts);
+            const hh = d.getHours().toString().padStart(2, '0');
+            const mm = d.getMinutes().toString().padStart(2, '0');
+            return hh + ":" + mm;
+        }
+
+        function escapeHtml(text) {
+            const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+
+
+
+
+// [최종 수정] 질문 목록 렌더링 (내가 쓴 글 녹색 강조 로직 포함)
+function renderList(data) {
+    const list = document.getElementById('qList'); 
+    list.innerHTML = ""; 
+    
+    // 1. 전체 데이터를 배열로 변환
+    let items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+    
+    // 2. 강사별 필터링 로직
+    if (currentFilter !== "공통질문") {
+        items = items.filter(item => item.subject === currentFilter);
+    }
+    
+    // 3. 정렬 로직
+    if(currentSort === 'like') {
+        items.sort((a,b) => (b.likes||0) - (a.likes||0) || b.timestamp - a.timestamp); 
+    } else {
+        items.sort((a,b) => b.timestamp - a.timestamp);
+    }
+
+    // 4. 질문이 없을 때 안내 문구
+    if (items.length === 0) {
+        const emptyMsg = currentFilter === "공통질문" 
+            ? "등록된 질문이 없습니다." 
+            : `'${currentFilter}'님께 등록된 질문이 없습니다.`;
+        list.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-size:14px;">${emptyMsg}</div>`;
+        return;
+    }
+
+    // 5. 질문 카드 그리기
+    items.forEach(item => {
+        if(item.status === 'delete') return;
+        
+        const isMine = myQs[item.id] ? true : false; // 내가 쓴 글인지 판단
+        const myQClass = isMine ? 'my-q' : '';       // CSS 클래스 적용
+        const likedClass = myLikes[item.id] ? 'active' : '';
+        
+        // 강사 성함 호칭 정리
+        let targetName = item.subject || '공통질문';
+        let displayName = "";
+        const positions = ["본부장", "공항장", "센터장", "부장", "차장", "과장", "주임", "교수"];
+        const foundPos = positions.find(pos => targetName.includes(pos));
+        if (foundPos) displayName = targetName.includes("님") ? targetName : targetName + "님";
+        else if (targetName !== '일반' && targetName !== '공통질문') displayName = targetName + " 강사님";
+        else displayName = targetName;
+
+        // [핵심 수정] 내가 쓴 글이면 녹색 배지 색상, 아니면 파란색 배지 색상 적용
+        const tagBg = isMine ? "#d1fae5" : "#eff6ff";
+        const tagColor = isMine ? "#059669" : "#3b82f6";
+        const tagBorder = isMine ? "#a7f3d0" : "#dbeafe";
+
+        const instructorTag = `<span style="display:inline-block; background:${tagBg}; color:${tagColor}; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px; border:1px solid ${tagBorder}; font-weight:800; vertical-align:middle;">To. ${displayName}</span>`;
+
+        let metaHtml = `<div class="q-meta"><span>${formatTime(item.timestamp)}</span>`;
+        
+        // 내가 쓴 글이고 + 작성한 지 5분(300,000ms)이 안 지났을 때만 수정/삭제 버튼 노출
+        if(isMine && (Date.now() - myQs[item.id] < 300000)) {
+            metaHtml += `<span class="btn-mini" onclick="editQ('${item.id}')">수정</span><span class="btn-mini" onclick="deleteQ('${item.id}')" style="color:#ef4444">삭제</span>`;
+        }
+        metaHtml += `</div>`;
+
+        list.innerHTML += `
+            <div class="q-card ${myQClass}">
+                <div class="q-avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="q-content">
+                    <div class="q-text" style="font-size:15px; color:#1e293b; line-height:1.4;">${instructorTag}<span>${escapeHtml(item.text)}</span></div>
+                    ${metaHtml}
+                </div>
+                <div class="q-like-area">
+                    <div class="like-btn ${likedClass}" onclick="toggleLike('${item.id}')"><i class="fa-solid fa-thumbs-up"></i></div>
+                    <span class="like-count">${item.likes||0}</span>
+                </div>
+            </div>`;
+    });
+}
+
+
+
+function handleSubjectChange() {
+    // 1. 선택된 강사명을 가져와서 필터 변수에 저장
+    currentFilter = document.getElementById('subjectSelect').value;
+    
+    // 2. [추가] 입력창의 안내 문구(Placeholder)를 선택한 강사에 맞춰 변경
+    const inputEl = document.getElementById('qInput');
+    if (currentFilter === "공통질문") {
+        inputEl.placeholder = "✎ 질문 입력 (무례한 표현은 삼가주세요)";
+    } else {
+        inputEl.placeholder = `✎ ${currentFilter}님께 질문 입력...`;
+    }
+    
+    // 3. 쿨타임 체크 (기존 기능 유지)
+    checkCooldown();
+    
+    // 4. 리스트 새로고침 (필터 적용된 renderList 호출)
+    dbRef.qa.once('value', snap => {
+        renderList(snap.val() || {});
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function submitQ() {
+    const txt = document.getElementById('qInput').value.trim();
+    if(!txt) return;
+
+    const subject = document.getElementById('subjectSelect').value;
+    const now = Date.now();
+    
+    // [수정] 선택한 강사(대상)에 대한 마지막 질문 시간 체크
+    const lastTimeForSubject = lastPostTimeMap[subject] || 0;
+
+    if(editingKey) {
+        dbRef.qa.child(editingKey).update({ text: txt, subject: subject }).then(() => { 
+            alert("수정 완료"); 
+            resetInput(); 
+        });
+        return;
+    }
+
+    // [수정] 해당 강사에게 2분이 지났는지 확인
+    if(now - lastTimeForSubject < 120000) { 
+        alert(`'${subject}'님께는 잠시 후 다시 질문해주세요.`); 
+        return; 
+    }
+
+    const ref = dbRef.qa.push();
+    ref.set({
+        text: txt,
+        subject: subject,
+        likes: 0,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    myQs[ref.key] = now;
+    localStorage.setItem(`myqs_${currentRoom}`, JSON.stringify(myQs));
+    
+    // [수정] 해당 강사에 대한 질문 시간만 업데이트하여 저장
+    lastPostTimeMap[subject] = now;
+    localStorage.setItem(`lastTimeMap_${currentRoom}`, JSON.stringify(lastPostTimeMap));
+    
+    resetInput();
+    checkCooldown();
+}
+
+
+
+        function toggleLike(key) { if(myLikes[key]) { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)-1; return p; }); delete myLikes[key]; } else { dbRef.qa.child(key).transaction(p => { if(p) p.likes = (p.likes||0)+1; return p; }); myLikes[key] = true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
+// [수정] 수정 모드 진입 (5분 경과 여부 재검사)
+        function editQ(key) {
+            // 클릭 시점에 다시 한번 시간 체크
+            if (Date.now() - myQs[key] > 300000) {
+                alert("⌛ 작성 후 5분이 경과하여 내용을 수정할 수 없습니다.");
+                // 버튼을 없애기 위해 목록 새로고침
+                dbRef.qa.once('value', s => renderList(s.val() || {}));
+                return;
             }
-            
-            firebase.database().ref(`courses/${room}/internal_attendance/${today}/${n}_${p}`).set({
-                name: n, phone: p, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => { 
-                localStorage.setItem(storageKey, "true"); 
-                alert("✅ 출석 완료 확인되었습니다."); 
-                cleanUrlAndGo(room); 
+
+            dbRef.qa.child(key).once('value', s => {
+                const el = document.getElementById('qInput'); 
+                el.value = s.val().text;
+                el.style.height = '1px'; 
+                el.style.height = (el.scrollHeight) + 'px';
+                document.getElementById('charCount').innerText = `${el.value.length} / 100`;
+                document.getElementById('submitBtn').classList.add('editing'); 
+                document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
+                editingKey = key; 
+                el.focus(); 
+                checkCooldown(); 
             });
         }
+        function deleteQ(key) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(key).remove(); }
+        function resetInput() { const el = document.getElementById('qInput'); el.value = ""; el.style.height = '24px'; el.focus(); document.getElementById('charCount').innerText = "0 / 100"; document.getElementById('charCount').classList.remove('limit'); document.getElementById('submitBtn').classList.remove('editing'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-paper-plane"></i>'; editingKey = null; checkCooldown(); }
 
-        // 유틸리티 함수들
-        function formatTime(ts) { if(!ts) return ""; const d = new Date(ts); return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0'); }
-        function escapeHtml(t) { const m = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}; return t.replace(/[&<>"']/g, f => m[f]); }
-        function getTodayString() { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; }
-        function cleanUrlAndGo(r) { window.history.replaceState({}, '', window.location.pathname + `?room=${r}`); showMainDashboard(); }
-        function closeShuttleModal() { document.getElementById('shuttleModal').style.display = 'none'; }
-        function forceCloseQuiz() { document.getElementById('quizOverlay').style.display = 'none'; rankingListener = null; }
-        function resetInput() { const el = document.getElementById('qInput'); el.value = ""; el.style.height = '24px'; document.getElementById('submitBtn').classList.remove('editing'); editingKey = null; checkCooldown(); }
-        function toggleLike(k) { if(myLikes[k]) { dbRef.qa.child(k).transaction(p=>{if(p)p.likes=(p.likes||1)-1;return p;}); delete myLikes[k]; } else { dbRef.qa.child(k).transaction(p=>{if(p)p.likes=(p.likes||0)+1;return p;}); myLikes[k]=true; } localStorage.setItem(`likes_${currentRoom}`, JSON.stringify(myLikes)); }
-        function editQ(k) { if (Date.now() - myQs[k] > 300000) return alert("⌛ 5분이 경과했습니다."); dbRef.qa.child(k).once('value', s => { const el = document.getElementById('qInput'); el.value = s.val().text; editingKey = k; document.getElementById('submitBtn').classList.add('editing'); el.focus(); }); }
-        function deleteQ(k) { if(confirm("삭제하시겠습니까?")) dbRef.qa.child(k).remove(); }
-        function setSort(t) { currentSort = t; document.getElementById('sortNew').classList.toggle('active', t === 'new'); document.getElementById('sortLike').classList.toggle('active', t === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
-        function handleSubjectChange() { currentFilter = document.getElementById('subjectSelect').value; document.getElementById('qInput').placeholder = currentFilter === "공통질문" ? "✎ 질문 입력..." : `✎ ${currentFilter}님께 질문...`; checkCooldown(); dbRef.qa.once('value', s => renderList(s.val() || {})); }
-        function checkCooldown() { const s = document.getElementById('subjectSelect').value; const d = Date.now() - (lastPostTimeMap[s] || 0); if(!editingKey && d < 120000) { const r = Math.ceil((120000 - d) / 1000); document.getElementById('coolTimer').innerText = `⏳ [${s}] 대기: ${Math.floor(r/60)}:${(r%60).toString().padStart(2,'0')}`; document.getElementById('submitBtn').disabled = true; document.getElementById('qInput').disabled = true; setTimeout(checkCooldown, 1000); } else { document.getElementById('coolTimer').innerText = ""; document.getElementById('submitBtn').disabled = false; document.getElementById('qInput').disabled = false; } }
-        async function updateMiniNotice() {
-            const [inst, co, g] = await Promise.all([firebase.database().ref(`courses/${currentRoom}/notice`).once('value'), firebase.database().ref(`courses/${currentRoom}/coordNotice`).once('value'), firebase.database().ref('system/globalNotice').once('value')]);
-            const cl = t => t ? t.replace(/\n/g, ' ').trim() : "";
-            let p = [];
-            if(cl(inst.val())) p.push(`📢 [우리과정] ${cl(inst.val())}`);
-            if(cl(co.val())) p.push(`🔔 [운영부] ${cl(co.val())}`);
-            if(cl(g.val())) p.push(`🏢 [센터공지] ${cl(g.val())}`);
-            const f = p.join(" | ");
-            if(f && localStorage.getItem('lastClosedNotice') !== f) { document.getElementById('miniNoticeText').innerText = f; document.getElementById('miniNoticeBar').style.display = 'flex'; }
-            else document.getElementById('miniNoticeBar').style.display = 'none';
-        }
-        function closeMiniNotice() { localStorage.setItem('lastClosedNotice', document.getElementById('miniNoticeText').innerText); document.getElementById('miniNoticeBar').style.display = 'none'; }
-        function watchNotices() { firebase.database().ref(`courses/${currentRoom}/notice`).on('value', updateMiniNotice); firebase.database().ref(`courses/${currentRoom}/coordNotice`).on('value', updateMiniNotice); firebase.database().ref('system/globalNotice').on('value', updateMiniNotice); }
-        function initKeyboardFix() { if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { const o = window.innerHeight - window.visualViewport.height; document.getElementById('inputDock').style.bottom = o > 50 ? o + 'px' : '0px'; }); } }
-        function exitApp() {
-            if (confirm("현재 강의실에서 나가시겠습니까?")) {
-                const u = localStorage.getItem('uToken_' + currentRoom);
-                if (u) firebase.database().ref(`courses/${currentRoom}/students/${u}/isOnline`).set(false);
-                const ua = navigator.userAgent.toLowerCase();
-                if (ua.indexOf('kakaotalk') !== -1) { location.href = 'kakaotalk://inappbrowser/close'; return; }
-                document.documentElement.innerHTML = `<div style="height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#0f172a; color:white; text-align:center;"><h2>퇴장 완료</h2><p>브라우저 창을 닫아주세요.</p></div>`;
-            }
-        }
-        async function openAttendanceQR() { document.getElementById('menuModal').style.display = 'none'; const img = document.getElementById('qrImage'); const msg = document.getElementById('qrEmptyMsg'); const snap = await firebase.database().ref(`courses/${currentRoom}/attendanceQR`).once('value'); if(snap.val()){ img.src=snap.val(); img.style.display='block'; msg.style.display='none'; } else { img.style.display='none'; msg.style.display='block'; } document.getElementById('qrModal').style.display = 'flex'; }
+
+
+        function checkCooldown() {
+    const btn = document.getElementById('submitBtn');
+    const input = document.getElementById('qInput');
+    const timerEl = document.getElementById('coolTimer');
+    const subject = document.getElementById('subjectSelect').value;
+
+    if(editingKey) { 
+        timerEl.innerText = ""; 
+        btn.disabled = false; 
+        btn.style.opacity = 1; 
+        input.disabled = false; 
+        input.placeholder = "내용을 수정하세요."; 
+        return; 
+    }
+
+    const now = Date.now();
+    const lastTimeForSubject = lastPostTimeMap[subject] || 0;
+    const diff = now - lastTimeForSubject;
+
+    if(diff < 120000) {
+        const remain = Math.ceil((120000 - diff) / 1000);
+        const mm = Math.floor(remain / 60);
+        const ss = remain % 60;
+        timerEl.innerText = `⏳ [${subject}] 질문 대기: ${mm}:${ss.toString().padStart(2, '0')}`;
+        btn.disabled = true;
+        btn.style.opacity = 0.5;
+        input.disabled = true;
+        input.placeholder = "도배 방지를 위해 잠시 대기해주세요.";
+        // 1초마다 다시 체크 (이전에 돌던 타이머와 겹치지 않게 주의)
+        setTimeout(checkCooldown, 1000);
+    } else {
+        timerEl.innerText = "";
+        btn.disabled = false;
+        btn.style.opacity = 1;
+        input.disabled = false;
+        input.placeholder = "강의장 공개, 예의있는 질문";
+    }
+}
+
+
+
+
         function showFinalRanking() {
-            const u = localStorage.getItem('uToken_' + currentRoom); if(!u || rankingListener) return;
-            document.getElementById('quizOverlay').style.display = 'flex'; 
-            document.getElementById('quizActiveBox').style.display = 'block'; 
-            document.getElementById('quizResultBox').style.display = 'none';
-            rankingListener = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${u}`).on('value', snap => {
-                const r = snap.val();
-                if(r) {
+            const myToken = localStorage.getItem('uToken'); if(!myToken) return; if(rankingListener) return;
+            document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
+            document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요..."; document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'none'; document.getElementById('quizFeedback').innerText = "";
+            const resultRef = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`);
+            rankingListener = resultRef.on('value', snap => {
+                const myResult = snap.val();
+                if(myResult) {
                     document.getElementById('quizActiveBox').style.display = 'none'; document.getElementById('quizResultBox').style.display = 'block';
-                    document.getElementById('myFinalScore').innerText = `${r.score}점`; document.getElementById('myFinalRank').innerText = r.rank;
-                    document.getElementById('quizKingStamp').style.display = r.rank === 1 ? 'flex' : 'none';
+                    document.getElementById('myFinalScore').innerText = `${myResult.score}점`; document.getElementById('myFinalRank').innerText = myResult.rank;
+                    if(myResult.rank === 1) document.getElementById('quizKingStamp').style.display = 'flex'; else document.getElementById('quizKingStamp').style.display = 'none';
                 }
             });
         }
+
+
+function forceCloseQuiz() {
+    hasClosedSummary = false; canAnswer = false;
+    if (rankingListener) { const myToken = localStorage.getItem('uToken'); firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`).off(); rankingListener = null; }
+    document.getElementById('quizResultBox').style.display = 'none'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizOverlay').style.display = 'none'; document.getElementById('quizKingStamp').style.display = 'none';
+
+    // [추가] 퀴즈 종료 시 모든 버튼의 잠금 클래스(locked)를 강제로 제거
+    document.querySelectorAll('.locked').forEach(el => el.classList.remove('locked'));
+}
+
+
+
+        function closeResultOverlay() { hasClosedSummary = true; document.getElementById('quizOverlay').style.display = 'none'; }
+        function openMenu() {
+            const box = document.getElementById('roomList'); box.innerHTML = "";
+            for(let i=65; i<=90; i++) { let c = String.fromCharCode(i); box.innerHTML += `<div class="menu-item" onclick="changeRoom('${c}')">Room ${c}</div>`; }
+            document.getElementById('menuModal').style.display = 'flex';
+        }
+        function changeRoom(r) {
+            const pw = prompt(`Room ${r} 입장 비밀번호를 입력하세요:`); if (!pw) return;
+            firebase.database().ref(`courses/${r}/settings/password`).once('value', snap => {
+                const dbPw = snap.val();
+                if (!dbPw) { alert("⚠️ 해당 강의실은 아직 개설되지 않았거나,\n비밀번호가 설정되지 않았습니다."); return; }
+                if (String(pw) === String(dbPw) || btoa(pw) === String(dbPw)) { window.location.href = `?room=${r}`; } else { alert("⛔ 비밀번호가 올바르지 않습니다."); }
+            });
+        }
+
+
+
+
+
+// --- 차량 신청 관련 변수 초기화 ---
+let currentShuttleData = null; // 나의 신청 데이터 저장용
+
+// 1. 차량 신청 팝업 열기
+// [수정] 기사님이 설정한 출발 시간을 실시간으로 연동하도록 변경된 함수
+async function openShuttleApply() {
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('shuttleModal').style.display = 'flex';
+    
+    const uToken = localStorage.getItem('uToken');
+
+    // [핵심 연동] 기사님이 driver.html에서 설정한 시간을 실시간으로 감시하여 표시합니다.
+    firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
+        const dep = snap.val();
+        const timeEl = document.getElementById('departureTimeText');
+        if(!timeEl) return;
+
+        if (dep && dep.time) {
+            // 기사님이 시간을 설정한 경우 (예: 2026-01-23 15:00)
+            // 날짜 부분은 빼고 시간만 깔끔하게 보고 싶다면 ${dep.time}만 남겨도 됩니다.
+            timeEl.innerText = `${dep.date} [ ${dep.time} ] 출발 예정`;
+            timeEl.style.color = "#ef4444"; // 눈에 잘 띄게 빨간색 계열로 강조
+        } else {
+            // 기사님이 아직 시간을 설정하지 않았을 경우
+            firebase.database().ref('system/shuttle_notice').once('value', s => {
+                // system/shuttle_notice에 값이 있으면 그걸 보여주고, 없으면 대기 문구 출력
+                timeEl.innerText = s.val() || "기사님이 출발 시간을 설정 중입니다.";
+                timeEl.style.color = "#64748b"; 
+            });
+        }
+    });
+
+    // 기존 신청 내역 확인 (이미 신청했는지 체크)
+    const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
+    currentShuttleData = snap.val();
+
+    if (currentShuttleData) {
+        // 신청 기록이 있으면 취소 화면 표시
+        document.getElementById('shuttleSelectionArea').style.display = 'none';
+        document.getElementById('shuttleCancelArea').style.display = 'block';
+        document.getElementById('myCurrentShuttleText').innerText = currentShuttleData.typeText;
+    } else {
+        // 신청 기록이 없으면 선택 버튼들 표시
+        document.getElementById('shuttleSelectionArea').style.display = 'block';
+        document.getElementById('shuttleCancelArea').style.display = 'none';
+    }
+}
+
+// 2. 차량 선택 시 호출 (오송, 터미널, 공항, 자차 공통)
+function selectShuttle(typeId, typeName) {
+    showKacConfirm(`[${typeName}]\n차량을 신청하시겠습니까?`, async function() {
+        const uToken = localStorage.getItem('uToken');
+        const name = localStorage.getItem('kac_user_name');
+        const phone = localStorage.getItem('kac_user_phone');
+
+        // 서버에 저장할 데이터 구성
+        const requestData = {
+            type: typeId,      // osong, terminal, airport, car
+            typeText: typeName, // 오송역, 청주터미널...
+            name: name,
+            phone: phone,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        try {
+            // 신규 통합 경로: shuttle/requests 밑에 내 토큰으로 저장
+            await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).set(requestData);
+            alert("✅ 신청이 완료되었습니다.");
+            closeShuttleModal();
+        } catch (e) { 
+            alert("저장 실패. 인터넷 연결을 확인하세요."); 
+        }
+    });
+}
+
+// 3. 신청 취소 실행
+async function cancelShuttleRequest() {
+    if (!confirm("정말 신청을 취소하시겠습니까?")) return;
+    
+    const uToken = localStorage.getItem('uToken');
+    try {
+        // 서버에서 내 데이터 삭제
+        await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).remove();
+        alert("정상적으로 취소되었습니다.");
+        
+        // 다시 신청할 수 있도록 팝업 화면 갱신
+        openShuttleApply(); 
+    } catch (e) { 
+        alert("취소 처리 중 오류가 발생했습니다."); 
+    }
+}
+
+// 4. 팝업창 닫기
+function closeShuttleModal() { 
+    document.getElementById('shuttleModal').style.display = 'none'; 
+}
+
+
+
+
+
+
+
+
+
+
+
+// --- [복구] 통합 행정 신청(외출/외박/석식) 로직 ---
+
+let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
+
+
+
+// [최종 통합] 행정 신청 메뉴 열기 (외출/외박 + 석식 제외 동시 체크)
+// [최종] 행정 신청 메뉴 열기 (상황별 버튼 제어 로직 포함)
+async function openAdminAction() {
+
+    // --- [추가] 자동완성 목록 불러오기 ---
+    const loadHistory = (id, datalistId) => {
+        const history = JSON.parse(localStorage.getItem('kac_auto_' + id) || '[]');
+        const dl = document.getElementById(datalistId);
+        if(dl) dl.innerHTML = history.map(item => `<option value="${item}">`).join('');
+    };
+    loadHistory('dept', 'deptHistory');
+    loadHistory('dest', 'destHistory');
+    loadHistory('reason', 'reasonHistory');
+    // ---------------------------------
+
+
+
+    const uToken = localStorage.getItem('uToken');
+    const today = getTodayString();
+    
+    const [actionSnap, dinnerSnap] = await Promise.all([
+        firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).once('value'),
+        firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).once('value')
+    ]);
+
+    const existingData = actionSnap.val();
+    const hasDinnerSkip = dinnerSnap.exists();
+
+    // 1. 아무것도 신청 안 했을 때
+    if (!existingData && !hasDinnerSkip) {
+        document.getElementById('adminActionForm').style.display = 'flex';
+        document.getElementById('adminStatusArea').style.display = 'none';
+        
+        // 입력값 초기화
+        document.getElementById('userDept').value = "";
+        document.getElementById('startTime').value = "";
+        document.getElementById('endTime').value = "";
+        document.getElementById('destination').value = "";
+        document.getElementById('outingReason').value = "";
+        document.getElementById('skipDinner').checked = false;
+        selectedAdminType = 'none';
+        updateAdminTypeButtons();
+    } 
+    // 2. 신청 내역이 있을 때
+    else {
+        document.getElementById('adminActionForm').style.display = 'none';
+        document.getElementById('adminStatusArea').style.display = 'block';
+
+        let statusTxt = "";
+        if (hasDinnerSkip) {
+            statusTxt += `<div style="margin-bottom:10px; padding:8px; background:#fff1f2; border-radius:8px; border:1px solid #fda4af;">
+                            <b style="color:#e11d48;">🍴 오늘 석식 제외 신청됨</b>
+                          </div>`;
+        }
+        if (existingData) {
+            const typeNm = existingData.type === 'outing' ? '외출(당일)' : '외박(익일)';
+            const returnStatus = existingData.returned 
+                ? `<b style="color:#059669;">[복귀 완료 보고됨: ${existingData.returnReportTime}]</b>` 
+                : `<b style="color:#b91c1c;">[미복귀 / 외출 중]</b>`;
+            statusTxt += `<div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #dbeafe;">
+                            ${returnStatus}<br>
+                            <span style="font-size:13px; color:#64748b;">유형: ${typeNm}</span><br>
+                            <span style="font-size:13px; color:#64748b;">시간: ${existingData.startTime} ~ ${existingData.endTime}</span>
+                          </div>`;
+        }
+        document.getElementById('adminStatusText').innerHTML = statusTxt;
+
+        // --- 버튼 제어 핵심 로직 ---
+        const beforeGrp = document.getElementById('beforeReturnGroup');
+        const afterGrp = document.getElementById('afterReturnGroup');
+        const dinnerGrp = document.getElementById('dinnerOnlyGroup');
+
+        // 일단 다 숨김
+        beforeGrp.style.display = 'none';
+        afterGrp.style.display = 'none';
+        dinnerGrp.style.display = 'none';
+
+        if (existingData) {
+            // 외출/외박 정보가 있으면 복귀 관련 버튼들 노출
+            if (existingData.returned) afterGrp.style.display = 'block';
+            else beforeGrp.style.display = 'flex';
+        } else if (hasDinnerSkip) {
+            // 외출 정보는 없고 '석식 제외'만 있을 때
+            dinnerGrp.style.display = 'block';
+        }
+    }
+
+    document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
+    document.getElementById('adminActionModal').style.display = 'flex';
+}
+
+
+// [신규] 석식 제외신청만 취소하는 함수
+async function cancelDinnerOnly() {
+    const now = new Date();
+    if (now.getHours() >= 16) {
+        alert("⚠️ 석식 취소는 16시에 마감되었습니다. 행정팀에 별도 문의바랍니다.");
+        return;
+    }
+    
+    if(!confirm("오늘 저녁 식사 제외 신청을 취소하시겠습니까?")) return;
+    
+    const uToken = localStorage.getItem('uToken');
+    const today = getTodayString();
+    
+    try {
+        await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+        alert("석식 제외 신청이 취소되었습니다.");
+        openAdminAction(); // 화면 갱신
+    } catch (e) { alert("취소 중 오류 발생"); }
+}
+
+
+
+
+
+
+// 복귀 보고 취소 (재수정)
+async function undoReturnAction() {
+    if(!confirm("복귀 보고를 취소하고 다시 외출 중 상태로 돌릴까요?")) return;
+    const uToken = localStorage.getItem('uToken');
+    const today = getTodayString();
+    
+    try {
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).update({
+            returned: false,
+            returnReportTime: null
+        });
+        openAdminAction(); // 화면 갱신
+    } catch (e) { alert("처리 오류"); }
+}
+
+
+
+// 1. 외출/외박 타입 선택 시 날짜창 제어
+function selectAdminType(type) {
+    selectedAdminType = type;
+    updateAdminTypeButtons();
+    const returnDateArea = document.getElementById('returnDateArea');
+    if(type === 'overnight') {
+        returnDateArea.style.display = 'block';
+        // 복귀 날짜 기본값을 내일로 설정
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('returnDate').value = tomorrow.toISOString().substring(0, 10);
+    } else {
+        returnDateArea.style.display = 'none';
+    }
+}
+
+
+
+function updateAdminTypeButtons() {
+    const types = ['outing', 'overnight'];
+    types.forEach(t => {
+        const btn = document.getElementById(`btn-${t}`);
+        if(!btn) return;
+        if (t === selectedAdminType) {
+            btn.style.background = "#3b82f6"; // 선택되면 파란색
+            btn.style.color = "white";
+            btn.style.borderColor = "#3b82f6";
+        } else {
+            btn.style.background = "#f8fafc"; // 안되면 흰색
+            btn.style.color = "#64748b";
+            btn.style.borderColor = "#e2e8f0";
+        }
+    });
+}
+
+
+
+
+
+// [최종 통합] 행정 신청 제출 함수 (시간검사 + 석식체크 + 자동완성 기록 보관)
+async function submitAdminAction() {
+    const today = getTodayString();
+    const uToken = localStorage.getItem('uToken');
+    const name = localStorage.getItem('kac_user_name');
+    const phoneShort = localStorage.getItem('kac_user_phone');
+    
+    // 입력된 값들 가져오기
+    const dept = document.getElementById('userDept').value.trim();
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const returnDate = document.getElementById('returnDate').value;
+    const dest = document.getElementById('destination').value.trim();
+    const reason = document.getElementById('outingReason').value.trim();
+    const fullPhone = document.getElementById('fullPhone').value.trim();
+    const skipDinner = document.getElementById('skipDinner').checked;
+
+    // 1. 아무것도 선택/체크 안 한 경우 차단
+    if (selectedAdminType === 'none' && !skipDinner) {
+        alert("외출 유형을 선택하거나 '석식 제외'에 체크해주세요.");
+        return;
+    }
+
+    // 2. 외출/외박을 선택했을 경우 필수 입력 및 시간 유효성 검사
+    if (selectedAdminType !== 'none') {
+        if (!dept || !startTime || !endTime || !dest || !reason || !fullPhone) {
+            alert("외출·외박 대장 기록을 위해 모든 항목을 입력해주세요.");
+            return;
+        }
+
+        // 시간 선후 관계 체크 로직
+        const outFullTime = new Date(`${today}T${startTime}`);
+        const retDateStr = (selectedAdminType === 'overnight' ? returnDate : today);
+        const returnFullTime = new Date(`${retDateStr}T${endTime}`);
+
+        if (returnFullTime <= outFullTime) {
+            alert("⚠️ 복귀 시간이 외출 시간보다 빠를 수 없습니다.\n날짜와 시간을 다시 확인해주세요.");
+            return;
+        }
+    }
+
+    try {
+        // 3. 외출/외박 데이터 저장 (선택했을 때만)
+        if (selectedAdminType !== 'none') {
+            const actionData = {
+                name: name,
+                dept: dept,
+                startTime: startTime,
+                endTime: endTime,
+                returnDate: (selectedAdminType === 'overnight' ? returnDate : today),
+                destination: dest,
+                reason: reason,
+                phone: fullPhone,
+                type: selectedAdminType,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                returned: false
+            };
+            await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).set(actionData);
+
+            // [기능 추가] 자동완성을 위해 로컬 스토리지에 입력 내용 저장
+            const saveAutoHistory = (id, val) => {
+                let history = JSON.parse(localStorage.getItem('kac_auto_' + id) || '[]');
+                if (val && !history.includes(val)) {
+                    history.unshift(val); // 새 기록을 맨 앞으로
+                    if(history.length > 5) history.pop(); // 최근 5개만 유지
+                    localStorage.setItem('kac_auto_' + id, JSON.stringify(history));
+                }
+            };
+            saveAutoHistory('dept', dept);
+            saveAutoHistory('dest', dest);
+            saveAutoHistory('reason', reason);
+        }
+
+        // 4. 석식 제외 데이터 저장 (체크했을 때만)
+        if (skipDinner) {
+            const now = new Date();
+            if (now.getHours() >= 16) {
+                alert("⚠️ 석식 신청/취소는 16시에 마감되었습니다.\n(외출 신청은 정상 접수되었습니다)");
+            } else {
+                await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).set(`${name}(${phoneShort})`);
+            }
+        }
+
+        alert("✅ 행정 신청서가 정상적으로 접수되었습니다.");
+        document.getElementById('adminActionModal').style.display = 'none';
+
+    } catch (e) {
+        alert("데이터 저장 중 오류가 발생했습니다: " + e.message);
+    }
+}
+
+
+
+
+
+// [수정] 신청 취소 처리
+async function cancelAdminAction() {
+    if(!confirm("기존 외출/외박 신청을 취소하시겠습니까?")) return;
+    
+    const today = getTodayString();
+    const uToken = localStorage.getItem('uToken');
+
+    try {
+        // 1. 외출/외박 내역 삭제
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).remove();
+        
+        // 2. 석식 제외도 같이 신청했다면 삭제
+        await firebase.database().ref(`courses/${currentRoom}/dinner_skips/${today}/${uToken}`).remove();
+
+        alert("신청이 취소되었습니다. 다시 작성하실 수 있습니다.");
+        
+        // 3. UI를 다시 신청 양식으로 전환
+        document.getElementById('adminStatusArea').style.display = 'none';
+        document.getElementById('adminActionForm').style.display = 'flex';
+    } catch (e) {
+        alert("취소 처리 중 오류가 발생했습니다.");
+    }
+}
+
+
+
+
+// 복귀 완료 보고 처리
+async function confirmReturnAction() {
+    if(!confirm("현 시각부로 강의실(생활관)에 복귀하셨습니까?")) return;
+    const uToken = localStorage.getItem('uToken');
+    const today = getTodayString();
+    
+    try {
+        const nowTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        await firebase.database().ref(`courses/${currentRoom}/admin_actions/${today}/${uToken}`).update({
+            returned: true,
+            returnReportTime: nowTime
+        });
+        alert("✅ 복귀 보고 완료!");
+        openAdminAction(); // 화면 갱신
+    } catch (e) { alert("처리 오류"); }
+}
+
+
+
+
+
+
+
+// 4. 강의실 이동 메뉴 클릭 시
+function openRoomMove() {
+    document.getElementById('menuModal').style.display = 'none';
+    if(typeof openMenu === 'function') openMenu(); 
+}
+
+
+
+
+
+// [추가] 동의 여부를 확인하고 저장하는 함수
+async function saveProfileWithCheck() {
+    const agree = document.getElementById('privacyAgree').checked;
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+
+    if (!agree) {
+        alert("서비스 이용을 위해 개인정보 수집 동의가 필요합니다.");
+        return;
+    }
+    
+    if (!name || phone.length !== 4) {
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
+        return;
+    }
+
+    // 모든 조건 충족 시 기존 저장 로직 실행
+    saveProfile(); 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [최종 수정] 프로필 저장 및 자동 출석 연결 로직
+async function saveProfile() {
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+    
+    // 1. 입력값 유효성 검사
+    if (!name || phone.length !== 4) {
+        alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
+        return;
+    }
+    
+    const newUToken = `${name}_${phone}`;
+    const oldUToken = localStorage.getItem('kac_old_uToken');
+    const isEditMode = !!oldUToken;
+
+    try {
+        // 2. [수정 모드] 이름이나 번호가 바뀌었다면 기존 서버 데이터 삭제
+        if (isEditMode && oldUToken !== newUToken) {
+            await firebase.database().ref(`courses/${currentRoom}/students/${oldUToken}`).remove();
+        }
+
+        // 3. 로컬 스토리지 정보 갱신
+        localStorage.setItem('kac_user_name', name);
+        localStorage.setItem('kac_user_phone', phone);
+        localStorage.setItem('uToken', newUToken);
+        localStorage.removeItem('kac_old_uToken'); // 백업 데이터 삭제
+
+        // 4. 서버(Firebase) 수강생 명단 업데이트
+        await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
+            name: name,
+            phone: phone,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isOnline: true
+        });
+
+        // 5. 접속 상태 감시 시작 및 UI 정리
+        startPresence(); 
+        document.getElementById('profileOverlay').style.display = 'none';
+        
+        if (isEditMode) {
+            alert("✅ 정보가 수정되었습니다.");
+        } else {
+            alert(`${name}님, 환영합니다!`);
+        }
+        
+        // 6. [핵심] 출석 체크 파라미터(&checkin=true)가 있는 경우 자동 출석 실행
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('checkin') === 'true') {
+            // 새로 수정된 함수 이름을 호출합니다.
+            handleInternalAttendance(currentRoom); 
+        } else {
+            // 일반 입장의 경우 대시보드 표시
+            showMainDashboard();
+        }
+        
+    } catch (e) {
+        console.error("Profile Save Error:", e);
+        alert("등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+}
+
+
+
+
+
+
+// [최종 수정] 서버 명단 대조 방식의 엄격한 프로필 체크
+async function checkProfile() {
+    const savedName = localStorage.getItem('kac_user_name');
+    const savedPhone = localStorage.getItem('kac_user_phone');
+    const uToken = localStorage.getItem('uToken');
+
+    // 1. 기본 정보조차 없으면 입력창행
+    if (!uToken || !savedName) {
+        document.getElementById('profileOverlay').style.display = 'flex';
+        return;
+    }
+
+    try {
+        // 2. [핵심] 현재 접속하려는 방(Room C)의 수강생 명단에 내가 있는지 확인
+        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
+        
+        if (!snap.exists()) {
+            // 이름은 저장되어 있지만, '이 방(C)'에는 처음 들어온 경우
+            // 자동으로 방 명단에 나를 등록하고 입장 (사용자에게 다시 입력 안 시킴)
+            await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({
+                name: savedName,
+                phone: savedPhone,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                isOnline: true
+            });
+        }
+        
+        // 3. 정상 입장 처리
+        showMainDashboard();
+        
+    } catch (e) {
+        document.getElementById('profileOverlay').style.display = 'flex';
+    }
+}
+
+
+
+
+// 메인 화면 전환 함수 (중복 제거용)
+function showMainDashboard() {
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    startPresence();
+}
+
+
+
+
+
+
+
+// [신규] 식단표 보기 기능
+async function viewMealMenu() {
+    document.getElementById('menuModal').style.display = 'none';
+    const snap = await firebase.database().ref('system/nutrition_menu').once('value');
+    const imageUrl = snap.val();
+    
+    if (!imageUrl) {
+        alert("등록된 식단표 사진이 없습니다.");
+        return;
+    }
+    
+    document.getElementById('mealMenuImage').src = imageUrl;
+    document.getElementById('mealMenuModal').style.display = 'flex';
+}
+
+
+
+// [수정] 공지사항 불러오기: 센터 공지 + 코디네이터 공지 + 강사 공지 3종 통합
+async function openNotice() {
+    document.getElementById('menuModal').style.display = 'none';
+    const container = document.getElementById('noticeContainer');
+    
+    container.innerHTML = "<div style='text-align:center; padding:20px;'>데이터를 불러오는 중...</div>";
+    document.getElementById('noticeModal').style.display = 'flex';
+
+    try {
+        // 1. 센터 전체 공지 (system/globalNotice)
+        const globalSnap = await firebase.database().ref('system/globalNotice').once('value');
+        const globalVal = globalSnap.val();
+
+        // 2. 코디네이터 과정 공지 (courses/방ID/coordNotice) - [신규 추가]
+        const coordSnap = await firebase.database().ref(`courses/${currentRoom}/coordNotice`).once('value');
+        const coordVal = coordSnap.val();
+
+        // 3. 강사 과정 공지 (courses/방ID/notice)
+        const instSnap = await firebase.database().ref(`courses/${currentRoom}/notice`).once('value');
+        const instVal = instSnap.val();
+
+        let html = "";
+        
+        // (1) 센터 전체 공지 표시
+        if (globalVal) {
+            html += `<div class="notice-card"><span class="notice-tag tag-global">센터 전체 공지</span><div class="notice-body">${globalVal}</div></div>`;
+        }
+        
+        // (2) 코디네이터 과정 공지 표시
+        if (coordVal) {
+            html += `<div class="notice-card"><span class="notice-tag tag-coord">교육 운영부 공지</span><div class="notice-body">${coordVal}</div></div>`;
+        }
+
+        // (3) 강사 과정 공지 표시
+        if (instVal) {
+            html += `<div class="notice-card"><span class="notice-tag tag-course">우리 과정 공지 (강사)</span><div class="notice-body">${instVal}</div></div>`;
+        }
+
+        container.innerHTML = html || "<div style='text-align:center; padding:30px; color:#94a3b8;'>현재 등록된 공지사항이 없습니다.</div>";
+        
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "<div style='text-align:center; padding:20px; color:red;'>공지사항을 불러오는 중 오류가 발생했습니다.</div>";
+    }
+}
+
+
+
+
+// [신규] 출결 QR 불러오기
+async function openAttendanceQR() {
+    document.getElementById('menuModal').style.display = 'none';
+    const img = document.getElementById('qrImage');
+    const msg = document.getElementById('qrEmptyMsg');
+    img.style.display = 'none'; msg.style.display = 'none';
+    document.getElementById('qrModal').style.display = 'flex';
+
+    try {
+        const snap = await firebase.database().ref(`courses/${currentRoom}/attendanceQR`).once('value');
+        if (snap.val()) { img.src = snap.val(); img.style.display = 'block'; }
+        else { msg.style.display = 'block'; }
+    } catch (e) { msg.innerText = "연결 오류"; msg.style.display = 'block'; }
+}
+
+
+
+// [최종 최적화] 아이폰/안드로이드 키보드 가림 완벽 방지 로직
+function initKeyboardFix() {
+    const inputDock = document.getElementById('inputDock');
+    const scrollContainer = document.getElementById('scrollContainer');
+    const qInput = document.getElementById('qInput');
+
+    // 1. VisualViewport 지원 브라우저 (최신 아이폰/안드로이드)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const offset = window.innerHeight - window.visualViewport.height;
+            if (offset > 50) { // 키보드가 올라왔다고 판단되는 높이
+                inputDock.style.bottom = offset + 'px';
+                // 채팅 목록 하단에 여백을 줘서 마지막 메시지가 키보드 위로 보이게 함
+                scrollContainer.style.paddingBottom = (offset + 150) + 'px';
+                
+                // 글 쓰는 칸이 바로 보이도록 스크롤 아래로 고정
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }, 100);
+            } else {
+                inputDock.style.bottom = '0px';
+                scrollContainer.style.paddingBottom = '150px';
+            }
+        });
+    }
+
+    // 2. 입력창 클릭 시 강제 화면 보정 (아이폰 사파리 전용)
+    qInput.addEventListener('focus', () => {
+        // 키보드가 올라오는 시간을 고려해 약간의 지연 후 실행
+        setTimeout(() => {
+            // 입력창이 화면 중앙에 오도록 강제 스크롤
+            qInput.scrollIntoView({ block: "center", behavior: "smooth" });
+            
+            // 전체 윈도우 스크롤이 튀는 현상 방지
+            window.scrollTo(0, 0);
+        }, 300);
+    });
+
+    qInput.addEventListener('blur', () => {
+        inputDock.style.bottom = '0px';
+        scrollContainer.style.paddingBottom = '150px';
+        window.scrollTo(0, 0);
+    });
+}
+
+
+
+
+// 1. 미니 공지 바 업데이트 함수 (3가지 공지 통합 버전)
+async function updateMiniNotice() {
+    const bar = document.getElementById('miniNoticeBar');
+    const textEl = document.getElementById('miniNoticeText');
+    if(!bar || !textEl) return;
+
+    // 세 군데 공지 데이터를 한 번에 가져옴
+    const [instSnap, coordSnap, globalSnap] = await Promise.all([
+        firebase.database().ref(`courses/${currentRoom}/notice`).once('value'),
+        firebase.database().ref(`courses/${currentRoom}/coordNotice`).once('value'),
+        firebase.database().ref('system/globalNotice').once('value')
+    ]);
+
+    // 텍스트 정제 함수 (태그 제거 및 줄바꿈 정리)
+    const clean = (txt) => txt ? txt.replace(/<[^>]*>?/gm, '').replace(/\n/g, ' ').trim() : "";
+
+    const t_inst = clean(instSnap.val());   // 우리 과정
+    const t_coord = clean(coordSnap.val()); // 운영부
+    const t_global = clean(globalSnap.val()); // 센터
+
+    // 내용이 있는 공지만 모아서 합침
+    let combinedParts = [];
+    if (t_inst) combinedParts.push(`📢 [우리과정] ${t_inst}`);
+    if (t_coord) combinedParts.push(`🔔 [운영부] ${t_coord}`);
+    if (t_global) combinedParts.push(`🏢 [센터공지] ${t_global}`);
+
+    // 공지들 사이에 구분선을 넣어 하나로 합침
+    const finalNoticeText = combinedParts.join(" 　 | 　 ");
+
+    if (finalNoticeText) {
+        // 이전에 'X' 눌러서 닫은 공지와 내용이 다를 때만 표시
+        if (localStorage.getItem('lastClosedNotice') !== finalNoticeText) {
+            textEl.innerText = finalNoticeText;
+            bar.style.display = 'flex';
+        } else {
+            bar.style.display = 'none';
+        }
+    } else {
+        // 공지가 아무것도 없으면 바를 숨김
+        bar.style.display = 'none';
+    }
+}
+
+function closeMiniNotice() {
+    const text = document.getElementById('miniNoticeText').innerText;
+    localStorage.setItem('lastClosedNotice', text);
+    document.getElementById('miniNoticeBar').style.display = 'none';
+}
+
+function watchNotices() {
+    if(!currentRoom) return;
+    firebase.database().ref(`courses/${currentRoom}/notice`).on('value', updateMiniNotice);
+    firebase.database().ref(`courses/${currentRoom}/coordNotice`).on('value', updateMiniNotice);
+    firebase.database().ref('system/globalNotice').on('value', updateMiniNotice);
+}
+// --- 미니 공지 바 관련 함수 끝 ---
+
+
+
+
+
+
+
+
+
+
+
+function handleInternalAttendance(room) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isCheckIn = urlParams.get('checkin') === 'true';
+
+    if (!isCheckIn || !room) return;
+
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    
+    // [확인] storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
+    const storageKey = `kac_attended_${room}_${today}`; 
+
+    if (localStorage.getItem(storageKey)) {
+        // 이미 해당 방에 출석한 기록이 브라우저에 있다면
+        alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
+        cleanUrlAndGo(room);
+        return;
+    }
+
+    // 이름/번호가 브라우저에 저장되어 있는지 확인
+    const myName = (localStorage.getItem('kac_user_name') || "").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
+
+    if (!myName || myPhone.length !== 4) {
+        // 정보가 없으면 입교 등록창부터 띄움
+        alert(`[Room ${room}] 출석을 위해 성함과 번호 확인이 필요합니다.`);
+        document.getElementById('profileOverlay').style.display = 'flex';
+        return;
+    }
+
+    // 실제 데이터베이스 기록 실행
+    executeAttendanceRecord(room, myName, myPhone, today, storageKey);
+}
+
+
+
+
+
+
+
+
+
+// [실제 저장] 파이어베이스에 데이터를 쓰고 브라우저에 완료 마킹을 함
+function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
+    const attendanceKey = `${name}_${phone}`;
+    const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${dateStr}/${attendanceKey}`);
+
+    const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const authId = "KAC-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+    attendRef.set({
+        name: name,
+        phone: phone,
+        time: currentTime,
+        authId: authId,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        // 해당 강의실+오늘날짜 전용 출석 완료 마킹 (중요!)
+        localStorage.setItem(storageKey, "true");
+        alert(`✅ [Room ${room}] 출석 완료!\n${name}님, 확인되었습니다.`);
+        cleanUrlAndGo(room);
+    }).catch(e => {
+        alert("출석 처리 중 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
+    });
+}
+
+// 주소창 정리 함수
+function cleanUrlAndGo(r) {
+    const newUrl = window.location.pathname + `?room=${r}`;
+    window.history.replaceState({}, '', newUrl);
+    if(document.getElementById('landingPage')) document.getElementById('landingPage').style.display = 'none';
+    if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'flex';
+    startPresence();
+}
+
+
+
+
+
+
+
+
     </script>
-
-
-
-
-
-
-
 
 <!-- 커스텀 컨펌 창 (여기가 진짜 자리입니다) -->
 <div id="kacConfirm" class="kac-confirm-overlay">
