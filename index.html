@@ -695,34 +695,47 @@ function sendAns(idx) {
 
 
         
-// [수정] index.html의 최하단 (async function init() { ... })
+// [추가] 실시간 리스너들을 추적하기 위한 전역 배열
+let activeRoomListeners = []; 
+
 (async function init() {
     const params = new URLSearchParams(window.location.search);
-    const directRoom = params.get('room'); // 새로 찍은 QR의 방 (예: C)
+    const directRoom = params.get('room'); 
     const code = params.get('code');
 
-    // [강력 로직 1] URL에 방 번호가 있으면 무조건 그 방을 현재 방으로 확정
+    // 1. 방 번호 확정
+    let targetRoom = null;
     if (directRoom) {
-        currentRoom = directRoom;
+        targetRoom = directRoom;
     } else if (code) {
-        currentRoom = await resolveRoomFromCode(code);
+        targetRoom = await resolveRoomFromCode(code);
     }
 
-    // [강력 로직 2] 방 번호가 바뀌었는지 확인하고, 데이터 경로 리셋
-    if (!currentRoom) {
+    if (!targetRoom) {
         alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
         return;
     }
 
-    // UI 즉시 업데이트 (이전 방 이름이 보이지 않게)
+    // [강력 로직] 방이 바뀌거나 초기화될 때 기존의 모든 리스너를 물리적으로 제거
+    // 이 작업이 없으면 이전 방의 데이터가 계속 브라우저 메모리에 남아 섞이게 됩니다.
+    if (activeRoomListeners.length > 0) {
+        activeRoomListeners.forEach(ref => ref.off()); // 모든 감시 종료
+        activeRoomListeners = []; // 배열 비우기
+    }
+
+    currentRoom = targetRoom; // 현재 방 확정
+
+    // 2. UI 즉시 업데이트
     document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
     document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
+    document.getElementById('roomTitle').innerText = "Loading..."; // 이전 방 제목 잔상 제거
 
-    // 해당 방(currentRoom) 전용 데이터 저장소 연결
+    // 3. 해당 방 전용 로컬 데이터 로드 (방별로 키를 분리하여 격리)
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
     lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
 
+    // 4. Firebase 참조 주소 갱신
     const db = firebase.database();
     const rPath = `courses/${currentRoom}`;
     dbRef = { 
@@ -731,18 +744,21 @@ function sendAns(idx) {
         ans: db.ref(`${rPath}/quizAnswers`), 
         settings: db.ref(`${rPath}/settings`), 
         status: db.ref(`${rPath}/status`), 
-        connections: db.ref(`${rPath}/connections`) 
+        connections: db.ref(`${rPath}/connections`),
+        notice: db.ref(`${rPath}/notice`),
+        coordNotice: db.ref(`${rPath}/coordNotice`)
     };
 
-    // [중요] 출석 체크 함수 호출 (이때 room은 새로 찍은 'C'여야 함)
-    handleInternalAttendance(currentRoom); 
+    // 5. [중요] 리스너 리스트에 새 참조 등록
+    // 나중에 방을 옮길 때 이 배열에 있는 것들을 전부 .off() 시킵니다.
+    activeRoomListeners.push(dbRef.qa, dbRef.quiz, dbRef.settings, dbRef.status, dbRef.notice, dbRef.coordNotice);
 
-    // 리스너 및 키보드 보정 실행
+    // 6. 기능 실행
+    handleInternalAttendance(currentRoom); 
     setupListeners(); 
     checkCooldown(); 
     initKeyboardFix();
 })();
-
 
 
 
@@ -987,94 +1003,124 @@ function startPresence() {
 
 
 function setupListeners() {
-            // 1. 서버 시간 동기화
-            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
-                serverTimeOffset = snap.val() || 0;
-            });
+    const roomAtStart = currentRoom; // 리스너가 시작될 때의 방 번호를 고정(클로저)
 
+    // 1. 서버 시간 동기화 (이건 시스템 전체 공통이므로 하나만 유지)
+    const offsetRef = firebase.database().ref(".info/serverTimeOffset");
+    offsetRef.off(); // 기존 꺼 끄기
+    offsetRef.on("value", (snap) => {
+        serverTimeOffset = snap.val() || 0;
+    });
+    activeRoomListeners.push(offsetRef);
 
-            watchNotices(); 
+    // 미니 공지 바 감시 시작 (내부에서 .off() 처리되도록 watchNotices 수정 필요)
+    watchNotices(); 
 
+    // 2. 과정명 및 기본 설정 감시
+    dbRef.settings.off();
+    dbRef.settings.on('value', s => { 
+        // [방어 로직] 데이터가 도착했을 때 방이 바뀌어 있다면 무시
+        if (currentRoom !== roomAtStart) return;
 
-            // 2. 과정명 및 기본 설정 감시
-            dbRef.settings.on('value', s => { 
-                const val = s.val() || {}; 
-                const title = val.courseName || `Course ${currentRoom}`; 
-                document.getElementById('roomTitle').innerText = title; 
-                document.getElementById('landingTitle').innerText = title; 
-            });
+        const val = s.val() || {}; 
+        const title = val.courseName || `Course ${currentRoom}`; 
+        document.getElementById('roomTitle').innerText = title; 
+        document.getElementById('landingTitle').innerText = title; 
+    });
+    activeRoomListeners.push(dbRef.settings);
 
-            // 3. 질문 리스트 실시간 감시
-            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+    // 3. 질문 리스트 실시간 감시
+    dbRef.qa.off();
+    dbRef.qa.on('value', snap => {
+        if (currentRoom !== roomAtStart) return;
+        renderList(snap.val() || {});
+    });
+    activeRoomListeners.push(dbRef.qa);
 
-            // [신규 추가] 1분마다 리스트를 강제로 다시 그려서 5분 지난 글의 '수정' 버튼을 자동으로 없앱니다.
-            setInterval(() => {
-                dbRef.qa.once('value', snap => {
-                    if(snap.exists()) renderList(snap.val());
-                });
-            }, 60000);
-
-            // 4. 과목 리스트 실시간 로드
-            firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
-                const data = s.val() || {};
-                const sel = document.getElementById('subjectSelect');
-                if(!sel) return;
-                let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
-                Object.values(data).forEach(name => {
-                    html += `<option value="${name}">${name}</option>`;
-                });
-                sel.innerHTML = html;
-            });
-
-// 5. 강의실 상태 감시 (중복 코드 제거 및 로직 통합 버전)
-dbRef.status.on('value', snap => {
-    const st = snap.val() || {};
-
-    // [A] 리셋 및 삭제 체크
-    const serverResetKey = st.resetKey || 'init';
-    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-
-    if (!myLocalKey) {
-        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-    } else if (myLocalKey !== serverResetKey) {
-        localStorage.clear();
-        alert("강의실 정보가 초기화되었습니다.");
-        location.replace(location.pathname + location.search);
-        return;
-    }
-
-    const uToken = localStorage.getItem('uToken');
-    if (uToken && st.roomStatus === 'active') {
-        firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
-            if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
-                localStorage.removeItem('uToken');
-                alert("정보가 갱신되었거나 삭제되었습니다.");
-                location.reload();
-            }
-        });
-    }
-
-    // [B] 강사 상태 체크
-    if (st.roomStatus !== 'active') {
-        forceCloseQuiz();
-        return;
-    }
-
-    // [C] 퀴즈 모드 전환
-    if (st.mode === 'quiz') {
-        if (st.quizStep !== 'summary') {
-            document.getElementById('quizOverlay').style.display = 'flex';
+    // [수정] 인터벌 관리 (방 이동 시 기존 인터벌 삭제)
+    if (window.qRefreshInterval) clearInterval(window.qRefreshInterval);
+    window.qRefreshInterval = setInterval(() => {
+        if (currentRoom !== roomAtStart) {
+            clearInterval(window.qRefreshInterval);
+            return;
         }
-    } else {
-        forceCloseQuiz();
-    }
-    
-    // [D] 퀴즈 결과 발표 체크
-    if (st.quizStep === 'summary') { 
-        if(!hasClosedSummary) showFinalRanking(); 
-    }
-});
+        dbRef.qa.once('value', snap => {
+            if(snap.exists()) renderList(snap.val());
+        });
+    }, 60000);
 
+    // 4. 과목 리스트 실시간 로드
+    const subjectRef = firebase.database().ref(`courses/${currentRoom}/settings/subjects`);
+    subjectRef.off();
+    subjectRef.on('value', s => {
+        if (currentRoom !== roomAtStart) return;
+        const data = s.val() || {};
+        const sel = document.getElementById('subjectSelect');
+        if(!sel) return;
+        let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
+        Object.values(data).forEach(name => {
+            html += `<option value="${name}">${name}</option>`;
+        });
+        sel.innerHTML = html;
+    });
+    activeRoomListeners.push(subjectRef);
+
+    // 5. 강의실 상태 감시 (리셋 및 퀴즈 제어)
+    dbRef.status.off();
+    dbRef.status.on('value', snap => {
+        if (currentRoom !== roomAtStart) return;
+        const st = snap.val() || {};
+
+        // [A] 리셋 및 삭제 체크 (방별 개별 키 사용)
+        const serverResetKey = st.resetKey || 'init';
+        const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
+        if (!myLocalKey) {
+            localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+        } else if (myLocalKey !== serverResetKey) {
+            // [중요] localStorage.clear() 대신 해당 방 데이터만 삭제
+            localStorage.removeItem(`likes_${currentRoom}`);
+            localStorage.removeItem(`myqs_${currentRoom}`);
+            localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+            
+            alert("해당 강의실 정보가 초기화되어 다시 시작합니다.");
+            location.reload(); 
+            return;
+        }
+
+        // [B] 수강생 명단에서 내가 삭제되었는지 체크
+        const uToken = localStorage.getItem('uToken');
+        if (uToken && st.roomStatus === 'active') {
+            firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
+                if (currentRoom !== roomAtStart) return;
+                if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
+                    localStorage.removeItem('uToken');
+                    alert("정보가 갱신되었거나 삭제되었습니다.");
+                    location.reload();
+                }
+            });
+        }
+
+        // [C] 강사 상태 및 퀴즈 제어
+        if (st.roomStatus !== 'active') {
+            forceCloseQuiz();
+            return;
+        }
+
+        if (st.mode === 'quiz') {
+            if (st.quizStep !== 'summary') {
+                document.getElementById('quizOverlay').style.display = 'flex';
+            }
+        } else {
+            forceCloseQuiz();
+        }
+        
+        if (st.quizStep === 'summary') { 
+            if(!hasClosedSummary) showFinalRanking(); 
+        }
+    });
+    activeRoomListeners.push(dbRef.status);
+}
 
 
 
