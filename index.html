@@ -677,8 +677,8 @@ function sendAns(idx) {
         }
     });
 
-    // Firebase 서버로 데이터 전송
-    const uToken = localStorage.getItem('uToken');
+    // Firebase 서버로 데이터 전송 (방별 전용 토큰 사용)
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
     if(uToken && currentQuizId) {
         dbRef.ans.child(currentQuizId).child(uToken).set({
             choice: idx,
@@ -765,9 +765,9 @@ async function enterApp() {
 
 
 function openMainMenu() {
-    // 1. 내 정보 가져오기 (공백 제거)
-    const myName = (localStorage.getItem('kac_user_name') || "미등록").trim();
-    const myPhone = (localStorage.getItem('kac_user_phone') || "0000").trim();
+    // 1. 내 정보 가져오기 (방별 전용 키로 수정)
+    const myName = (localStorage.getItem('kac_user_name_' + currentRoom) || "미등록").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone_' + currentRoom) || "0000").trim();
     const dormTextEl = document.getElementById('displayMyDorm');
 
     // 2. 상단 이름/번호 표시
@@ -816,14 +816,11 @@ function openMainMenu() {
 
 // [신규] 정보 수정 버튼 클릭 시 호출되는 함수
 function editProfile() {
-    // [중요] 수정 전의 이름과 번호를 미리 백업해둡니다. (나중에 지우기 위함)
-    const oldName = localStorage.getItem('kac_user_name');
-    const oldPhone = localStorage.getItem('kac_user_phone');
+    const oldName = localStorage.getItem('kac_user_name_' + currentRoom);
+    const oldPhone = localStorage.getItem('kac_user_phone_' + currentRoom);
     localStorage.setItem('kac_old_uToken', `${oldName}_${oldPhone}`);
-
     document.getElementById('userName').value = oldName || "";
     document.getElementById('userPhone').value = oldPhone || "";
-    
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('profileOverlay').style.display = 'flex';
 }
@@ -833,12 +830,13 @@ function editProfile() {
 
 
 
-        // [수정] 완전히 나가기 (주소 초기화)
+// [수정] 완전히 나가기 (주소 초기화)
 function exitApp() {
 
     if (confirm("현재 강의실에서 나가시겠습니까?")) {
 
-    const uToken = localStorage.getItem('uToken');
+    // [핵심 수정] 그냥 uToken이 아니라 현재 방 번호가 붙은 전용 토큰을 가져옵니다.
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
     if (uToken && currentRoom) {
         firebase.database().ref(`courses/${currentRoom}/students/${uToken}/isOnline`).set(false);
     }
@@ -909,13 +907,11 @@ function exitApp() {
 
 
 
-// [최종 보강] 유령 회원 방지 및 강제 퇴출 로직 완결판
 function startPresence() {
-    const uToken = localStorage.getItem('uToken');
-    const name = localStorage.getItem('kac_user_name');
-    const phone = localStorage.getItem('kac_user_phone');
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
+    const name = localStorage.getItem('kac_user_name_' + currentRoom);
+    const phone = localStorage.getItem('kac_user_phone_' + currentRoom);
     
-    // 입장권이 없으면 실행 중단
     if (!uToken || !currentRoom || !name) {
         if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
         return;
@@ -924,19 +920,16 @@ function startPresence() {
     const myRef = firebase.database().ref(`courses/${currentRoom}/students/${uToken}`);
     const connectedRef = firebase.database().ref(".info/connected");
 
-    // [1] 실시간 감시: 내가 서버에서 지워지는 순간 즉시 화면 차단
     myRef.on('value', snap => {
         if (!snap.exists()) {
             evictUser("해당 정보가 변경되어 재시작합니다.");
         }
     });
 
-    // [2] 접속 상태 업데이트: 서버 확인 후 명단에 있을 때만 데이터 전송
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
             myRef.once('value').then(s => {
                 if (s.exists()) {
-                    // 서버 명단에 내가 있을 때만 온라인 상태 보고
                     myRef.update({
                         name: name,
                         phone: phone,
@@ -945,33 +938,27 @@ function startPresence() {
                     });
                     myRef.child('isOnline').onDisconnect().set(false);
                 } else {
-                    // 서버 명단에 없으면 부활 시도 차단 및 퇴출
                     evictUser("유효하지 않은 접근입니다.");
                 }
             });
         }
     });
 
-    // [강제 퇴출 함수] 모든 데이터 삭제 및 화면 봉쇄
     function evictUser(msg) {
-        myRef.off(); // 서버 연결 끊기
-        localStorage.removeItem('uToken'); // 입장권 삭제
+        myRef.off(); 
+        localStorage.removeItem('uToken_' + currentRoom);
         if(document.getElementById('mainApp')) document.getElementById('mainApp').style.display = 'none';
         alert(msg);
-        location.reload(); // 초기 화면으로 강제 이동
+        location.reload();
     }
 
-    // 전체 접속자 수 감시
     firebase.database().ref(`courses/${currentRoom}/students`).on('value', (snap) => {
         const data = snap.val() || {};
-        const activeUsers = Object.values(data).filter(user => 
-            user.name && user.name !== "undefined" && user.isOnline === true
-        );
+        const activeUsers = Object.values(data).filter(user => user.isOnline === true);
         const countEl = document.getElementById('realUserCount');
         if(countEl) countEl.innerText = `${activeUsers.length}명 접속`;
     });
 }
-
 
 
 
@@ -1459,20 +1446,33 @@ function submitQ() {
 
 
 
-        function showFinalRanking() {
-            const myToken = localStorage.getItem('uToken'); if(!myToken) return; if(rankingListener) return;
-            document.getElementById('quizOverlay').style.display = 'flex'; document.getElementById('quizActiveBox').style.display = 'block'; document.getElementById('quizResultBox').style.display = 'none';
-            document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요..."; document.getElementById('btnGroupMultiple').style.display = 'none'; document.getElementById('btnGroupOX').style.display = 'none'; document.getElementById('quizFeedback').innerText = "";
-            const resultRef = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`);
-            rankingListener = resultRef.on('value', snap => {
-                const myResult = snap.val();
-                if(myResult) {
-                    document.getElementById('quizActiveBox').style.display = 'none'; document.getElementById('quizResultBox').style.display = 'block';
-                    document.getElementById('myFinalScore').innerText = `${myResult.score}점`; document.getElementById('myFinalRank').innerText = myResult.rank;
-                    if(myResult.rank === 1) document.getElementById('quizKingStamp').style.display = 'flex'; else document.getElementById('quizKingStamp').style.display = 'none';
-                }
-            });
+function showFinalRanking() {
+    // [수정] 방별 전용 토큰 사용
+    const myToken = localStorage.getItem('uToken_' + currentRoom); 
+    if(!myToken) return; 
+    if(rankingListener) return;
+
+    document.getElementById('quizOverlay').style.display = 'flex'; 
+    document.getElementById('quizActiveBox').style.display = 'block'; 
+    document.getElementById('quizResultBox').style.display = 'none';
+    document.getElementById('quizStatusMsg').innerText = "📊 점수를 집계 중입니다. 잠시만 기다려주세요..."; 
+    document.getElementById('btnGroupMultiple').style.display = 'none'; 
+    document.getElementById('btnGroupOX').style.display = 'none'; 
+    document.getElementById('quizFeedback').innerText = "";
+
+    const resultRef = firebase.database().ref(`courses/${currentRoom}/quizFinalResults/${myToken}`);
+    rankingListener = resultRef.on('value', snap => {
+        const myResult = snap.val();
+        if(myResult) {
+            document.getElementById('quizActiveBox').style.display = 'none'; 
+            document.getElementById('quizResultBox').style.display = 'block';
+            document.getElementById('myFinalScore').innerText = `${myResult.score}점`; 
+            document.getElementById('myFinalRank').innerText = myResult.rank;
+            if(myResult.rank === 1) document.getElementById('quizKingStamp').style.display = 'flex'; 
+            else document.getElementById('quizKingStamp').style.display = 'none';
         }
+    });
+}
 
 
 function forceCloseQuiz() {
@@ -1509,12 +1509,12 @@ function forceCloseQuiz() {
 let currentShuttleData = null; // 나의 신청 데이터 저장용
 
 // 1. 차량 신청 팝업 열기
-// [수정] 기사님이 설정한 출발 시간을 실시간으로 연동하도록 변경된 함수
 async function openShuttleApply() {
     document.getElementById('menuModal').style.display = 'none';
     document.getElementById('shuttleModal').style.display = 'flex';
     
-    const uToken = localStorage.getItem('uToken');
+    // [수정] 방별 전용 토큰 사용
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
 
     // [핵심 연동] 기사님이 driver.html에서 설정한 시간을 실시간으로 감시하여 표시합니다.
     firebase.database().ref(`courses/${currentRoom}/shuttle/departure`).on('value', snap => {
@@ -1524,20 +1524,18 @@ async function openShuttleApply() {
 
         if (dep && dep.time) {
             // 기사님이 시간을 설정한 경우 (예: 2026-01-23 15:00)
-            // 날짜 부분은 빼고 시간만 깔끔하게 보고 싶다면 ${dep.time}만 남겨도 됩니다.
             timeEl.innerText = `${dep.date} [ ${dep.time} ] 출발 예정`;
             timeEl.style.color = "#ef4444"; // 눈에 잘 띄게 빨간색 계열로 강조
         } else {
             // 기사님이 아직 시간을 설정하지 않았을 경우
             firebase.database().ref('system/shuttle_notice').once('value', s => {
-                // system/shuttle_notice에 값이 있으면 그걸 보여주고, 없으면 대기 문구 출력
                 timeEl.innerText = s.val() || "기사님이 출발 시간을 설정 중입니다.";
                 timeEl.style.color = "#64748b"; 
             });
         }
     });
 
-    // 기존 신청 내역 확인 (이미 신청했는지 체크)
+    // 기존 신청 내역 확인 (이미 신청했는지 체크 - 방별 토큰 사용)
     const snap = await firebase.database().ref(`courses/${currentRoom}/shuttle/requests/${uToken}`).once('value');
     currentShuttleData = snap.val();
 
@@ -1552,6 +1550,14 @@ async function openShuttleApply() {
         document.getElementById('shuttleCancelArea').style.display = 'none';
     }
 }
+
+
+
+
+
+
+
+
 
 // 2. 차량 선택 시 호출 (오송, 터미널, 공항, 자차 공통)
 function selectShuttle(typeId, typeName) {
@@ -1619,7 +1625,6 @@ let selectedAdminType = 'none'; // 외출/외박 선택 상태 저장
 
 
 // [최종 통합] 행정 신청 메뉴 열기 (외출/외박 + 석식 제외 동시 체크)
-// [최종] 행정 신청 메뉴 열기 (상황별 버튼 제어 로직 포함)
 async function openAdminAction() {
 
     // --- [추가] 자동완성 목록 불러오기 ---
@@ -1633,9 +1638,8 @@ async function openAdminAction() {
     loadHistory('reason', 'reasonHistory');
     // ---------------------------------
 
-
-
-    const uToken = localStorage.getItem('uToken');
+    // [수정] 방별 전용 토큰 사용
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
     const today = getTodayString();
     
     const [actionSnap, dinnerSnap] = await Promise.all([
@@ -1708,6 +1712,14 @@ async function openAdminAction() {
     document.getElementById('adminActionDate').innerText = `오늘 날짜: ${today}`;
     document.getElementById('adminActionModal').style.display = 'flex';
 }
+
+
+
+
+
+
+
+
 
 
 // [신규] 석식 제외신청만 취소하는 함수
@@ -1987,7 +1999,6 @@ async function saveProfile() {
     const name = document.getElementById('userName').value.trim();
     const phone = document.getElementById('userPhone').value.trim();
     
-    // 1. 입력값 유효성 검사
     if (!name || phone.length !== 4) {
         alert("성함과 전화번호 뒷 4자리를 정확히 입력해주세요.");
         return;
@@ -1998,18 +2009,20 @@ async function saveProfile() {
     const isEditMode = !!oldUToken;
 
     try {
-        // 2. [수정 모드] 이름이나 번호가 바뀌었다면 기존 서버 데이터 삭제
         if (isEditMode && oldUToken !== newUToken) {
             await firebase.database().ref(`courses/${currentRoom}/students/${oldUToken}`).remove();
         }
 
-        // 3. 로컬 스토리지 정보 갱신
+        // [핵심 수정] 공통 정보(자동완성용)와 방별 전용 정보를 구분하여 저장
         localStorage.setItem('kac_user_name', name);
         localStorage.setItem('kac_user_phone', phone);
-        localStorage.setItem('uToken', newUToken);
-        localStorage.removeItem('kac_old_uToken'); // 백업 데이터 삭제
+        
+        localStorage.setItem('uToken_' + currentRoom, newUToken);
+        localStorage.setItem('kac_user_name_' + currentRoom, name);
+        localStorage.setItem('kac_user_phone_' + currentRoom, phone);
+        
+        localStorage.removeItem('kac_old_uToken');
 
-        // 4. 서버(Firebase) 수강생 명단 업데이트
         await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
             name: name,
             phone: phone,
@@ -2017,7 +2030,6 @@ async function saveProfile() {
             isOnline: true
         });
 
-        // 5. 접속 상태 감시 시작 및 UI 정리
         startPresence(); 
         document.getElementById('profileOverlay').style.display = 'none';
         
@@ -2027,13 +2039,10 @@ async function saveProfile() {
             alert(`${name}님, 환영합니다!`);
         }
         
-        // 6. [핵심] 출석 체크 파라미터(&checkin=true)가 있는 경우 자동 출석 실행
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('checkin') === 'true') {
-            // 새로 수정된 함수 이름을 호출합니다.
             handleInternalAttendance(currentRoom); 
         } else {
-            // 일반 입장의 경우 대시보드 표시
             showMainDashboard();
         }
         
@@ -2047,37 +2056,34 @@ async function saveProfile() {
 
 
 
-
 // [최종 수정] 서버 명단 대조 방식의 엄격한 프로필 체크
 async function checkProfile() {
-    const savedName = localStorage.getItem('kac_user_name');
-    const savedPhone = localStorage.getItem('kac_user_phone');
-    const uToken = localStorage.getItem('uToken');
+    const uToken = localStorage.getItem('uToken_' + currentRoom);
+    const savedName = localStorage.getItem('kac_user_name_' + currentRoom);
 
-    // 1. 기본 정보조차 없으면 입력창행
+    // 1. 이 방에 등록된 정보가 없으면 본인 확인창 띄우기
     if (!uToken || !savedName) {
+        // [자동완성] 다른 방에서 썼던 정보가 있다면 입력창에 미리 세팅
+        const globalName = localStorage.getItem('kac_user_name');
+        const globalPhone = localStorage.getItem('kac_user_phone');
+        if(globalName) document.getElementById('userName').value = globalName;
+        if(globalPhone) document.getElementById('userPhone').value = globalPhone;
+        
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
     try {
-        // 2. [핵심] 현재 접속하려는 방(Room C)의 수강생 명단에 내가 있는지 확인
         const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
-        
         if (!snap.exists()) {
-            // 이름은 저장되어 있지만, '이 방(C)'에는 처음 들어온 경우
-            // 자동으로 방 명단에 나를 등록하고 입장 (사용자에게 다시 입력 안 시킴)
             await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({
                 name: savedName,
-                phone: savedPhone,
+                phone: localStorage.getItem('kac_user_phone_' + currentRoom),
                 joinedAt: firebase.database.ServerValue.TIMESTAMP,
                 isOnline: true
             });
         }
-        
-        // 3. 정상 입장 처리
         showMainDashboard();
-        
     } catch (e) {
         document.getElementById('profileOverlay').style.display = 'flex';
     }
@@ -2301,34 +2307,28 @@ function watchNotices() {
 function handleInternalAttendance(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
-
     if (!isCheckIn || !room) return;
 
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    
-    // [확인] storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
     const storageKey = `kac_attended_${room}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        // 이미 해당 방에 출석한 기록이 브라우저에 있다면
         alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
         cleanUrlAndGo(room);
         return;
     }
 
-    // 이름/번호가 브라우저에 저장되어 있는지 확인
-    const myName = (localStorage.getItem('kac_user_name') || "").trim();
-    const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
+    // [핵심 수정] 이 방 전용 정보를 가져와서 출석부에 기록
+    const myName = (localStorage.getItem('kac_user_name_' + room) || "").trim();
+    const myPhone = (localStorage.getItem('kac_user_phone_' + room) || "").trim();
 
     if (!myName || myPhone.length !== 4) {
-        // 정보가 없으면 입교 등록창부터 띄움
         alert(`[Room ${room}] 출석을 위해 성함과 번호 확인이 필요합니다.`);
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
-    // 실제 데이터베이스 기록 실행
     executeAttendanceRecord(room, myName, myPhone, today, storageKey);
 }
 
