@@ -695,51 +695,54 @@ function sendAns(idx) {
 
 
         
-// [최종 수정] 리스너 및 타이머 관리 변수
-let activeRoomListeners = []; 
-
+// [수정] index.html의 최하단 (async function init() { ... })
 (async function init() {
     const params = new URLSearchParams(window.location.search);
-    const directRoom = params.get('room'); 
+    const directRoom = params.get('room'); // 새로 찍은 QR의 방 (예: C)
     const code = params.get('code');
 
-    let targetRoom = directRoom || (code ? await resolveRoomFromCode(code) : null);
-    if (!targetRoom) return;
-
-    // 1. [가장 강력한 청소] 이전 방에 대한 모든 연결을 뿌리부터 제거
-    if (currentRoom) {
-        firebase.database().ref(`courses/${currentRoom}`).off();
-        if (window.qRefreshInterval) clearInterval(window.qRefreshInterval);
+    // [강력 로직 1] URL에 방 번호가 있으면 무조건 그 방을 현재 방으로 확정
+    if (directRoom) {
+        currentRoom = directRoom;
+    } else if (code) {
+        currentRoom = await resolveRoomFromCode(code);
     }
 
-    currentRoom = targetRoom;
+    // [강력 로직 2] 방 번호가 바뀌었는지 확인하고, 데이터 경로 리셋
+    if (!currentRoom) {
+        alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
+        return;
+    }
 
-    // 2. UI 초기화
+    // UI 즉시 업데이트 (이전 방 이름이 보이지 않게)
     document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
     document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-    document.getElementById('roomTitle').innerText = "Loading...";
 
-    // 3. 해당 방 전용 로컬 데이터 격리 로드
+    // 해당 방(currentRoom) 전용 데이터 저장소 연결
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
     lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
 
-    // 4. 참조 주소 갱신
+    const db = firebase.database();
     const rPath = `courses/${currentRoom}`;
     dbRef = { 
-        qa: firebase.database().ref(`${rPath}/questions`), 
-        quiz: firebase.database().ref(`${rPath}/activeQuiz`), 
-        settings: firebase.database().ref(`${rPath}/settings`), 
-        status: firebase.database().ref(`${rPath}/status`),
-        students: firebase.database().ref(`${rPath}/students`)
+        qa: db.ref(`${rPath}/questions`), 
+        quiz: db.ref(`${rPath}/activeQuiz`), 
+        ans: db.ref(`${rPath}/quizAnswers`), 
+        settings: db.ref(`${rPath}/settings`), 
+        status: db.ref(`${rPath}/status`), 
+        connections: db.ref(`${rPath}/connections`) 
     };
 
-    // 5. 기능 재시작
-    setupListeners(); 
+    // [중요] 출석 체크 함수 호출 (이때 room은 새로 찍은 'C'여야 함)
     handleInternalAttendance(currentRoom); 
+
+    // 리스너 및 키보드 보정 실행
+    setupListeners(); 
     checkCooldown(); 
     initKeyboardFix();
 })();
+
 
 
 
@@ -984,230 +987,229 @@ function startPresence() {
 
 
 function setupListeners() {
-    const roomAtStart = currentRoom; // 리스너 시작 시점의 방 번호 고정
+            // 1. 서버 시간 동기화
+            firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+                serverTimeOffset = snap.val() || 0;
+            });
 
-    // --- 1. 서버 시간 동기화 (전역 리스너) ---
-    const offsetRef = firebase.database().ref(".info/serverTimeOffset");
-    offsetRef.off();
-    offsetRef.on("value", (snap) => {
-        serverTimeOffset = snap.val() || 0;
-    });
 
-    // --- 2. 미니 공지 바 업데이트 (watchNotices 내부에 .off() 포함 권장) ---
-    watchNotices(); 
+            watchNotices(); 
 
-    // --- 3. 과정명 및 기본 설정 감시 ---
-    dbRef.settings.off();
-    dbRef.settings.on('value', s => { 
-        if (currentRoom !== roomAtStart) return;
-        const val = s.val() || {}; 
-        const title = val.courseName || `Course ${currentRoom}`; 
-        document.getElementById('roomTitle').innerText = title; 
-        document.getElementById('landingTitle').innerText = title; 
-    });
 
-    // --- 4. 질문 리스트 실시간 감시 ---
-    dbRef.qa.off();
-    dbRef.qa.on('value', snap => {
-        if (currentRoom !== roomAtStart) return;
-        renderList(snap.val() || {});
-    });
+            // 2. 과정명 및 기본 설정 감시
+            dbRef.settings.on('value', s => { 
+                const val = s.val() || {}; 
+                const title = val.courseName || `Course ${currentRoom}`; 
+                document.getElementById('roomTitle').innerText = title; 
+                document.getElementById('landingTitle').innerText = title; 
+            });
 
-    // 1분마다 리스트 강제 새로고침 (5분 경과 수정버튼 제어용)
-    if (window.qRefreshInterval) clearInterval(window.qRefreshInterval);
-    window.qRefreshInterval = setInterval(() => {
-        if (currentRoom !== roomAtStart) {
-            clearInterval(window.qRefreshInterval);
-            return;
-        }
-        dbRef.qa.once('value', snap => {
-            if(snap.exists()) renderList(snap.val());
+            // 3. 질문 리스트 실시간 감시
+            dbRef.qa.on('value', snap => renderList(snap.val() || {}));
+
+            // [신규 추가] 1분마다 리스트를 강제로 다시 그려서 5분 지난 글의 '수정' 버튼을 자동으로 없앱니다.
+            setInterval(() => {
+                dbRef.qa.once('value', snap => {
+                    if(snap.exists()) renderList(snap.val());
+                });
+            }, 60000);
+
+            // 4. 과목 리스트 실시간 로드
+            firebase.database().ref(`courses/${currentRoom}/settings/subjects`).on('value', s => {
+                const data = s.val() || {};
+                const sel = document.getElementById('subjectSelect');
+                if(!sel) return;
+                let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
+                Object.values(data).forEach(name => {
+                    html += `<option value="${name}">${name}</option>`;
+                });
+                sel.innerHTML = html;
+            });
+
+// 5. 강의실 상태 감시 (중복 코드 제거 및 로직 통합 버전)
+dbRef.status.on('value', snap => {
+    const st = snap.val() || {};
+
+    // [A] 리셋 및 삭제 체크
+    const serverResetKey = st.resetKey || 'init';
+    const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
+
+    if (!myLocalKey) {
+        localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
+    } else if (myLocalKey !== serverResetKey) {
+        localStorage.clear();
+        alert("강의실 정보가 초기화되었습니다.");
+        location.replace(location.pathname + location.search);
+        return;
+    }
+
+    const uToken = localStorage.getItem('uToken');
+    if (uToken && st.roomStatus === 'active') {
+        firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
+            if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
+                localStorage.removeItem('uToken');
+                alert("정보가 갱신되었거나 삭제되었습니다.");
+                location.reload();
+            }
         });
-    }, 60000);
+    }
 
-    // --- 5. 과목 리스트 로드 ---
-    const subjectRef = firebase.database().ref(`courses/${currentRoom}/settings/subjects`);
-    subjectRef.off();
-    subjectRef.on('value', s => {
-        if (currentRoom !== roomAtStart) return;
-        const data = s.val() || {};
-        const sel = document.getElementById('subjectSelect');
-        if(!sel) return;
-        let html = '<option value="공통질문">질문 대상 선택 (기본: 공통질문)</option>';
-        Object.values(data).forEach(name => {
-            html += `<option value="${name}">${name}</option>`;
-        });
-        sel.innerHTML = html;
-    });
+    // [B] 강사 상태 체크
+    if (st.roomStatus !== 'active') {
+        forceCloseQuiz();
+        return;
+    }
 
-    // --- 6. 강의실 상태 감시 (모드 전환 및 리셋) ---
-    dbRef.status.off();
-    dbRef.status.on('value', snap => {
-        if (currentRoom !== roomAtStart) return;
-        const st = snap.val() || {};
-
-        // [A] 리셋 체크
-        const serverResetKey = st.resetKey || 'init';
-        const myLocalKey = localStorage.getItem(`kac_resetKey_${currentRoom}`);
-        if (!myLocalKey) {
-            localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-        } else if (myLocalKey !== serverResetKey) {
-            localStorage.removeItem(`likes_${currentRoom}`);
-            localStorage.removeItem(`myqs_${currentRoom}`);
-            localStorage.setItem(`kac_resetKey_${currentRoom}`, serverResetKey);
-            alert("강의실 정보가 초기화되었습니다.");
-            location.reload();
-            return;
+    // [C] 퀴즈 모드 전환
+    if (st.mode === 'quiz') {
+        if (st.quizStep !== 'summary') {
+            document.getElementById('quizOverlay').style.display = 'flex';
         }
+    } else {
+        forceCloseQuiz();
+    }
+    
+    // [D] 퀴즈 결과 발표 체크
+    if (st.quizStep === 'summary') { 
+        if(!hasClosedSummary) showFinalRanking(); 
+    }
+});
 
-        // [B] 사용자 삭제 체크
-        const uToken = localStorage.getItem('uToken');
-        if (uToken && st.roomStatus === 'active') {
-            firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value', sSnap => {
-                if (currentRoom !== roomAtStart) return;
-                if (!sSnap.exists() && document.getElementById('mainApp').style.display === 'flex') {
-                    localStorage.removeItem('uToken');
-                    alert("정보가 갱신되었거나 삭제되었습니다.");
-                    location.reload();
+
+
+
+
+
+// 6. 퀴즈 세부 진행 감시 (리셋 로직 및 연동 보완)
+            dbRef.quiz.on('value', s => {
+                const q = s.val(); if(!q) return;
+
+                // [핵심 수정] 문제 ID가 바뀌면 (즉, 진짜 새 문제가 나오면) 무조건 모든 상태 초기화
+                if (currentQuizId !== q.id) {
+                    currentQuizId = q.id;
+                    myLastChoiceIdx = null;
+                    myLastChoice = null;
+                    canAnswer = false;
+                    // 이전 문제의 모든 선택/잠금 효과 제거
+                    document.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                        b.classList.remove('selected', 'locked');
+                    });
                 }
+
+                if(studentTimerInterval) clearInterval(studentTimerInterval);
+                const sTimerBox = document.getElementById('studentQuizTimerBox');
+                const sTimerText = document.getElementById('studentTimer');
+                if(sTimerBox) sTimerBox.style.display = 'none';
+
+                dbRef.status.once('value', statusSnap => {
+                    const st = statusSnap.val() || {};
+                    if (st.quizStep === 'summary' && !hasClosedSummary) return; 
+                    if (st.mode !== 'quiz') { forceCloseQuiz(); return; }
+
+                    document.getElementById('quizOverlay').style.display = 'flex';
+                    const msgBox = document.getElementById('quizStatusMsg');
+                    const feedBox = document.getElementById('quizFeedback');
+
+                    // [상태: 일시정지]
+                    if(q.status === 'pause') {
+                        canAnswer = false; 
+                        msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
+                        if(sTimerBox && q.remainingTime !== undefined) {
+                            sTimerBox.style.display = 'flex';
+                            sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
+                        }
+                        // 버튼 잠금 유지
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+                        return; 
+                    }
+
+                    // [상태: 결과 발표]
+                    if (q.status === 'result') { 
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        const correctAns = q.correct;
+                        if (q.isSurvey) {
+                            msgBox.innerText = "📋 설문 결과 요약";
+                            feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계 완료"}</span>`;
+                        } else {
+                            if (myLastChoiceIdx === correctAns) {
+                                 msgBox.innerText = "🎉 정답입니다!"; feedBox.innerHTML = `훌륭합니다!`;
+                            } else {
+                                 msgBox.innerText = "앗, 틀렸습니다...";
+                                 const ansText = q.isOX ? (correctAns===1?'O':'X') : `${correctAns}번`;
+                                 feedBox.innerHTML = `정답은 [ ${ansText} ] 입니다.`;
+                            }
+                        }
+                        return; 
+                    }
+
+                    // [상태: 대기 중]
+                    if(q.status === 'ready') {
+                        canAnswer = false; 
+                        msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
+                        document.getElementById('btnGroupMultiple').style.display = 'none';
+                        document.getElementById('btnGroupOX').style.display = 'none';
+                        feedBox.innerText = "";
+                    } 
+                    // [상태: 진행 중]
+                    else if(q.status === 'open') {
+                        canAnswer = true; 
+                        msgBox.innerText = "정답을 선택하세요!";
+                        
+                        // 타이머 작동
+                        if(q.endTime && sTimerBox) {
+                            sTimerBox.style.display = 'flex';
+                            studentTimerInterval = setInterval(() => {
+                                const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
+                                const display = remain < 0 ? 0 : remain;
+                                sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
+                                if(remain <= 0) clearInterval(studentTimerInterval);
+                            }, 200);
+                        }
+
+                        if(q.isOX) {
+                            document.getElementById('btnGroupMultiple').style.display = 'none';
+                            const oxArea = document.getElementById('btnGroupOX');
+                            oxArea.style.display = 'flex';
+                            // 버튼 리셋 후 내 선택 강조
+                            document.querySelectorAll('.ox-btn').forEach((btn, i) => {
+                                btn.classList.remove('locked', 'selected');
+                                if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
+                            });
+                        } else {
+                            document.getElementById('btnGroupOX').style.display = 'none';
+                            const multArea = document.getElementById('btnGroupMultiple');
+                            multArea.style.display = 'flex'; multArea.innerHTML = ""; 
+                            q.options.forEach((opt, i) => {
+                                const btn = document.createElement('button');
+                                btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
+                                btn.innerText = `${i+1}. ${opt}`; 
+                                btn.onclick = () => sendAns(i+1);
+                                multArea.appendChild(btn);
+                            });
+                        }
+                    }
+                    // [상태: 시간 종료/마감]
+                    else if(q.status === 'close') {
+                        canAnswer = false;
+                        document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
+                        msgBox.innerText = myLastChoice ? "제출 완료" : "미제출 마감";
+                    }
+                });
+            });
+
+            // 7. 입력창 자동 높이 조절 및 글자수 제한
+            const qInputEl = document.getElementById('qInput');
+            qInputEl.addEventListener('input', function() {
+                const len = this.value.length; 
+                document.getElementById('charCount').innerText = `${len} / 100`;
+                if (len >= 90) document.getElementById('charCount').classList.add('limit'); 
+                else document.getElementById('charCount').classList.remove('limit');
+                this.style.height = '1px'; 
+                this.style.height = (this.scrollHeight) + 'px';
             });
         }
 
-        // [C] 모드 제어
-        if (st.roomStatus !== 'active') {
-            forceCloseQuiz();
-            return;
-        }
-
-        if (st.mode === 'quiz') {
-            if (st.quizStep !== 'summary') {
-                document.getElementById('quizOverlay').style.display = 'flex';
-            }
-        } else {
-            forceCloseQuiz();
-        }
-        
-        if (st.quizStep === 'summary') { 
-            if(!hasClosedSummary) showFinalRanking(); 
-        }
-    });
-
-    // --- 7. 퀴즈 세부 진행 감시 (통합된 6번 로직) ---
-    dbRef.quiz.off();
-    dbRef.quiz.on('value', s => {
-        if (currentRoom !== roomAtStart) return;
-        const q = s.val(); 
-        if(!q) return;
-
-        // 문제 ID 변경 시 초기화
-        if (currentQuizId !== q.id) {
-            currentQuizId = q.id;
-            myLastChoiceIdx = null;
-            myLastChoice = null;
-            canAnswer = false;
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => {
-                b.classList.remove('selected', 'locked');
-            });
-        }
-
-        // 타이머 초기화
-        if(studentTimerInterval) clearInterval(studentTimerInterval);
-        const sTimerBox = document.getElementById('studentQuizTimerBox');
-        const sTimerText = document.getElementById('studentTimer');
-        if(sTimerBox) sTimerBox.style.display = 'none';
-
-        const msgBox = document.getElementById('quizStatusMsg');
-        const feedBox = document.getElementById('quizFeedback');
-        const oxArea = document.getElementById('btnGroupOX');
-        const multArea = document.getElementById('btnGroupMultiple');
-
-        // [상태별 분기 로직]
-        if(q.status === 'pause') {
-            canAnswer = false; 
-            msgBox.innerText = "설명을 위해 잠시 멈췄습니다.";
-            if(sTimerBox && q.remainingTime !== undefined) {
-                sTimerBox.style.display = 'flex';
-                sTimerText.innerText = `00:${q.remainingTime < 10 ? '0' + q.remainingTime : q.remainingTime}`;
-            }
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
-        } 
-        else if (q.status === 'result') { 
-            multArea.style.display = 'none';
-            oxArea.style.display = 'none';
-            if (q.isSurvey) {
-                msgBox.innerText = "📋 설문 결과 요약";
-                feedBox.innerHTML = `<span style="color:#3b82f6; font-size:18px;">${q.surveyResult || "집계 완료"}</span>`;
-            } else {
-                if (myLastChoiceIdx === q.correct) {
-                    msgBox.innerText = "🎉 정답입니다!"; feedBox.innerHTML = `훌륭합니다!`;
-                } else {
-                    msgBox.innerText = "앗, 틀렸습니다...";
-                    const ansText = q.isOX ? (q.correct === 1 ? 'O' : 'X') : `${q.correct}번`;
-                    feedBox.innerHTML = `정답은 [ ${ansText} ] 입니다.`;
-                }
-            }
-        }
-        else if(q.status === 'ready') {
-            canAnswer = false; 
-            msgBox.innerText = "강사님의 시작을 기다리고 있습니다...";
-            multArea.style.display = 'none';
-            oxArea.style.display = 'none';
-            feedBox.innerText = "";
-        } 
-        else if(q.status === 'open') {
-            canAnswer = true; 
-            msgBox.innerText = "정답을 선택하세요!";
-            
-            // 타이머 작동
-            if(q.endTime && sTimerBox) {
-                sTimerBox.style.display = 'flex';
-                studentTimerInterval = setInterval(() => {
-                    const remain = Math.ceil((q.endTime - (Date.now() + serverTimeOffset)) / 1000);
-                    const display = remain < 0 ? 0 : remain;
-                    sTimerText.innerText = `00:${display < 10 ? '0' + display : display}`;
-                    if(remain <= 0) clearInterval(studentTimerInterval);
-                }, 200);
-            }
-
-            if(q.isOX) {
-                multArea.style.display = 'none';
-                oxArea.style.display = 'flex';
-                document.querySelectorAll('.ox-btn').forEach((btn, i) => {
-                    btn.classList.remove('locked', 'selected');
-                    if((i + 1) === myLastChoiceIdx) btn.classList.add('selected');
-                });
-            } else {
-                oxArea.style.display = 'none';
-                multArea.style.display = 'flex'; 
-                multArea.innerHTML = ""; 
-                q.options.forEach((opt, i) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'quiz-opt-btn' + ((i+1)===myLastChoiceIdx?' selected':'');
-                    btn.innerText = `${i+1}. ${opt}`; 
-                    btn.onclick = () => sendAns(i+1);
-                    multArea.appendChild(btn);
-                });
-            }
-        }
-        else if(q.status === 'close') {
-            canAnswer = false;
-            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('locked'));
-            msgBox.innerText = myLastChoice ? "제출 완료" : "미제출 마감";
-        }
-    });
-
-    // --- 8. 입력창 UI 제어 (비리스너) ---
-    const qInputEl = document.getElementById('qInput');
-    // 기존 이벤트 리스너 중복 방지를 위해 클론 사용하거나 정석대로 적용
-    qInputEl.oninput = function() {
-        const len = this.value.length; 
-        document.getElementById('charCount').innerText = `${len} / 100`;
-        if (len >= 90) document.getElementById('charCount').classList.add('limit'); 
-        else document.getElementById('charCount').classList.remove('limit');
-        this.style.height = '1px'; 
-        this.style.height = (this.scrollHeight) + 'px';
-    };
-}
 
 
         function setSort(type) { currentSort = type; document.getElementById('sortNew').classList.toggle('active', type === 'new'); document.getElementById('sortLike').classList.toggle('active', type === 'like'); dbRef.qa.once('value', s => renderList(s.val()||{})); }
@@ -2279,14 +2281,9 @@ function closeMiniNotice() {
 }
 
 function watchNotices() {
-    const rPath = `courses/${currentRoom}`;
-    // 기존 공지 리스너들 다 끄고 다시 시작
-    firebase.database().ref(`${rPath}/notice`).off();
-    firebase.database().ref(`${rPath}/coordNotice`).off();
-    firebase.database().ref('system/globalNotice').off();
-
-    firebase.database().ref(`${rPath}/notice`).on('value', updateMiniNotice);
-    firebase.database().ref(`${rPath}/coordNotice`).on('value', updateMiniNotice);
+    if(!currentRoom) return;
+    firebase.database().ref(`courses/${currentRoom}/notice`).on('value', updateMiniNotice);
+    firebase.database().ref(`courses/${currentRoom}/coordNotice`).on('value', updateMiniNotice);
     firebase.database().ref('system/globalNotice').on('value', updateMiniNotice);
 }
 // --- 미니 공지 바 관련 함수 끝 ---
