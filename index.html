@@ -2288,11 +2288,12 @@ function handleInternalAttendance(room) {
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // [확인] storageKey가 kac_attended_C_2026-01-25 처럼 생성됨
+    // [핵심 수정] 기록 저장 키에 '강의실 ID'를 포함시킵니다.
+    // 예: Room A는 'kac_attended_A_날짜', Room F는 'kac_attended_F_날짜'로 서로 다르게 저장됩니다.
     const storageKey = `kac_attended_${room}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        // 이미 해당 방에 출석한 기록이 브라우저에 있다면
+        // 이 방(room)에 대해서만 출석 완료 여부를 판단합니다.
         alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
         cleanUrlAndGo(room);
         return;
@@ -2303,7 +2304,7 @@ function handleInternalAttendance(room) {
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
     if (!myName || myPhone.length !== 4) {
-        // 정보가 없으면 입교 등록창부터 띄움
+        // 정보가 없으면 정보 입력창부터 띄움
         alert(`[Room ${room}] 출석을 위해 성함과 번호 확인이 필요합니다.`);
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
@@ -2320,9 +2321,8 @@ function handleInternalAttendance(room) {
 
 
 
-
-// [실제 저장] 파이어베이스에 데이터를 쓰고 브라우저에 완료 마킹을 함
 function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
+    // 서버의 해당 강의실(room) 폴더 안에 출석 기록을 남깁니다.
     const attendanceKey = `${name}_${phone}`;
     const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${dateStr}/${attendanceKey}`);
 
@@ -2336,7 +2336,7 @@ function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
         authId: authId,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        // 해당 강의실+오늘날짜 전용 출석 완료 마킹 (중요!)
+        // [중요] 해당 강의실 전용 출석 완료 마킹을 휴대폰에 저장합니다.
         localStorage.setItem(storageKey, "true");
         alert(`✅ [Room ${room}] 출석 완료!\n${name}님, 확인되었습니다.`);
         cleanUrlAndGo(room);
@@ -2344,6 +2344,16 @@ function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
         alert("출석 처리 중 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
     });
 }
+
+
+
+
+
+
+
+
+
+
 
 // 주소창 정리 함수
 function cleanUrlAndGo(r) {

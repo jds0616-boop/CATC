@@ -1171,7 +1171,7 @@ const ui = {
 
 loadDashboardStats: function() {
     if(!state.room) return;
-    const room = state.room; // 현재 함수가 실행되는 시점의 방 번호 고정
+    const room = state.room; // [중요] 함수 시작 시점의 방 번호를 고정
     const today = getTodayString();
 
     // 1. 과정 기본 정보 감시 (과정명, 기간, 장소, 담당자)
@@ -1208,7 +1208,7 @@ loadDashboardStats: function() {
     const globalNoticeRef = firebase.database().ref(`system/globalNotice`);
     globalNoticeRef.off();
     globalNoticeRef.on('value', s => {
-        // 센터 공지는 공통 데이터이므로 방 번호 검증 없이 로드해도 무방함
+        // 센터 공지는 공통 데이터이므로 방 번호 검증 없이 로드
         const el = document.getElementById('dashNoticeGlobal');
         if(el) el.innerText = s.val() || "현재 게시된 센터 전체 공지가 없습니다.";
     });
