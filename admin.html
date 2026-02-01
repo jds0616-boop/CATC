@@ -1245,7 +1245,7 @@
                     <span style="display:block; font-size:12px; font-weight:800; color:#d97706; margin-bottom:8px;">퀴즈 문제 은행 (.TXT)</span>
                     <p style="font-size: 11px; color: #92400e; line-height: 1.4; margin-bottom:10px;">새 파일을 업로드하면 퀴즈 보관함에 즉시 추가됩니다.</p>
                     <div style="display:flex; gap:8px;">
-                        <input type="file" id="modalQuizInput" accept=".txt" style="display:none;" onchange="quizMgr.loadFile(this)">
+                        <input type="file" id="modalQuizInput" accept=".txt" style="display:none;" onchange="quizMgr.loadFile(event)">
                         <button class="btn-action" onclick="document.getElementById('modalQuizInput').click()" style="flex:2; height:40px; font-size:13px; background:#f59e0b; color:white; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
                             <i class="fa-solid fa-file-import"></i> 문제 업로드
                         </button>
