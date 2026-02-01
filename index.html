@@ -1993,23 +1993,16 @@ async function saveProfile() {
         return;
     }
     
+    // 2. 이 방에서 사용할 고유 토큰 생성 (이름_번호)
     const newUToken = `${name}_${phone}`;
-    const oldUToken = localStorage.getItem('kac_old_uToken');
-    const isEditMode = !!oldUToken;
 
     try {
-        // 2. [수정 모드] 이름이나 번호가 바뀌었다면 기존 서버 데이터 삭제
-        if (isEditMode && oldUToken !== newUToken) {
-            await firebase.database().ref(`courses/${currentRoom}/students/${oldUToken}`).remove();
-        }
-
-        // 3. 로컬 스토리지 정보 갱신
+        // 3. 내 휴대폰 메모리에 현재 입력한 정보 저장 (다음번에 참고용)
         localStorage.setItem('kac_user_name', name);
         localStorage.setItem('kac_user_phone', phone);
         localStorage.setItem('uToken', newUToken);
-        localStorage.removeItem('kac_old_uToken'); // 백업 데이터 삭제
 
-        // 4. 서버(Firebase) 수강생 명단 업데이트
+        // 4. [중요] 서버의 '현재 방(currentRoom)' 하위 명단에 학생 등록
         await firebase.database().ref(`courses/${currentRoom}/students/${newUToken}`).update({
             name: name,
             phone: phone,
@@ -2017,28 +2010,24 @@ async function saveProfile() {
             isOnline: true
         });
 
-        // 5. 접속 상태 감시 시작 및 UI 정리
+        // 5. 접속 상태 감시 시작 (유령 회원 방지 로직)
         startPresence(); 
+        
+        // 6. 입력창 숨기기
         document.getElementById('profileOverlay').style.display = 'none';
         
-        if (isEditMode) {
-            alert("✅ 정보가 수정되었습니다.");
-        } else {
-            alert(`${name}님, 환영합니다!`);
-        }
+        alert(`${name}님, [Room ${currentRoom}] 입실이 확인되었습니다.`);
         
-        // 6. [핵심] 출석 체크 파라미터(&checkin=true)가 있는 경우 자동 출석 실행
+        // 7. QR 출석체크 링크(&checkin=true)로 들어온 경우 자동 출석 실행
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('checkin') === 'true') {
-            // 새로 수정된 함수 이름을 호출합니다.
             handleInternalAttendance(currentRoom); 
         } else {
-            // 일반 입장의 경우 대시보드 표시
             showMainDashboard();
         }
         
     } catch (e) {
-        console.error("Profile Save Error:", e);
+        console.error("SaveProfile Error:", e);
         alert("등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 }
@@ -2050,37 +2039,29 @@ async function saveProfile() {
 
 // [최종 수정] 서버 명단 대조 방식의 엄격한 프로필 체크
 async function checkProfile() {
-    const savedName = localStorage.getItem('kac_user_name');
-    const savedPhone = localStorage.getItem('kac_user_phone');
     const uToken = localStorage.getItem('uToken');
 
-    // 1. 기본 정보조차 없으면 입력창행
-    if (!uToken || !savedName) {
-        document.getElementById('profileOverlay').style.display = 'flex';
-        return;
+    // 1. 휴대폰에 기존 정보(uToken)가 있더라도, 현재 들어오려는 '이 방(currentRoom)'의 명단에 있는지 확인합니다.
+    if (uToken) {
+        try {
+            const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
+            if (snap.exists()) {
+                // 이미 이 방 명단에 등록된 상태(새로고침 등)라면 바로 입장
+                showMainDashboard();
+                return;
+            }
+        } catch (e) {
+            console.error("Profile check failed:", e);
+        }
     }
 
-    try {
-        // 2. [핵심] 현재 접속하려는 방(Room C)의 수강생 명단에 내가 있는지 확인
-        const snap = await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).once('value');
-        
-        if (!snap.exists()) {
-            // 이름은 저장되어 있지만, '이 방(C)'에는 처음 들어온 경우
-            // 자동으로 방 명단에 나를 등록하고 입장 (사용자에게 다시 입력 안 시킴)
-            await firebase.database().ref(`courses/${currentRoom}/students/${uToken}`).update({
-                name: savedName,
-                phone: savedPhone,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                isOnline: true
-            });
-        }
-        
-        // 3. 정상 입장 처리
-        showMainDashboard();
-        
-    } catch (e) {
-        document.getElementById('profileOverlay').style.display = 'flex';
-    }
+    // 2. 이 방 명단에 내가 없거나 처음 접속한 경우라면 무조건 입력창을 띄웁니다.
+    // 기존에 다른 방에서 썼던 정보가 입력창에 남아있지 않도록 깨끗이 비워줍니다.
+    document.getElementById('userName').value = "";
+    document.getElementById('userPhone').value = "";
+    document.getElementById('privacyAgree').checked = false; // 동의 체크도 해제
+    
+    document.getElementById('profileOverlay').style.display = 'flex';
 }
 
 
