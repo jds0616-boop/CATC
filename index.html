@@ -652,7 +652,8 @@ let confirmCallback = null;
 
 
 
-        let dbRef = {}; let currentRoom = null; let myQs = {}; let myLikes = {}; let lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}'); let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false;  let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null; let currentFilter = "공통질문"; 
+let currentRoom = null; 
+let dbRef = {}; let myQs = {}; let myLikes = {}; let lastPostTimeMap = {}; let editingKey = null; let currentSort = 'new'; let currentQuizId = null; let canAnswer = false; let myLastChoice = null; let myLastChoiceIdx = null; let hasClosedSummary = false; let rankingListener = null; let studentTimerInterval = null; let currentFilter = "공통질문";
 
 
 function sendAns(idx) {
@@ -701,6 +702,7 @@ function sendAns(idx) {
     const directRoom = params.get('room'); 
     const code = params.get('code');
 
+    // 1. 방 번호 확정 (앞에 let이나 const를 붙이지 마세요)
     if (directRoom) {
         currentRoom = directRoom;
     } else if (code) {
@@ -712,24 +714,14 @@ function sendAns(idx) {
         return;
     }
 
-    // [수정 포인트] 방이 바뀌었을 때 uToken뿐만 아니라 성함/번호까지 모두 삭제합니다.
-    // 그래야 휴대폰이 예전 방 정보를 잊고 새로 입력을 받습니다.
-    const lastRoom = localStorage.getItem('kac_last_visited_room');
-    if (lastRoom && lastRoom !== currentRoom) {
-        localStorage.removeItem('uToken');
-        localStorage.removeItem('kac_user_name');
-        localStorage.removeItem('kac_user_phone');
-        localStorage.setItem('kac_last_visited_room', currentRoom);
-    } else if (!lastRoom) {
-        localStorage.setItem('kac_last_visited_room', currentRoom);
-    }
-
-    document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
-    document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
-
+    // 2. [핵심 수정] 방 번호가 2번으로 확정된 '지금' 데이터를 불러옵니다.
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
     lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
+
+    // 3. UI 업데이트
+    document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
+    document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
 
     const db = firebase.database();
     const rPath = `courses/${currentRoom}`;
@@ -742,8 +734,8 @@ function sendAns(idx) {
         connections: db.ref(`${rPath}/connections`) 
     };
 
-    // 출결 모드인지 확인 후 실행
-    handleInternalAttendance(currentRoom); 
+    // 4. 출결 체크 실행
+    handleInternalAttendance(); 
 
     setupListeners(); 
     checkCooldown(); 
@@ -2275,36 +2267,36 @@ function watchNotices() {
 
 
 
-function handleInternalAttendance(room) {
+function handleInternalAttendance() {
+    // 1. 변수에 의존하지 않고, 지금 휴대폰 주소창에 적힌 방 번호를 즉시 읽습니다.
     const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
     const isCheckIn = urlParams.get('checkin') === 'true';
 
-    // 방 번호가 명확하지 않거나 출결 모드가 아니면 실행 안 함
-    if (!isCheckIn || !room || room === "undefined") return;
+    // 2. 주소창에 방 번호가 없거나 출결 모드가 아니면 작동 중단
+    if (!isCheckIn || !roomFromUrl) return;
 
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // [중요!] 방 번호(room)가 포함된 독립된 이름표를 사용합니다.
-    const storageKey = `kac_attended_${room}_${today}`; 
+    // 3. 방 번호를 주소창에서 가져온 값(roomFromUrl)으로 박아버립니다.
+    const storageKey = `kac_attended_${roomFromUrl}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
-        cleanUrlAndGo(room);
+        // 여기서 보여주는 방 번호도 주소창 기준입니다.
+        alert(`알림: 오늘 [Room ${roomFromUrl}]의 출석 처리는 이미 완료되었습니다.`);
+        cleanUrlAndGo(roomFromUrl);
         return;
     }
 
-    const uToken = localStorage.getItem('uToken');
     const myName = (localStorage.getItem('kac_user_name') || "").trim();
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
-    // 이 방에 등록된 정보가 없으면 입교 등록(saveProfile)이 끝날 때까지 대기
-    if (!uToken || !myName || myPhone.length !== 4) {
-        return; 
-    }
+    // 정보가 없으면 등록을 기다림
+    if (!myName || myPhone.length !== 4) return;
 
-    // 실제 서버 저장 실행
-    executeAttendanceRecord(room, myName, myPhone, today, storageKey);
+    // 실제 서버 저장 실행 (roomFromUrl 사용)
+    executeAttendanceRecord(roomFromUrl, myName, myPhone, today, storageKey);
 }
 
 
