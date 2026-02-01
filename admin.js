@@ -1491,17 +1491,6 @@ loadDashboardStats: function() {
     },
 
 
-// 전체 출석부(관리대장) 새창 열기
-    openFullAttendanceSheet: function() {
-        if(!state.room) return;
-        // 별도의 attendance_sheet.html 파일을 새창으로 엽니다.
-        const url = `attendance_sheet.html?room=${state.room}`;
-        window.open(url, '_blank', 'width=1200,height=900,scrollbars=yes');
-    },
-
-
-
-
 
 
 // [최종 수정] 자체 출석부 실시간 리스트 (방 이동 시 데이터 꼬임 방지 강화)
@@ -1513,21 +1502,21 @@ loadInternalAttendance: function() {
     const today = getTodayString();
     const listDiv = document.getElementById('internalAttendanceList');
     
-    // 2. [중요] 새로운 리스너를 걸기 전에 해당 경로의 이전 리스너를 완전히 제거
+    // 2. [중요] 새로운 리스너를 걸기 전에 이전 방의 안테나를 완전히 제거
     const studentsRef = firebase.database().ref(`courses/${roomAtInvoke}/students`);
     const attendanceRef = firebase.database().ref(`courses/${roomAtInvoke}/internal_attendance/${today}`);
     
     studentsRef.off();
     attendanceRef.off();
 
-    // (1) 수강생 명단 가져오기
+    // (1) 해당 방의 전체 수강생 명단 가져오기
     studentsRef.on('value', studentSnap => {
         // [방 검증] 데이터가 도착했을 때, 관리자가 이미 다른 방으로 이동했다면 실행 중단
         if (state.room !== roomAtInvoke) return;
 
         const students = studentSnap.val() || {};
         
-        // 이름+번호가 같으면 동일인물로 취급하여 중복 제거
+        // 중복 데이터 방지를 위해 이름+번호 조합으로 정리
         const uniqueStudentsMap = new Map();
         Object.keys(students).forEach(key => {
             const s = students[key];
@@ -1540,7 +1529,7 @@ loadInternalAttendance: function() {
 
         const sortedList = Array.from(uniqueStudentsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
 
-        // (2) 오늘 출석 데이터 가져오기
+        // (2) 오늘 해당 방의 출석 체크 데이터 가져오기
         attendanceRef.on('value', attendSnap => {
             // [방 검증] 2차 체크
             if (state.room !== roomAtInvoke) return;
@@ -1555,6 +1544,7 @@ loadInternalAttendance: function() {
                 const isAttended = attendees[attendKey] ? true : false;
                 if(isAttended) attendCount++;
 
+                // 출석 여부에 따른 디자인 설정
                 const bgColor = isAttended ? "#ecfdf5" : "#ffffff";
                 const textColor = isAttended ? "#10b981" : "#94a3b8";
                 const borderColor = isAttended ? "#10b981" : "#e2e8f0";
@@ -1570,7 +1560,7 @@ loadInternalAttendance: function() {
                 }
             });
 
-            // 상단 카운트 정보 업데이트
+            // 상단 카운트 정보 업데이트 (현재 방의 인원만 계산됨)
             const totalEl = document.getElementById('totalMemberCount');
             const checkInEl = document.getElementById('checkInCount');
             if(totalEl) totalEl.innerText = sortedList.length;

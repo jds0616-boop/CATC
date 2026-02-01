@@ -698,27 +698,26 @@ function sendAns(idx) {
 // [수정] index.html의 최하단 (async function init() { ... })
 (async function init() {
     const params = new URLSearchParams(window.location.search);
-    const directRoom = params.get('room'); // 새로 찍은 QR의 방 (예: C)
+    const directRoom = params.get('room'); // QR에서 방 번호(A, B, C...) 가져오기
     const code = params.get('code');
 
-    // [강력 로직 1] URL에 방 번호가 있으면 무조건 그 방을 현재 방으로 확정
+    // 1. 방 번호 확정 (이 코드가 가장 정확해야 합니다)
     if (directRoom) {
         currentRoom = directRoom;
     } else if (code) {
         currentRoom = await resolveRoomFromCode(code);
     }
 
-    // [강력 로직 2] 방 번호가 바뀌었는지 확인하고, 데이터 경로 리셋
     if (!currentRoom) {
         alert("강의실 정보가 없습니다. QR 코드를 다시 스캔해주세요.");
         return;
     }
 
-    // UI 즉시 업데이트 (이전 방 이름이 보이지 않게)
+    // 2. 현재 방 이름과 배지 즉시 업데이트
     document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
     document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
 
-    // 해당 방(currentRoom) 전용 데이터 저장소 연결
+    // 3. 해당 방 전용 데이터 저장소 연결 (로컬 메모리)
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
     lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
@@ -734,10 +733,9 @@ function sendAns(idx) {
         connections: db.ref(`${rPath}/connections`) 
     };
 
-    // [중요] 출석 체크 함수 호출 (이때 room은 새로 찍은 'C'여야 함)
+    // 4. [중요] 출석 체크 함수 호출 (이때 방 번호를 정확히 전달)
     handleInternalAttendance(currentRoom); 
 
-    // 리스너 및 키보드 보정 실행
     setupListeners(); 
     checkCooldown(); 
     initKeyboardFix();
@@ -2283,34 +2281,34 @@ function handleInternalAttendance(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
+    // 출석 체크 모드가 아니면 실행 안 함
     if (!isCheckIn || !room) return;
 
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // [핵심 수정] 기록 저장 키에 '강의실 ID'를 포함시킵니다.
-    // 예: Room A는 'kac_attended_A_날짜', Room F는 'kac_attended_F_날짜'로 서로 다르게 저장됩니다.
+    // [해결 포인트] 저장 키 이름에 방(room) 번호를 반드시 넣습니다.
+    // 그래야 Room A의 출석 기록이 Room B의 출석을 방해하지 않습니다.
     const storageKey = `kac_attended_${room}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        // 이 방(room)에 대해서만 출석 완료 여부를 판단합니다.
+        // 이 방에 대해서만 출석 완료를 판단합니다.
         alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
         cleanUrlAndGo(room);
         return;
     }
 
-    // 이름/번호가 브라우저에 저장되어 있는지 확인
+    // 이름과 번호가 있는지 확인 (없으면 입력창 띄움)
     const myName = (localStorage.getItem('kac_user_name') || "").trim();
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
     if (!myName || myPhone.length !== 4) {
-        // 정보가 없으면 정보 입력창부터 띄움
-        alert(`[Room ${room}] 출석을 위해 성함과 번호 확인이 필요합니다.`);
+        alert(`[Room ${room}] 출석을 위해 본인 정보를 먼저 입력해주세요.`);
         document.getElementById('profileOverlay').style.display = 'flex';
         return;
     }
 
-    // 실제 데이터베이스 기록 실행
+    // 실제 출석 기록 실행
     executeAttendanceRecord(room, myName, myPhone, today, storageKey);
 }
 
@@ -2322,8 +2320,8 @@ function handleInternalAttendance(room) {
 
 
 function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
-    // 서버의 해당 강의실(room) 폴더 안에 출석 기록을 남깁니다.
     const attendanceKey = `${name}_${phone}`;
+    // 서버의 해당 강의실 폴더로 정확히 전송
     const attendRef = firebase.database().ref(`courses/${room}/internal_attendance/${dateStr}/${attendanceKey}`);
 
     const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -2336,15 +2334,14 @@ function executeAttendanceRecord(room, name, phone, dateStr, storageKey) {
         authId: authId,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        // [중요] 해당 강의실 전용 출석 완료 마킹을 휴대폰에 저장합니다.
+        // [중요] 해당 방(storageKey)에 대해서만 완료 마킹!
         localStorage.setItem(storageKey, "true");
-        alert(`✅ [Room ${room}] 출석 완료!\n${name}님, 확인되었습니다.`);
+        alert(`✅ [Room ${room}] 출석 완료!\n${name}님, 정상 처리되었습니다.`);
         cleanUrlAndGo(room);
     }).catch(e => {
-        alert("출석 처리 중 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
+        alert("출석 처리 중 오류가 발생했습니다.");
     });
 }
-
 
 
 
