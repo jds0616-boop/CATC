@@ -698,10 +698,9 @@ function sendAns(idx) {
 // [수정] index.html의 최하단 (async function init() { ... })
 (async function init() {
     const params = new URLSearchParams(window.location.search);
-    const directRoom = params.get('room'); // QR에서 방 번호(A, B, C...) 가져오기
+    const directRoom = params.get('room'); 
     const code = params.get('code');
 
-    // 1. 방 번호 확정 (이 코드가 가장 정확해야 합니다)
     if (directRoom) {
         currentRoom = directRoom;
     } else if (code) {
@@ -713,11 +712,17 @@ function sendAns(idx) {
         return;
     }
 
-    // 2. 현재 방 이름과 배지 즉시 업데이트
+    // [수정 포인트] 방이 바뀌었는지 확인하여 입장권(uToken) 리셋
+    // 이 코드가 있어야 새로운 방에 갈 때 이름을 다시 물어봅니다.
+    const lastRoom = localStorage.getItem('kac_last_visited_room');
+    if (lastRoom !== currentRoom) {
+        localStorage.removeItem('uToken'); // 이전 방 입장권 삭제
+        localStorage.setItem('kac_last_visited_room', currentRoom);
+    }
+
     document.getElementById('roomBadge').innerText = `Room ${currentRoom}`;
     document.getElementById('landingBadge').innerText = `ROOM ${currentRoom}`;
 
-    // 3. 해당 방 전용 데이터 저장소 연결 (로컬 메모리)
     myLikes = JSON.parse(localStorage.getItem(`likes_${currentRoom}`) || '{}'); 
     myQs = JSON.parse(localStorage.getItem(`myqs_${currentRoom}`) || '{}'); 
     lastPostTimeMap = JSON.parse(localStorage.getItem(`lastTimeMap_${currentRoom}`) || '{}');
@@ -733,14 +738,13 @@ function sendAns(idx) {
         connections: db.ref(`${rPath}/connections`) 
     };
 
-    // 4. [중요] 출석 체크 함수 호출 (이때 방 번호를 정확히 전달)
+    // [수정 포인트] 출결 체크 함수는 유지하되, 내부 로직을 강화합니다.
     handleInternalAttendance(currentRoom); 
 
     setupListeners(); 
     checkCooldown(); 
     initKeyboardFix();
 })();
-
 
 
 
@@ -2281,34 +2285,34 @@ function handleInternalAttendance(room) {
     const urlParams = new URLSearchParams(window.location.search);
     const isCheckIn = urlParams.get('checkin') === 'true';
 
-    // 출석 체크 모드가 아니면 실행 안 함
-    if (!isCheckIn || !room) return;
+    // 방 번호가 없거나 출결 모드가 아니면 절대 실행 안 함
+    if (!isCheckIn || !room || room === "undefined") return;
 
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     
-    // [해결 포인트] 저장 키 이름에 방(room) 번호를 반드시 넣습니다.
-    // 그래야 Room A의 출석 기록이 Room B의 출석을 방해하지 않습니다.
+    // 저장 키 이름 (이미 잘 만드셨습니다. 그대로 유지하며 안전장치만 강화)
     const storageKey = `kac_attended_${room}_${today}`; 
 
     if (localStorage.getItem(storageKey)) {
-        // 이 방에 대해서만 출석 완료를 판단합니다.
         alert(`알림: 오늘 [Room ${room}]의 출석 처리는 이미 완료되었습니다.`);
         cleanUrlAndGo(room);
         return;
     }
 
-    // 이름과 번호가 있는지 확인 (없으면 입력창 띄움)
+    // 현재 방에 대한 입장권(uToken)이 있는 경우에만 출결 진행
+    const uToken = localStorage.getItem('uToken');
     const myName = (localStorage.getItem('kac_user_name') || "").trim();
     const myPhone = (localStorage.getItem('kac_user_phone') || "").trim();
 
-    if (!myName || myPhone.length !== 4) {
-        alert(`[Room ${room}] 출석을 위해 본인 정보를 먼저 입력해주세요.`);
-        document.getElementById('profileOverlay').style.display = 'flex';
-        return;
+    // [수정 포인트] uToken이 없으면 아직 이 방에 등록 안 된 것이므로, 
+    // 출결을 잠시 멈추고 이름 입력창이 뜨도록 유도합니다.
+    if (!uToken || !myName || myPhone.length !== 4) {
+        // 이름을 먼저 입력하게 하기 위해 알림만 띄우고 종료
+        // 이후 saveProfile 함수가 완료되면 자동으로 다시 호출될 것입니다.
+        return; 
     }
 
-    // 실제 출석 기록 실행
     executeAttendanceRecord(room, myName, myPhone, today, storageKey);
 }
 

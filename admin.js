@@ -1392,33 +1392,38 @@ loadDashboardStats: function() {
 
 
 // [교체 및 추가] 출결 게시판 통합 관리 (공식 QR + 자체 출석부)
-    loadAttendanceView: function() {
-        if(!state.room) return;
-        
-        // 1. [기존 기능 유지] 공식 E-HRD QR 이미지 실시간 감시
-        firebase.database().ref(`courses/${state.room}/attendanceQR`).on('value', snap => {
-            const qrData = snap.val();
-            const imgMain = document.getElementById('attendanceQrImgMain');
-            const msgMain = document.getElementById('noAttendanceQrMsgMain');
-            
-            if(qrData) {
-                if(imgMain) {
-                    imgMain.src = qrData;
-                    imgMain.style.display = 'block';
-                }
-                if(msgMain) msgMain.style.display = 'none';
-            } else {
-                if(imgMain) imgMain.style.display = 'none';
-                if(msgMain) {
-                    msgMain.style.display = 'block';
-                    msgMain.innerText = "등록된 QR 이미지가 없습니다. (운영부 업로드 필요)";
-                }
-            }
-        });
+loadAttendanceView: function() {
+    if(!state.room) return;
+    const room = state.room; // 현재 방 번호 고정
 
-        // 2. [신규 기능] 자체 출석체크 실시간 감시 시작
-        this.loadInternalAttendance();
-    },
+    // 1. 공식 QR 이미지 경로 리스너 정리 및 새로 연결
+    const qrRef = firebase.database().ref(`courses/${room}/attendanceQR`);
+    qrRef.off(); // 이전 방 안테나 제거
+    
+    qrRef.on('value', snap => {
+        if(state.room !== room) return; // 방 번호 검증
+        const qrData = snap.val();
+        const imgMain = document.getElementById('attendanceQrImgMain');
+        const msgMain = document.getElementById('noAttendanceQrMsgMain');
+        
+        if(qrData) {
+            if(imgMain) {
+                imgMain.src = qrData;
+                imgMain.style.display = 'block';
+            }
+            if(msgMain) msgMain.style.display = 'none';
+        } else {
+            if(imgMain) imgMain.style.display = 'none';
+            if(msgMain) {
+                msgMain.style.display = 'block';
+                msgMain.innerText = "등록된 QR 이미지가 없습니다. (운영부 업로드 필요)";
+            }
+        }
+    });
+
+    // 2. 자체 출석체크 실시간 감시 함수 호출
+    this.loadInternalAttendance();
+},
 
     // [신규] 출결 모드 전환 (공식 QR <-> 자체 출석체크)
     toggleAttendanceMode: function(mode) {
